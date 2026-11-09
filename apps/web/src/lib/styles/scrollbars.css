@@ -1,0 +1,59 @@
+/*
+ * Overlay scrollbars (OverlayScrollbars, applied by `overlayScroll` in lib/scrollbars.ts): thin, over the content so
+ * they take no layout space, faded out when idle and drawn from the theme's tones, so every theme and both colour
+ * schemes follow. The handle widens while the pointer is over the track, as on macOS. The chat column draws the same
+ * markup with `VerticalOverlayScrollbar.svelte` instead, so the theme below covers it too.
+ */
+@import "overlayscrollbars/styles/overlayscrollbars.css" layer(components);
+
+/* The library's own CSS sits below Tailwind's utilities (it would otherwise force `position: relative` on the app's
+   absolutely placed scrollers), so its overflow rule is restated where a utility such as `overflow-y-auto` cannot win. */
+[data-overlayscrollbars-viewport] {
+	overflow-x: var(--os-viewport-overflow-x);
+	overflow-y: var(--os-viewport-overflow-y);
+}
+
+.os-theme-harness {
+	--os-size: 14px;
+	--os-padding-perpendicular: 3px;
+	--os-padding-axis: 3px;
+	--os-track-border-radius: 999px;
+	--os-handle-border-radius: 999px;
+	--os-handle-min-size: 36px;
+	--os-handle-interactive-area-offset: 2px;
+	--os-handle-perpendicular-size: 50%;
+	--os-handle-perpendicular-size-hover: 100%;
+	--os-handle-perpendicular-size-active: 100%;
+	--os-handle-bg: color-mix(in oklab, var(--chat-fg-subtle) 55%, transparent);
+	--os-handle-bg-hover: color-mix(in oklab, var(--chat-fg-subtle) 80%, transparent);
+	--os-handle-bg-active: var(--chat-fg-subtle);
+	--os-track-bg-hover: color-mix(in oklab, var(--chat-fg-subtle) 12%, transparent);
+	--os-track-bg-active: color-mix(in oklab, var(--chat-fg-subtle) 12%, transparent);
+	transition-duration: 0.35s;
+}
+
+/* The library sets these on the scroller; as inherited properties every change would restyle all of its content. */
+@property --os-viewport-overflow-x {
+	syntax: "*";
+	inherits: false;
+}
+@property --os-viewport-overflow-y {
+	syntax: "*";
+	inherits: false;
+}
+@property --os-vaw {
+	syntax: "*";
+	inherits: false;
+}
+@property --os-vah {
+	syntax: "*";
+	inherits: false;
+}
+
+/* Rendered markdown gets its scrollbars after it is on screen (lib/scrollbars.ts); the native ones never show. */
+@media (pointer: fine) {
+	.code-block pre,
+	.md-table {
+		scrollbar-width: none;
+	}
+}

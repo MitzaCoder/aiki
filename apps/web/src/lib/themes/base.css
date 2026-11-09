@@ -1,0 +1,471 @@
+/*
+ * Everything the app draws derives from a theme's tones.
+ *
+ * A theme file (src/lib/themes/<name>.css) sets one small set of `--tone-*`
+ * variables for light and for dark. This file turns those into shadcn's tokens
+ * (so settings, dialogs and every vendored component follow the theme) and into
+ * the chat's own tokens (`--chat-*`), plus the shared utilities. Adding a theme
+ * means adding tones — never tokens. docs/DESIGN.md says how.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+	--font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+	--font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+	/* What a task says (titles, reports, briefs, questions, decisions), a step above the chat's small print. */
+	--text-task: 0.9375rem;
+	--text-task--line-height: 1.5rem;
+	/* A task's secondary text: the gist under a row, answered questions and decisions in a list. */
+	--text-task-sm: 0.8125rem;
+	--text-task-sm--line-height: 1.25rem;
+
+	--animate-shimmer: shimmer 2.2s linear infinite;
+	--animate-orb: orb 8s linear infinite;
+	--animate-rise: rise 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+	@keyframes shimmer {
+		from {
+			background-position: 200% 0;
+		}
+		to {
+			background-position: -200% 0;
+		}
+	}
+	@keyframes orb {
+		to {
+			transform: rotate(1turn);
+		}
+	}
+	@keyframes rise {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+	}
+}
+
+@theme inline {
+	--radius-sm: calc(var(--radius) * 0.6);
+	--radius-md: calc(var(--radius) * 0.8);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) * 1.4);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6);
+
+	--color-accent-1: var(--accent-1);
+	--color-accent-2: var(--accent-2);
+	--color-accent-3: var(--accent-3);
+	--color-accent-4: var(--accent-4);
+
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+	--radius: var(--tone-radius);
+
+	/* shadcn-svelte's tokens, so the vendored components and every screen follow the theme too. */
+	--background: var(--tone-bg);
+	--foreground: var(--tone-fg);
+	--card: var(--tone-surface);
+	--card-foreground: var(--tone-fg);
+	--popover: var(--tone-surface);
+	--popover-foreground: var(--tone-fg);
+	--primary: var(--tone-primary);
+	--primary-foreground: var(--tone-primary-fg);
+	--secondary: var(--tone-surface);
+	--secondary-foreground: var(--tone-fg);
+	--muted: var(--tone-surface);
+	--muted-foreground: var(--tone-fg-muted);
+	--accent: var(--tone-surface-2);
+	--accent-foreground: var(--tone-fg);
+	--destructive: var(--tone-danger);
+	--border: var(--tone-border);
+	--input: var(--tone-border);
+	--ring: var(--tone-ring);
+	--chart-1: var(--tone-accent-1);
+	--chart-2: var(--tone-accent-2);
+	--chart-3: var(--tone-accent-3);
+	--chart-4: var(--tone-accent-4);
+	--chart-5: var(--tone-fg-muted);
+	--sidebar: var(--tone-surface);
+	--sidebar-foreground: var(--tone-fg);
+	--sidebar-primary: var(--tone-primary);
+	--sidebar-primary-foreground: var(--tone-primary-fg);
+	--sidebar-accent: var(--tone-surface-2);
+	--sidebar-accent-foreground: var(--tone-fg);
+	--sidebar-border: var(--tone-border);
+	--sidebar-ring: var(--tone-ring);
+
+	/* The chat's own tokens: Jarvis' names, prefixed so they never fight shadcn's. */
+	--accent-1: var(--tone-accent-1);
+	--accent-2: var(--tone-accent-2);
+	--accent-3: var(--tone-accent-3);
+	--accent-4: var(--tone-accent-4);
+
+	--chat-bg: var(--tone-bg);
+	--chat-bg-elev: color-mix(in oklab, var(--tone-surface) 78%, transparent);
+	--chat-surface: var(--tone-surface);
+	--chat-surface-2: var(--tone-surface-2);
+	--chat-border: var(--tone-border);
+	--chat-border-strong: var(--tone-border-strong);
+	--chat-fg: var(--tone-fg);
+	--chat-fg-muted: var(--tone-fg-muted);
+	--chat-fg-subtle: var(--tone-fg-subtle);
+	--chat-user-bubble: var(--tone-user-bubble);
+	--chat-user-border: var(--tone-user-border);
+	--chat-danger: var(--tone-danger);
+	--chat-success: var(--tone-success);
+	--chat-warning: var(--tone-warning);
+	--chat-shadow: var(--tone-shadow);
+	--chat-grad: linear-gradient(
+		120deg,
+		var(--accent-1),
+		var(--accent-2) 40%,
+		var(--accent-3) 75%,
+		var(--accent-4)
+	);
+
+	/*
+	 * One colour per task status, derived from the theme's tones: a status reads the same on a task row's edge, a row's
+	 * dot, the sheet's badge and a chat chip. `tasks.ts`'s `taskStatusToneClass` hands one to `--task-status`; the
+	 * components in base.css below draw with it. Working is the theme's second accent (indigo in Jarvis), review the
+	 * warning tone, blocked the danger tone, done the success tone; todo (a ring) and dropped stay quiet.
+	 */
+	--task-status-todo: color-mix(in oklab, var(--tone-fg-subtle) 80%, var(--tone-bg));
+	--task-status-working: var(--tone-accent-2);
+	--task-status-review: var(--tone-warning);
+	--task-status-waiting: var(--accent-2);
+	--task-status-blocked: var(--tone-danger);
+	--task-status-done: var(--tone-success);
+	--task-status-dropped: color-mix(in oklab, var(--tone-fg-subtle) 55%, var(--tone-bg));
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+
+	html {
+		@apply font-sans;
+		background: var(--chat-bg);
+		-webkit-text-size-adjust: 100%;
+		-webkit-tap-highlight-color: transparent;
+		text-rendering: optimizeLegibility;
+	}
+
+	html,
+	body {
+		height: 100%;
+		color: var(--chat-fg);
+		font-feature-settings: "cv11", "ss01", "ss03";
+		-webkit-font-smoothing: antialiased;
+	}
+
+	body {
+		@apply bg-background text-foreground;
+		overscroll-behavior: none;
+	}
+
+	::selection {
+		background: color-mix(in oklab, var(--accent-2) 30%, transparent);
+	}
+
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: var(--chat-border-strong) transparent;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+		border-radius: 6px;
+	}
+
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+}
+
+/* ------------------------------------------------------------- utilities */
+
+/* A placeholder while something loads: a bar of the surface's own weight, softly pulsing. */
+@utility skeleton {
+	background: color-mix(in oklab, var(--chat-fg-subtle) 16%, transparent);
+	border-radius: 0.5rem;
+	animation: skeleton-pulse 1.7s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+	50% {
+		opacity: 0.45;
+	}
+}
+
+@utility text-gradient {
+	background: var(--chat-grad);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+
+@utility glass {
+	background: var(--chat-bg-elev);
+	backdrop-filter: blur(20px) saturate(1.6);
+	-webkit-backdrop-filter: blur(20px) saturate(1.6);
+}
+
+@utility shimmer-text {
+	background: linear-gradient(
+		90deg,
+		var(--chat-fg-subtle) 0%,
+		var(--chat-fg-subtle) 35%,
+		var(--chat-fg) 50%,
+		var(--chat-fg-subtle) 65%,
+		var(--chat-fg-subtle) 100%
+	);
+	background-size: 200% 100%;
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	animation: var(--animate-shimmer);
+}
+
+@layer components {
+	/*
+	 * Task status colours. `.task-status-<tone>` is set on the element that owns the colour (a row, a badge, a chip's
+	 * dot) and hands it to `--task-status`; everything inside reads that. Only the six tones exist, so the components
+	 * never name a token directly.
+	 */
+	.task-status-todo {
+		--task-status: var(--task-status-todo);
+	}
+	.task-status-working {
+		--task-status: var(--task-status-working);
+	}
+	.task-status-waiting { --task-status: var(--task-status-waiting); }
+	.task-status-review {
+		--task-status: var(--task-status-review);
+	}
+	.task-status-blocked {
+		--task-status: var(--task-status-blocked);
+	}
+	.task-status-done {
+		--task-status: var(--task-status-done);
+	}
+	.task-status-dropped {
+		--task-status: var(--task-status-dropped);
+	}
+
+	/* A row's edge: the status colour down the left of a task card. */
+	.task-status-edge::before {
+		content: "";
+		position: absolute;
+		top: 0.5rem;
+		bottom: 0.5rem;
+		left: -1px;
+		width: 3px;
+		border-radius: 0 2px 2px 0;
+		background: var(--task-status);
+	}
+
+	/* A small round marker before a status' words, or alone on a chip. */
+	.task-status-dot {
+		display: inline-block;
+		flex: none;
+		width: 0.4375rem;
+		height: 0.4375rem;
+		border-radius: 999px;
+		background: var(--task-status);
+	}
+
+	/* A to-do task has not started: its marker is a ring, so it never reads as working in a theme with no colour. */
+	.task-status-todo .task-status-dot,
+	.task-status-todo.task-status-dot {
+		background: transparent;
+		box-shadow: inset 0 0 0 1.5px var(--task-status);
+	}
+
+	/* A task's ref (a ticket key, a PR number, a link) as a small quiet chip. */
+	.task-ref {
+		flex: none;
+		border: 1px solid color-mix(in oklab, var(--chat-border-strong) 65%, transparent);
+		border-radius: 0.3125rem;
+		padding: 0 0.3125rem;
+		background: color-mix(in oklab, var(--chat-surface-2) 60%, transparent);
+		color: var(--chat-fg-muted);
+		font-family: var(--font-mono);
+		font-size: 0.65625rem;
+		line-height: 1rem;
+	}
+
+	/*
+	 * A ref chip that opens its ticket or pull request: a dot in its state's colour (`.task-status-<tone>` on the chip)
+	 * when the backend read it. It sits above a row's own link, and on a touch screen its tap area reaches past its edges.
+	 */
+	.ref-chip {
+		position: relative;
+		z-index: 1;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		min-width: 0;
+		max-width: 9rem;
+	}
+	a.ref-chip {
+		text-decoration: none;
+		transition:
+			border-color 120ms ease,
+			color 120ms ease;
+	}
+	a.ref-chip:hover {
+		border-color: var(--chat-border-strong);
+		color: var(--chat-fg);
+	}
+	a.ref-chip:focus-visible {
+		outline: 2px solid var(--accent-2);
+		outline-offset: 1px;
+	}
+	.ref-chip .ref-chip-dot {
+		width: 0.375rem;
+		height: 0.375rem;
+	}
+	@media (pointer: coarse) {
+		a.ref-chip::after {
+			content: "";
+			position: absolute;
+			inset: -0.375rem -0.125rem;
+		}
+	}
+
+	/* A status as a pill: its colour in the words, a wash of it behind. */
+	.task-status-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		border: 1px solid color-mix(in oklab, var(--task-status) 40%, transparent);
+		border-radius: 999px;
+		padding: 0 0.5rem;
+		font-size: 0.6875rem;
+		line-height: 1.25rem;
+		font-weight: 500;
+		color: var(--task-status);
+		background: color-mix(in oklab, var(--task-status) 12%, transparent);
+	}
+
+	/* A small square button holding one icon: copy, scroll, attach. */
+	.icon-btn {
+		display: inline-grid;
+		place-items: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		border-radius: 0.5rem;
+		color: var(--chat-fg-subtle);
+		transition:
+			background 0.15s,
+			color 0.15s;
+	}
+	.icon-btn:hover {
+		background: var(--chat-surface-2);
+		color: var(--chat-fg);
+	}
+	.icon-btn[aria-pressed='true'] {
+		background: var(--chat-surface-2);
+		color: var(--chat-fg);
+	}
+
+	/* A rounded pill in the composer holding a setting or a mode. */
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		height: 2rem;
+		padding: 0 0.625rem;
+		border-radius: 999px;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--chat-fg-muted);
+		transition:
+			background 0.15s,
+			color 0.15s;
+	}
+	.chip:hover {
+		background: var(--chat-surface-2);
+		color: var(--chat-fg);
+	}
+	.chip:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+
+	/* The label above a block inside a tool card. */
+	.section-label {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.375rem 0.375rem 0 0.875rem;
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--chat-fg-subtle);
+	}
+}
+
+/* A background thread's card a notification opened: it glows for a moment so the eye lands on it. */
+@keyframes thread-glow {
+	0%,
+	60% {
+		box-shadow: 0 0 0 2px var(--primary), 0 0 24px color-mix(in oklab, var(--primary) 45%, transparent);
+	}
+	100% {
+		box-shadow: 0 0 0 0 transparent;
+	}
+}
+
+.thread-glow {
+	animation: thread-glow 2.4s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}

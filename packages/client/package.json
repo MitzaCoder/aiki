@@ -1,0 +1,18 @@
+{
+	"name": "@mihai-harness/client",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Framework-free client for the mihai-harness WebSocket protocol: handshake, requests, watches, reconnects and Chord view ops.",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"types": "./src/index.ts",
+	"dependencies": {
+		"@earendil-works/chord": "1.4.0",
+		"@mihai-harness/protocol": "workspace:*"
+	},
+	"devDependencies": {
+		"@earendil-works/pi-ai": "1.4.0"
+	}
+}

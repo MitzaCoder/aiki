@@ -1,0 +1,14 @@
+[
+	{
+		"name": "backend-pc",
+		"url": "https://backend-pc.example.test"
+	},
+	{
+		"name": "backend-vm",
+		"url": "https://backend-vm.example.test"
+	},
+	{
+		"name": "backend-laptop",
+		"url": "https://backend-laptop.example.test"
+	}
+]

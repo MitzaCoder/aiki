@@ -1,0 +1,78 @@
+/*
+ * Jarvis: violet-tinted surfaces, a cyan → indigo → fuchsia → orange gradient,
+ * and light/dark pairs defined here and nowhere else.
+ *
+ * A theme only names tones (see base.css). `:root:not([data-theme])` makes this
+ * the default, so the app still looks right before app.html sets the attribute.
+ * `[data-theme-preview]` paints the same tones on one element, so Settings can show a theme that is not the
+ * chosen one (add `.dark` for its dark tones).
+ */
+:root[data-theme='jarvis'],
+:root:not([data-theme]),
+[data-theme-preview='jarvis'] {
+	color-scheme: light;
+
+	--tone-radius: 0.875rem;
+
+	--tone-bg: #fbfaff;
+	--tone-surface: #f3f1fb;
+	--tone-surface-2: #eae7f6;
+	--tone-border: #e3dff0;
+	--tone-border-strong: #d2cce6;
+
+	--tone-fg: #1a1830;
+	--tone-fg-muted: #5d5a78;
+	--tone-fg-subtle: #8c89a6;
+
+	--tone-primary: #6366f1;
+	--tone-primary-fg: #ffffff;
+
+	--tone-accent-1: #22d3ee;
+	--tone-accent-2: #6366f1;
+	--tone-accent-3: #d946ef;
+	--tone-accent-4: #fb923c;
+
+	--tone-user-bubble: linear-gradient(135deg, #eef2ff, #fae8ff);
+	--tone-user-border: #ddd6fe;
+
+	--tone-danger: #e11d48;
+	--tone-success: #059669;
+	--tone-warning: #d97706;
+	--tone-ring: #8b5cf6;
+
+	--tone-shadow: 0 10px 40px -12px rgb(76 29 149 / 0.25), 0 2px 8px -2px rgb(76 29 149 / 0.08);
+}
+
+:root[data-theme='jarvis'].dark,
+:root:not([data-theme]).dark,
+[data-theme-preview='jarvis'].dark {
+	color-scheme: dark;
+
+	--tone-bg: #09090f;
+	--tone-surface: #15141f;
+	--tone-surface-2: #1d1b2b;
+	--tone-border: #262437;
+	--tone-border-strong: #34314b;
+
+	--tone-fg: #ecebf5;
+	--tone-fg-muted: #a3a0bd;
+	--tone-fg-subtle: #6e6b88;
+
+	--tone-primary: #818cf8;
+	--tone-primary-fg: #0b0b14;
+
+	--tone-accent-1: #22d3ee;
+	--tone-accent-2: #818cf8;
+	--tone-accent-3: #e879f9;
+	--tone-accent-4: #fb923c;
+
+	--tone-user-bubble: linear-gradient(135deg, #1e1b4b, #3b0f4a);
+	--tone-user-border: #3f3470;
+
+	--tone-danger: #fb7185;
+	--tone-success: #34d399;
+	--tone-warning: #fbbf24;
+	--tone-ring: #a78bfa;
+
+	--tone-shadow: 0 10px 40px -12px rgb(0 0 0 / 0.7), 0 2px 8px -2px rgb(0 0 0 / 0.4);
+}

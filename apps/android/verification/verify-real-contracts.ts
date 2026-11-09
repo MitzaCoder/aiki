@@ -1,0 +1,272 @@
+/** Real RPC + tool + HTTP acceptance; reusable --seed leaves populated state for native UI. */
+import assert from "node:assert/strict";
+import { join } from "node:path";
+import { writeFile } from "node:fs/promises";
+import { connect } from "./wire.ts";
+import { FINISH_SUMMARY, PROOF_THREAD, SOURCE_TEXT, TASK_TITLE, contentText } from "./real-scenarios.ts";
+
+export async function until<T>(read: () => Promise<T>, accept: (value: T) => boolean, label: string, timeout = 20000): Promise<T> {
+	const deadline = Date.now() + timeout;
+	while (Date.now() < deadline) {
+		const value = await read();
+		if (accept(value)) return value;
+		await Bun.sleep(30);
+	}
+	throw new Error(`Timed out: ${label}`);
+}
+/** Signed URLs are ephemeral capabilities. Never persist them, even in failure evidence. */
+export function sanitized(value: unknown, root: string): unknown {
+	if (typeof value === "string") return value.replaceAll(root, "<scratch>").replace(/https?:\/\/[^\s"<>]*[?&]token=[^\s"<>]*/g, "<signed-url-omitted>");
+	if (Array.isArray(value)) return value.map((v) => sanitized(v, root));
+	if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, k === "url" ? "<signed-url-omitted>" : sanitized(v, root)]));
+	return value;
+}
+export async function verifyRealContracts(url: string, projectId: string, root: string, seedOnly = false) {
+	const client = await connect(url, { validateRequests: true });
+	const http: unknown[] = [];
+	const fetchArtifact = async (input: string | URL, init?: RequestInit) => {
+		try { return await fetch(input, init); }
+		catch { throw new Error("Artifact HTTP transport failed (signed capability omitted)"); }
+	};
+	const rpc = async (type: string, fields: Record<string, unknown> = {}) => {
+		const result = await client.request(type, fields);
+		assert.notEqual(result.type, "error", `${type}: ${JSON.stringify(result.error)}`);
+		return result;
+	};
+	const scoped = (type: string, fields: Record<string, unknown> = {}) => rpc(type, { projectId, ...fields });
+	const page = async (threadId?: string) => (await scoped("conversation.page", { ...(threadId ? { threadId } : {}), limit: 200 })).entries as any[];
+	const texts = (entries: any[]) => entries.filter((e) => e.kind === "pi.user").flatMap((e) => e.model ?? []).map((m) => contentText(m.content));
+	const tools = (entries: any[], name: string) => entries.flatMap((e) => e.model ?? []).filter((m) => m.role === "toolResult" && m.toolName === name);
+	const submit = async (content: string, threadId?: string, requestId = crypto.randomUUID()) => {
+		const fields = { requestId, content, whenBusy: "followUp", ...(threadId ? { threadId } : {}) };
+		const accepted = await scoped("conversation.submit", fields);
+		assert(accepted.submissionId > 0);
+		return fields;
+	};
+	const threads = async () => (await scoped("threads.list", { includeArchived: true })).threads as any[];
+	const idle = () => until(threads, (ts) => ts.every((t) => t.status !== "running"), "all turns idle");
+	try {
+		const hello = await rpc("hello", { protocolVersion: 1 });
+		assert(hello.features.includes("threads") && hello.features.includes("artifacts"));
+		await scoped("conversation.watch");
+		await submit("R2 start");
+		await until(async () => (await scoped("artifacts.list", { threadId: PROOF_THREAD })).artifacts, (a) => a.length === 4, "four tool-saved artifacts");
+		await idle();
+		const started = tools(await page(), "thread_start");
+		assert.equal(started.length, 1);
+		assert.equal(started[0].details.threadId, PROOF_THREAD);
+		assert.equal(started[0].isError, false);
+		await scoped("conversation.watch", { threadId: PROOF_THREAD });
+		const context = await scoped("conversation.context", { threadId: PROOF_THREAD });
+		assert.equal(context.context.threadId, PROOF_THREAD);
+		const list = await threads();
+		assert(list.some((t) => t.main && t.id === "main"));
+		assert.deepEqual(list.find((t) => t.id === PROOF_THREAD).ownedTasks, ["T1"]);
+		assert.equal((await scoped("board.get")).board.tasks[0].ownerThreadId, PROOF_THREAD);
+		assert(texts(await page()).some((t) => t === `[from ${PROOF_THREAD}] Background owns T1 and is preparing real artifacts.`));
+		assert.equal(tools(await page(PROOF_THREAD), "artifact_save").length, 4);
+		const mainBefore = await page();
+		const fields = await submit("R2 scoped", PROOF_THREAD);
+		await until(() => page(PROOF_THREAD), (es) => es.some((e) => (e.model ?? []).some((m: any) => contentText(m.content) === "Background received: R2 scoped")), "scoped assistant");
+		await idle();
+		assert.deepEqual(await page(), mainBefore, "background submit must not modify main");
+		const unknown = await client.request("conversation.submit", { projectId, threadId: "missing-real-thread", requestId: crypto.randomUUID(), content: "Must not fall back to main" });
+		assert.equal(unknown.type, "error");
+		assert.equal(unknown.error.code, "unknown_thread");
+		assert.deepEqual(await page(), mainBefore, "unknown thread cannot fall back to main");
+		const firstPage = await scoped("conversation.page", { threadId: PROOF_THREAD, limit: 2, order: "ascending" });
+		assert.equal(firstPage.entries.length, 2);
+		assert.equal(typeof firstPage.next, "object");
+		assert(firstPage.next !== null);
+		const secondPage = await scoped("conversation.page", { threadId: PROOF_THREAD, limit: 2, order: "ascending", cursor: firstPage.next });
+		assert.equal(secondPage.entries.length, 2);
+		assert.notEqual(firstPage.entries[0].id, secondPage.entries[0].id);
+		await scoped("conversation.submit", fields);
+		assert.equal(texts(await page(PROOF_THREAD)).filter((t) => t === "R2 scoped").length, 1, "scoped admission deduplicated");
+		await submit("R2 message");
+		await until(() => page(PROOF_THREAD), (es) => texts(es).includes("[from main] Real steering from main"), "real from-main notice");
+		await idle();
+		await submit("R2 inspect");
+		await until(() => page(), (es) => tools(es, "thread_peek").length === 1, "thread list/peek tools");
+		await idle();
+		const listed = tools(await page(), "thread_list")[0];
+		assert.equal(listed.details, undefined, "thread_list has prose only, not a structured thread array");
+		assert(contentText(listed.content).includes("1 background thread."));
+		const peek = tools(await page(), "thread_peek")[0];
+		assert.equal(peek.details.threadId, PROOF_THREAD);
+		await submit("R2 worker", PROOF_THREAD);
+		await until(async () => (await scoped("workers.list", { threadId: PROOF_THREAD })).workers, (ws) => ws.length === 1 && ws[0].status !== "running", "actual shared worker");
+		await idle();
+		const workerArtifacts = (await scoped("artifacts.list", { threadId: PROOF_THREAD, workerId: "proof-worker", taskId: "T1" })).artifacts;
+		assert.equal(workerArtifacts.length, 1);
+		assert.equal(workerArtifacts[0].threadId, PROOF_THREAD);
+		assert.equal(workerArtifacts[0].workerId, "proof-worker");
+		await scoped("conversation.page", { threadId: PROOF_THREAD, workerId: "proof-worker", limit: 20 });
+		await submit("R2 handoff", PROOF_THREAD);
+		await until(() => page(), (es) => texts(es).some((t) => t.startsWith(`[board] Thread "${PROOF_THREAD}" handed T1`)), "actual board handoff input");
+		await idle();
+		assert.equal((await scoped("board.get")).board.tasks[0].ownerThreadId, "main");
+		assert(texts(await page()).includes(`[board] Thread "${PROOF_THREAD}" handed T1 ${JSON.stringify(TASK_TITLE)} (r3) to you. It is yours now: read it with the board tool and carry it on.`));
+		await submit("R2 finish", PROOF_THREAD);
+		await until(threads, (ts) => ts.find((t) => t.id === PROOF_THREAD)?.status === "done", "thread_finish");
+		await until(() => page(), (es) => texts(es).includes(`[thread ${PROOF_THREAD} finished]\n${FINISH_SUMMARY}`), "actual finish card input");
+		await idle();
+		const finishInputs = (entries: any[]) => entries.flatMap((e) => e.kind === "pi.user" ? e.model ?? [] : []).filter((m) => contentText(m.content).startsWith(`[thread ${PROOF_THREAD} finished]`));
+		const finish1 = finishInputs(await page())[0];
+		assert.equal(typeof finish1.timestamp, "number");
+		const finished = (await threads()).find((t) => t.id === PROOF_THREAD);
+		assert.equal(finished.summary, FINISH_SUMMARY);
+		const artifacts = (await scoped("artifacts.list", { threadId: PROOF_THREAD, taskId: "T1" })).artifacts as any[];
+		assert.equal(artifacts.length, 5);
+		assert(artifacts.every((a) => a.projectId === projectId && a.taskId === "T1" && Date.parse(a.createdAt) <= Date.parse(finished.finishedAt)));
+		assert.deepEqual(new Set(artifacts.map((a) => a.kind)), new Set(["text", "image", "video", "file"]));
+		assert.equal((await scoped("artifacts.list", { threadId: "main", taskId: "T1" })).artifacts.length, 0);
+		for (const artifact of artifacts) {
+			const inline = await scoped("artifacts.url", { artifactId: artifact.id });
+			assert.equal(new URL(inline.url).origin, url);
+			const full = await fetchArtifact(inline.url);
+			assert.equal(full.status, 200);
+			assert(full.headers.get("content-disposition")?.startsWith("inline;"));
+			assert.equal(full.headers.get("cache-control"), "private, max-age=3600");
+			const body = new Uint8Array(await full.arrayBuffer());
+			assert.equal(body.length, artifact.size);
+			if (artifact.name === "report.md") assert.equal(new TextDecoder().decode(body), SOURCE_TEXT);
+			if (artifact.kind === "file") assert.deepEqual(body, Uint8Array.from({ length: 256 }, (_, i) => i));
+			const download = await scoped("artifacts.url", { artifactId: artifact.id, download: true });
+			assert(download.url !== inline.url, "download intent has its own signed capability");
+			const saved = await fetchArtifact(download.url);
+			assert(saved.headers.get("content-disposition")?.startsWith("attachment;"));
+			assert.deepEqual(new Uint8Array(await saved.arrayBuffer()), body);
+			const range = await fetchArtifact(inline.url, { headers: { Range: "bytes=2-9" } });
+			assert.equal(range.status, 206);
+			assert.deepEqual(new Uint8Array(await range.arrayBuffer()), body.slice(2, 10));
+			assert.equal((await fetchArtifact(inline.url, { method: "HEAD" })).headers.get("content-length"), String(body.length));
+			assert.equal((await fetchArtifact(inline.url, { headers: { Range: `bytes=${body.length}-` } })).status, 416);
+			const suffix = await fetchArtifact(inline.url, { headers: { Range: "bytes=-8" } });
+			assert.equal(suffix.status, 206);
+			assert.deepEqual(new Uint8Array(await suffix.arrayBuffer()), body.slice(-8));
+			const open = await fetchArtifact(inline.url, { headers: { Range: "bytes=8-" } });
+			assert.equal(open.status, 206);
+			assert.deepEqual(new Uint8Array(await open.arrayBuffer()), body.slice(8));
+			const missing = new URL(inline.url); missing.search = "";
+			assert.equal((await fetchArtifact(missing)).status, 403);
+			const wrongIntent = new URL(inline.url); wrongIntent.searchParams.set("token", wrongIntent.searchParams.get("token")!.replace(".i.", ".a."));
+			assert.equal((await fetchArtifact(wrongIntent)).status, 403, "disposition is signed, not a client URL switch");
+			const wrongPath = new URL(inline.url); wrongPath.pathname += "-other";
+			assert.equal((await fetchArtifact(wrongPath)).status, 403, "token authenticates artifact identity");
+			const invalid = new URL(inline.url); invalid.searchParams.set("token", "invalid");
+			assert.equal((await fetchArtifact(invalid)).status, 403);
+			http.push({ artifactId: artifact.id, kind: artifact.kind, full: 200, range: 206, head: 200, download: "attachment; byte-identical", invalid: 403, unsatisfiable: 416 });
+		}
+		const renewing = await scoped("artifacts.url", { artifactId: artifacts[0].id });
+		// Actual signer/server clock, no forged token or fake time. Short TTL selected through supported startServer option.
+		if (!seedOnly) {
+			await Bun.sleep(Math.max(0, Date.parse(renewing.expiresAt) - Date.now()) + 30);
+			assert.equal((await fetchArtifact(renewing.url)).status, 403);
+			const renewed = await scoped("artifacts.url", { artifactId: artifacts[0].id });
+			assert(renewed.url !== renewing.url, "renewal issued a different capability");
+			assert.equal((await fetchArtifact(renewed.url)).status, 200);
+			http.push({ renewal: "real expiry 403 then fresh RPC URL 200" });
+		}
+		await submit("R2 return");
+		await until(threads, (ts) => ts.find((t) => t.id === PROOF_THREAD)?.status === "idle", "real board handoff revives finished thread");
+		await idle();
+		assert.equal((await scoped("board.get")).board.tasks[0].ownerThreadId, PROOF_THREAD);
+		await submit("R2 late", PROOF_THREAD);
+		await until(async () => (await scoped("artifacts.list", { threadId: PROOF_THREAD })).artifacts, (a) => a.length === 6, "late artifact");
+		await idle();
+		const all = (await scoped("artifacts.list", { threadId: PROOF_THREAD })).artifacts as any[];
+		assert.equal(all.filter((a) => Date.parse(a.createdAt) <= finish1.timestamp).length, 5, "old finish input timestamp excludes later saves");
+		await submit("R2 finish", PROOF_THREAD);
+		await until(() => page(), (es) => finishInputs(es).length === 2, "second actual finish input");
+		await idle();
+		const finish2 = finishInputs(await page()).find((m) => m.timestamp !== finish1.timestamp);
+		assert(finish2.timestamp > finish1.timestamp);
+		assert.equal(all.filter((a) => Date.parse(a.createdAt) <= finish2.timestamp).length, 6, "second finish includes A+B");
+		assert.equal((await scoped("board.get")).board.tasks[0].ownerThreadId, null, "finishing releases open task ownership");
+		await submit("R2 main save");
+		await until(async () => (await scoped("artifacts.list", { threadId: "main" })).artifacts, (as) => as.length === 1, "main coordinator save");
+		await idle();
+		await submit("R2 main worker");
+		await until(async () => (await scoped("workers.list", { threadId: "main" })).workers, (ws) => ws.length === 1 && ws[0].status !== "running", "actual main worker");
+		await idle();
+		const owners = (await scoped("artifacts.list", { taskId: "T1" })).artifacts as any[];
+		assert.equal(owners.length, 8);
+		assert(owners.some((a) => a.threadId === "main" && a.workerId === null));
+		assert(owners.some((a) => a.threadId === "main" && a.workerId === "proof-worker"));
+		assert(owners.some((a) => a.threadId === PROOF_THREAD && a.workerId === null));
+		assert(owners.some((a) => a.threadId === PROOF_THREAD && a.workerId === "proof-worker"));
+		assert.equal((await scoped("artifacts.list", { workerId: "proof-worker", taskId: "T1" })).artifacts.length, 2, "same worker name across two threads");
+		assert.equal((await scoped("artifacts.list", { threadId: "main", workerId: "proof-worker", taskId: "T1" })).artifacts.length, 1);
+		assert.equal((await scoped("artifacts.list", { threadId: PROOF_THREAD, workerId: "proof-worker", taskId: "missing-task" })).artifacts.length, 0);
+		const allWorkers = (await scoped("workers.list")).workers;
+		assert.deepEqual(new Set(allWorkers.map((w: any) => w.threadId)), new Set(["main", PROOF_THREAD]));
+		await submit("R2 bad message");
+		await until(() => page(), (es) => tools(es, "thread_send").some((r) => r.isError), "actual thread error result");
+		await idle();
+		const sendError = tools(await page(), "thread_send").find((r) => r.isError);
+		assert.equal(sendError.details.threadId, "missing-real-thread", "error details name a target but must not become success card");
+		await submit("R2 bad save");
+		await until(() => page(), (es) => tools(es, "artifact_save").some((r) => r.isError), "actual artifact error result");
+		await idle();
+		assert.equal(tools(await page(), "artifact_save").find((r) => r.isError).details, undefined);
+		await submit("R2 failure");
+		await until(() => page(), (es) => texts(es).some((t) => t.startsWith("[thread failure-proof failed:")), "real failed notice");
+		await idle();
+		if (!seedOnly) {
+			assert.equal((await scoped("threads.stop", { threadId: PROOF_THREAD })).thread.status, "done", "stopping a finished thread is a no-op");
+			await submit("R2 revive before stop", PROOF_THREAD);
+			await until(threads, (ts) => ts.find((t) => t.id === PROOF_THREAD)?.status === "idle", "scoped submit revives finished thread");
+			await idle();
+			const liveArchive = await client.request("threads.archive", { projectId, threadId: PROOF_THREAD, archived: true });
+			assert.equal(liveArchive.type, "error");
+			assert.equal(liveArchive.error.code, "bad_request");
+			await submit("R2 stop");
+			await until(threads, (ts) => ts.find((t) => t.id === PROOF_THREAD)?.status === "stopped", "thread_stop tool");
+			await idle();
+			await submit("R2 archive");
+			await until(threads, (ts) => ts.find((t) => t.id === PROOF_THREAD)?.archived, "thread_archive tool");
+			await idle();
+			assert(!(await scoped("threads.list")).threads.some((t: any) => t.id === PROOF_THREAD));
+			await scoped("threads.archive", { threadId: PROOF_THREAD, archived: false });
+			await scoped("threads.stop", { threadId: PROOF_THREAD });
+			const deleting = all.find((a) => a.title === "Later evidence");
+			const old = await scoped("artifacts.url", { artifactId: deleting.id });
+			await scoped("artifacts.delete", { artifactId: deleting.id });
+			assert.equal((await fetchArtifact(old.url)).status, 404);
+			assert(client.events.some((e) => e.type === "artifacts.changed" && e.artifact.id === deleting.id && e.deleted));
+			const older = artifacts.find((a) => a.name === "report.md");
+			await submit("R2 flood");
+			await until(async () => client.events.filter((e) => e.type === "artifacts.changed" && !e.deleted && e.artifact.title?.startsWith("Window proof ")), (as) => as.length === 501, "501 actual codemode-contained saves", 90000);
+			await idle();
+			const window = (await scoped("artifacts.list", { limit: 500 })).artifacts;
+			assert.equal(window.length, 500);
+			assert(!window.some((a: any) => a.id === older.id), "old background artifact absent from project list window");
+			assert((await scoped("artifacts.list", { threadId: PROOF_THREAD })).artifacts.some((a: any) => a.id === older.id));
+			const stillAvailable = await scoped("artifacts.url", { artifactId: older.id, download: true });
+			const oldDownload = await fetchArtifact(stillAvailable.url);
+			assert.equal(oldDownload.status, 200, "list absence is NOT deletion");
+			assert.equal(await oldDownload.text(), SOURCE_TEXT);
+			http.push({ window: "501 newer actual saves omit old background row from list500 but filtered lookup and signed download remain200", deleted: "explicit delete alone returned404" });
+		}
+		assert(client.events.some((e) => e.type === "threads.state" && e.threads.some((t: any) => t.id === PROOF_THREAD)));
+		assert(client.events.some((e) => e.type === "conversation.view"));
+		assert(client.events.some((e) => e.type === "artifacts.changed" && !e.deleted));
+		const sample = sanitized({ projectId, requests: client.requests, responses: client.events.filter((e) => e.id), snapshots: { threads: await threads(), main: await page(), background: await page(PROOF_THREAD), artifacts: all }, events: client.events.filter((e) => ["threads.state", "artifacts.changed", "conversation.view"].includes(e.type)), http }, root);
+		await writeFile(join(root, "wire-samples.json"), JSON.stringify(sample, null, 2));
+		const mainEntries = await page();
+		const backgroundEntries = await page(PROOF_THREAD);
+		const selectedTools = new Set(["thread_start", "thread_send", "thread_list", "thread_peek", "thread_finish", "thread_stop", "thread_archive", "artifact_save", "worker_spawn", "board"]);
+		const seen = new Set<string>();
+		const toolResults = [["main", mainEntries], [PROOF_THREAD, backgroundEntries]].flatMap(([threadId, entries]: any) => entries.flatMap((e: any) => e.model ?? []).filter((m: any) => m.role === "toolResult" && selectedTools.has(m.toolName)).filter((m: any) => {
+			const key = `${threadId}:${m.toolName}:${Boolean(m.isError)}`;
+			if (seen.has(key)) return false;
+			seen.add(key); return true;
+		}).map((message: any) => ({ threadId, message })));
+		const callIds = new Set(toolResults.map((r: any) => r.message.toolCallId));
+		const toolCalls = [["main", mainEntries], [PROOF_THREAD, backgroundEntries]].flatMap(([threadId, entries]: any) => entries.flatMap((e: any) => e.model ?? []).flatMap((m: any) => m.role === "assistant" && Array.isArray(m.content) ? m.content : []).filter((b: any) => b.type === "toolCall" && callIds.has(b.id)).map((call: any) => ({ threadId, call })));
+		const cards = sanitized({ projectId, toolCalls, toolResults, notices: mainEntries.flatMap((e) => e.kind === "pi.user" ? e.model ?? [] : []).filter((m) => /^\[(thread |from |board\])/.test(contentText(m.content))), ownership: owners, finishCuts: [{ timestamp: finish1.timestamp, artifacts: 5 }, { timestamp: finish2.timestamp, artifacts: 6 }], http }, root);
+		await writeFile(join(root, "card-samples.json"), JSON.stringify(cards, null, 2));
+		console.log(`REAL THREAD/ARTIFACT CONTRACT PASS; sanitized samples ${join(root, "wire-samples.json")}`);
+	} finally { client.close(); }
+}

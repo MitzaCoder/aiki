@@ -1,0 +1,752 @@
+{
+  "projectId": "project-905b110515",
+  "toolCalls": [
+    {
+      "threadId": "main",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839311984:rsrbgx4gx2",
+        "name": "thread_archive",
+        "arguments": {
+          "id": "contract-proof"
+        }
+      }
+    },
+    {
+      "threadId": "main",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839311937:ih7tnmhaap",
+        "name": "thread_stop",
+        "arguments": {
+          "id": "contract-proof"
+        }
+      }
+    },
+    {
+      "threadId": "main",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839311773:ycyxltdvo5",
+        "name": "thread_start",
+        "arguments": {
+          "title": "Failure proof",
+          "brief": "Fail deterministically.",
+          "onFinish": "review"
+        }
+      }
+    },
+    {
+      "threadId": "main",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839311681:knvx33sd6zc",
+        "name": "artifact_save",
+        "arguments": {
+          "path": "missing-real-file.txt",
+          "title": "Must not create preview"
+        }
+      }
+    },
+    {
+      "threadId": "main",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839311635:oehhwiqt1l",
+        "name": "thread_send",
+        "arguments": {
+          "id": "missing-real-thread",
+          "message": "Do not create a success card"
+        }
+      }
+    },
+    {
+      "threadId": "main",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839311475:84s02perdm",
+        "name": "worker_spawn",
+        "arguments": {
+          "id": "proof-worker",
+          "task": "Save actual worker evidence for T1.",
+          "isolation": "shared"
+        }
+      }
+    },
+    {
+      "threadId": "main",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839311420:izlq7jnb7ss",
+        "name": "artifact_save",
+        "arguments": {
+          "path": "main-report.md",
+          "title": "Main coordinator evidence",
+          "taskId": "T1"
+        }
+      }
+    },
+    {
+      "threadId": "main",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839311051:59v0ejxkb7l",
+        "name": "board",
+        "arguments": {
+          "action": "handoff",
+          "id": "T1",
+          "expectedRevision": 3,
+          "toThread": "contract-proof"
+        }
+      }
+    },
+    {
+      "threadId": "main",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839308702:b4eg9sh78a",
+        "name": "thread_peek",
+        "arguments": {
+          "id": "contract-proof"
+        }
+      }
+    },
+    {
+      "threadId": "main",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839308682:p8q4lvkbios",
+        "name": "thread_list",
+        "arguments": {}
+      }
+    },
+    {
+      "threadId": "main",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839308601:s5lpb4m5hw",
+        "name": "thread_send",
+        "arguments": {
+          "id": "contract-proof",
+          "message": "Real steering from main",
+          "reply": false
+        }
+      }
+    },
+    {
+      "threadId": "contract-proof",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839311268:o9r1kw4khkn",
+        "name": "thread_finish",
+        "arguments": {
+          "summary": "Real tools saved text, image, video and file evidence for T1."
+        }
+      }
+    },
+    {
+      "threadId": "contract-proof",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839311153:rybueogbht",
+        "name": "artifact_save",
+        "arguments": {
+          "path": "late.txt",
+          "title": "Later evidence",
+          "taskId": "T1"
+        }
+      }
+    },
+    {
+      "threadId": "contract-proof",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839308915:pwd3atdlxk",
+        "name": "board",
+        "arguments": {
+          "action": "handoff",
+          "id": "T1",
+          "expectedRevision": 2,
+          "toThread": "main"
+        }
+      }
+    },
+    {
+      "threadId": "contract-proof",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839308751:d0mcyeg68mq",
+        "name": "worker_spawn",
+        "arguments": {
+          "id": "proof-worker",
+          "task": "Save actual worker evidence for T1.",
+          "isolation": "shared"
+        }
+      }
+    },
+    {
+      "threadId": "contract-proof",
+      "call": {
+        "type": "toolCall",
+        "id": "tool:1793839307912:4m3ukcyfpy7",
+        "name": "thread_send",
+        "arguments": {
+          "id": "main",
+          "message": "Background owns T1 and is preparing real artifacts.",
+          "reply": true
+        }
+      }
+    }
+  ],
+  "toolResults": [
+    {
+      "threadId": "main",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839311984:rsrbgx4gx2",
+        "toolName": "thread_archive",
+        "content": [
+          {
+            "type": "text",
+            "text": "Thread \"contract-proof\" is archived."
+          }
+        ],
+        "details": {
+          "threadId": "contract-proof",
+          "conversationId": 21
+        },
+        "isError": false,
+        "durationMs": 1,
+        "timestamp": 1793839311991
+      }
+    },
+    {
+      "threadId": "main",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839311937:ih7tnmhaap",
+        "toolName": "thread_stop",
+        "content": [
+          {
+            "type": "text",
+            "text": "Thread \"contract-proof\" is stopped. Its open tasks are released; claim them to take them over."
+          }
+        ],
+        "details": {
+          "threadId": "contract-proof",
+          "conversationId": 21
+        },
+        "isError": false,
+        "durationMs": 2,
+        "timestamp": 1793839311944
+      }
+    },
+    {
+      "threadId": "main",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839311773:ycyxltdvo5",
+        "toolName": "thread_start",
+        "content": [
+          {
+            "type": "text",
+            "text": "Started background thread \"failure-proof\" on faux/faux-1, working in <scratch>/data/projects/project-905b110515/threads/failure-proof/checkout. It works on its own: its summary arrives as \"[thread failure-proof finished]\" (or \"[thread failure-proof failed: ...]\"). Look in with thread_peek, steer it with thread_send, stop it with thread_stop; keep going meanwhile."
+          }
+        ],
+        "details": {
+          "threadId": "failure-proof",
+          "conversationId": 258
+        },
+        "isError": false,
+        "durationMs": 46,
+        "timestamp": 1793839311832
+      }
+    },
+    {
+      "threadId": "main",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839311681:knvx33sd6zc",
+        "toolName": "artifact_save",
+        "content": [
+          {
+            "type": "text",
+            "text": "<scratch>/project/missing-real-file.txt does not exist."
+          }
+        ],
+        "isError": true,
+        "durationMs": 2,
+        "timestamp": 1793839311715
+      }
+    },
+    {
+      "threadId": "main",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839311635:oehhwiqt1l",
+        "toolName": "thread_send",
+        "content": [
+          {
+            "type": "text",
+            "text": "No thread \"missing-real-thread\" (unknown_thread). thread_list shows them."
+          }
+        ],
+        "details": {
+          "code": "unknown_thread",
+          "threadId": "missing-real-thread"
+        },
+        "isError": true,
+        "durationMs": 0,
+        "timestamp": 1793839311646
+      }
+    },
+    {
+      "threadId": "main",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839311475:84s02perdm",
+        "toolName": "worker_spawn",
+        "content": [
+          {
+            "type": "text",
+            "text": "Started worker \"proof-worker\" on faux/faux-1, working in the project checkout. Its report arrives as a message when it answers; keep going meanwhile."
+          }
+        ],
+        "details": {
+          "workerId": "proof-worker",
+          "conversationId": 208
+        },
+        "isError": false,
+        "durationMs": 4,
+        "timestamp": 1793839311493
+      }
+    },
+    {
+      "threadId": "main",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839311420:izlq7jnb7ss",
+        "toolName": "artifact_save",
+        "content": [
+          {
+            "type": "text",
+            "text": "Saved artifact mw2tlz61-db33492b18: main-report.md (text, 34 B)."
+          }
+        ],
+        "details": {
+          "artifactId": "mw2tlz61-db33492b18"
+        },
+        "isError": false,
+        "durationMs": 20,
+        "timestamp": 1793839311451
+      }
+    },
+    {
+      "threadId": "main",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839311051:59v0ejxkb7l",
+        "toolName": "board",
+        "content": [
+          {
+            "type": "text",
+            "text": "T1 (now r4) is thread \"contract-proof\"'s."
+          }
+        ],
+        "details": {
+          "taskId": "T1",
+          "ownerThreadId": "contract-proof"
+        },
+        "isError": false,
+        "durationMs": 3,
+        "timestamp": 1793839311067
+      }
+    },
+    {
+      "threadId": "main",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839308702:b4eg9sh78a",
+        "toolName": "thread_peek",
+        "content": [
+          {
+            "type": "text",
+            "text": "contract-proof — Contract proof\nstatus: idle, waiting for workers, a message or the user; Waiting for a message; last activity 0s ago\nmodel: faux/faux-1; workspace: <scratch>/data/projects/project-905b110515/threads/contract-proof/checkout\nworkers: none running\ntasks: T1; open questions: 0\nactivity:\n  result artifact_save: Saved artifact mw2tlwm0-46cfe6263e: proof.mp4 (video, 9.1 KiB, 2.0 s).\n  call artifact_save {\"path\":\"<scratch>/project/proof.bin\",\"title\":\"Real saved file\",\"taskId\":\"T1\",\"note\":\"Actu…\n  result artifact_save: Saved artifact mw2tlww7-5e1d85088b: proof.bin (file, 256 B).\n  text: Evidence saved. Waiting for R2 scoped, R2 worker, R2 handoff or R2 finish.\n  you: R2 scoped\n  text: Background received: R2 scoped\n  you: [from main] Real steering from main\n  text: Background received: [from main] Real steering from main"
+          }
+        ],
+        "details": {
+          "threadId": "contract-proof",
+          "conversationId": 21
+        },
+        "isError": false,
+        "durationMs": 2,
+        "timestamp": 1793839308712
+      }
+    },
+    {
+      "threadId": "main",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839308682:p8q4lvkbios",
+        "toolName": "thread_list",
+        "content": [
+          {
+            "type": "text",
+            "text": "You are main. 1 background thread.\n\nmain — Android real checkout (faux model)\n  status: running; Running thread_list · 0s\n  workers running: 0; tasks: none; open questions: 0\n\ncontract-proof — Contract proof\n  status: idle; Waiting for a message\n  started by main; summary is reviewed\n  workers running: 0; tasks: T1; open questions: 0"
+          }
+        ],
+        "isError": false,
+        "durationMs": 0,
+        "timestamp": 1793839308689
+      }
+    },
+    {
+      "threadId": "main",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839308601:s5lpb4m5hw",
+        "toolName": "thread_send",
+        "content": [
+          {
+            "type": "text",
+            "text": "Delivered to \"contract-proof\"; it reads it at its next step."
+          }
+        ],
+        "details": {
+          "threadId": "contract-proof"
+        },
+        "isError": false,
+        "durationMs": 3,
+        "timestamp": 1793839308617
+      }
+    },
+    {
+      "threadId": "contract-proof",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839311268:o9r1kw4khkn",
+        "toolName": "thread_finish",
+        "content": [
+          {
+            "type": "text",
+            "text": "Finished: main has your summary. End your turn now, without another message."
+          }
+        ],
+        "details": {
+          "threadId": "contract-proof"
+        },
+        "isError": false,
+        "durationMs": 55,
+        "timestamp": 1793839311335
+      }
+    },
+    {
+      "threadId": "contract-proof",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839311153:rybueogbht",
+        "toolName": "artifact_save",
+        "content": [
+          {
+            "type": "text",
+            "text": "Saved artifact mw2tlyyj-0fac3655a8: late.txt (text, 59 B)."
+          }
+        ],
+        "details": {
+          "artifactId": "mw2tlyyj-0fac3655a8"
+        },
+        "isError": false,
+        "durationMs": 66,
+        "timestamp": 1793839311227
+      }
+    },
+    {
+      "threadId": "contract-proof",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839308915:pwd3atdlxk",
+        "toolName": "board",
+        "content": [
+          {
+            "type": "text",
+            "text": "T1 (now r3) is thread \"main\"'s."
+          }
+        ],
+        "details": {
+          "taskId": "T1",
+          "ownerThreadId": "main"
+        },
+        "isError": false,
+        "durationMs": 2,
+        "timestamp": 1793839308928
+      }
+    },
+    {
+      "threadId": "contract-proof",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839308751:d0mcyeg68mq",
+        "toolName": "worker_spawn",
+        "content": [
+          {
+            "type": "text",
+            "text": "Started worker \"proof-worker\" on faux/faux-1, working in your workspace <scratch>/data/projects/project-905b110515/threads/contract-proof/checkout. Its report arrives as a message when it answers; keep going meanwhile."
+          }
+        ],
+        "details": {
+          "workerId": "proof-worker",
+          "conversationId": 102
+        },
+        "isError": false,
+        "durationMs": 5,
+        "timestamp": 1793839308772
+      }
+    },
+    {
+      "threadId": "contract-proof",
+      "message": {
+        "role": "toolResult",
+        "toolCallId": "tool:1793839307912:4m3ukcyfpy7",
+        "toolName": "thread_send",
+        "content": [
+          {
+            "type": "text",
+            "text": "Delivered to \"main\" without waking it; it reads it at its next turn."
+          }
+        ],
+        "details": {
+          "threadId": "main"
+        },
+        "isError": false,
+        "durationMs": 3,
+        "timestamp": 1793839307930
+      }
+    }
+  ],
+  "notices": [
+    {
+      "role": "user",
+      "content": "[thread failure-proof failed: Deterministic verification model failure [not a server fixture]]",
+      "timestamp": 1793839311853
+    },
+    {
+      "role": "user",
+      "content": "[thread contract-proof finished]\nReal tools saved text, image, video and file evidence for T1.",
+      "timestamp": 1793839311281
+    },
+    {
+      "role": "user",
+      "content": "[thread contract-proof finished]\nReal tools saved text, image, video and file evidence for T1.",
+      "timestamp": 1793839308976
+    },
+    {
+      "role": "user",
+      "content": "[board] Thread \"contract-proof\" handed T1 \"Contract \\\"evidence\\\" \\\\ trail\\nnotes\" (r3) to you. It is yours now: read it with the board tool and carry it on.",
+      "timestamp": 1793839308926
+    },
+    {
+      "role": "user",
+      "content": "[from contract-proof] Background owns T1 and is preparing real artifacts.",
+      "timestamp": 1793839307929
+    }
+  ],
+  "ownership": [
+    {
+      "id": "mw2tlz8x-10afc846ef",
+      "projectId": "project-905b110515",
+      "name": "worker-report.txt",
+      "title": "Worker evidence",
+      "note": null,
+      "kind": "text",
+      "mimeType": "text/plain",
+      "size": 35,
+      "durationSeconds": null,
+      "threadId": "main",
+      "workerId": "proof-worker",
+      "taskId": "T1",
+      "sourcePath": "<scratch>/project/worker-report.txt",
+      "createdAt": "2026-11-05T00:41:51.538Z"
+    },
+    {
+      "id": "mw2tlz61-db33492b18",
+      "projectId": "project-905b110515",
+      "name": "main-report.md",
+      "title": "Main coordinator evidence",
+      "note": null,
+      "kind": "text",
+      "mimeType": "text/markdown",
+      "size": 34,
+      "durationSeconds": null,
+      "threadId": "main",
+      "workerId": null,
+      "taskId": "T1",
+      "sourcePath": "<scratch>/project/main-report.md",
+      "createdAt": "2026-11-05T00:41:51.435Z"
+    },
+    {
+      "id": "mw2tlyyj-0fac3655a8",
+      "projectId": "project-905b110515",
+      "name": "late.txt",
+      "title": "Later evidence",
+      "note": null,
+      "kind": "text",
+      "mimeType": "text/plain",
+      "size": 59,
+      "durationSeconds": null,
+      "threadId": "contract-proof",
+      "workerId": null,
+      "taskId": "T1",
+      "sourcePath": "<scratch>/data/projects/project-905b110515/threads/contract-proof/checkout/late.txt",
+      "createdAt": "2026-11-05T00:41:51.164Z"
+    },
+    {
+      "id": "mw2tlx5f-df44487bce",
+      "projectId": "project-905b110515",
+      "name": "worker-report.txt",
+      "title": "Worker evidence",
+      "note": null,
+      "kind": "text",
+      "mimeType": "text/plain",
+      "size": 35,
+      "durationSeconds": null,
+      "threadId": "contract-proof",
+      "workerId": "proof-worker",
+      "taskId": "T1",
+      "sourcePath": "<scratch>/data/projects/project-905b110515/threads/contract-proof/checkout/worker-report.txt",
+      "createdAt": "2026-11-05T00:41:48.820Z"
+    },
+    {
+      "id": "mw2tlww7-5e1d85088b",
+      "projectId": "project-905b110515",
+      "name": "proof.bin",
+      "title": "Real saved file",
+      "note": "Actual checkout tool execution; deterministic faux model.",
+      "kind": "file",
+      "mimeType": "application/octet-stream",
+      "size": 256,
+      "durationSeconds": null,
+      "threadId": "contract-proof",
+      "workerId": null,
+      "taskId": "T1",
+      "sourcePath": "<scratch>/project/proof.bin",
+      "createdAt": "2026-11-05T00:41:48.488Z"
+    },
+    {
+      "id": "mw2tlwm0-46cfe6263e",
+      "projectId": "project-905b110515",
+      "name": "proof.mp4",
+      "title": "Real saved video",
+      "note": "Actual checkout tool execution; deterministic faux model.",
+      "kind": "video",
+      "mimeType": "video/mp4",
+      "size": 9355,
+      "durationSeconds": 2,
+      "threadId": "contract-proof",
+      "workerId": null,
+      "taskId": "T1",
+      "sourcePath": "<scratch>/project/proof.mp4",
+      "createdAt": "2026-11-05T00:41:48.389Z"
+    },
+    {
+      "id": "mw2tlwji-7302f94e67",
+      "projectId": "project-905b110515",
+      "name": "proof.png",
+      "title": "Real saved image",
+      "note": "Actual checkout tool execution; deterministic faux model.",
+      "kind": "image",
+      "mimeType": "image/png",
+      "size": 1697,
+      "durationSeconds": null,
+      "threadId": "contract-proof",
+      "workerId": null,
+      "taskId": "T1",
+      "sourcePath": "<scratch>/project/proof.png",
+      "createdAt": "2026-11-05T00:41:48.042Z"
+    },
+    {
+      "id": "mw2tlwic-155041c4f3",
+      "projectId": "project-905b110515",
+      "name": "report.md",
+      "title": "Tool-written report",
+      "note": "Actual checkout tool execution; deterministic faux model.",
+      "kind": "text",
+      "mimeType": "text/markdown",
+      "size": 82,
+      "durationSeconds": null,
+      "threadId": "contract-proof",
+      "workerId": null,
+      "taskId": "T1",
+      "sourcePath": "<scratch>/data/projects/project-905b110515/threads/contract-proof/checkout/report.md",
+      "createdAt": "2026-11-05T00:41:47.991Z"
+    }
+  ],
+  "finishCuts": [
+    {
+      "timestamp": 1793839308976,
+      "artifacts": 5
+    },
+    {
+      "timestamp": 1793839311281,
+      "artifacts": 6
+    }
+  ],
+  "http": [
+    {
+      "artifactId": "mw2tlx5f-df44487bce",
+      "kind": "text",
+      "full": 200,
+      "range": 206,
+      "head": 200,
+      "download": "attachment; byte-identical",
+      "invalid": 403,
+      "unsatisfiable": 416
+    },
+    {
+      "artifactId": "mw2tlww7-5e1d85088b",
+      "kind": "file",
+      "full": 200,
+      "range": 206,
+      "head": 200,
+      "download": "attachment; byte-identical",
+      "invalid": 403,
+      "unsatisfiable": 416
+    },
+    {
+      "artifactId": "mw2tlwm0-46cfe6263e",
+      "kind": "video",
+      "full": 200,
+      "range": 206,
+      "head": 200,
+      "download": "attachment; byte-identical",
+      "invalid": 403,
+      "unsatisfiable": 416
+    },
+    {
+      "artifactId": "mw2tlwji-7302f94e67",
+      "kind": "image",
+      "full": 200,
+      "range": 206,
+      "head": 200,
+      "download": "attachment; byte-identical",
+      "invalid": 403,
+      "unsatisfiable": 416
+    },
+    {
+      "artifactId": "mw2tlwic-155041c4f3",
+      "kind": "text",
+      "full": 200,
+      "range": 206,
+      "head": 200,
+      "download": "attachment; byte-identical",
+      "invalid": 403,
+      "unsatisfiable": 416
+    },
+    {
+      "renewal": "real expiry 403 then fresh RPC URL 200"
+    },
+    {
+      "window": "501 newer actual saves omit old background row from list500 but filtered lookup and signed download remain200",
+      "deleted": "explicit delete alone returned404"
+    }
+  ]
+}

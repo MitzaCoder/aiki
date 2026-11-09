@@ -1,0 +1,22 @@
+{
+	"targets": [
+		{
+			"name": "vm",
+			"label": "VM",
+			"ssh": "user@vm.example.test",
+			"tailnet": "vm.example.test",
+			"unit": "user"
+		},
+		{
+			"name": "laptop",
+			"label": "Laptop",
+			"ssh": "user@laptop.example.test",
+			"tailnet": "laptop.example.test",
+			"unit": "system",
+			"bun": "$HOME/.local/bin/bun",
+			"shell": "fish",
+			"identity": "~/.ssh/example-deploy",
+			"optional": true
+		}
+	]
+}

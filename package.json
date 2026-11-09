@@ -1,0 +1,16 @@
+{
+	"name": "mihai-harness",
+	"private": true,
+	"license": "MIT",
+	"type": "module",
+	"workspaces": ["packages/*", "apps/*"],
+	"scripts": {
+		"start": "bun run packages/server/src/main.ts",
+		"test": "bun test",
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "latest"
+	}
+}

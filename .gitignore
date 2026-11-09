@@ -1,0 +1,42 @@
+spikes/
+node_modules/
+.preview/
+
+# Local environment and registry/HTTP credentials.
+.env
+.env.*
+!.env.example
+!.env.*.example
+.npmrc
+.netrc
+credentials.json
+cookies.json
+cookies.txt
+
+# Notification identities, subscriptions and Firebase configuration stay outside the repo.
+vapid.json
+fcm-service-account.json
+service-account*.json
+*-service-account*.json
+google-services.json
+**/notifications/devices.json
+**/notifications/state.json
+
+# Signing keys and SSH identities (including Android release keystores).
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+keystore.properties
+.ssh/
+id_rsa*
+id_ed25519*
+
+# Runtime conversations and request logs are private, not test fixtures.
+session.sqlite*
+request-log.sqlite*
+
+# Machine-specific deployment, build and publication guard configuration.
+/deploy/local

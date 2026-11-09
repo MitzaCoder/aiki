@@ -1,0 +1,19 @@
+/*
+ * Styles are assembled, not written here: Tailwind and shadcn first, then the
+ * theme layer (a theme's tones, the derivations shared by all of them), then the
+ * markdown/code styles the rendered transcript needs.
+ *
+ * The `.dark` class on <html> (set in app.html from the system setting) picks
+ * each theme's dark tones; the `data-theme` attribute picks the theme.
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn-svelte/tailwind.css";
+@import "@fontsource-variable/atkinson-hyperlegible-next";
+@import "@fontsource-variable/jetbrains-mono";
+
+@import "./lib/themes/jarvis.css";
+@import "./lib/themes/neutral.css";
+@import "./lib/themes/base.css";
+@import "./lib/styles/markdown.css";
+@import "./lib/styles/scrollbars.css";

@@ -1,0 +1,17 @@
+[Unit]
+# Runs on this host, as the installing user. @REPO_DIR@ is filled in by deploy/install-watcher.sh.
+Description=Deploy the mihai-harness app and backends when refs/heads/main moves
+Documentation=file://@REPO_DIR@/README.md
+
+[Service]
+Type=simple
+WorkingDirectory=@REPO_DIR@
+ExecStart=/usr/bin/env bash @REPO_DIR@/deploy/watch.sh
+# Deploying needs git, ssh, tar, flock and bun; NixOS puts the profile tools outside the default user-unit PATH.
+Environment=PATH=/run/current-system/sw/bin:%h/.nix-profile/bin:%h/.local/bin:/usr/bin:/bin
+# A deploy that fails must not restarts-loop (it would retry every RestartSec); watch.sh itself keeps running.
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

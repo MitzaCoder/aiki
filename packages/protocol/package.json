@@ -1,0 +1,14 @@
+{
+	"name": "@mihai-harness/protocol",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Wire protocol between the mihai-harness server and its clients. TypeBox schemas, and the few pure rules both sides share (cache-misses.ts); no runtime dependencies.",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"types": "./src/index.ts",
+	"dependencies": {
+		"typebox": "1.3.27"
+	}
+}

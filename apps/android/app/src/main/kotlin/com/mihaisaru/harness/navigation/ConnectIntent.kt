@@ -1,0 +1,16 @@
+package com.mihaisaru.harness.navigation
+
+import java.net.URI
+
+/** A connect URL only opens a preview. Settings still validates the entire fragment and asks to add. */
+fun connectPayloadFromUri(value: String): String? = runCatching {
+    val uri = URI(value)
+    require(uri.rawUserInfo == null && uri.rawQuery == null)
+    when (uri.scheme?.lowercase()) {
+        "https" -> require(uri.host.equals(com.mihaisaru.harness.features.notifications.APP_LINK_HOST, ignoreCase = true) && uri.rawPath == "/connect")
+        "harness" -> require(uri.host == "connect" && uri.rawPath.orEmpty() in setOf("", "/"))
+        else -> return null
+    }
+    // Preserve the raw fragment: percent escapes must not turn damaged base64url into valid input.
+    uri.rawFragment.orEmpty()
+}.getOrNull()

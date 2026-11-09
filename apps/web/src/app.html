@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="text-scale" content="scale" />
+		<!--
+			Installable app: one manifest per colour scheme, because a manifest carries only one theme/background pair,
+			and the status bar colour follows the scheme too. Both manifests carry the same name, start URL and icons.
+			The icons are drawn by scripts/generate-icons.ts from the orb's gradient (bun run icons).
+		-->
+		<link rel="manifest" href="/manifest-light.webmanifest" media="(prefers-color-scheme: light)" />
+		<link rel="manifest" href="/manifest.webmanifest" media="(prefers-color-scheme: dark)" />
+		<meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbfaff" />
+		<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#09090f" />
+		<meta name="mobile-web-app-capable" content="yes" />
+		<link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
+		<script>
+			// Before the first paint: the stored theme (see src/lib/themes) and, from
+			// the system setting, the `dark` class that picks each theme's dark tones.
+			// This list must match THEMES in src/lib/themes/themes.ts; a test checks it.
+			const THEME_KEY = 'mihai-harness.theme.v1';
+			const THEMES = ['jarvis', 'neutral'];
+			const root = document.documentElement;
+
+			try {
+				const stored = localStorage.getItem(THEME_KEY);
+				if (THEMES.includes(stored)) root.dataset.theme = stored;
+			} catch {
+				// Storage disabled: the default theme in base.css applies.
+			}
+
+			const dark = window.matchMedia('(prefers-color-scheme: dark)');
+			const apply = () => root.classList.toggle('dark', dark.matches);
+			apply();
+			dark.addEventListener('change', apply);
+		</script>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

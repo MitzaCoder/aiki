@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- The vendored Termux terminal emulator and view (src/main/java/com/termux, see PATCHES.md there) is kept as close to
+         upstream as it can be, so its style findings are not fixed here. -->
+    <issue id="DefaultLocale"><ignore path="**/com/termux/**" /></issue>
+    <issue id="ObsoleteSdkInt"><ignore path="**/com/termux/**" /></issue>
+    <issue id="UseRequiresApi"><ignore path="**/com/termux/**" /></issue>
+    <issue id="InlinedApi"><ignore path="**/com/termux/**" /></issue>
+</lint>

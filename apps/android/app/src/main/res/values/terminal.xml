@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The terminal's selection action bar (vendored Termux terminal-view; see java/com/termux/PATCHES.md). -->
+    <string name="terminal_copy">Copy</string>
+    <string name="terminal_paste">Paste</string>
+</resources>
