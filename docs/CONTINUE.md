@@ -1,5 +1,22 @@
 # Continue
 
+## Device sign-in security acceptance (T68)
+
+Independent server tests add 18 HTTP/WS/owner-socket cases to the existing 46 auth cases. Fixed three reproduced bugs:
+forwarding metadata containing only `X-Forwarded-Proto`/other forwarding headers could qualify for local bootstrap;
+guessed retained IDs or anonymous exchanges could exhaust valid devices' refresh/rotation budgets; expired pairing
+approval closed a healthy owner's socket. Invalid retained proofs now have a separate backend budget. No wire change.
+The reusable `device-auth-migration.test.ts` rehearses three optional backends, two browsers, Android and a stranger:
+fixed CLI inventory, exact/idempotent batch approval, delivery/ack, expiry, required cutover and disk restart.
+Live tests cover streamed artifact abort, both push rows, queued-input cancellation and zellij detach with host-job survival.
+
+Root: 1,750 tests and typecheck pass. Web: 801 tests, check (zero errors/warnings), build pass. Android generation check:
+324 DTOs / 87 overloads, exit 0; no protocol changes here, so no Android rebuild. Public guard passes. Real web/Android
+credential storage and downgrade refusal remain client-worker checks: servers provide stable backend ID, `/auth/status`
+and explicit auth feature flags; clients must pin advertised support and reject later missing flags/404, never infer auth
+from the legacy baseline list. Tests simulate missing flags, not a malicious replacement server or real proxy/TLS network.
+Nothing deployed or pushed.
+
 ## Stage-1 auth compatibility and Aiki wire prefixes (T65 follow-up)
 
 Optional/off keeps the old artifact origin derivation (explicit public URL, otherwise forwarded proto/host or Host),

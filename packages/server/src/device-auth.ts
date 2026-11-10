@@ -308,26 +308,33 @@ export class DeviceAuth {
 		};
 	}
 	#retained(token: string, allowPrevious = false): Session {
-		const parts = /^aiki_s1\.([a-f0-9]{32})\.[A-Za-z0-9_-]{43}$/.exec(token);
-		if (!parts) return fail();
-		const session = this.session(parts[1]!);
-		if (
-			!matches(token, session.retainedHash) &&
-			!(
-				allowPrevious &&
-				session.previousHash &&
-				matches(token, session.previousHash) &&
-				this.now() < session.rotationUntil!
+		try {
+			const parts = /^aiki_s1\.([a-f0-9]{32})\.[A-Za-z0-9_-]{43}$/.exec(token);
+			if (!parts) return fail();
+			const session = this.session(parts[1]!);
+			if (
+				!matches(token, session.retainedHash) &&
+				!(
+					allowPrevious &&
+					session.previousHash &&
+					matches(token, session.previousHash) &&
+					this.now() < session.rotationUntil!
+				)
 			)
-		)
-			return fail();
-		this.session(session.id, true);
-		return session;
+				return fail();
+			this.session(session.id, true);
+			return session;
+		} catch (error) {
+			// Keep distributed bad proofs bounded without spending valid devices' budgets.
+			this.limit("retained-invalid-global", 300);
+			throw error;
+		}
 	}
 	refresh(token: string, source: string) {
 		this.limit(`refresh-source:${source}`, 60);
-		this.limit("refresh-global", 300);
 		const session = this.#retained(token);
+		// Guessed public IDs must not spend the authenticated backend-wide budget.
+		this.limit("refresh-global", 300);
 		this.limit(`refresh:${session.id}`, 30);
 		const access = this.#access(session);
 		this.save();
@@ -341,6 +348,7 @@ export class DeviceAuth {
 	}
 	rotate(token: string, successor: string) {
 		const session = this.#retained(token, true);
+		this.limit("rotate-global", 300);
 		if (!new RegExp(`^aiki_s1\\.${session.id}\\.[A-Za-z0-9_-]{43}$`).test(successor) || token === successor)
 			return fail("bad_request", 400);
 		if (matches(token, session.retainedHash)) {

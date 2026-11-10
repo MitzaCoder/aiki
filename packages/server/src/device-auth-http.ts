@@ -63,7 +63,9 @@ export async function handleAuthHttp(
 		if (request.method !== "POST") return authJson({ error: { code: "not_found" } }, 404);
 		// Limit before parsing even when a guessed ID is used.
 		auth.limit(`auth-http:${source}`, 120);
-		auth.limit("auth-http-global", 600);
+		// Session exchanges have their own backend budget after retained-proof verification.
+		// Enrollment/guessed-ID floods must not lock valid devices out of refresh or rotation.
+		if (path !== "/auth/session/refresh" && path !== "/auth/session/rotate") auth.limit("auth-http-global", 600);
 		const body = await readAuthBody(request);
 		switch (path) {
 			case "/auth/session/refresh":

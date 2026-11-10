@@ -1108,7 +1108,13 @@ export class ClientConnection {
 					error.code,
 					error.retryAfter ? { retryAfter: error.retryAfter } : undefined,
 				);
-				if (this.#deviceAuth?.identity && error.code.startsWith("auth_"))
+				const authority = this.#deviceAuth;
+				// An expired pairing grant (or another target device) is not this socket's expiry.
+				if (
+					authority?.identity &&
+					error.code.startsWith("auth_") &&
+					(request.type === "auth.renew" || !authority.store.active(authority.identity.sessionId))
+				)
 					this.#io.close(error.code === "auth_revoked" ? 4403 : 4401, error.code);
 				return;
 			}

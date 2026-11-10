@@ -722,9 +722,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					!trusted &&
 					["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(peer) &&
 					loopback.includes(backendOrigin) &&
-					!request.headers.has("forwarded") &&
-					!request.headers.has("x-forwarded-for") &&
-					!request.headers.has("x-forwarded-host");
+					![...request.headers.keys()].some((name) => name === "forwarded" || name.startsWith("x-forwarded-"));
 				const response = await handleAuthHttp(
 					request,
 					auth,
