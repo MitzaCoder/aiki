@@ -3,7 +3,10 @@
 	"compilerOptions": {
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
-		"rootDir": ".",
+		"rootDir": "..",
+		"lib": ["ES2023", "DOM"],
+		"allowImportingTsExtensions": true,
+		"resolveJsonModule": true,
 		"types": ["bun", "node"],
 		"noEmit": true
 	},

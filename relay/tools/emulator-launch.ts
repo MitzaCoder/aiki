@@ -66,6 +66,8 @@ export function prepareEmulators(ports: EmulatorPorts) {
 		FIREBASE_CLI_DISABLE_UPDATE_CHECK: "true",
 		NO_UPDATE_NOTIFIER: "true",
 		GCLOUD_PROJECT: DEMO_PROJECT,
+		// Never probe a cloud metadata server: checks must run with loopback networking only.
+		METADATA_SERVER_DETECTION: "none",
 		RELAY_TEST_FCM_PORT: String(ports.fcm),
 		RELAY_DEMO_STATE: state,
 	};
@@ -105,7 +107,12 @@ export function prepareEmulators(ports: EmulatorPorts) {
 }
 
 /** Invoke only the installed CLI through env -i, with isolated login/config/cache state and an explicit demo ID. */
-export function spawnEmulators(action: "setup" | "test" | "start" | "demo", minutes = 30, fakeFcmStarted = false) {
+export function spawnEmulators(
+	action: "setup" | "test" | "test:e2e" | "start" | "demo",
+	minutes = 30,
+	fakeFcmStarted = false,
+) {
+	const testing = action === "test" || action === "test:e2e";
 	const ports = emulatorPorts();
 	if (action === "demo" && !fakeFcmStarted) throw new Error("Demo must own its fake FCM listener");
 	if (action !== "setup") requireFreePorts(ports, !fakeFcmStarted);
@@ -121,7 +128,13 @@ export function spawnEmulators(action: "setup" | "test" | "start" | "demo", minu
 			DEMO_PROJECT,
 			"--config",
 			prepared.configPath,
-			...(action === "test" ? ["bun run test:cases"] : []),
+			...(testing
+				? [
+						action === "test:e2e"
+							? "bun test --timeout 90000 --preload ./checks/network-guard.ts ./checks/e2e/integration.cases.ts"
+							: "bun run test:cases",
+					]
+				: []),
 		);
 	const child = Bun.spawn(
 		["env", "-i", ...Object.entries(prepared.environment).map(([key, value]) => `${key}=${value}`), ...command],
@@ -131,13 +144,7 @@ export function spawnEmulators(action: "setup" | "test" | "start" | "demo", minu
 			stderr: "inherit",
 			stdin: "ignore",
 			timeout:
-				action === "setup"
-					? 120_000
-					: action === "test"
-						? 240_000
-						: action === "demo"
-							? minutes * 60_000 + 120_000
-							: 600_000,
+				action === "setup" ? 120_000 : testing ? 240_000 : action === "demo" ? minutes * 60_000 + 120_000 : 600_000,
 		},
 	);
 	return { child, ports, ...prepared };

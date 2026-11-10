@@ -10,6 +10,7 @@ const environment = {
 	XDG_CONFIG_HOME: resolve(state, "config"),
 	XDG_CACHE_HOME: resolve(state, "cache"),
 	GCLOUD_PROJECT: "demo-aiki-relay",
+	METADATA_SERVER_DETECTION: "none",
 	FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:" + (process.env.RELAY_AUTH_PORT ?? "19371"),
 	FIRESTORE_EMULATOR_HOST: "127.0.0.1:" + (process.env.RELAY_FIRESTORE_PORT ?? "19372"),
 };

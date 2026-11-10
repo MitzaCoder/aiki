@@ -7,8 +7,9 @@
 	},
 	"scripts": {
 		"build": "tsc",
-		"typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.checks.json",
+		"typecheck": "tsc --noEmit && bun ../node_modules/typescript/bin/tsc --noEmit -p tsconfig.checks.json",
 		"test:emulator": "bun run tools/emulators.ts test",
+		"test:e2e": "RELAY_AUTH_PORT=19471 RELAY_FIRESTORE_PORT=19472 RELAY_FUNCTIONS_PORT=19473 RELAY_HUB_PORT=19474 RELAY_LOGGING_PORT=19475 RELAY_WEBSOCKET_PORT=19476 RELAY_FCM_PORT=19477 bun run tools/emulators.ts test:e2e",
 		"emulator:setup": "bun run tools/emulators.ts setup",
 		"emulator:start": "bun run tools/emulators.ts start",
 		"demo:stack": "bun run tools/demo-stack.ts",

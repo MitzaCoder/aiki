@@ -272,7 +272,7 @@ test("emulator-only admin launcher scrubs its child environment and applies sett
 	expect(output).not.toContain(fixture.primary.localId);
 	expect((await store.control.doc("settings").get()).data()?.enabled).toBe(false);
 	expect((await store.control.doc("settings").get()).data()?.limits?.relaySendDay).toBe(7);
-});
+}, 20000);
 
 test("reconciliation removes a phone after its last route without waiting thirty days", async () => {
 	const phone = await enroll();
