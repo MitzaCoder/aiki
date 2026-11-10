@@ -63,6 +63,9 @@ class RelayMessageRouter(
                 val key = route.notificationKey ?: reject("inactive_route")
                 val plaintext = RelayCrypto.decrypt(RelayCrypto.unbase64(key, 32), route.context(), encrypted)
                 val backendNow = route.clock?.now(time.elapsed(), time.boot()) ?: reject("clock")
+                val uncertainty = route.clock.uncertaintyMs
+                if (plaintext.createdAt > backendNow + RelayCrypto.SKEW_MS - uncertainty) reject("clock")
+                if (backendNow + uncertainty > plaintext.expiresAt + RelayCrypto.SKEW_MS) reject("expired")
                 val admission = RelayAdmission(local.admissions[route.admissionId()])
                 var admitted: String? = null
                 admission.admit(route.keyId, plaintext, backendNow, { admitted = it })

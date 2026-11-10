@@ -53,6 +53,12 @@ class NotificationCenter(
     val appFirebaseProject: String? get() = tokens.projectId
 
     init {
+        repository.notificationCleanup = { key ->
+            if (repository.settings.value.notifications.relayEnabled) {
+                relay()?.removeBackend(key)
+                scope.launch { runCatching { relay()?.routes?.cleanupBackend() } }
+            }
+        }
         scope.launch {
             repository.loaded.first { it }
             val stored = repository.settings.value.notifications
@@ -115,12 +121,23 @@ class NotificationCenter(
 
     /** Turn push off: every backend forgets this device, now or on its next connect, and the token is deleted. */
     suspend fun disable() {
-        if (repository.settings.value.notifications.relayEnabled) relay()?.routes?.signOut()
+        if (repository.settings.value.notifications.relayEnabled) {
+            relay()?.routes?.turnOff()
+            scope.launch { runCatching { relay()?.routes?.cleanupBackend() } }
+        }
         repository.setNotifications { it.copy(enabled = false, fcmToken = null, relayEnabled = false) }
         runCatching { tokens.delete() }
     }
 
-    suspend fun update(transform: (NotificationSettings) -> NotificationSettings) = repository.setNotifications(transform)
+    /** Opt-out discards receive keys first and schedules backend unregister without delaying local settings. */
+    suspend fun update(transform: (NotificationSettings) -> NotificationSettings) {
+        val prior = repository.settings.value.notifications
+        if (prior.relayEnabled && !transform(prior).relayEnabled) {
+            relay()?.routes?.turnOff()
+            scope.launch { runCatching { relay()?.routes?.cleanupBackend() } }
+        }
+        repository.setNotifications(transform)
+    }
 
     /** Firebase rotated the token ([com.google.firebase.messaging.FirebaseMessagingService.onNewToken]). */
     fun tokenChanged(token: String) {
@@ -135,7 +152,7 @@ class NotificationCenter(
     suspend fun sendTest(backendKey: String): String {
         val session = repository.session(backendKey) ?: return "This backend is not connected."
         return try {
-            val result = session.client.request(NotificationsTestRequest(deviceId = repository.settings.value.deviceId))
+            val result = session.client.request(NotificationsTestRequest(deviceId = notificationDeviceId(backendKey)))
             refresh(session)
             val status = result.status?.let { " ($it${result.message?.let { message -> " $message" }.orEmpty()})" } ?: result.message?.let { " ($it)" }.orEmpty()
             when {
@@ -175,7 +192,11 @@ class NotificationCenter(
                     }
                 }
                 launch {
-                    repository.settings.map { it.deviceId to it.notifications }.distinctUntilChanged().collect { sync(session) }
+                    repository.settings.map { it.deviceId to it.notifications }.distinctUntilChanged().collectLatest { (_, settings) ->
+                        val selectedRelay = if (settings.relayEnabled) relay() else null
+                        if (selectedRelay == null) sync(session)
+                        else selectedRelay.revision.collect { sync(session) }
+                    }
                 }
             }
         }
@@ -190,22 +211,20 @@ class NotificationCenter(
         try {
             val config = client.request(NotificationsConfigRequest())
             setState(key) { it.copy(configRead = true, fcmProjectId = config.fcm?.projectId) }
-            val token = settings.fcmToken
-            val relaySelected = settings.relayEnabled && relay()?.selected(key) == true
-            val device = if (!relaySelected && settings.enabled && token != null && client.state.value.supports("fcm-push")) {
-                client.request(NotificationsRegisterFcmRequest(deviceId = deviceId, label = label, backendKey = key, token = token, preferences = settings.preferencesFor(key))).device
-            } else {
-                val existing = client.request(NotificationsDeviceRequest(deviceId = deviceId)).device
-                if (!settings.enabled && existing != null) { client.request(NotificationsUnregisterRequest(deviceId = deviceId)); null } else existing
-            }
+            val device = syncNotificationRegistration(settings, client.state.value, deviceId, key, label,
+                HarnessNotificationRegistrationRpc(client), relay)
             setState(key) { it.copy(device = device, error = null) }
         } catch (error: CancellationException) { throw error }
         catch (error: Exception) { setState(key) { it.copy(error = error.message ?: "Notifications could not be read.") } }
     }
 
+    private suspend fun notificationDeviceId(backendKey: String): String =
+        (if (repository.settings.value.notifications.relayEnabled) relay()?.deviceId(backendKey) else null)
+            ?: repository.settings.value.deviceId
+
     private suspend fun refresh(session: BackendSession) {
         try {
-            val device = session.client.request(NotificationsDeviceRequest(deviceId = repository.settings.value.deviceId)).device
+            val device = session.client.request(NotificationsDeviceRequest(deviceId = notificationDeviceId(session.config.key))).device
             setState(session.config.key) { it.copy(device = device) }
         } catch (error: CancellationException) { throw error }
         catch (_: Exception) { }

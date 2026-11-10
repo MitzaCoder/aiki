@@ -72,12 +72,13 @@ class RelayStoreTest {
         assertTrue(retired.admissions.values.single().contains(plain.eventId))
     }
 
-    @Test fun clockRejectsRebootBackwardsAndOldAnchors() {
+    @Test fun clockRejectsRebootBackwardsAndExcessiveUncertainty() {
         val clock = RelayClock(10000, 100, "boot")
         assertEquals(10001L, clock.now(101, "boot"))
         assertNull(clock.now(99, "boot"))
         assertNull(clock.now(101, "other"))
-        assertNull(clock.now(101 + RelayCrypto.RETENTION_MS, "boot"))
+        assertEquals(10001L + RelayCrypto.RETENTION_MS, clock.now(101 + RelayCrypto.RETENTION_MS, "boot"))
+        assertNull(clock.copy(uncertaintyMs = 10001).now(101, "boot"))
     }
 
     private fun route(id: String) = RelayRoute(id, RelayCrypto.newId(), RelayCrypto.newId(), "backend", "session",

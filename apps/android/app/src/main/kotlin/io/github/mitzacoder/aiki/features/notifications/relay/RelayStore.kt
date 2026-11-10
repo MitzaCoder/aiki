@@ -51,7 +51,12 @@ class RelayStore internal constructor(
 ) : RelayStorage {
     constructor(context: Context) : this(context.applicationContext.relayData,
         AesGcmDeviceCipher({ relayKey(true) }, { relayKey(false) }),
-        { KeyStore.getInstance("AndroidKeyStore").apply { load(null); deleteEntry(ALIAS) } },
+        {
+            KeyStore.getInstance("AndroidKeyStore").apply {
+                load(null)
+                deleteEntry(ALIAS)
+            }
+        },
     )
 
     private fun decode(encoded: String): RelayState {
@@ -82,7 +87,12 @@ class RelayStore internal constructor(
         catch (error: CancellationException) { throw error }
         catch (_: Exception) {
             // Only discard the same unreadable record; a concurrent successful opt-in must survive.
-            data.edit { if (it[RECORD] == encoded) { it.remove(RECORD); it[LOST] = "1" } }
+            data.edit {
+                if (it[RECORD] == encoded) {
+                    it.remove(RECORD)
+                    it[LOST] = "1"
+                }
+            }
             lost()
         }
     }

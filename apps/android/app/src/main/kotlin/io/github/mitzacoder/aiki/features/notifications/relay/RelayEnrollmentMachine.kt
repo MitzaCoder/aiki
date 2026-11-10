@@ -9,6 +9,7 @@ class RelayEnrollmentMachine(
     private val storage: RelayStorage,
     private val api: RelayApi,
     private val time: RelayTime,
+    private val confirmed: suspend () -> Unit = {},
 ) {
     private val mutex = Mutex()
 
@@ -80,8 +81,10 @@ class RelayEnrollmentMachine(
                 }
                 is RelayResult.Success -> {
                     check(result.value.installationId == installation) { "Invalid relay confirmation" }
-                    storage.update { it.copy(activeToken = operation.token, enrollment = null,
+                    storage.update { if (!it.signedIn) it else it.copy(activeToken = operation.token,
+                        tokenGeneration = result.value.generation, enrollment = null,
                         failure = null, retryAfterSeconds = null) }
+                    confirmed()
                 }
             }
         }

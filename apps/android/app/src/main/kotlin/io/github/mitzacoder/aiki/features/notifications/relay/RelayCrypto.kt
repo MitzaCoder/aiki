@@ -41,7 +41,7 @@ data class RelayPlaintext(
 
 data class RelayEnvelope(val v: Int = 1, val r: String, val k: String, val m: String, val n: String, val c: String)
 
-/** Platform-only JVM implementation. No running app calls this library yet. */
+/** Platform-only JVM implementation shared by relay lifecycle, receive routing and the normative vector tests. */
 object RelayCrypto {
     const val VERSION = 1
     const val PLAINTEXT_CAP = 2048

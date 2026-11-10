@@ -27,13 +27,16 @@ enum class RelayErrorCode(val wire: String) {
 
 /** Typed transport outcome with bounded Retry-After seconds; no response bodies or credentials in errors. */
 sealed interface RelayResult<out T> {
+    /** Carries a typed decoded receipt without including it in diagnostics. */
     class Success<T>(val value: T) : RelayResult<T> {
         override fun toString(): String = "RelaySuccess"
     }
+    /** Contains only a fixed code and optional Retry-After seconds, never upstream error text. */
     data class Failure(val code: RelayErrorCode, val retryAfterSeconds: Long? = null) : RelayResult<Nothing>
 }
 
 /** Account tokens stay phone-side. Firebase Auth plugs into this port in the next task. */
 fun interface RelayAccount {
+    /** Returns a current ID token, or null without launching any sign-in UI. */
     suspend fun idToken(): String?
 }

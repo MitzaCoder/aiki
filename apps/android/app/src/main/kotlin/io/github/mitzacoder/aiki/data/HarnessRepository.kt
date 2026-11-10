@@ -83,9 +83,12 @@ class HarnessRepository(private val store: DeviceStore, private val authStore: D
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Mutex()
     private val http = OkHttpClient.Builder().pingInterval(30, java.util.concurrent.TimeUnit.SECONDS).build()
+    /** Notification cleanup is durable locally; the callback must never wait for remote deletion. */
+    var notificationCleanup: suspend (String) -> Unit = {}
     private val authControllers = java.util.concurrent.ConcurrentHashMap<String, DeviceAuth>()
     fun deviceAuth(origin: String): DeviceAuth = authControllers.computeIfAbsent(normalizeBackendOrigin(origin)) {
-        DeviceAuth(it, requireNotNull(authStore) { "Secure authentication storage unavailable" }, DeviceAuthHttp(http))
+        DeviceAuth(it, requireNotNull(authStore) { "Secure authentication storage unavailable" }, DeviceAuthHttp(http),
+            beforeSignOut = { notificationCleanup(it) })
     }
     private fun client(config: BackendConfig) = HarnessClient(config, http, deviceAuth = authStore?.let { deviceAuth(config.url) })
     suspend fun pairBackend(link: DevicePairingLink, name: String, code: String, waiting: (String) -> Unit) {
@@ -112,7 +115,10 @@ class HarnessRepository(private val store: DeviceStore, private val authStore: D
         val normalized = backends.map { BackendConfig(it.name.trim().also { n -> require(n.isNotEmpty() && n.length <= 48) }, normalizeBackendOrigin(it.url)) }
         current.copy(backends = (current.backends + normalized).distinctBy { it.key })
     }
-    suspend fun removeBackend(key: String) = update { it.copy(backends = it.backends.filterNot { backend -> backend.key == key }) }
+    suspend fun removeBackend(key: String) {
+        notificationCleanup(key)
+        update { it.copy(backends = it.backends.filterNot { backend -> backend.key == key }) }
+    }
     suspend fun renameBackend(key: String, name: String) = update {
         require(name.trim().length in 1..48)
         it.copy(backends = it.backends.map { backend -> if (backend.key == key) backend.copy(name = name.trim()) else backend })

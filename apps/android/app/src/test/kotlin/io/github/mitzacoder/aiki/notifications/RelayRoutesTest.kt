@@ -26,18 +26,19 @@ class RelayRoutesTest {
         }
         override suspend fun confirm(route: RelayRoute, phoneConfirmation: String) {
             assertNotNull(store.state.routes[route.routeId]!!.notificationKey)
-            assertEquals(RelayRoute.Phase.Confirming, store.state.routes[route.routeId]!!.phase)
+            assertEquals(RelayRoute.Phase.Confirmed, store.state.routes[route.routeId]!!.phase)
             val keys = RelayCrypto.deriveKeys(RelayCrypto.sharedSecret(pairs.getValue(route.routeId).private,
                 route.phonePublicKey), route.salt, route.context())
             RelayCrypto.verifyConfirmation(keys.getValue("phone-confirm"), RelayCrypto.transcript(route.context(), route.salt,
                 route.phonePublicKey, RelayCrypto.exportPublicKey(pairs.getValue(route.routeId).public)), phoneConfirmation)
             check(!failConfirm) { "synthetic confirm response lost" }
-        }
-        override suspend fun activated(route: RelayRoute) {
             check(!failActivated) { "synthetic activation reply lost" }
-            assertEquals(RelayRoute.Phase.Active, store.state.routes[route.routeId]!!.phase)
+            assertEquals(RelayRoute.Phase.Confirmed, store.state.routes[route.routeId]!!.phase)
             activated++
         }
+        override suspend fun sync(route: RelayRoute, resume: Boolean): RelayClock =
+            RelayClock(time.now, time.monotonic, time.bootId)
+        override suspend fun unregister(deletion: RelayBackendDeletion) { }
     }
 
     @Test fun stagedSecretsSurviveLostCreateAndResumeSameRoute() = runTest {
@@ -129,6 +130,24 @@ class RelayRoutesTest {
         api.failure = null
         RelayRoutes(store, api, backend, time).cleanup()
         assertTrue(store.state.deletions.isEmpty())
+    }
+
+    @Test fun explicitOffOnReusesInstallationWithoutConsumingAnotherPhoneSlot() = runTest {
+        val time = RelayFakeTime()
+        val store = enrolled()
+        val api = RelayFakeApi(time)
+        val backend = Backend(time, store)
+        val routes = RelayRoutes(store, api, backend, time)
+        val installation = store.state.installationId
+        routes.create("backend", "session", "local")
+        routes.turnOff()
+        assertEquals(installation, store.state.installationId)
+        assertFalse(store.state.signedIn)
+        assertTrue(store.state.routes.isEmpty())
+        assertEquals(0, api.revokes)
+        RelayEnrollmentMachine(store, api, time).enable("synthetic-token")
+        assertEquals(installation, store.state.installationId)
+        assertEquals(0, api.begins)
     }
 
     private fun enrolled() = RelayMemoryStore(RelayState(installationId = RelayCrypto.newId(), signedIn = true,

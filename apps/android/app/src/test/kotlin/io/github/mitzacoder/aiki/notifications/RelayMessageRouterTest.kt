@@ -95,7 +95,11 @@ class RelayMessageRouterTest {
         f.receive(first)
         f.receive(first)
         f.receive(f.envelope(f.plain("4")))
-        f.receive(f.envelope(f.plain("6", event)))
+        val successorKey = RelayCrypto.unbase64(RelayCrypto.newSecret())
+        val successor = f.route.copy(routeId = RelayCrypto.newId(), keyId = RelayCrypto.newId(),
+            notificationKey = RelayCrypto.base64(successorKey))
+        f.store.state = f.store.state.copy(routes = f.store.state.routes + (successor.routeId to successor))
+        f.receive(RelayCrypto.encrypt(successorKey, successor.context(), f.plain("1", event)))
         assertEquals(2, f.shown.size)
         assertEquals(1L, f.store.state.counters["replay"])
         assertEquals(1L, f.store.state.counters["event_duplicate"])
@@ -172,6 +176,15 @@ class RelayMessageRouterTest {
             assertFalse(file.exists())
             assertEquals("old-token", old.fcmToken)
         } finally { directory.deleteRecursively() }
+    }
+
+    @Test fun recoveryRequiredNeverFallsBackOnSubsequentPlaintextPushes() = runTest {
+        val relay = RelayNotifications({ NotificationSettings(relayRecoveryRequired = true) },
+            { error("no relay file after key loss") }, { error("no client") }, { error("no backend") }, RelayFakeTime(),
+            { error("no plaintext downgrade after key loss") })
+        relay.receive(mapOf("payload" to payload().toString()))
+        relay.tokenChanged("new-token")
+        relay.foreground()
     }
 
     @Test fun invalidatedStoreDoesNotDowngradeCurrentMessage() = runTest {

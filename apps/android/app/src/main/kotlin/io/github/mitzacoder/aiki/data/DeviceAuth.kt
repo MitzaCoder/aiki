@@ -63,7 +63,9 @@ internal fun allowAnonymousAuth(advertised: Boolean, mode: String?, hasSession: 
 data class DeviceAuthState(val backendId: String? = null, val mode: String? = null, val sessionId: String? = null, val notice: String? = null, val comparisonCode: String? = null)
 
 /** One controller per approved origin. Access tokens are memory-only and never part of a public state flow. */
-class DeviceAuth(val origin: String, private val store: DeviceAuthStorage, val http: DeviceAuthHttp = DeviceAuthHttp(), private val label: String = android.os.Build.MODEL ?: "Android device") {
+class DeviceAuth(val origin: String, private val store: DeviceAuthStorage, val http: DeviceAuthHttp = DeviceAuthHttp(), private val label: String = android.os.Build.MODEL ?: "Android device",
+    private val beforeSignOut: suspend () -> Unit = {},
+) {
     private val mutex = Mutex()
     private val mutableState = MutableStateFlow(DeviceAuthState())
     val state = mutableState.asStateFlow()
@@ -156,6 +158,7 @@ class DeviceAuth(val origin: String, private val store: DeviceAuthStorage, val h
     fun blocked(message: String) { mutableState.value = state.value.copy(notice = message) }
 
     suspend fun signedOut(message: String) = mutex.withLock {
+        beforeSignOut()
         stopped = true; access = null; accessExpiry = null
         val saved = store.read(origin)
         store.write(origin, SavedDeviceAuth(backendId = saved?.backendId, signedOut = message))

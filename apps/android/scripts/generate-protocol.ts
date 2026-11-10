@@ -86,7 +86,10 @@ function emit(name: string, s: Schema, union?: { name: string; by: string }) {
         return `    ${v.const !== undefined ? "@kotlinx.serialization.EncodeDefault " : ""}${p === union?.by ? "override " : ""}val ${ident(p)}: ${t}${fallback}`;
     });
     const supertype = union ? ` : ${union.name}` : name.endsWith("Event") ? " : ProtocolEvent" : "";
-    output.set(name, `@Serializable\ndata class ${name}(\n${fields.join(",\n")}\n)${supertype}`);
+    // Relay registration carries capabilities/HMACs; generated DTOs must not leak them through diagnostics.
+    const redacted = ["NotificationsRegisterRelayRequest", "NotificationsConfirmRelayRequest"].includes(name)
+        ? ` {\n    override fun toString(): String = "${name}(redacted)"\n}` : "";
+    output.set(name, `@Serializable\ndata class ${name}(\n${fields.join(",\n")}\n)${supertype}${redacted}`);
 }
 function emitUnion(name: string, by: string, variants: Schema[]) {
     if (output.has(name)) return;

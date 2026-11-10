@@ -80,7 +80,9 @@ data class NotificationsRegisterRelayRequest(
     val `backendKey`: String,
     val `preferences`: NotificationPreferences,
     val `predecessorRouteId`: String? = null
-)
+) {
+    override fun toString(): String = "NotificationsRegisterRelayRequest(redacted)"
+}
 
 @Serializable
 data class NotificationsRegisterRelayResponse(
@@ -100,7 +102,9 @@ data class NotificationsConfirmRelayRequest(
     val `id`: String = java.util.UUID.randomUUID().toString(),
     val `operationId`: String,
     val `confirmation`: String
-)
+) {
+    override fun toString(): String = "NotificationsConfirmRelayRequest(redacted)"
+}
 
 @Serializable
 data class NotificationsConfirmRelayResponse(

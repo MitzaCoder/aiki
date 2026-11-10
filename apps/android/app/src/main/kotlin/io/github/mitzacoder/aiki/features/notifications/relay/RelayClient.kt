@@ -36,17 +36,27 @@ data class RelayRouteReceipt(val routeId: String, val state: String, val leaseEx
 
 /** Management port permits deterministic state-machine tests without any Firebase dependency. */
 interface RelayApi {
+    /** Reads safe account capacity without enrolling an installation. */
     suspend fun accountStatus(): RelayResult<RelayAccountStatus>
+    /** Starts or retries one installation-wide possession operation. */
     suspend fun begin(installationId: String, operationId: String, token: String,
         replacing: Boolean = false): RelayResult<RelayChallengeReceipt>
+    /** Confirms only the nonce delivered to the pending installation. */
     suspend fun confirm(installationId: String, operationId: String, challengeId: String, nonce: String,
         replacing: Boolean = false): RelayResult<RelayInstallationReceipt>
+    /** Lists opaque phone inventory, never raw tokens. */
     suspend fun installations(): RelayResult<List<RelayInstallation>>
+    /** Removes one owned installation and its routes. */
     suspend fun deleteInstallation(installationId: String): RelayResult<Unit>
+    /** Creates a pending route from already-durable secrets. */
     suspend fun create(installationId: String, route: RelayRoute): RelayResult<RelayRouteReceipt>
+    /** Activates a locally agreed key and atomically disables its predecessor. */
     suspend fun activate(installationId: String, routeId: String): RelayResult<RelayRouteReceipt>
+    /** Extends only an owned route lease, never its absolute expiry. */
     suspend fun renew(installationId: String, routeId: String): RelayResult<RelayRouteReceipt>
+    /** Deletes an owned route using phone account authority. */
     suspend fun deleteRoute(installationId: String, routeId: String): RelayResult<Unit>
+    /** Uses delete-only authority without consulting the account port. */
     suspend fun revoke(deletion: RelayDeletion): RelayResult<Unit>
 }
 

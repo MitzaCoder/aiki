@@ -18,18 +18,67 @@ class RelayNotifications(
 ) {
     private val store by lazy(storage)
     private val client by lazy(api)
-    val enrollment by lazy { RelayEnrollmentMachine(store, client, time) }
+    private val clock = time
+    private val mutableRevision = kotlinx.coroutines.flow.MutableStateFlow(0L)
+    val revision: kotlinx.coroutines.flow.StateFlow<Long> get() = mutableRevision
+    val enrollment by lazy { RelayEnrollmentMachine(store, client, time) { mutableRevision.value++ } }
     val routes by lazy { RelayRoutes(store, client, backend(), time) }
     private val router = RelayMessageRouter({ settings().relayEnabled }, { store }, time,
         { enrollment.challenge(it) }, present, storageLost)
 
     /** Shares the existing parser/presenter with direct FCM, including the complete no-relay path. */
-    suspend fun receive(message: Map<String, String>) = router.receive(message)
+    suspend fun receive(message: Map<String, String>) {
+        if (settings().relayRecoveryRequired) return
+        router.receive(message)
+    }
 
     /** A relay-selected backend cannot be overwritten by today's direct-token registration sync. */
     suspend fun selected(backendKey: String): Boolean {
         if (!settings().relayEnabled) return false
         return backendKey in store.read().selectedBackends
+    }
+
+    /** Selects exactly one transport per eligible signed-in backend session; unsupported backends remain direct. */
+    suspend fun syncBackend(backendKey: String, connection: io.github.mitzacoder.aiki.data.ConnectionState,
+        label: String): Boolean {
+        val current = settings()
+        if (!current.relayEnabled) return false
+        if (!relayBackendEligible(connection)) return selected(backendKey)
+        val state = store.read()
+        if (!state.signedIn || state.activeToken == null) return true
+        val backendId = requireNotNull(connection.hello?.backendId)
+        val sessionId = requireNotNull(connection.hello?.auth?.sessionId)
+        for (old in state.routes.values.filter { it.backendKey == backendKey &&
+            (it.backendId != backendId || it.sessionId != sessionId) }) routes.remove(old.routeId)
+        val expired = state.routes.values.filter { it.backendKey == backendKey && it.absoluteExpiresAt > 0 &&
+            it.absoluteExpiresAt <= clock.wall() }
+        for (old in expired) routes.remove(old.routeId)
+        val beforeMaintenance = store.read().routes.values.firstOrNull { it.backendKey == backendKey &&
+            it.phase == RelayRoute.Phase.Active }
+        if (beforeMaintenance != null && beforeMaintenance.absoluteExpiresAt - clock.wall() < RelayRoutes.RENEW_MS) {
+            routes.create(backendId, sessionId, backendKey, beforeMaintenance.routeId, label, current.preferencesFor(backendKey))
+        }
+        routes.maintain(backendKey)
+        val existing = store.read().routes.values.filter { it.backendKey == backendKey &&
+            it.backendId == backendId && it.sessionId == sessionId && it.phase != RelayRoute.Phase.Retiring }
+        val active = existing.singleOrNull { it.phase == RelayRoute.Phase.Active }
+        if (existing.isEmpty() || (active != null && active.absoluteExpiresAt - clock.wall() < RelayRoutes.RENEW_MS)) {
+            routes.create(backendId, sessionId, backendKey, active?.routeId, label, current.preferencesFor(backendKey))
+        }
+        return true
+    }
+
+    /** Backend removal/session sign-out needs only local storage; caller may schedule remote cleanup separately. */
+    suspend fun removeBackend(backendKey: String) {
+        if (!settings().relayEnabled) return
+        routes.removeBackend(backendKey)
+    }
+
+    /** The server-returned relay device ID belongs to the selected session, not the legacy app-global device ID. */
+    suspend fun deviceId(backendKey: String): String? {
+        if (!settings().relayEnabled) return null
+        return store.read().routes.values.firstOrNull { it.backendKey == backendKey &&
+            it.phase in setOf(RelayRoute.Phase.Active, RelayRoute.Phase.Confirmed) }?.backendDeviceId
     }
 
     /** Both FCM callback forms converge here; the persisted operation deduplicates identical tokens. */

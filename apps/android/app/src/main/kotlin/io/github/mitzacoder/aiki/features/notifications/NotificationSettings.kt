@@ -18,6 +18,8 @@ data class NotificationSettings(
     val enabled: Boolean = false,
     /** Optional relay transport; upgrades and fresh installs keep direct FCM until explicit opt-in. */
     val relayEnabled: Boolean = false,
+    /** Key loss requires an explicit transport choice; it must never automatically re-register direct FCM. */
+    val relayRecoveryRequired: Boolean = false,
     val kinds: List<String> = DEFAULT_NOTIFICATION_KINDS,
     val defaultsVersion: Int = NOTIFICATION_DEFAULTS_VERSION,
     val quietHours: QuietHours? = null,

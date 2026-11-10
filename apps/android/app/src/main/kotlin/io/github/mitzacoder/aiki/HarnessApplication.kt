@@ -17,8 +17,11 @@ class HarnessApplication : Application() {
     }
     /** Lazy receive plumbing; opening it does not open backend sockets or relay storage while relay is off. */
     val relayNotifications by lazy {
-        io.github.mitzacoder.aiki.features.notifications.relay.androidRelayNotifications(this) {
-            repository.setNotifications { it.copy(relayEnabled = false) }
+        io.github.mitzacoder.aiki.features.notifications.relay.androidRelayNotifications(this,
+            { key -> repository.session(key)?.client?.let {
+                io.github.mitzacoder.aiki.features.notifications.relay.HarnessRelayBackendRpc(it)
+            } }) {
+            repository.setNotifications { it.copy(relayEnabled = false, relayRecoveryRequired = true) }
         }
     }
     @Volatile private var started: NotificationCenter? = null

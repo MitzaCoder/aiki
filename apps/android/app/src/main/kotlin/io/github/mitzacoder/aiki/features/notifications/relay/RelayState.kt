@@ -14,16 +14,17 @@ data class RelayEnrollment(
     val nonce: String? = null,
 ) {
     @Serializable
+    /** Durable enrollment checkpoints; Confirm retains the received nonce for an idempotent retry. */
     enum class Phase { Begin, Waiting, Confirm }
     override fun toString(): String = "RelayEnrollment($phase)"
 }
 
 /** Authenticated backend time advances only with elapsed realtime in the same boot. */
 @Serializable
-data class RelayClock(val backendAt: Long, val elapsedAt: Long, val boot: String) {
-    /** Null after reboot, backwards monotonic time or stale anchor: wall time is never trusted for message expiry. */
+data class RelayClock(val backendAt: Long, val elapsedAt: Long, val boot: String, val uncertaintyMs: Long = 0) {
+    /** Null after reboot, backwards monotonic time or excessive RTT uncertainty. Wall time never drives expiry. */
     fun now(elapsed: Long, bootId: String): Long? = if (bootId == boot && elapsed >= elapsedAt &&
-        elapsed - elapsedAt <= RelayCrypto.RETENTION_MS) backendAt + elapsed - elapsedAt else null
+        uncertaintyMs in 0..10_000) backendAt + elapsed - elapsedAt else null
 }
 
 /** One local backend-session route. Secret-bearing records deliberately have content-free string representations. */
@@ -51,8 +52,13 @@ data class RelayRoute(
     val retiringElapsed: Long? = null,
     val retiringBoot: String? = null,
     val clock: RelayClock? = null,
+    val label: String = "Android app",
+    val registrationPreferences: io.github.mitzacoder.aiki.protocol.NotificationPreferences? = null,
+    val backendDeviceId: String? = null,
+    val syncedTokenGeneration: Long = 0,
 ) {
     @Serializable
+    /** Confirming means agreed keys; Confirmed means relay-activated but backend confirmation may need retry. */
     enum class Phase { Staged, Created, Confirming, Confirmed, Active, Retiring }
     /** Identity is local and stable; never resolve it from envelope fields. */
     fun context(): RelayContext = RelayContext(backendId, sessionId, routeId, keyId)
@@ -67,16 +73,24 @@ data class RelayDeletion(val routeId: String, val bearer: String) {
     override fun toString(): String = "RelayDeletion"
 }
 
+/** Secret-free backend unregister retry, independent of the relay delete-only queue. */
+@Serializable
+data class RelayBackendDeletion(val backendKey: String, val backendId: String, val sessionId: String, val routeId: String) {
+    override fun toString(): String = "RelayBackendDeletion"
+}
+
 /** Complete encrypted relay record; a missing installation means explicit opt-in is required. */
 @Serializable
 data class RelayState(
     val installationId: String? = null,
     val activeToken: String? = null,
+    val tokenGeneration: Long = 0,
     val enrollment: RelayEnrollment? = null,
     val routes: Map<String, RelayRoute> = emptyMap(),
     val selectedBackends: Map<String, String> = emptyMap(),
     val admissions: Map<String, String> = emptyMap(),
     val deletions: List<RelayDeletion> = emptyList(),
+    val backendDeletions: List<RelayBackendDeletion> = emptyList(),
     val counters: Map<String, Long> = emptyMap(),
     val failure: RelayErrorCode? = null,
     val retryAfterSeconds: Long? = null,
@@ -109,7 +123,10 @@ data class RelayState(
 
 /** Serialized clock inputs, injected in JVM tests and anchored to Android elapsedRealtime in the app. */
 interface RelayTime {
+    /** Relay challenge/lease management time, never used for notification expiry. */
     fun wall(): Long
+    /** Elapsed realtime including sleep. */
     fun elapsed(): Long
+    /** Boot identity makes every restored pre-reboot backend clock untrusted. */
     fun boot(): String
 }
