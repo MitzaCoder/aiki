@@ -24,6 +24,11 @@ import { ServerError } from "../errors.ts";
 import { readJsonFile, writeJsonFile } from "../fs-json.ts";
 import type { NotificationEvent } from "../notifications.ts";
 
+/** Relay cleanup and unused-pending-route retention windows, in milliseconds. */
+export const PUSH_RELAY_CLEANUP_MS = 24 * 60 * 60 * 1000;
+export const PUSH_RELAY_PENDING_MS = 10 * 60 * 1000;
+const MAX_RELAY_ROUTE_LIFETIME_MS = 90 * PUSH_RELAY_CLEANUP_MS;
+
 export type RelayRegistration = Omit<NotificationsRegisterRelayRequest, "id" | "type">;
 export type RelayRegistrationAnswer = Omit<NotificationsRegisterRelayResponse, "id" | "type">;
 export type RelayRoute = {
@@ -50,16 +55,28 @@ export type RelayDeleteEntry = {
 	routeId: string;
 	sessionId: string;
 	deleteBearer: string;
+	absoluteExpiresAt: number;
 	attempts: number;
 	dueAt: number;
 };
-type Receipt = { sessionId: string; fingerprint: string; routeId: string; keyId: string; answer: RelayRegistrationAnswer };
+type Receipt = {
+	sessionId: string;
+	fingerprint: string;
+	routeId: string;
+	keyId: string;
+	answer: RelayRegistrationAnswer;
+	purgeAt: number;
+};
+type RevokedStatus = Pick<NotificationRelayStatus, "leaseExpiresAt" | "absoluteExpiresAt" | "lastDelivery"> & {
+	purgeAt: number;
+};
 export type RelayFile = {
 	version: 1;
 	routes: RelayRoute[];
 	receipts: Record<string, Receipt>;
 	selected: Record<string, string | null>;
-	revoked: Record<string, Pick<NotificationRelayStatus, "leaseExpiresAt" | "absoluteExpiresAt" | "lastDelivery">>;
+	revoked: Record<string, RevokedStatus>;
+	cleanupExpired: Record<string, number>;
 	sends: RelaySendEntry[];
 	deletes: RelayDeleteEntry[];
 };
@@ -78,7 +95,7 @@ export function relayDeviceId(sessionId: string): string {
 export class PushRelayStore {
 	readonly file: string;
 	readonly countersFile: string;
-	#state: RelayFile = { version: 1, routes: [], receipts: {}, selected: {}, revoked: {}, sends: [], deletes: [] };
+	#state: RelayFile = { version: 1, routes: [], receipts: {}, selected: {}, revoked: {}, cleanupExpired: {}, sends: [], deletes: [] };
 	#counters: CounterFile = { version: 1, counters: {} };
 	#writes: Promise<unknown> = Promise.resolve();
 
@@ -99,6 +116,26 @@ export class PushRelayStore {
 		const state = raw as RelayFile;
 		if (state.version !== 1 || !Array.isArray(state.routes) || !Array.isArray(state.sends) ||
 			!Array.isArray(state.deletes) || !state.selected || !state.receipts || !state.revoked) throw new Error("Invalid relay state");
+		state.cleanupExpired ??= {};
+		// Upgrade the pre-retention v1 shape conservatively. A missing old route can have lived at most 90 days.
+		for (const receipt of Object.values(state.receipts)) {
+			const route = state.routes.find((r) => r.context.routeId === receipt.routeId);
+			receipt.purgeAt ??= (route
+				? state.selected[route.context.sessionId] === route.context.routeId
+					? route.registration.absoluteExpiresAt
+					: route.answer.serverTime + PUSH_RELAY_PENDING_MS
+				: receipt.answer.serverTime + MAX_RELAY_ROUTE_LIFETIME_MS) + PUSH_RELAY_CLEANUP_MS;
+		}
+		for (const revoked of Object.values(state.revoked))
+			revoked.purgeAt ??= (revoked.absoluteExpiresAt ?? 0) + PUSH_RELAY_CLEANUP_MS;
+		for (const entry of state.deletes) {
+			if (entry.absoluteExpiresAt !== undefined) continue;
+			const receipt = Object.values(state.receipts).find((r) => r.routeId === entry.routeId);
+			const absolute = receipt ? Math.max(state.revoked[entry.sessionId]?.absoluteExpiresAt ?? 0,
+				receipt.answer.serverTime + MAX_RELAY_ROUTE_LIFETIME_MS) : state.revoked[entry.sessionId]?.absoluteExpiresAt;
+			if (absolute === undefined || absolute === null) throw new Error("Relay deletion expiry is missing");
+			entry.absoluteExpiresAt = absolute;
+		}
 		this.#state = state;
 		if (counters !== undefined) {
 			const witness = counters as CounterFile;
@@ -160,8 +197,32 @@ export class PushRelayStore {
 			leaseExpiresAt: route?.registration.leaseExpiresAt ?? revoked?.leaseExpiresAt ?? null,
 			absoluteExpiresAt: route?.registration.absoluteExpiresAt ?? revoked?.absoluteExpiresAt ?? null,
 			cleanup: this.#state.deletes.some((r) => r.sessionId === sessionId) ? "pending" : "done",
-			lastDelivery: route?.device.lastDelivery?.message ?? revoked?.lastDelivery ?? null,
+			lastDelivery: route?.device.lastDelivery?.message ?? revoked?.lastDelivery ??
+				(sessionId && this.#state.cleanupExpired[sessionId] ? "cleanup_expired" : null),
 		};
+	}
+
+	/** Expire receipts/status and delete capabilities at their relay purge horizons, without any HTTP wait. */
+	async prune(now: number): Promise<void> {
+		const due = Object.values(this.#state.receipts).some((r) => r.purgeAt <= now) ||
+			Object.values(this.#state.revoked).some((r) => r.purgeAt <= now) ||
+			Object.values(this.#state.cleanupExpired).some((until) => until <= now) ||
+			this.#state.deletes.some((d) => d.absoluteExpiresAt + PUSH_RELAY_CLEANUP_MS <= now);
+		if (!due) return;
+		await this.transaction((draft) => {
+			for (const [sessionId, until] of Object.entries(draft.cleanupExpired))
+				if (until <= now) delete draft.cleanupExpired[sessionId];
+			for (const [operationId, receipt] of Object.entries(draft.receipts))
+				if (receipt.purgeAt <= now && !draft.routes.some((r) => r.context.routeId === receipt.routeId))
+					delete draft.receipts[operationId];
+			for (const [sessionId, revoked] of Object.entries(draft.revoked))
+				if (revoked.purgeAt <= now) delete draft.revoked[sessionId];
+			draft.deletes = draft.deletes.filter((entry) => {
+				if (entry.absoluteExpiresAt + PUSH_RELAY_CLEANUP_MS > now) return true;
+				draft.cleanupExpired[entry.sessionId] = now + PUSH_RELAY_CLEANUP_MS;
+				return false;
+			});
+		});
 	}
 
 	/** Public pending/active registration, excluding every secret-bearing storage field. */
@@ -219,7 +280,10 @@ export class PushRelayStore {
 			this.#counters.counters[input.keyId] = "0";
 			await writeJsonFile(this.countersFile, this.#counters, 0o600);
 			draft.routes.push(route);
-			draft.receipts[input.operationId] = { sessionId, fingerprint, routeId: input.routeId, keyId: input.keyId, answer };
+			draft.receipts[input.operationId] = {
+				sessionId, fingerprint, routeId: input.routeId, keyId: input.keyId, answer,
+				purgeAt: now + PUSH_RELAY_PENDING_MS + PUSH_RELAY_CLEANUP_MS,
+			};
 			return answer;
 		});
 	}
@@ -234,6 +298,7 @@ export class PushRelayStore {
 			for (const old of [...draft.routes])
 				if (old.context.sessionId === sessionId && old !== route) this.removeRoute(draft, old, now);
 			route.state = "active";
+			draft.receipts[operationId]!.purgeAt = route.registration.absoluteExpiresAt + PUSH_RELAY_CLEANUP_MS;
 			draft.selected[sessionId] = route.context.routeId;
 		});
 	}
@@ -242,9 +307,12 @@ export class PushRelayStore {
 	removeRoute(draft: RelayFile, route: RelayRoute, now: number): void {
 		if (!draft.deletes.some((d) => d.routeId === route.context.routeId)) draft.deletes.push({
 			routeId: route.context.routeId, sessionId: route.context.sessionId,
-			deleteBearer: route.registration.deleteBearer, attempts: 0, dueAt: now,
+			deleteBearer: route.registration.deleteBearer, absoluteExpiresAt: route.registration.absoluteExpiresAt,
+			attempts: 0, dueAt: now,
 		});
 		draft.revoked[route.context.sessionId] = {
+			purgeAt: draft.receipts[route.operationId]?.purgeAt ??
+				(route.registration.absoluteExpiresAt + PUSH_RELAY_CLEANUP_MS),
 			leaseExpiresAt: route.registration.leaseExpiresAt, absoluteExpiresAt: route.registration.absoluteExpiresAt,
 			lastDelivery: route.registration.leaseExpiresAt <= now ? "route_expired" : route.device.lastDelivery?.message ?? null,
 		};

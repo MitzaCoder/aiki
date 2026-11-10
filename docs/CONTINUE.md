@@ -1,5 +1,27 @@
 # Continue
 
+## Bound relay metadata and delete authority (T95 follow-up)
+
+Rebased workspace onto the accepted merged tip `pxxrzxsu` before changing code. Relay receipts now have a scheduled
+`purgeAt`: ten-minute pending expiry plus 24 hours until activation, then absolute expiry plus 24 hours. Revoked
+status uses the same route horizon. Both are pruned after restart even when no sends or remote cleanup remain.
+Delete-only entries now retain their absolute expiry and stop at absolute expiry plus 24 hours, independently of a
+long Retry-After. Wrong-secret 404 keeps capped-backoff retries until then. Expiry atomically erases the capability
+and marks cleanup done; a secret-free `cleanup_expired` diagnosis survives restart for only 24 hours, then is pruned.
+Minimal transport-selection tombstones remain, so pruning history cannot revive stale direct notification rows.
+Pre-retention v1 files are upgraded conservatively using known route expiry or the relay's maximum 90-day lifetime.
+
+Three fake-clock tests cover activated/pending receipt and revoked-status boundaries, restart, wrong-secret capped
+backoff, expiry erasure without further HTTP, bounded diagnosis and stopped timers. All 50 relay tests pass.
+Exact fields and retention rules are in `docs/push-relay-backend-v1.md`; no protocol, crypto, Android or UI changes.
+Full checks on the merged base pass: root 2,110 tests / 24,295 assertions / 176 files (193.96s); root typecheck
+1.33s. Web: 918 tests / 13,722 assertions / 70 files (2.77s), zero check errors/warnings (17.16s), production build
+passes (12.25s). Incremental Android test/assemble/lint passes (7.82s): XML has 741 tests / 95 suites, two existing
+skips, zero failures/errors; lint has 36 warnings, zero errors. Android used an explicit empty private-properties
+source and no Firebase config. Install checked 262 installs without changes (1.26s); DTO check confirms 337 models/
+91 requests (0.10s); shared vectors match (0.03s); public/Gitleaks guard passes. No flaky rerun, protocol drift,
+services left running, main move, push or deployment.
+
 ## Backend encrypted push relay (T95)
 
 Backend relay transport is wired behind private `AIKI_PUSH_RELAY_ENDPOINT` (complete operator-approved HTTPS v1 base
@@ -20,7 +42,7 @@ Mode-0600 `notifications/push-relay.json` owns routes/receipts/selections/safe r
 send/delete-only outboxes. Independent `push-relay-counters.json` witnesses the next per-key sequence; allocation is
 durable before encryption, exact HTTP body before send. Partial counter restore/malformed keys require new keys.
 A coherent rollback of both files is fundamentally undetectable locally: full-backup restoration must agree fresh
-routes/keys, or a future independent non-rollbackable witness is needed. Operation receipts currently have no pruning.
+routes/keys, or a future independent non-rollbackable witness is needed. Receipt and delete retention is bounded as described above.
 Public-source ignore/guard rules reject both private filenames. No exports/logs/config/device read exposes secrets.
 
 Existing dedupe/hold/interaction/filter/TTL/preview policy runs first. Retry checks current session/preferences/archive,
@@ -29,7 +51,7 @@ resends identical bytes with 5-second exponential jitter capped at 15 minutes, h
 pause new sends; after token/route repair the phone explicitly syncs resume:true, which never replays old events.
 Counter inconsistency cannot resume and requires fresh keys. No direct/plaintext fallback. Test success says accepted,
 never delivered. Revoke/unregister/expiry stop local sends immediately and atomically erase send authority/keys into a
-delete-only outbox before old rows disappear. Cleanup retries independently across restart; only 204 erases its secret.
+delete-only outbox before old rows disappear. Cleanup retries independently across restart; 204 or the relay purge horizon erases its secret.
 Safe status distinguishes pending cleanup from done; still-signed-in phones can read it after unregister.
 
 Checks at the final implementation: root 2,082 tests / 24,144 assertions / 172 files, zero failures (194.45s);

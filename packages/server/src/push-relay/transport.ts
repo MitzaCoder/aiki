@@ -10,7 +10,8 @@ import {
 } from "@aiki/protocol";
 import { ServerError } from "../errors.ts";
 import type { DeliveryOutcome, HoldScheduler, NotificationEvent } from "../notifications.ts";
-import { PushRelayStore, type RelayRegistration, type RelayRegistrationAnswer, type RelayRoute,
+import { PUSH_RELAY_CLEANUP_MS, PUSH_RELAY_PENDING_MS, PushRelayStore,
+	type RelayRegistration, type RelayRegistrationAnswer, type RelayRoute,
 	type RelaySendEntry, relayDeviceId } from "./store.ts";
 
 export type PushRelayOptions = {
@@ -165,6 +166,7 @@ export class PushRelayTransport {
 		await this.store.transaction((draft) => {
 			delete draft.selected[sessionId];
 			delete draft.revoked[sessionId];
+			delete draft.cleanupExpired[sessionId];
 		});
 	}
 
@@ -312,6 +314,10 @@ export class PushRelayTransport {
 	async #delete(routeId: string): Promise<void> {
 		const entry = this.store.snapshot().deletes.find((d) => d.routeId === routeId);
 		if (!entry || this.#deleting.has(routeId)) return;
+		if (entry.absoluteExpiresAt + PUSH_RELAY_CLEANUP_MS <= this.#now()) {
+			await this.store.prune(this.#now());
+			return;
+		}
 		this.#deleting.add(routeId);
 		try {
 			const result = await this.#http("delete", entry.deleteBearer, JSON.stringify({ routeId }));
@@ -340,16 +346,19 @@ export class PushRelayTransport {
 	}
 
 	async #pump(): Promise<void> {
-		for (const route of this.store.snapshot().routes) {
+		const snapshot = this.store.snapshot();
+		for (const route of snapshot.routes) {
 			if (!this.#options.sessionActive(route.context.sessionId) ||
 				Math.min(route.registration.leaseExpiresAt, route.registration.absoluteExpiresAt,
-					route.state === "pending" ? route.answer.serverTime + 600_000 : Infinity) <= this.#now()) {
+					snapshot.selected[route.context.sessionId] !== route.context.routeId
+						? route.answer.serverTime + PUSH_RELAY_PENDING_MS : Infinity) <= this.#now()) {
 				await this.store.transaction((draft) => {
 					const current = draft.routes.find((r) => r.context.routeId === route.context.routeId);
 					if (current) this.store.removeRoute(draft, current, this.#now());
 				});
 			}
 		}
+		await this.store.prune(this.#now());
 		for (const entry of this.store.snapshot().sends)
 			if (Math.min(entry.dueAt, entry.expiresAt) <= this.#now()) this.#launch(this.#attempt(entry));
 		for (const entry of this.store.snapshot().deletes)
@@ -361,12 +370,19 @@ export class PushRelayTransport {
 		this.#cancel = undefined;
 		if (this.#stopped) return;
 		const snapshot = this.store.snapshot();
-		if (!snapshot.routes.length && !snapshot.deletes.length && !snapshot.sends.length) return;
+		if (!snapshot.routes.length && !snapshot.deletes.length && !snapshot.sends.length &&
+			!Object.keys(snapshot.receipts).length && !Object.keys(snapshot.revoked).length &&
+			!Object.keys(snapshot.cleanupExpired).length) return;
 		const times = [this.#now() + 60_000,
 			...snapshot.routes.map((r) => Math.min(r.registration.leaseExpiresAt, r.registration.absoluteExpiresAt,
-				r.state === "pending" ? r.answer.serverTime + 600_000 : Infinity)),
+				snapshot.selected[r.context.sessionId] !== r.context.routeId
+					? r.answer.serverTime + PUSH_RELAY_PENDING_MS : Infinity)),
 			...snapshot.sends.filter((s) => !this.#sending.has(s.messageId)).map((s) => Math.min(s.dueAt, s.expiresAt)),
-			...snapshot.deletes.filter((d) => !this.#deleting.has(d.routeId)).map((d) => d.dueAt)];
+			...snapshot.deletes.filter((d) => !this.#deleting.has(d.routeId)).map((d) => d.dueAt),
+			...snapshot.deletes.map((d) => d.absoluteExpiresAt + PUSH_RELAY_CLEANUP_MS),
+			...Object.values(snapshot.receipts).map((r) => r.purgeAt),
+			...Object.values(snapshot.revoked).map((r) => r.purgeAt),
+			...Object.values(snapshot.cleanupExpired)];
 		this.#cancel = this.#schedule(() => { this.#cancel = undefined; this.#launch(this.#pump()); },
 			Math.max(0, Math.min(...times) - this.#now()));
 	}

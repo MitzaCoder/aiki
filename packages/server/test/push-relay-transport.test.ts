@@ -213,7 +213,7 @@ test("revoke during outage is local immediately; delete-only retries survive res
 	expect(before.routes).toHaveLength(0);
 	expect(before.sends).toHaveLength(0);
 	expect(before.deletes[0]).toMatchObject({ routeId: phone.registration.routeId, deleteBearer: phone.registration.deleteBearer });
-	expect(Object.keys(before.deletes[0]!).sort()).toEqual(["attempts", "deleteBearer", "dueAt", "routeId", "sessionId"]);
+	expect(Object.keys(before.deletes[0]!).sort()).toEqual(["absoluteExpiresAt", "attempts", "deleteBearer", "dueAt", "routeId", "sessionId"]);
 	expect(JSON.stringify(before)).not.toContain(phone.registration.sendBearer);
 	expect(relay.status(f.credentials.sessionId)).toMatchObject({ state: "revoked", cleanup: "pending" });
 	await f.tick(0);

@@ -2962,8 +2962,12 @@ at message/route expiry (at most twelve hours). A route holds at most 100 messag
 capacity. Accepted events are removed durably. Terminal responses stop the message and retain safe delivery status;
 acceptance is never described as delivery. Revoke/expiry/unregister cancels local sends immediately and atomically
 replaces route secrets/keys with delete-only work before dropping direct notification rows. Delete retries survive
-restart, do not require a live session, and erase the delete capability only after 204. Safe status distinguishes
-local revoke with cleanup pending from completed cleanup. Already handed-off pushes cannot be recalled.
+restart, do not require a live session, and erase the delete capability after 204 or absolute expiry plus 24 hours
+(the relay's purge horizon). Wrong-secret 404 keeps retrying until that horizon. Receipts and revoked status expire
+at absolute expiry plus 24 hours, or ten-minute pending expiry plus 24 hours for never-activated operations. A bounded
+24-hour `cleanup_expired` diagnosis distinguishes expiry completion from confirmed deletion after secrets are erased.
+Safe status distinguishes local revoke with cleanup pending from completed cleanup. Already handed-off pushes cannot
+be recalled.
 
 ### Encrypted relay v1 library (T92)
 

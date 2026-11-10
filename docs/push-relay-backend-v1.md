@@ -92,7 +92,8 @@ inconsistency instead requires an explicit fresh route/key agreement and cannot 
 7. On push off/backend removal/sign-out call `syncRelay {routeId,unregister:true}` or existing unregister with the
    returned device ID before erasing credentials when reachable. Session revoke takes the same local cleanup path.
    Local phone cleanup must not wait for network; queue its own delete-only cleanup when the backend is unreachable.
-8. Poll safe status if still signed in; cleanup completion is only after relay 204, not local unregister acknowledgement.
+8. Poll safe status if still signed in; cleanup completes after relay 204 or absolute expiry plus 24 hours, not local
+   unregister acknowledgement. Expiry completion reports `cleanup_expired` for 24 hours; it is not a relay acknowledgement.
 
 Shared-client methods: `readNotificationTransports`, `registerRelayNotifications`, `confirmRelayNotifications`,
 `syncRelayNotifications`; existing device/test/unregister methods remain compatible. Generated Kotlin requests cover
@@ -103,17 +104,27 @@ all new calls. Android behavior is unchanged in this task.
 Both files are backend-owned, mode 0600, atomic private temporary-file replacement, serialized writes. They are
 source-ignored and the public guard rejects their filenames. No configuration/QR/address/support export reads them.
 
-- `notifications/push-relay.json`: `version:1`, `routes`, `receipts`, `selected`, `revoked`, `sends`, `deletes`.
+- `notifications/push-relay.json`: `version:1`, `routes`, `receipts`, `selected`, `revoked`, `cleanupExpired`, `sends`, `deletes`.
 - Each route: authoritative `context` (backend/session/route/key IDs), `operationId`, original `registration`, stable
   `answer`, exact `transcript`, three base64url `keys`, `state`, decimal `nextSequence`, and public `device`.
-- Each receipt: owning `sessionId`, registration `fingerprint`, `routeId`, `keyId`, stable `answer`. Receipts retain
-  no capability/derived key and prevent operation/route/key reuse after cleanup. They currently have no pruning.
+- Each receipt: owning `sessionId`, registration `fingerprint`, `routeId`, `keyId`, stable `answer`, `purgeAt`.
+  Receipts retain no capability/derived key and prevent operation/route/key reuse until the relay purge horizon:
+  absolute expiry plus 24 hours after activation; original ten-minute pending expiry plus 24 hours if never activated.
+  Confirmation extends the pending receipt to the absolute-expiry horizon. Expired receipts are pruned by the pump,
+  including after restart; after pruning, the operation ID is no longer a registration retry receipt.
 - `selected` maps session IDs to one active route or null for locally revoked. Even a null selection suppresses stale
   direct rows left by a crash between files; only explicit direct registration clears it. `revoked` retains safe
-  lease/absolute expiry and last-delivery diagnosis after secret erasure.
+  lease/absolute expiry and last-delivery diagnosis after secret erasure, plus `purgeAt` using that route receipt’s
+  horizon. Revoked status is pruned at that horizon. Minimal null selections remain to suppress stale direct rows;
+  pruning status/receipts never enables a direct fallback.
+- `cleanupExpired` maps session IDs to diagnosis expiry times. When a delete capability reaches its absolute expiry
+  plus 24 hours, its secret is erased and status becomes cleanup `done`; `lastDelivery:"cleanup_expired"` distinguishes
+  that completion from an HTTP acknowledgement. This secret-free diagnosis lasts only 24 hours after local erasure,
+  survives restart and is then pruned. It is not another indefinitely retained revoked-status record.
 - Each send: `routeId`, `messageId`, exact serialized HTTP `body`, policy-only `event` (kind/project), `expiresAt`,
   `attempts`, `dueAt`. Payload content is encrypted; no plaintext preview/body is stored in the outbox.
-- Each delete: `routeId`, `sessionId`, `deleteBearer`, `attempts`, `dueAt`; no send capability, transcript or key.
+- Each delete: `routeId`, `sessionId`, `deleteBearer`, `absoluteExpiresAt`, `attempts`, `dueAt`; no send capability,
+  transcript or key. The absolute-expiry-plus-24-hour deadline is scheduled even if Retry-After would defer HTTP longer.
 - `notifications/push-relay-counters.json`: `version:1`, `counters` mapping key IDs to next decimal sequence.
   This independent high-water witness is committed before route allocation. A mismatch/missing witness or malformed
   counter/key makes the route need new keys. Exact already-encrypted entries can still retry without a new sequence.
@@ -137,8 +148,16 @@ message. Known terminal route/account/token results additionally pause further n
 
 Local revoke first blocks further submissions in memory, then atomically replaces route/send secrets and keys with
 delete-only work. Old direct rows are removed only after that commit. HTTP is never part of the local revoke wait.
-Delete retries independently of auth/session state across restarts, including after wrong-secret 404; only 204 erases
-the capability. Wrong-secret cleanup therefore remains visibly pending until the operator/phone fixes it.
+Delete retries independently of auth/session state across restarts, including after wrong-secret 404. A 204 erases
+its capability immediately; otherwise cleanup stays pending with capped backoff until absolute expiry plus 24 hours.
+At that horizon the relay has purged the route: local erasure and cleanup `done` no longer require an HTTP response.
+The expiry pump removes the secret before submitting further HTTP, records the bounded `cleanup_expired` diagnosis,
+and prunes expired operation receipts/revoked status in the same atomic local write.
+
+Earlier private v1 files without retention fields are upgraded on read. Known live routes use their exact horizon;
+legacy receipts for missing routes conservatively use registration time plus the relay’s maximum 90-day life plus
+24 hours. Legacy delete entries use the available absolute expiry or that conservative maximum, never an early
+pending deadline that could discard deletion authority for an ambiguously activated route.
 
 ## Limits of local durability
 
@@ -148,6 +167,6 @@ routes and agree fresh keys; a stronger automatic guarantee needs an independent
 the approved design does not specify. Similarly, atomic rename/fsync follows existing stores and is not a new
 cross-file/power-loss transaction system. No exactly-once HTTP/FCM/display guarantee is claimed.
 
-All 47 relay integration tests run through `createSetup`; no real relay/Firebase credentials, endpoints, emulator,
+All 50 relay integration tests run through `createSetup`; no real relay/Firebase credentials, endpoints, emulator,
 phone or Android UI are needed. Existing direct-FCM/Web-Push suites plus the explicit relay-off regression prove the
 default behavior. Backend configuration changes do not enroll existing clients or replay old project events.
