@@ -6,7 +6,7 @@
 	import * as Popover from '#lib/components/ui/popover/index.js';
 	import ModelSearchList from '#lib/components/ModelSearchList.svelte';
 	import { sameModel } from '#lib/models.js';
-	import type { ModelInfo, ModelRef, ProviderInfo } from '@mihai-harness/protocol';
+	import type { ModelInfo, ModelRef, ProviderInfo } from '@aiki/protocol';
 
 	/**
 	 * The coordinator's model, as a chip in the composer: a searchable list of

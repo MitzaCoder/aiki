@@ -11,7 +11,7 @@ import type {
 	SchedulesSaveResponse,
 	WorkerModel,
 	WorkersListResponse,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { formatLocalTime, formatRunStamp, nextRunAfter, parseCron, validateSpec } from "../src/schedules.ts";
 import { createSetup, entryText, errorOf, TestClient, ViewClient, type TestSetup } from "./support.ts";
 import { mkdir, readdir, writeFile } from "node:fs/promises";

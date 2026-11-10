@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { ConversationContext, ModelRef } from "@mihai-harness/protocol";
+import type { ConversationContext, ModelRef } from "@aiki/protocol";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -556,14 +556,14 @@ describe("system prompt files", () => {
 		expect(prompt).toContain("How tests are written here.");
 	});
 
-	it("prefers the project's .mihai-harness files over the config directory's and never combines them", async () => {
+	it("prefers the project's .aiki files over the config directory's and never combines them", async () => {
 		const test = await setup();
 		const client = await connect(test.server);
 		await greet(client);
 
 		await writeFile(join(test.configDir, "SYSTEM.md"), "Config system prompt.\n");
 		await writeFile(join(test.configDir, "APPEND_SYSTEM.md"), "Config additions.\n");
-		const projectHarnessDir = join(test.projectDir, ".mihai-harness");
+		const projectHarnessDir = join(test.projectDir, ".aiki");
 		await mkdir(projectHarnessDir, { recursive: true });
 		await writeFile(join(projectHarnessDir, "SYSTEM.md"), "Project system prompt.\n");
 		await writeFile(join(projectHarnessDir, "APPEND_SYSTEM.md"), "Project additions.\n");
@@ -634,8 +634,8 @@ describe("system prompt files", () => {
 		const client = await connect(test.server);
 		await greet(client);
 
-		await mkdir(join(test.projectDir, ".mihai-harness"), { recursive: true });
-		await writeFile(join(test.projectDir, ".mihai-harness", "SYSTEM.md"), `${SYSTEM_TEXT}\n`);
+		await mkdir(join(test.projectDir, ".aiki"), { recursive: true });
+		await writeFile(join(test.projectDir, ".aiki", "SYSTEM.md"), `${SYSTEM_TEXT}\n`);
 		await writeFile(join(test.configDir, "APPEND_SYSTEM.md"), `${APPEND_TEXT}\n`);
 
 		const BRIEF = "Summarize the project's README for me.";
@@ -751,7 +751,7 @@ describe("model notes", () => {
 
 describe("Claude Code @imports", () => {
 	async function tempDir(): Promise<string> {
-		const dir = await mkdtemp(join(tmpdir(), "mihai-harness-imports-"));
+		const dir = await mkdtemp(join(tmpdir(), "aiki-imports-"));
 		cleanups.push(() => rm(dir, { recursive: true, force: true }));
 		return dir;
 	}

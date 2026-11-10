@@ -33,9 +33,9 @@ import {
 	decodeTerminalFrame,
 	encodeTerminalFrame,
 	terminalAckBytes,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { Value } from "typebox/value";
-import type { ArtifactsChangedEvent, DraftsChangedEvent } from "@mihai-harness/protocol";
+import type { ArtifactsChangedEvent, DraftsChangedEvent } from "@aiki/protocol";
 import type { ArtifactUrlSigner } from "./artifacts.ts";
 import type { DraftStore } from "./drafts.ts";
 import { withTaskReference } from "./board.ts";

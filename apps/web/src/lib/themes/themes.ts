@@ -25,7 +25,7 @@ export const THEMES = [
 export const DEFAULT_THEME: ThemeId = "jarvis";
 
 /** Per browser, like the backend list. Bumped when stored ids or meanings change. */
-export const THEME_STORAGE_KEY = "mihai-harness.theme.v1";
+export const THEME_STORAGE_KEY = "aiki.theme.v1";
 
 export function isThemeId(value: unknown): value is ThemeId {
 	return THEMES.some((theme) => theme.id === value);

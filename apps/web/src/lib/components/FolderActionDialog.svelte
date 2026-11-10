@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { DirectoryEntry } from '@mihai-harness/protocol';
+	import type { DirectoryEntry } from '@aiki/protocol';
 
 	export type FolderAction =
 		| { kind: 'create'; parent: string }
@@ -15,7 +15,7 @@
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Spinner } from '#lib/components/ui/spinner/index.js';
 	import { deleteConfirmation } from '#lib/folder-picker.js';
-	import { validateFolderName } from '@mihai-harness/protocol';
+	import { validateFolderName } from '@aiki/protocol';
 
 	let {
 		action,

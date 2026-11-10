@@ -3,7 +3,7 @@
  * then runs this test suite. Those values must not leak into the scripts under test, which would then read the real
  * state directory and config instead of their temporary ones. Import this module first in every deploy test.
  */
-const MACHINE_CONFIGURATION = /^(DEPLOY_[A-Z0-9_]+|MIHAI_HARNESS_PUBLISHED_BACKENDS_FILE)$/;
+const MACHINE_CONFIGURATION = /^(DEPLOY_[A-Z0-9_]+|AIKI_PUBLISHED_BACKENDS_FILE)$/;
 
 for (const name of Object.keys(process.env)) {
 	if (MACHINE_CONFIGURATION.test(name)) delete process.env[name];

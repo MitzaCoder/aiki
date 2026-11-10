@@ -9,7 +9,7 @@
 	import { KEY_BAR_ROWS, applyModifiers, arrowBytes, type KeyBarKey, type TerminalTab } from '#lib/terminal.js';
 	import { currentTerminalColors } from '#lib/terminal-theme.js';
 	import { theme } from '#lib/themes/theme.svelte.js';
-	import type { TerminalSession, TerminalState } from '@mihai-harness/client';
+	import type { TerminalSession, TerminalState } from '@aiki/client';
 	import type { Terminal } from '@xterm/xterm';
 
 	/**

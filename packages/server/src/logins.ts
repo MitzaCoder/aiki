@@ -14,7 +14,7 @@ import type {
 	AuthPrompt as ProviderAuthPrompt,
 	Models,
 } from "@earendil-works/pi-ai";
-import type { AuthEvent, AuthLogin, AuthPrompt, AuthPromptOption } from "@mihai-harness/protocol";
+import type { AuthEvent, AuthLogin, AuthPrompt, AuthPromptOption } from "@aiki/protocol";
 import { ServerError, errorMessage } from "./errors.ts";
 
 /** How many notifications a login keeps for a client that reloads late. */

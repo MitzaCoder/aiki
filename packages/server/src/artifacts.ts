@@ -16,7 +16,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { constants } from "node:fs";
 import { copyFile, mkdir, open, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
-import { type Artifact, type ArtifactKind, type ArtifactsChangedEvent, normalizeTags } from "@mihai-harness/protocol";
+import { type Artifact, type ArtifactKind, type ArtifactsChangedEvent, normalizeTags } from "@aiki/protocol";
 import { ServerError, errorMessage } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 import { isOriginAllowed, normalizeOrigin } from "./origins.ts";
@@ -24,9 +24,9 @@ import { isOriginAllowed, normalizeOrigin } from "./origins.ts";
 export const ARTIFACTS_DIR = "artifacts";
 export const ARTIFACTS_INDEX_FILE = "index.json";
 export const ARTIFACTS_SECRET_FILE = "artifacts-secret";
-/** Bytes one artifact may have; `MIHAI_HARNESS_ARTIFACT_MAX_BYTES` overrides it. */
+/** Bytes one artifact may have; `AIKI_ARTIFACT_MAX_BYTES` overrides it. */
 export const DEFAULT_ARTIFACT_MAX_BYTES = 2 * 1024 * 1024 * 1024;
-export const ARTIFACT_MAX_BYTES_ENV = "MIHAI_HARNESS_ARTIFACT_MAX_BYTES";
+export const ARTIFACT_MAX_BYTES_ENV = "AIKI_ARTIFACT_MAX_BYTES";
 /** How long an `artifacts.url` answer stays valid. */
 export const DEFAULT_ARTIFACT_URL_TTL_MS = 4 * 60 * 60 * 1000;
 export const DEFAULT_ARTIFACT_LIST_LIMIT = 100;
@@ -208,7 +208,7 @@ export type ArtifactListFilter = {
 
 export type ArtifactStoreOptions = {
 	dataDir: string;
-	/** Bytes one file may have. Default: `MIHAI_HARNESS_ARTIFACT_MAX_BYTES`, else 2 GiB. */
+	/** Bytes one file may have. Default: `AIKI_ARTIFACT_MAX_BYTES`, else 2 GiB. */
 	maxFileBytes?: number;
 	/** Reads a video's or audio file's duration. Default: `ffprobe` when it is on PATH. */
 	probeDuration?: (path: string) => Promise<number | null>;
@@ -490,11 +490,11 @@ export class ArtifactUrlSigner {
 }
 
 /**
- * The origin the browser reached this backend at, for absolute artifact URLs: `MIHAI_HARNESS_PUBLIC_URL` when set,
+ * The origin the browser reached this backend at, for absolute artifact URLs: `AIKI_PUBLIC_URL` when set,
  * else the proxy's `X-Forwarded-Proto`/`X-Forwarded-Host` (Caddy sets both), else the request's own.
  */
 export function requestOrigin(request: Request, env: Readonly<Record<string, string | undefined>> = process.env): string {
-	const configured = env.MIHAI_HARNESS_PUBLIC_URL?.trim();
+	const configured = env.AIKI_PUBLIC_URL?.trim();
 	if (configured !== undefined && configured.length > 0) {
 		const origin = normalizeOrigin(configured);
 		if (origin !== undefined) return origin;

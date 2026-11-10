@@ -7,7 +7,7 @@
  * the pointer to the window's right edge: dragging the handle left widens it, and
  * ArrowLeft does the same, as if the edge itself moved.
  */
-import type { HarnessFeature } from "@mihai-harness/protocol";
+import type { HarnessFeature } from "@aiki/protocol";
 
 /**
  * The tabs the sidebar can show: the project's board, main's background threads, the conversation's context, and its
@@ -25,7 +25,7 @@ export const MAX_SIDEBAR_WINDOW_SHARE = 0.6;
 export const SIDEBAR_KEY_STEP = 16;
 
 /** Per browser, like the backend list and the theme. Bumped when the stored shape changes. */
-export const SIDEBAR_STORAGE_KEY = "mihai-harness.sidebar.v1";
+export const SIDEBAR_STORAGE_KEY = "aiki.sidebar.v1";
 
 export type SidebarState = {
 	/** Drawn width in pixels; clamped to the window when it is restored. */

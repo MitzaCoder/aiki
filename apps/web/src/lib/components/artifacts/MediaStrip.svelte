@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ArrowLeftRightIcon from '@lucide/svelte/icons/arrow-left-right';
-	import type { HarnessClient } from '@mihai-harness/client';
-	import type { Artifact } from '@mihai-harness/protocol';
+	import type { HarnessClient } from '@aiki/client';
+	import type { Artifact } from '@aiki/protocol';
 	import { onDestroy, tick } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { MEDIA_MOTION, scrollPosition, stepIndex } from '#lib/media-gallery.js';

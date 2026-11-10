@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { ModelRef } from "@mihai-harness/protocol";
+import type { ModelRef } from "@aiki/protocol";
 import { mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -43,7 +43,7 @@ afterEach(async () => {
 const PROJECT_TARGET = { scope: "project", projectId: "proj-1" } as const;
 
 async function storeAt(): Promise<{ store: MemoryStore; root: string; changes: string[] }> {
-	const root = await mkdtemp(join(tmpdir(), "mihai-harness-memory-"));
+	const root = await mkdtemp(join(tmpdir(), "aiki-memory-"));
 	const changes: string[] = [];
 	const store = new MemoryStore({
 		dataDir: root,

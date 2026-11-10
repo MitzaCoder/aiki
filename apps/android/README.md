@@ -1,6 +1,6 @@
 # Harness for Android
 
-Native Jetpack Compose client, package `com.mihaisaru.harness`, Android 12+
+Native Jetpack Compose client, package `io.github.mitzacoder.aiki`, Android 12+
 (API31). Streaming Markdown/tool transcripts, questions, image attachments,
 main/background/worker navigation, signed artifact previews and SAF downloads,
 Board/Memory/Workers/Schedules panels, provider/model settings and subscription
@@ -15,7 +15,7 @@ Push notifications go through Firebase Cloud Messaging (below); there is no voic
 
 ```sh
 adb install -r ~/scratch/android-screens/harness-debug.apk
-adb shell am start -n com.mihaisaru.harness/.MainActivity
+adb shell am start -n io.github.mitzacoder.aiki/.MainActivity
 ```
 
 On this host use the isolated emulator wrapper, never default adb:
@@ -83,7 +83,7 @@ HARNESS_GOOGLE_SERVICES_JSON=~/scratch/android-sync/firebase/google-services.jso
 
 Each backend needs the Firebase project's service-account key (Firebase console → Project settings → Service
 accounts → Generate new private key) at `<data dir>/notifications/fcm-service-account.json` (or
-`MIHAI_HARNESS_FCM_KEY_FILE`), mode 0600, then a restart; it logs `FCM on for Firebase project …` or `FCM off`.
+`AIKI_FCM_KEY_FILE`), mode 0600, then a restart; it logs `FCM on for Firebase project …` or `FCM off`.
 Never commit or print it. The app's Notifications screen turns push on (asks for POST_NOTIFICATIONS on Android 13+),
 registers the FCM token with every backend that has `fcm-push`, shows each backend's registration, last push and
 "Send test", and keeps kinds, quiet hours and muted projects (the bell in a chat header mutes that project).
@@ -91,7 +91,7 @@ registers the FCM token with every backend that has `fcm-push`, shows each backe
 Web project links (`https://harness.example.test/b/<backend>/projects/<id>`, with `/threads/<t>`,
 `/workers/<w>`, `/settings`, `?task=`, `#thread-<id>`, `#entry-<n>`) open in the app once the user lets it open that
 domain (system settings → Harness → Open by default → Add link; on the emulator `adb shell pm
-set-app-links-user-selection --user 0 --package com.mihaisaru.harness true harness.example.test`). The
+set-app-links-user-selection --user 0 --package io.github.mitzacoder.aiki true harness.example.test`). The
 `<backend>` is the web's ID, the slug of the name the backend was added with (`harness-pc`, `harness-vm` for the
 published list); the app matches it by the slug of each backend's name, then by its host's first label, so a rename on
 either side still opens. An unknown one closes any panel and opens the drawer with an "Unknown backend" note.
@@ -100,8 +100,8 @@ Debug builds accept what FCM would deliver from adb (it holds DUMP), for tests w
 
 ```sh
 D=apps/android/verification/device.sh
-$D adb shell am broadcast -a com.mihaisaru.harness.DEBUG_PUSH -p com.mihaisaru.harness --es token fake-token  # turns push on
-$D adb shell am broadcast -a com.mihaisaru.harness.DEBUG_PUSH -p com.mihaisaru.harness --es payload "'<NotificationPayload JSON>'"
+$D adb shell am broadcast -a io.github.mitzacoder.aiki.DEBUG_PUSH -p io.github.mitzacoder.aiki --es token fake-token  # turns push on
+$D adb shell am broadcast -a io.github.mitzacoder.aiki.DEBUG_PUSH -p io.github.mitzacoder.aiki --es payload "'<NotificationPayload JSON>'"
 ```
 
 ## Verification: actual behavior versus appearance
@@ -166,7 +166,7 @@ release step after green checks.
 
 ## Architecture and stable interfaces
 
-Kotlin: `app/src/main/kotlin/com/mihaisaru/harness/`:
+Kotlin: `app/src/main/kotlin/io/github/mitzacoder/aiki/`:
 
 - `core/`, `data/`, `protocol/`: tolerant serialization, Chord, one WebSocket per
   backend, generated RPC/events, lifecycle watches and DataStore.

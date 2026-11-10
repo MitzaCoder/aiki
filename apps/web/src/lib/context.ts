@@ -10,7 +10,7 @@ import type {
 	SkillInfo,
 	SkillSource,
 	ToolInfo,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 
 /** What the path helpers need to shorten an absolute path; `homeDir` may be absent from an older backend. */
 export type PathRoots = {
@@ -117,7 +117,7 @@ function parentDirectory(path: string): string {
 
 /**
  * The origin of a context file. A system prompt file is the harness's own config directory or the project's
- * `.mihai-harness`; an AGENTS.md comes from pi's agent directory, the project or one of its parents.
+ * `.aiki`; an AGENTS.md comes from pi's agent directory, the project or one of its parents.
  */
 export function contextFileOrigin(
 	file: Pick<ContextFile, "path" | "scope" | "kind">,
@@ -257,7 +257,7 @@ export const BUILT_IN_TOOLS_LABEL = "Built-in";
 const TOOL_GROUP_LABELS: Record<string, string> = {
 	"coding-tools": "Coding",
 	"worker-tools": "Workers",
-	"mihai-agent-context": "Context",
+	"aiki-agent-context": "Context",
 };
 
 /** How an extension's tools are headed: "Coding", "Workers", or a readable form of an unknown ID. */

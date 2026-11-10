@@ -1,4 +1,4 @@
-import type { CacheWarmStretch } from "@mihai-harness/protocol";
+import type { CacheWarmStretch } from "@aiki/protocol";
 /**
  * The request log's database: one row per model request of every project on this backend, kept `REQUEST_LOG_KEEP_DAYS`
  * days, plus each conversation's last prompt fingerprint and which projects were read back from their transcripts.
@@ -13,7 +13,7 @@ import {
 	type PreviousRequest,
 	type RequestSource,
 	type WakeReason,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import type { PromptFingerprint } from "./prompt-fingerprint.ts";
 
 export const REQUEST_LOG_FILE = "request-log.sqlite";

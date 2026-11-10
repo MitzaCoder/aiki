@@ -12,7 +12,7 @@ import {
 	TERMINAL_MAX_INPUT_BYTES,
 	type TerminalClosedEvent,
 	type TerminalOpenResponse,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { ClientError } from "./errors.ts";
 
 export type TerminalStatus =

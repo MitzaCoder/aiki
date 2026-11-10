@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Is a mihai-harness backend alive, and is it safe to restart?
+ * Is a aiki backend alive, and is it safe to restart?
  *
  * Sends protocol requests over the WebSocket at `/ws`, retrying until `--timeout-ms` runs out. Exit 0 only when the
  * server answers everything asked; prints one line saying what answered. The backends are API-only, so there is no app

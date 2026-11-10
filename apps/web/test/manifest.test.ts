@@ -52,7 +52,7 @@ describe("web manifests", () => {
 	for (const entry of manifests) {
 		test(`${entry.path} installs as a standalone app`, () => {
 			const value = manifest(entry.path);
-			expect(value.name).toBe("mihai-harness");
+			expect(value.name).toBe("aiki");
 			expect(value.short_name).toBe("harness");
 			expect(value.start_url).toBe("/");
 			expect(value.scope).toBe("/");

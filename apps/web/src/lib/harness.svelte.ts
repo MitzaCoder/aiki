@@ -17,7 +17,7 @@ import {
 	type ProjectChange,
 	type WatchStatus,
 	type WorkerDefaultsSupport,
-} from "@mihai-harness/client";
+} from "@aiki/client";
 import {
 	HARNESS_FEATURES,
 	type AuthLogin,
@@ -48,7 +48,7 @@ import {
 	type ServerStatus,
 	type WorkerDefaults,
 	type WorkerSummary,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import {
 	backendIdFromName,
 	backendWebSocketUrl,
@@ -131,7 +131,7 @@ export class BackendConnection {
 		this.url = config.url;
 		this.client = new HarnessClient({
 			url: backendWebSocketUrl(config.url),
-			clientName: "mihai-harness-web",
+			clientName: "aiki-web",
 			reconnect: { initialDelayMs: 300, maxDelayMs: 10_000, jitter: 0.2 },
 		});
 		this.client.subscribe((state) => {

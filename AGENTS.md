@@ -14,14 +14,13 @@ A harness based on pi durable.
 ## Commits
 
 - Conventional Commits style (`feat:`, `fix:`, `docs:`, …).
-- Author: Mihai Saru <mihai.saru@proton.me>, set in the repo's jj and git
-  config. GitHub user: MitzaCoder.
+- Author: as set in the repo's jj/git config.
 - Moving the `main` bookmark deploys the app on this host and the backends
   here and on configured remote hosts (`deploy/`). Move it only to commits whose checks
   pass: `bun test`, `bun run typecheck`, and `bun run check` plus
   `bun run build` in `apps/web`.
 - Deploy only by moving `main`; the watcher does the rest. Never run
-  `deploy/*.sh` or `systemctl` on `mihai-harness` from a tool: when the
+  `deploy/*.sh` or `systemctl` on `aiki` from a tool: when the
   harness runs you, that restarts the server under the deploy and kills it
   before its health check and rollback. After moving `main`, end the turn;
   the deploy holds new tool calls and restarts once none is running. Its outcome shows in the app.

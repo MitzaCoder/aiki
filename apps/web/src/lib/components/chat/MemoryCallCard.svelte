@@ -14,7 +14,7 @@
 		type MemoryMatch
 	} from '#lib/chat/memory-tools.js';
 	import { toolCardStatus, type ToolCardStatus, type ToolPart } from '#lib/transcript.js';
-	import type { MemoryScope } from '@mihai-harness/protocol';
+	import type { MemoryScope } from '@aiki/protocol';
 
 	/**
 	 * One memory tool call, in words: a search's hits, a read's sections, a

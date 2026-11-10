@@ -2,7 +2,7 @@
  * Prompt cache statistics, per backend: read `cache.stats` when the Usage screen shows them (and after a reconnect),
  * for the range the reader picked. Only backends with the `cache-stats` feature are asked.
  */
-import type { CacheStats } from "@mihai-harness/protocol";
+import type { CacheStats } from "@aiki/protocol";
 import type { CacheStatsRange } from "./cache-stats.ts";
 import type { BackendConnection } from "./harness.svelte.ts";
 

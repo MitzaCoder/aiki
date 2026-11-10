@@ -14,7 +14,7 @@ const input=(t:any)=>({title:t.title,description:t.description,acceptance:t.acce
 async function until(accept:(b:any)=>boolean,label:string){for(let i=0;i<100;i++){const b=await board();if(accept(b))return b;await Bun.sleep(100);}throw Error("Actual Board did not settle: "+label);}
 try {
  const before=await board(),original=before.tasks.find((t:any)=>t.id==="T2");assert.equal(original.title,"Review release checklist");assert.equal(before.tasks.find((t:any)=>t.id==="T3").status,"todo");
- await device("phone");await device("adb","shell","am","force-stop","com.mihaisaru.harness");await device("launch");await project(/Android real checkout \(faux model\)/);
+ await device("phone");await device("adb","shell","am","force-stop","io.github.mitzacoder.aiki");await device("launch");await project(/Android real checkout \(faux model\)/);
  await find(/^Message the coordinator…$/,false,20); // old committed proof prose can be above the latest viewport
  await tap(/^Open project panels$/);await tap(/^Board(?:,.*)?$/);
  await tap(/^Review · 1$/);await tap(/^Blocked · 1$/);

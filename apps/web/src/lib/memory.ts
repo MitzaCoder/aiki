@@ -13,7 +13,7 @@ import {
 	shortCommit,
 	type MemorySnippetPart,
 	type MemoryTarget,
-} from "@mihai-harness/client";
+} from "@aiki/client";
 import type {
 	MemoryChange,
 	MemoryChangeKind,
@@ -26,8 +26,8 @@ import type {
 	ModelInfo,
 	ModelRef,
 	ThinkingLevel,
-} from "@mihai-harness/protocol";
-import { THINKING_LEVELS } from "@mihai-harness/protocol";
+} from "@aiki/protocol";
+import { THINKING_LEVELS } from "@aiki/protocol";
 import { exactTime, relativeTime, relativeTimeAhead } from "./relative-time.ts";
 import { sameModel } from "./models.ts";
 
@@ -35,7 +35,7 @@ import { sameModel } from "./models.ts";
 export const MEMORY_SCOPES: readonly MemoryScope[] = ["global", "project"];
 
 /** Per browser, like the backend list, the theme and the sidebar. Bumped when the stored shape changes. */
-export const MEMORY_SCOPE_STORAGE_KEY = "mihai-harness.memory-scope.v1";
+export const MEMORY_SCOPE_STORAGE_KEY = "aiki.memory-scope.v1";
 
 /** A conversation is about its project, so its memory opens on the project's scope until the reader picks another. */
 export const DEFAULT_MEMORY_SCOPE: MemoryScope = "project";

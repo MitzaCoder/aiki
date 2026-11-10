@@ -7,8 +7,8 @@ import {
 	DEFAULT_NOTIFICATION_KINDS,
 	NOTIFICATION_FAILURE_KINDS,
 	type NotificationDevice,
-} from "@mihai-harness/protocol";
-import { NOTIFICATION_KINDS } from "@mihai-harness/client";
+} from "@aiki/protocol";
+import { NOTIFICATION_KINDS } from "@aiki/client";
 import {
 	DEFAULT_KIND_INFO,
 	NOTIFICATION_KIND_INFO,

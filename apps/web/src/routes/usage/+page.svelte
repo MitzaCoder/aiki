@@ -14,5 +14,5 @@
 </script>
 
 <svelte:head>
-	<title>Usage · mihai-harness</title>
+	<title>Usage · aiki</title>
 </svelte:head>

@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Models, TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import { CHECK_IN_PREFIX, type ModelRef } from "@mihai-harness/protocol";
+import { CHECK_IN_PREFIX, type ModelRef } from "@aiki/protocol";
 import { cacheStats, longCacheWhatIf, wakeGroups } from "../src/cache-stats.ts";
 import { createHarnessModels } from "../src/models.ts";
 import { diffFingerprints, fingerprintRequest } from "../src/prompt-fingerprint.ts";

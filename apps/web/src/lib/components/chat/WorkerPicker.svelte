@@ -11,7 +11,7 @@
 		type ModelRef,
 		type ProviderInfo,
 		type ThinkingLevel
-	} from '@mihai-harness/protocol';
+	} from '@aiki/protocol';
 
 	/**
 	 * The worker model and thinking level carried by the coordinator's messages:

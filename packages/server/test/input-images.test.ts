@@ -1,7 +1,7 @@
 /** Images in a message: one that keeps to the limits reaches the model, one that breaks them is refused. */
 import { afterEach, describe, expect, it } from "bun:test";
 import { fauxAssistantMessage } from "@earendil-works/pi-ai/providers/faux";
-import { INPUT_IMAGE_MAX_BYTES, INPUT_MAX_IMAGES } from "@mihai-harness/protocol";
+import { INPUT_IMAGE_MAX_BYTES, INPUT_MAX_IMAGES } from "@aiki/protocol";
 import { TestClient, ViewClient, createSetup, entryText, type TestSetup } from "./support.ts";
 
 const cleanups: (() => Promise<void>)[] = [];

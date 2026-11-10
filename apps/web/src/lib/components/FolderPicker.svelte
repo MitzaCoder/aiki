@@ -43,7 +43,7 @@
 		DirectoryEntry,
 		FilesystemCompleteResponse,
 		FilesystemListResponse
-	} from '@mihai-harness/protocol';
+	} from '@aiki/protocol';
 
 	let {
 		backend,

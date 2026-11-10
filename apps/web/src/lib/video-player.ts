@@ -165,7 +165,7 @@ export function videoHasAudio(probe: AudioProbe): boolean | undefined {
 }
 
 /** Per browser, like the sidebar. Bumped when the stored shape changes. */
-export const VIDEO_STORAGE_KEY = "mihai-harness.video.v1";
+export const VIDEO_STORAGE_KEY = "aiki.video.v1";
 /** At most this many videos keep their place; the oldest go first. */
 export const VIDEO_POSITIONS_LIMIT = 100;
 /** A place this close to the start is not worth resuming. */

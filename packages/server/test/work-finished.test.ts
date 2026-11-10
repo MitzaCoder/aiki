@@ -32,8 +32,8 @@ async function watchIn(dir: string, clock: { now: number }, sent: NotificationEv
 describe("work finished", () => {
 	it("reads the minimum work from the environment, 10 minutes by default", () => {
 		expect(resolveWorkFinishedMs({})).toBe(600_000);
-		expect(resolveWorkFinishedMs({ MIHAI_HARNESS_WORK_FINISHED_MINUTES: "2" })).toBe(120_000);
-		expect(resolveWorkFinishedMs({ MIHAI_HARNESS_WORK_FINISHED_MINUTES: "soon" })).toBe(600_000);
+		expect(resolveWorkFinishedMs({ AIKI_WORK_FINISHED_MINUTES: "2" })).toBe(120_000);
+		expect(resolveWorkFinishedMs({ AIKI_WORK_FINISHED_MINUTES: "soon" })).toBe(600_000);
 	});
 
 	it("announces once after long work, ignores short work and a short pause, and survives a restart", async () => {

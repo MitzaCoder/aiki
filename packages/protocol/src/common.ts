@@ -12,7 +12,7 @@ import { type Static, Type } from "typebox";
 export const PROTOCOL_VERSION = 1;
 export const ProtocolVersionSchema = Type.Literal(PROTOCOL_VERSION);
 
-export const SERVER_NAME = "mihai-harness";
+export const SERVER_NAME = "aiki";
 export const SERVER_VERSION = "0.1.0";
 
 export const RequestIdSchema = Type.String({ minLength: 1, description: "Client-chosen; echoed by the response." });

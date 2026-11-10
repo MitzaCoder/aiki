@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ChatDraft, DraftContent } from "@mihai-harness/protocol";
+import type { ChatDraft, DraftContent } from "@aiki/protocol";
 import {
 	DRAFT_DEBOUNCE_MS,
 	DRAFT_MAX_ATTEMPTS,

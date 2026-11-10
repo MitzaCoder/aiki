@@ -1,6 +1,6 @@
 /**
  * The board: the coordinator's tasks, questions for the user and decisions, kept as a durable document on the
- * coordinator conversation (`mihai.board`) so it never has to be recalled from a summary. The contract is
+ * coordinator conversation (`aiki.board`) so it never has to be recalled from a summary. The contract is
  * `packages/protocol/src/board.ts`.
  *
  * Three writers share the same pure mutators below, each run inside one commit: the coordinator's `board` tool, the user
@@ -40,7 +40,7 @@ import {
 	type BoardTimelineEntry,
 	type BoardTimelineKind,
 	type BoardWriter,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { estimateTextTokens } from "@earendil-works/pi-ai/utils/estimate";
 import { createHash } from "node:crypto";
 import { type Static, Type } from "typebox";
@@ -90,7 +90,7 @@ export type BoardState = {
 };
 
 export const BoardDoc = defineDoc<BoardState>({
-	kind: "mihai.board",
+	kind: "aiki.board",
 	version: 1,
 	scope: "conversation",
 	history: "latest",
@@ -168,7 +168,7 @@ const KEPT_FEEDBACK = 300;
 const KEPT_FEEDBACK_KEYS = 100;
 
 export const TaskHistoryDoc = defineDocFamily<TaskHistoryState, null>({
-	kind: "mihai.board-history",
+	kind: "aiki.board-history",
 	version: 1,
 	scope: "conversation",
 	history: "latest",

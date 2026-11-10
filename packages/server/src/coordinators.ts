@@ -10,7 +10,7 @@
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { Context } from "@earendil-works/chord/context";
 import type { Conversation, ConversationId, Harness } from "@earendil-works/pi-durable";
-import { MAIN_THREAD_ID } from "@mihai-harness/protocol";
+import { MAIN_THREAD_ID } from "@aiki/protocol";
 
 /** Where one coordinator's workers run. */
 export type CoordinatorPlace = {

@@ -3,8 +3,8 @@
 	import WrapTextIcon from '@lucide/svelte/icons/wrap-text';
 	import CodeXmlIcon from '@lucide/svelte/icons/code-xml';
 	import BookOpenTextIcon from '@lucide/svelte/icons/book-open-text';
-	import type { HarnessClient } from '@mihai-harness/client';
-	import type { Artifact } from '@mihai-harness/protocol';
+	import type { HarnessClient } from '@aiki/client';
+	import type { Artifact } from '@aiki/protocol';
 	import CopyButton from '#lib/components/CopyButton.svelte';
 	import Markdown from '#lib/components/markdown/Markdown.svelte';
 	import { formatBytes, isMarkdownArtifact, MEDIA_RETRY_LIMIT, TEXT_PREVIEW_BYTES } from '#lib/artifacts.js';

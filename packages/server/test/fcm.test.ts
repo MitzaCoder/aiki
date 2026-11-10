@@ -7,8 +7,8 @@
  * fake FCM endpoint checks that token and records each message. No network.
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { NotificationPayload, NotificationPreferences } from "@mihai-harness/protocol";
-import { DEFAULT_NOTIFICATION_KINDS } from "@mihai-harness/protocol";
+import type { NotificationPayload, NotificationPreferences } from "@aiki/protocol";
+import { DEFAULT_NOTIFICATION_KINDS } from "@aiki/protocol";
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -42,7 +42,7 @@ afterEach(async () => {
 });
 
 async function tempDir(): Promise<string> {
-	const dir = await mkdtemp(join(tmpdir(), "mihai-harness-fcm-"));
+	const dir = await mkdtemp(join(tmpdir(), "aiki-fcm-"));
 	cleanups.push(() => rm(dir, { recursive: true, force: true }));
 	return dir;
 }
@@ -191,7 +191,7 @@ async function googleWithKey(): Promise<{ google: FakeGoogle; keyFile: string; a
 describe("the service-account key", () => {
 	it("is read from the data directory unless the environment names another file", () => {
 		expect(resolveFcmKeyFile("/data", {})).toBe("/data/notifications/fcm-service-account.json");
-		expect(resolveFcmKeyFile("/data", { MIHAI_HARNESS_FCM_KEY_FILE: "/keys/fcm.json" })).toBe("/keys/fcm.json");
+		expect(resolveFcmKeyFile("/data", { AIKI_FCM_KEY_FILE: "/keys/fcm.json" })).toBe("/keys/fcm.json");
 	});
 
 	it("turns FCM off when absent or unusable, and never logs the key", async () => {

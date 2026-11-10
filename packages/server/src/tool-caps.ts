@@ -19,8 +19,8 @@ export const TOOL_CAP_EXTENSION_NAME = "coordinator-tool-caps";
 /** Long enough for a real command; short enough that the coordinator never looks stuck to the user waiting on it. */
 export const DEFAULT_TOOL_CALL_CAP_MS = 2 * 60_000;
 
-/** Minutes, so the number in the environment reads naturally; `MIHAI_HARNESS_TOOL_CALL_CAP_MINUTES` overrides it. */
-export const TOOL_CALL_CAP_MINUTES_ENV = "MIHAI_HARNESS_TOOL_CALL_CAP_MINUTES";
+/** Minutes, so the number in the environment reads naturally; `AIKI_TOOL_CALL_CAP_MINUTES` overrides it. */
+export const TOOL_CALL_CAP_MINUTES_ENV = "AIKI_TOOL_CALL_CAP_MINUTES";
 
 /**
  * The tools this cap wraps. Every other tool the coordinator has keeps running as long as it likes. `codemode` is
@@ -30,7 +30,7 @@ export const TOOL_CALL_CAP_MINUTES_ENV = "MIHAI_HARNESS_TOOL_CALL_CAP_MINUTES";
  */
 const CAPPED_TOOLS = ["bash", "powershell", "codemode"] as const;
 
-/** `MIHAI_HARNESS_TOOL_CALL_CAP_MINUTES` when it names a positive number of minutes, else the default. */
+/** `AIKI_TOOL_CALL_CAP_MINUTES` when it names a positive number of minutes, else the default. */
 export function resolveToolCallCapMs(env: Readonly<Record<string, string | undefined>> = process.env): number {
 	const raw = env[TOOL_CALL_CAP_MINUTES_ENV];
 	if (raw === undefined || raw.trim().length === 0) return DEFAULT_TOOL_CALL_CAP_MS;

@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, realpath, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
-import type { LongPromptCache, ModelRef, ProjectCheckIns, ProjectLinks, ThinkingLevel, UiProof, WorkerModel } from "@mihai-harness/protocol";
+import type { LongPromptCache, ModelRef, ProjectCheckIns, ProjectLinks, ThinkingLevel, UiProof, WorkerModel } from "@aiki/protocol";
 import {
 	DEFAULT_CHECK_INS,
 	DEFAULT_LONG_PROMPT_CACHE,
@@ -13,7 +13,7 @@ import {
 	normalizeGithubRepo,
 	normalizeJiraSite,
 	THINKING_LEVELS,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { ServerError } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 

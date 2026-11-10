@@ -13,7 +13,7 @@
  */
 import { contentText } from "@earendil-works/pi-ai";
 import type { AssistantMessage, Message, Models, Tool } from "@earendil-works/pi-ai";
-import type { MemoryScope, ModelRef, ThinkingLevel } from "@mihai-harness/protocol";
+import type { MemoryScope, ModelRef, ThinkingLevel } from "@aiki/protocol";
 import { Type } from "typebox";
 import { ServerError, errorMessage } from "./errors.ts";
 import {

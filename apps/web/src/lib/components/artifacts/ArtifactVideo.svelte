@@ -12,8 +12,8 @@
 	import Volume1Icon from '@lucide/svelte/icons/volume-1';
 	import Volume2Icon from '@lucide/svelte/icons/volume-2';
 	import VolumeXIcon from '@lucide/svelte/icons/volume-x';
-	import type { HarnessClient } from '@mihai-harness/client';
-	import type { Artifact } from '@mihai-harness/protocol';
+	import type { HarnessClient } from '@aiki/client';
+	import type { Artifact } from '@aiki/protocol';
 	import { onDestroy, type Component } from 'svelte';
 	import { artifactTitle, formatMediaDuration, MEDIA_RETRY_LIMIT } from '#lib/artifacts.js';
 	import { downloadArtifact, useArtifactSource } from '#lib/artifacts.svelte.js';

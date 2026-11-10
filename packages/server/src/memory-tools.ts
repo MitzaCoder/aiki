@@ -24,7 +24,7 @@ import {
 	section,
 	type ToolRegistration,
 } from "@earendil-works/pi-durable";
-import type { MemoryFileSummary, MemoryScope, MemorySearchHit } from "@mihai-harness/protocol";
+import type { MemoryFileSummary, MemoryScope, MemorySearchHit } from "@aiki/protocol";
 import { Type } from "typebox";
 import { ServerError } from "./errors.ts";
 import {

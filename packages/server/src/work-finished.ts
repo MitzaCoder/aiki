@@ -16,7 +16,7 @@ import { type NotificationEvent, notificationLine } from "./notifications.ts";
 
 export const WORK_FILE = "work.json";
 /** Minutes of continuous work a quiet project must follow before `work_finished` is sent. */
-export const WORK_FINISHED_MINUTES_ENV = "MIHAI_HARNESS_WORK_FINISHED_MINUTES";
+export const WORK_FINISHED_MINUTES_ENV = "AIKI_WORK_FINISHED_MINUTES";
 export const DEFAULT_WORK_FINISHED_MINUTES = 10;
 /** How long the project must stay quiet before it counts as finished. */
 export const DEFAULT_WORK_QUIET_MS = 30_000;

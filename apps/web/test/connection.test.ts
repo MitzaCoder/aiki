@@ -27,8 +27,8 @@ describe("connection view", () => {
 			"Connection refused",
 		);
 		expect(
-			connectionView({ status: "ready", attempt: 0, server: { name: "mihai-harness", version: "0.1.0" } }).title,
-		).toBe("mihai-harness");
+			connectionView({ status: "ready", attempt: 0, server: { name: "aiki", version: "0.1.0" } }).title,
+		).toBe("aiki");
 	});
 
 	test("every tone has a badge and a dot", () => {

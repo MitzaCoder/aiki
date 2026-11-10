@@ -10,7 +10,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import type { ComboOption } from '#lib/combobox.js';
 	import type { BackendConnection } from '#lib/harness.svelte.js';
-	import type { ProviderInfo } from '@mihai-harness/protocol';
+	import type { ProviderInfo } from '@aiki/protocol';
 
 	/**
 	 * General → Backends → one backend → Accounts and API keys. Credentials belong to the backend that holds them, so

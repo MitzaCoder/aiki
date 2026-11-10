@@ -2,7 +2,7 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import XIcon from '@lucide/svelte/icons/x';
-	import { ARTIFACT_MAX_TAGS, ARTIFACT_MAX_TAG_LENGTH } from '@mihai-harness/protocol';
+	import { ARTIFACT_MAX_TAGS, ARTIFACT_MAX_TAG_LENGTH } from '@aiki/protocol';
 	import { onMount } from 'svelte';
 	import { addTags, removeTag, suggestTags } from '#lib/media-gallery.js';
 

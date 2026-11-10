@@ -16,7 +16,7 @@
  */
 import { join } from "node:path";
 import type { CredentialStore, Models } from "@earendil-works/pi-ai";
-import { PROTOCOL_SCHEMAS, type SubscriptionUsage, type UsageSample, type UsageWindow } from "@mihai-harness/protocol";
+import { PROTOCOL_SCHEMAS, type SubscriptionUsage, type UsageSample, type UsageWindow } from "@aiki/protocol";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { errorMessage } from "./errors.ts";
@@ -353,7 +353,7 @@ export class SubscriptionUsageService {
 	}
 
 	async #readOpenCodeGo(apiKey: string): Promise<UsageReading> {
-		const headers = { authorization: `Bearer ${apiKey}`, accept: "application/json", "user-agent": "mihai-harness" };
+		const headers = { authorization: `Bearer ${apiKey}`, accept: "application/json", "user-agent": "aiki" };
 		const body = await this.#getJson(`${this.#opencodeGoBaseUrl}/v1/usage`, headers);
 		return parseOpenCodeGoUsage(body);
 	}

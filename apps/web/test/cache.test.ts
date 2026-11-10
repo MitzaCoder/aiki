@@ -1,6 +1,6 @@
 /** The prompt cache in the transcript and the Info tab: which turns get a miss line, and how lines and totals read. */
 import { describe, expect, test } from "bun:test";
-import type { CacheMiss, EntryRecord } from "@mihai-harness/protocol";
+import type { CacheMiss, EntryRecord } from "@aiki/protocol";
 import { cacheMissDetail, cacheMissLine, cacheMissTotalsView, idleTime, turnUsageTitle } from "../src/lib/chat/cache.ts";
 import { buildTranscript } from "../src/lib/transcript.ts";
 

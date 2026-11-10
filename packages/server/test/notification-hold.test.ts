@@ -3,7 +3,7 @@
  * service, and the state file is real (a temp dir), so a restart is a second `Notifier` on the same directory.
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import { DEFAULT_NOTIFICATION_KINDS, NOTIFICATION_HOLD_MS, type NotificationPreferences } from "@mihai-harness/protocol";
+import { DEFAULT_NOTIFICATION_KINDS, NOTIFICATION_HOLD_MS, type NotificationPreferences } from "@aiki/protocol";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -84,7 +84,7 @@ const fakeFcm = (sent: Rig["sent"]): FcmSender =>
 	}) as unknown as FcmSender;
 
 async function rig(options: { dir?: string; clock?: FakeClock; presence?: NotificationPresence } = {}): Promise<Rig> {
-	const dir = options.dir ?? (await mkdtemp(join(tmpdir(), "mihai-harness-hold-")));
+	const dir = options.dir ?? (await mkdtemp(join(tmpdir(), "aiki-hold-")));
 	if (options.dir === undefined) dirs.push(dir);
 	const clock = options.clock ?? new FakeClock();
 	const presence = options.presence ?? new NotificationPresence();
@@ -344,7 +344,7 @@ describe("a restart during a hold", () => {
 	});
 
 	it("ignores a held entry in the state file that is not an event", async () => {
-		const dir = await mkdtemp(join(tmpdir(), "mihai-harness-hold-"));
+		const dir = await mkdtemp(join(tmpdir(), "aiki-hold-"));
 		dirs.push(dir);
 		await Bun.write(
 			join(dir, "state.json"),

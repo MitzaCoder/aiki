@@ -46,8 +46,8 @@ protocol generation is unchanged (299 DTOs / 78 overloads). Synthetic UI proof i
 
 ## Current state
 
-Aiki is an early personal cross-device agent harness built on pi durable. The code still uses `mihai-harness` and
-`com.mihaisaru.harness` identifiers; a public-name migration is separate. Bun only for TypeScript; see `DESIGN.md` and
+Aiki is an early personal cross-device agent harness built on pi durable. The code still uses `aiki` and
+`io.github.mitzacoder.aiki` identifiers; a public-name migration is separate. Bun only for TypeScript; see `DESIGN.md` and
 the root README for architecture and setup. Original project code is MIT; bundled third-party licences still apply.
 
 ## Publication preparation

@@ -13,8 +13,8 @@ import {
 	artifactUrlUsable,
 	type ArtifactFilter,
 	type HarnessClient,
-} from "@mihai-harness/client";
-import type { Artifact } from "@mihai-harness/protocol";
+} from "@aiki/client";
+import type { Artifact } from "@aiki/protocol";
 import { getContext, setContext } from "svelte";
 
 /** The default length of a list, as the server answers it. */

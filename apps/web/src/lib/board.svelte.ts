@@ -4,7 +4,7 @@
  * read when the user asks for them and again after each push while they are shown. Saves and answers go through here and
  * report a conflict as an outcome, with the newer row read back, instead of throwing.
  */
-import { boardConflict, boardStateIsFor, type HarnessClient } from "@mihai-harness/client";
+import { boardConflict, boardStateIsFor, type HarnessClient } from "@aiki/client";
 import type {
 	Board,
 	BoardFeedback,
@@ -15,7 +15,7 @@ import type {
 	BoardTaskInput,
 	BoardTaskSnapshot,
 	BoardTimelineEntry,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 
 export type SaveOutcome =
 	| { kind: "saved"; task: BoardTask }

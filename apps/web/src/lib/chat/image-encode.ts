@@ -2,7 +2,7 @@
  * Reading an image the user attached and shrinking it if the limits ask (the decisions are `planImage`'s, in
  * `images.ts`). Browser only: it decodes with `createImageBitmap` and draws on a canvas.
  */
-import { INPUT_IMAGE_MAX_BYTES, type InputImageMimeType } from "@mihai-harness/protocol";
+import { INPUT_IMAGE_MAX_BYTES, type InputImageMimeType } from "@aiki/protocol";
 import { planImage, type EncodeAttempt, type FileLike } from "./images.ts";
 
 /** An image ready to go in a message. */

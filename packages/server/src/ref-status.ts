@@ -5,8 +5,8 @@
  * clients may ask every few minutes and the tools are hardly ever run. Without a tool or its login the source rests
  * for ten minutes and its refs are simply left out; nothing here is ever an error for the client.
  */
-import type { ChecksState, JiraStatusCategory, ProjectLinks, RefStatus, ResolvedRef } from "@mihai-harness/protocol";
-import { refIdentity, resolveRef } from "@mihai-harness/protocol";
+import type { ChecksState, JiraStatusCategory, ProjectLinks, RefStatus, ResolvedRef } from "@aiki/protocol";
+import { refIdentity, resolveRef } from "@aiki/protocol";
 import { type RunCommand, runHostCommand } from "./host-commands.ts";
 
 /** A status without the `ref` it was asked by, since `#12` and its URL share one. */

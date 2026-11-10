@@ -1,8 +1,8 @@
 <script lang="ts">
 	import ChevronsLeftRightIcon from '@lucide/svelte/icons/chevrons-left-right';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
-	import type { HarnessClient } from '@mihai-harness/client';
-	import type { Artifact } from '@mihai-harness/protocol';
+	import type { HarnessClient } from '@aiki/client';
+	import type { Artifact } from '@aiki/protocol';
 	import { onMount } from 'svelte';
 	import { artifactTitle, MEDIA_RETRY_LIMIT } from '#lib/artifacts.js';
 	import { useArtifactSource } from '#lib/artifacts.svelte.js';

@@ -7,7 +7,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
-	import { formatMinutes } from '@mihai-harness/client';
+	import { formatMinutes } from '@aiki/client';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import Banner from '#lib/components/Banner.svelte';
 	import BoardQuestionCard from '#lib/components/BoardQuestionCard.svelte';
@@ -36,7 +36,7 @@
 		type TaskSectionId
 	} from '#lib/tasks.js';
 	import { questionAskedBy } from '#lib/threads.js';
-	import type { BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@mihai-harness/protocol';
+	import type { BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@aiki/protocol';
 	import type { Snippet } from 'svelte';
 
 	/**

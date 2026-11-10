@@ -134,8 +134,8 @@ import type {
 	WorkerSummary,
 	WorkersDefaultsSetResponse,
 	WorkersListResponse,
-} from "@mihai-harness/protocol";
-import { HARNESS_FEATURES, PROTOCOL_VERSION, TERMINAL_FRAME, decodeTerminalFrame, encodeTerminalAck, encodeTerminalFrame } from "@mihai-harness/protocol";
+} from "@aiki/protocol";
+import { HARNESS_FEATURES, PROTOCOL_VERSION, TERMINAL_FRAME, decodeTerminalFrame, encodeTerminalAck, encodeTerminalFrame } from "@aiki/protocol";
 import { backoffDelay, canRetry, type BackoffOptions } from "./backoff.ts";
 import { ClientError, errorFromResponse, errorMessage } from "./errors.ts";
 import { memoryChangedIsFor, type MemoryTarget } from "./memory.ts";
@@ -304,7 +304,7 @@ export class HarnessClient {
 	constructor(options: HarnessClientOptions) {
 		this.url = options.url;
 		this.#webSocketFactory = options.webSocketFactory ?? defaultWebSocketFactory;
-		this.#clientName = options.clientName ?? "mihai-harness-client";
+		this.#clientName = options.clientName ?? "aiki-client";
 		this.#clientVersion = options.clientVersion;
 		this.#protocolVersion = options.protocolVersion ?? PROTOCOL_VERSION;
 		this.#requestTimeoutMs = options.requestTimeoutMs ?? 20_000;

@@ -7,43 +7,43 @@ import { HARNESS_PROVIDERS, createHarnessModels, describeModels } from "../src/m
 import { isOriginAllowed, normalizeOrigin, parseAllowedOrigins, resolveAllowedOrigins } from "../src/origins.ts";
 
 describe("data directory", () => {
-	it("defaults to XDG_DATA_HOME/mihai-harness and honours the override", () => {
-		expect(resolveDataDir({ XDG_DATA_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/mihai-harness");
-		expect(resolveDataDir({ MIHAI_HARNESS_DATA_DIR: "/tmp/direct" })).toBe("/tmp/direct");
-		expect(resolveDataDir({})).toBe(join(homedir(), ".local", "share", "mihai-harness"));
+	it("defaults to XDG_DATA_HOME/aiki and honours the override", () => {
+		expect(resolveDataDir({ XDG_DATA_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/aiki");
+		expect(resolveDataDir({ AIKI_DATA_DIR: "/tmp/direct" })).toBe("/tmp/direct");
+		expect(resolveDataDir({})).toBe(join(homedir(), ".local", "share", "aiki"));
 	});
 
 	it("keeps the harness's own config apart from pi's agent directory", () => {
-		expect(resolveConfigDir({ XDG_CONFIG_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/mihai-harness");
-		expect(resolveConfigDir({ MIHAI_HARNESS_CONFIG_DIR: "/tmp/direct" })).toBe("/tmp/direct");
-		expect(resolveConfigDir({ MIHAI_HARNESS_CONFIG_DIR: "~/elsewhere" })).toBe(join(homedir(), "elsewhere"));
-		expect(resolveConfigDir({ MIHAI_HARNESS_CONFIG_DIR: "  " })).toBe(join(homedir(), ".config", "mihai-harness"));
-		expect(resolveConfigDir({})).toBe(join(homedir(), ".config", "mihai-harness"));
+		expect(resolveConfigDir({ XDG_CONFIG_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/aiki");
+		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "/tmp/direct" })).toBe("/tmp/direct");
+		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "~/elsewhere" })).toBe(join(homedir(), "elsewhere"));
+		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "  " })).toBe(join(homedir(), ".config", "aiki"));
+		expect(resolveConfigDir({})).toBe(join(homedir(), ".config", "aiki"));
 	});
 
 	it("binds the loopback interface unless told otherwise", () => {
 		expect(resolveHostname({})).toBe("127.0.0.1");
-		expect(resolveHostname({ MIHAI_HARNESS_HOST: "  " })).toBe("127.0.0.1");
-		expect(resolveHostname({ MIHAI_HARNESS_HOST: "0.0.0.0" })).toBe("0.0.0.0");
-		expect(resolveHostname({ MIHAI_HARNESS_HOST: " vm.example.test " })).toBe("vm.example.test");
+		expect(resolveHostname({ AIKI_HOST: "  " })).toBe("127.0.0.1");
+		expect(resolveHostname({ AIKI_HOST: "0.0.0.0" })).toBe("0.0.0.0");
+		expect(resolveHostname({ AIKI_HOST: " vm.example.test " })).toBe("vm.example.test");
 	});
 
 	it("reads and validates the port", () => {
 		expect(resolvePort({})).toBe(7317);
-		expect(resolvePort({ MIHAI_HARNESS_PORT: "0" })).toBe(0);
-		expect(resolvePort({ MIHAI_HARNESS_PORT: "9000" })).toBe(9000);
-		expect(() => resolvePort({ MIHAI_HARNESS_PORT: "nope" })).toThrow();
-		expect(() => resolvePort({ MIHAI_HARNESS_PORT: "70000" })).toThrow();
+		expect(resolvePort({ AIKI_PORT: "0" })).toBe(0);
+		expect(resolvePort({ AIKI_PORT: "9000" })).toBe(9000);
+		expect(() => resolvePort({ AIKI_PORT: "nope" })).toThrow();
+		expect(() => resolvePort({ AIKI_PORT: "70000" })).toThrow();
 	});
 });
 
 describe("allowed origins", () => {
 	it("defaults to none and parses a comma-separated list", () => {
 		expect(resolveAllowedOrigins({})).toEqual([]);
-		expect(resolveAllowedOrigins({ MIHAI_HARNESS_ALLOWED_ORIGINS: "  " })).toEqual([]);
+		expect(resolveAllowedOrigins({ AIKI_ALLOWED_ORIGINS: "  " })).toEqual([]);
 		expect(
 			resolveAllowedOrigins({
-				MIHAI_HARNESS_ALLOWED_ORIGINS: "https://harness.example.test/, http://127.0.0.1:5173",
+				AIKI_ALLOWED_ORIGINS: "https://harness.example.test/, http://127.0.0.1:5173",
 			}),
 		).toEqual(["https://harness.example.test", "http://127.0.0.1:5173"]);
 		expect(parseAllowedOrigins("https://a.example,https://a.example")).toEqual(["https://a.example"]);

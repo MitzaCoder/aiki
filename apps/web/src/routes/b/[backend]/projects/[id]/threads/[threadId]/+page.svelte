@@ -19,7 +19,7 @@
 </script>
 
 <svelte:head>
-	<title>Background thread · {project?.name ?? 'Chat'} · mihai-harness</title>
+	<title>Background thread · {project?.name ?? 'Chat'} · aiki</title>
 </svelte:head>
 
 {#if backend}

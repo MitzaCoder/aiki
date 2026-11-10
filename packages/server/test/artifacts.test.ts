@@ -14,7 +14,7 @@ import {
 	type ServerMessage,
 	normalizeTag,
 	normalizeTags,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";

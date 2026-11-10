@@ -13,13 +13,13 @@ import {
 	shortCommit,
 	type DeployProblem,
 	type DiskLevel,
-} from "@mihai-harness/client";
-import type { DeployStatus, DiskStatus, ReleaseInfo, ServerStatus } from "@mihai-harness/protocol";
+} from "@aiki/client";
+import type { DeployStatus, DiskStatus, ReleaseInfo, ServerStatus } from "@aiki/protocol";
 import { formatBytes } from "./artifacts.ts";
 import { relativeTime } from "./relative-time.ts";
 
 /** Per browser, like the backend list. Bumped when the stored shape changes. */
-export const DEPLOY_DISMISSALS_STORAGE_KEY = "mihai-harness.dismissed-deploys.v1";
+export const DEPLOY_DISMISSALS_STORAGE_KEY = "aiki.dismissed-deploys.v1";
 
 /** How many attempts a browser remembers. Deploys are rare, so a handful covers the open failures. */
 export const MAX_DISMISSED_DEPLOYS = 20;

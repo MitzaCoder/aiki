@@ -11,7 +11,7 @@
  */
 import type { Context } from "@earendil-works/chord/context";
 import { type Extension, type ToolRegistration, defineExtension, defineTool } from "@earendil-works/pi-durable";
-import { MAIN_THREAD_ID } from "@mihai-harness/protocol";
+import { MAIN_THREAD_ID } from "@aiki/protocol";
 import { constants } from "node:fs";
 import { access, realpath, stat } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";

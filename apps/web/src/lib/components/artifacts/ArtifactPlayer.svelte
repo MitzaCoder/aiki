@@ -2,8 +2,8 @@
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 	import ZoomInIcon from '@lucide/svelte/icons/zoom-in';
-	import type { HarnessClient } from '@mihai-harness/client';
-	import type { Artifact } from '@mihai-harness/protocol';
+	import type { HarnessClient } from '@aiki/client';
+	import type { Artifact } from '@aiki/protocol';
 	import { artifactTitle, formatBytes, MEDIA_RETRY_LIMIT } from '#lib/artifacts.js';
 	import { downloadArtifact, useArtifactSource } from '#lib/artifacts.svelte.js';
 	import ArtifactKindIcon from './ArtifactKindIcon.svelte';

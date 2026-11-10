@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import type { FauxResponseFactory } from "@earendil-works/pi-ai/providers/faux";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { ModelRef } from "@mihai-harness/protocol";
+import type { ModelRef } from "@aiki/protocol";
 import { createSetup, entryText, TestClient, ViewClient, type TestSetup } from "./support.ts";
 
 const cleanups: (() => Promise<void>)[] = [];

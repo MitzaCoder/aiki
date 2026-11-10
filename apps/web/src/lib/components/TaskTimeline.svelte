@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { markdownText } from '@mihai-harness/protocol';
+	import { markdownText } from '@aiki/protocol';
 	import CircleDotIcon from '@lucide/svelte/icons/circle-dot';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
 	import FlagIcon from '@lucide/svelte/icons/flag';
@@ -9,7 +9,7 @@
 	import UserCogIcon from '@lucide/svelte/icons/user-cog';
 	import { exactTime, relativeTime } from '#lib/relative-time.js';
 	import { TIMELINE_KINDS, timelineCounts, visibleTimeline } from '#lib/task-relations.js';
-	import type { BoardTimelineEntry, BoardTimelineKind, BoardWriter } from '@mihai-harness/protocol';
+	import type { BoardTimelineEntry, BoardTimelineKind, BoardWriter } from '@aiki/protocol';
 
 	/**
 	 * Everything that happened to a task, oldest first: feedback and what became of it, status moves, workers, questions,

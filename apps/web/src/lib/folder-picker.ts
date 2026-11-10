@@ -3,7 +3,7 @@
  * how a row's actions read, the delete confirmation and what the device remembers per backend. The component
  * (`FolderPicker.svelte`) only draws this and talks to the backend.
  */
-import type { DirectoryEntry } from "@mihai-harness/protocol";
+import type { DirectoryEntry } from "@aiki/protocol";
 import { compactRelativeTime, relativeTime } from "./relative-time.ts";
 
 /** The server's own order: numeric-aware, case-insensitive, then exact. */
@@ -223,7 +223,7 @@ export function quickPlaces(input: {
 
 // --- what the device remembers ------------------------------------------------------------------------------------
 
-export const FOLDER_PICKER_STORAGE_KEY = "mihai-harness.folder-picker.v1";
+export const FOLDER_PICKER_STORAGE_KEY = "aiki.folder-picker.v1";
 
 export type BackendPickerMemory = {
 	/** The folder the picker last showed, where it starts next time. */

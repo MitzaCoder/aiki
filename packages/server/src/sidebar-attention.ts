@@ -1,5 +1,5 @@
 /** Compact summaries from the watches the runtime already owns, not a board watch per client/project. */
-import { ProjectAttentionSchema, type ProjectAttention, type Board, type WorkerSummary, type ThreadSummary } from "@mihai-harness/protocol";
+import { ProjectAttentionSchema, type ProjectAttention, type Board, type WorkerSummary, type ThreadSummary } from "@aiki/protocol";
 import { Value } from "typebox/value";
 import { join } from "node:path";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";

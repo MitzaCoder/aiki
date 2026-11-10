@@ -24,7 +24,7 @@ import {
 	type MemoryScopeStatus,
 	type ModelRef,
 	type ThinkingLevel,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { join } from "node:path";
 import { Value } from "typebox/value";
 import { ServerError, errorMessage } from "./errors.ts";

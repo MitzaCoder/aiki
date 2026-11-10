@@ -92,14 +92,14 @@ case ${1:-status} in
     install)
         APK=${2:-$REPO/apps/android/app/build/outputs/apk/debug/app-debug.apk}
         device install -r "$APK"
-        device shell am start -W -n com.mihaisaru.harness/.MainActivity
+        device shell am start -W -n io.github.mitzacoder.aiki/.MainActivity
         ;;
-    launch) device shell am start -W -n com.mihaisaru.harness/.MainActivity ;;
+    launch) device shell am start -W -n io.github.mitzacoder.aiki/.MainActivity ;;
     open)
         [[ $# == 2 ]] || { echo 'Usage: device.sh open <https://app/connect#v1... or harness://connect#v1...>' >&2; exit 2; }
         # Package constrains this to our app AND still exercises manifest intent resolution.
         device shell am start -W -a android.intent.action.VIEW -c android.intent.category.BROWSABLE \
-            -p com.mihaisaru.harness -d "'${2//\'/\'\\\'\'}'"
+            -p io.github.mitzacoder.aiki -d "'${2//\'/\'\\\'\'}'"
         ;;
     phone) device shell wm size 1080x2400; device shell wm density 420 ;;
     tablet) device shell wm size 2560x1600; device shell wm density 240 ;;

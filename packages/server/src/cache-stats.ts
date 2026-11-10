@@ -13,7 +13,7 @@ import type {
 	CacheWake,
 	LongCacheWhatIf,
 	WakeReason,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { calculateCost, type Model, type Models, type Usage } from "@earendil-works/pi-ai";
 import type { ProjectStore } from "./projects.ts";
 import { REQUEST_LOG_KEEP_DAYS, type RequestLogStore, type RequestRow } from "./request-log-store.ts";

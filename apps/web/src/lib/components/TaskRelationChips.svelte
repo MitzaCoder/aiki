@@ -8,7 +8,7 @@
 		subtaskCountText,
 		subtaskProgressText
 	} from '#lib/task-relations.js';
-	import type { BoardTask, BoardTaskBrief } from '@mihai-harness/protocol';
+	import type { BoardTask, BoardTaskBrief } from '@aiki/protocol';
 
 	/**
 	 * What a task's row or card says about its links and feedback, in small chips: "↳ T8" on a subtask (it opens the

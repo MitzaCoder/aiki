@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import type { JsonObject } from "@earendil-works/pi-durable";
 import { fauxAssistantMessage, fauxToolCall, type FauxResponseFactory } from "@earendil-works/pi-ai/providers/faux";
-import type { Board, BoardTask, BoardTaskInput, ModelRef, ProjectSummary } from "@mihai-harness/protocol";
+import type { Board, BoardTask, BoardTaskInput, ModelRef, ProjectSummary } from "@aiki/protocol";
 import { ARCHIVE_AFTER_MS, boardView, emptyBoardState, normalizeBoard, saveTask } from "../src/board.ts";
 import { createSetup, entryText, errorOf, TestClient, ViewClient, type TestSetup } from "./support.ts";
 

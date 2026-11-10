@@ -53,7 +53,7 @@
 </script>
 
 <svelte:head>
-	<title>Project settings · mihai-harness</title>
+	<title>Project settings · aiki</title>
 </svelte:head>
 
 {#if backend === undefined}

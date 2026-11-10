@@ -51,7 +51,7 @@
 </script>
 
 <svelte:head>
-	<title>Settings · mihai-harness</title>
+	<title>Settings · aiki</title>
 </svelte:head>
 
 <SettingsShell

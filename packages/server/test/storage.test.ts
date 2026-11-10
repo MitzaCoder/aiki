@@ -5,7 +5,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { DiskStatus, ModelRef } from "@mihai-harness/protocol";
+import type { DiskStatus, ModelRef } from "@aiki/protocol";
 import { mkdir, mkdtemp, readdir, rm, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -179,7 +179,7 @@ describe("disks", () => {
 		expect(isDiskLow(9 * GiB, 1000 * GiB, threshold)).toBe(true);
 		expect(isDiskLow(5 * GiB, 20 * GiB, threshold)).toBe(false);
 		expect(isDiskLow(2 * GiB, 20 * GiB, threshold)).toBe(true);
-		expect(resolveDiskThreshold({ MIHAI_HARNESS_DISK_LOW_PERCENT: "5", MIHAI_HARNESS_DISK_LOW_BYTES: "1000" })).toEqual({
+		expect(resolveDiskThreshold({ AIKI_DISK_LOW_PERCENT: "5", AIKI_DISK_LOW_BYTES: "1000" })).toEqual({
 			percent: 5,
 			bytes: 1000,
 		});

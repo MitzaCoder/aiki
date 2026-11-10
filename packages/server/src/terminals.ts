@@ -27,7 +27,7 @@ import {
 	type TerminalLimits,
 	isTerminalSessionName,
 	terminalPrefix,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { ServerError, errorMessage } from "./errors.ts";
 
 export type TerminalMultiplexer = "zellij" | "none";
@@ -35,7 +35,7 @@ export type TerminalMultiplexer = "zellij" | "none";
 export type TerminalHostOptions = {
 	/** `zellij` (default) or `none`: a plain shell without sessions, for tests and development. */
 	multiplexer?: TerminalMultiplexer;
-	/** The zellij binary. Default: `MIHAI_HARNESS_ZELLIJ`, else `zellij` on PATH, else `~/.local/bin/zellij`. */
+	/** The zellij binary. Default: `AIKI_ZELLIJ`, else `zellij` on PATH, else `~/.local/bin/zellij`. */
 	zellij?: string;
 	/**
 	 * Where a new zellij server is started. `auto` (default): outside the service's cgroup with `systemd-run --user
@@ -93,7 +93,7 @@ export type OpenTerminal = {
 };
 
 /** For a user with no zellij config: no first-run wizard, no tips, no release notes; everything else is zellij's default. */
-export const HARNESS_ZELLIJ_CONFIG = `// Written by mihai-harness for the terminals it opens. It is used only while you have no zellij config of your own.
+export const HARNESS_ZELLIJ_CONFIG = `// Written by aiki for the terminals it opens. It is used only while you have no zellij config of your own.
 show_startup_tips false
 show_release_notes false
 default_mode "normal"
@@ -113,11 +113,11 @@ const COMMAND_TIMEOUT_MS = 8_000;
 const SCOPE_PROBE_TTL_MS = 60_000;
 
 /** The variables a terminal must not inherit: this server's own settings and its service manager's. */
-const SCRUBBED_ENV = [/^MIHAI_HARNESS_/, /^ZELLIJ/, /^INVOCATION_ID$/, /^JOURNAL_STREAM$/, /^NOTIFY_SOCKET$/, /^SYSTEMD_EXEC_PID$/];
+const SCRUBBED_ENV = [/^AIKI_/, /^ZELLIJ/, /^INVOCATION_ID$/, /^JOURNAL_STREAM$/, /^NOTIFY_SOCKET$/, /^SYSTEMD_EXEC_PID$/];
 
-/** Whether terminals are on: yes, unless `MIHAI_HARNESS_TERMINALS` is `off` (or `0`, `false`, `no`). */
+/** Whether terminals are on: yes, unless `AIKI_TERMINALS` is `off` (or `0`, `false`, `no`). */
 export function terminalsEnabled(env: Record<string, string | undefined> = process.env): boolean {
-	const value = env.MIHAI_HARNESS_TERMINALS?.trim().toLowerCase();
+	const value = env.AIKI_TERMINALS?.trim().toLowerCase();
 	return !(value === "off" || value === "0" || value === "false" || value === "no");
 }
 
@@ -169,7 +169,7 @@ export class TerminalHost {
 
 	/** The zellij binary, or undefined when none can be found. */
 	#zellij(): string | undefined {
-		const configured = this.#zellijOption ?? this.#baseEnv.MIHAI_HARNESS_ZELLIJ;
+		const configured = this.#zellijOption ?? this.#baseEnv.AIKI_ZELLIJ;
 		if (configured !== undefined && configured.length > 0) return existsSync(configured) ? configured : Bun.which(configured, { PATH: this.#baseEnv.PATH ?? "" }) ?? undefined;
 		const found = Bun.which("zellij", { PATH: this.#baseEnv.PATH ?? "" });
 		if (found !== null) return found;
@@ -279,7 +279,7 @@ export class TerminalHost {
 				available: false,
 				multiplexer: "zellij",
 				reason:
-					"zellij is not installed on this backend (it is not on the server's PATH or in ~/.local/bin). Install zellij there, or set MIHAI_HARNESS_ZELLIJ to its path.",
+					"zellij is not installed on this backend (it is not on the server's PATH or in ~/.local/bin). Install zellij there, or set AIKI_ZELLIJ to its path.",
 				survivesRestart: false,
 			};
 		}
@@ -415,7 +415,7 @@ export class TerminalHost {
 		if (!availability.survivesRestart) return command;
 		const systemdRun = Bun.which("systemd-run", { PATH: this.#env().PATH ?? "" });
 		if (systemdRun === null) return command;
-		return [systemdRun, "--user", "--scope", "--quiet", "--collect", "--description=mihai-harness terminal session", "--", ...command];
+		return [systemdRun, "--user", "--scope", "--quiet", "--collect", "--description=aiki terminal session", "--", ...command];
 	}
 
 	#newSessionName(prefix: string | undefined, known: readonly SessionListing[]): string {

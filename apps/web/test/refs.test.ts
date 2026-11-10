@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ProjectLinks, RefStatus } from "@mihai-harness/protocol";
+import type { ProjectLinks, RefStatus } from "@aiki/protocol";
 import {
 	linkRefMentions,
 	refHref,

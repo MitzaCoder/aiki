@@ -13,7 +13,7 @@ import type {
 	BoardTaskStatus,
 	BoardTimelineEntry,
 	BoardTimelineKind,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 
 // --- links -------------------------------------------------------------------------------------------------------
 
@@ -185,7 +185,7 @@ export function applyTaskFilter<T extends Pick<BoardTask, "id" | "subtasks" | "p
 }
 
 /** Per device, like the Tasks view's mode. */
-export const TASK_FILTER_STORAGE_KEY = "mihai-harness.task-filter.v1";
+export const TASK_FILTER_STORAGE_KEY = "aiki.task-filter.v1";
 
 export function loadTopLevelOnly(storage: Pick<Storage, "getItem"> | undefined = browserStorage()): boolean {
 	try {

@@ -8,7 +8,7 @@ if(hello.server.name !== "ANDROID CONTRACT FIXTURE") throw new Error("Not the la
 const projectId = "android-fixture";
 const before = await client.request("conversation.page",{projectId,threadId:"main"});
 await device("phone");
-await device("adb","shell","am","force-stop","com.mihaisaru.harness"); await device("launch");
+await device("adb","shell","am","force-stop","io.github.mitzacoder.aiki"); await device("launch");
 await project(/^ANDROID CONTRACT FIXTURE$/);
 await tap(/^Panels$/);
 await find(/^Background contract fixture$/,"down");
@@ -56,7 +56,7 @@ await type(/^Thread ID \(main or background\)$/, "", "up", true);
 await artifact("video");
 // Media3 updates can prevent the CLI's 1000 ms idle window. Use bounded sanitized
 // player callbacks rather than silently reusing a previous window's XML.
-const pid=(await device("adb","shell","pidof","com.mihaisaru.harness")).trim();
+const pid=(await device("adb","shell","pidof","io.github.mitzacoder.aiki")).trim();
 async function mediaLog() { return device("adb","logcat","-d",`--pid=${pid}`,"-s","HarnessMedia:V","*:S"); }
 const frames=(log:string)=>[...log.matchAll(/frame source=(\d+) durationMs=(\d+) positionMs=(\d+)/g)].map(m=>({source:Number(m[1]),duration:Number(m[2]),position:Number(m[3])}));
 async function waitMedia(predicate:(log:string)=>boolean) {

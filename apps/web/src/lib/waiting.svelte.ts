@@ -7,9 +7,9 @@
  * withdraws everything waiting, so a message that left the queue without an entry becomes a bubble you can take back
  * into the composer. Cancel and Edit withdraw one message by its submission ID.
  */
-import type { HarnessClient, SubmitOptions } from "@mihai-harness/client";
+import type { HarnessClient, SubmitOptions } from "@aiki/client";
 import { imageCountLabel, inputContent, type HeldImage } from "./chat/images.ts";
-import type { ConversationView, EntryRecord, QueuedInput } from "@mihai-harness/protocol";
+import type { ConversationView, EntryRecord, QueuedInput } from "@aiki/protocol";
 import {
 	UNLISTED_GRACE_MS,
 	departures,

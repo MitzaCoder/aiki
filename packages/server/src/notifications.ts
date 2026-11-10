@@ -1,4 +1,4 @@
-import { markdownText } from "@mihai-harness/protocol";
+import { markdownText } from "@aiki/protocol";
 /**
  * Web Push notifications: one VAPID key pair for every backend, devices registered per backend, and one `Notifier` the
  * rest of the server calls. Android devices register an FCM token instead of a subscription and are sent the same
@@ -29,7 +29,7 @@ import {
 	type NotificationTransport,
 	type PushSubscription,
 	type ScheduleRun,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { Buffer } from "node:buffer";
 import { chmod } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -46,9 +46,9 @@ export const VAPID_KEY_FILE_NAME = "vapid.json";
 export const DEVICES_FILE_NAME = "devices.json";
 export const NOTIFICATION_STATE_FILE_NAME = "state.json";
 /** Names the VAPID key pair file outright, for a backend whose data directory is not the default. */
-export const VAPID_KEY_FILE_ENV = "MIHAI_HARNESS_VAPID_KEY_FILE";
+export const VAPID_KEY_FILE_ENV = "AIKI_VAPID_KEY_FILE";
 /** The VAPID `sub`, which RFC 8292 wants to be the app's URL; overrides what the allowed origins give. */
-export const VAPID_SUBJECT_ENV = "MIHAI_HARNESS_VAPID_SUBJECT";
+export const VAPID_SUBJECT_ENV = "AIKI_VAPID_SUBJECT";
 /** A push nobody picked up is dropped by the push service after this long. */
 export const NOTIFICATION_TTL_SECONDS = 12 * 60 * 60;
 /** How many dedupe keys are kept; old ones fall off, and an event that far back is never replayed. */
@@ -86,7 +86,7 @@ function expandHome(path: string): string {
 	return path;
 }
 
-/** `${MIHAI_HARNESS_VAPID_KEY_FILE}` when set, else `<data>/notifications/vapid.json`. */
+/** `${AIKI_VAPID_KEY_FILE}` when set, else `<data>/notifications/vapid.json`. */
 export function resolveVapidKeyFile(dataDir: string, env: Environment = process.env): string {
 	const override = env[VAPID_KEY_FILE_ENV];
 	if (override !== undefined && override.trim().length > 0) return resolve(expandHome(override.trim()));
@@ -180,7 +180,7 @@ export async function vapidKeysWork(keys: VapidKeys): Promise<boolean> {
 			false,
 			["verify"],
 		);
-		const probe = new TextEncoder().encode("mihai-harness vapid key check");
+		const probe = new TextEncoder().encode("aiki vapid key check");
 		const signature = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, privateKey, probe);
 		return await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, publicKey, signature, probe);
 	} catch {

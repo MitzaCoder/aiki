@@ -5,9 +5,9 @@
 	import { Spinner } from '#lib/components/ui/spinner/index.js';
 	import { tick, untrack, type Snippet } from 'svelte';
 	import { loadEarlierPage, shouldPrefetchEarlier } from '#lib/chat/earlier-paging.js';
-	import type { WorkerSummary } from '@mihai-harness/protocol';
+	import type { WorkerSummary } from '@aiki/protocol';
 	import type { MemoryExtraction } from '#lib/memory.js';
-	import type { MemoryScope } from '@mihai-harness/protocol';
+	import type { MemoryScope } from '@aiki/protocol';
 	import Orb from '#lib/components/Orb.svelte';
 	import { CHAT_COLUMN_CLASS } from '#lib/chat/layout.js';
 	import type { TranscriptItem } from '#lib/transcript.js';

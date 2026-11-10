@@ -52,7 +52,7 @@ dsh's README lists these limits itself:
 | After a restart | Interrupted work shows "Task stopped"; cold members are not restored | The background anchor and reporter tasks resume; reports and messages are idempotent by tool call ID |
 | Keeping watch | The Lead has to poll or be messaged | Durable check-ins with bounded digests (`worker_peek`, `[check-in]`) |
 | Worker setup | A named preset of tools, prompt sections and skills, plus model and effort per spawn | Model and thinking per spawn or per message; the coordinator's agent is copied, the worker extension removed and the instructions replaced |
-| Board | Task DAG with CAS revisions, blockers and write-scope warnings | A flat worker list (`mihai.workers`); the planned board has no dependencies yet |
+| Board | Task DAG with CAS revisions, blockers and write-scope warnings | A flat worker list (`aiki.workers`); the planned board has no dependencies yet |
 
 They made the opposite trade from us: dsh invested in the board and left the workspace shared, while we invested in
 the workspace (isolation and merge) and in durability, which comes from pi durable. The hierarchy is also deliberate

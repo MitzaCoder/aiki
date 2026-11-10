@@ -17,7 +17,7 @@
 	import { modelKey, modelOptions, sameModel } from '#lib/models.js';
 	import { SaveState } from '#lib/save-state.svelte.js';
 	import { moveWorkerModel, removeWorkerModel, setWorkerModelThinkingLevel } from '#lib/workers.js';
-	import { THINKING_LEVELS, type ModelRef, type ThinkingLevel, type WorkerModel } from '@mihai-harness/protocol';
+	import { THINKING_LEVELS, type ModelRef, type ThinkingLevel, type WorkerModel } from '@aiki/protocol';
 
 	/**
 	 * Project → Workers: the ordered list of default worker models (each with the thinking level workers get on it)

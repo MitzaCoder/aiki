@@ -4,7 +4,7 @@
  * functions, tested here; the panel only lays them out.
  */
 import { describe, expect, test } from "bun:test";
-import { ClientError } from "@mihai-harness/client";
+import { ClientError } from "@aiki/client";
 import type {
 	MemoryChange,
 	MemoryFileSummary,
@@ -12,7 +12,7 @@ import type {
 	MemoryScopeStatus,
 	MemorySearchHit,
 	ModelInfo,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import {
 	DEFAULT_MEMORY_MAINTENANCE,
 	DEFAULT_MEMORY_SCOPE,

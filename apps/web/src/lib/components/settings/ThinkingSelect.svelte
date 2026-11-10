@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Combobox from '#lib/components/settings/Combobox.svelte';
 	import { thinkingBars, thinkingOptions } from '#lib/thinking.js';
-	import type { ThinkingLevel } from '@mihai-harness/protocol';
+	import type { ThinkingLevel } from '@aiki/protocol';
 
 	/**
 	 * A model's thinking level as a dropdown: "Model default" and the levels the model lists, each with four small bars

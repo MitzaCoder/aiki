@@ -10,7 +10,7 @@
  * and one level is all there is. It works in its own workspace under the data directory (a jj workspace when the
  * project is jj, else a plain directory it can make git worktrees in), never in the project checkout.
  *
- * The list is a durable document on main's conversation (`mihai.threads`). Statuses `done` and `stopped` are written by
+ * The list is a durable document on main's conversation (`aiki.threads`). Statuses `done` and `stopped` are written by
  * the tools; `running`, `idle` and `failed` follow a watch on each thread's transcript (a run in progress, its running
  * workers, a run that ended in an error), so a restart recomputes them instead of trusting a stale value.
  *
@@ -52,7 +52,7 @@ import {
 	type ThreadStatus,
 	type ThreadSummary,
 	type WorkerSummary,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { Type } from "typebox";
@@ -135,7 +135,7 @@ export type ThreadsState = {
 };
 
 export const ThreadsDoc = defineDoc<ThreadsState>({
-	kind: "mihai.threads",
+	kind: "aiki.threads",
 	version: 1,
 	scope: "conversation",
 	history: "latest",
@@ -171,7 +171,7 @@ function isLive(status: ThreadStatus): boolean {
 
 /** Owns one thread's conversation and finishes at once, like a worker's anchor. */
 const ThreadAnchor = defineTask<null, { phase: "done" }, null>({
-	name: "mihai.thread-anchor",
+	name: "aiki.thread-anchor",
 	version: 1,
 	initial: () => ({ phase: "done" }),
 	phases: {
@@ -186,7 +186,7 @@ type KickoffInput = { conversationId: number; content: string; requestId: string
 
 /** Delivers a thread's brief once, under a request ID derived from what started it; never waits for the answer. */
 const ThreadKickoff = defineTask<KickoffInput, { phase: "deliver" }, null>({
-	name: "mihai.thread-kickoff",
+	name: "aiki.thread-kickoff",
 	version: 1,
 	initial: () => ({ phase: "deliver" }),
 	phases: {

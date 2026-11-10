@@ -4,7 +4,7 @@ import type { Op } from "@earendil-works/chord/delta";
 import type { MutableModels } from "@earendil-works/pi-ai";
 import { createModels } from "@earendil-works/pi-ai";
 import { fauxProvider, type FauxProviderHandle } from "@earendil-works/pi-ai/providers/faux";
-import type { ConversationView, ServerMessage } from "@mihai-harness/protocol";
+import type { ConversationView, ServerMessage } from "@aiki/protocol";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -48,7 +48,7 @@ export async function createSetup(options?: {
 	setTimer?: StartServerOptions["setTimer"];
 	/** How long the user's board edits wait before they reach the coordinator as one input. */
 	boardEditDebounceMs?: StartServerOptions["boardEditDebounceMs"];
-	/** The timezone schedules run in; defaults to the host's, or `MIHAI_HARNESS_TIMEZONE`. */
+	/** The timezone schedules run in; defaults to the host's, or `AIKI_TIMEZONE`. */
 	timezone?: StartServerOptions["timezone"];
 	/** Where the release and the deploy status are read from; defaults to what the running code discovers. */
 	status?: StartServerOptions["status"];
@@ -69,7 +69,7 @@ export async function createSetup(options?: {
 	/** Terminals: a plain-shell host, or zellij pointed at test-only sockets. */
 	terminals?: StartServerOptions["terminals"];
 }): Promise<TestSetup> {
-	const root = await mkdtemp(join(tmpdir(), "mihai-harness-test-"));
+	const root = await mkdtemp(join(tmpdir(), "aiki-test-"));
 	const dataDir = join(root, "data");
 	const projectDir = join(root, "project");
 	await mkdir(projectDir, { recursive: true });
@@ -77,7 +77,7 @@ export async function createSetup(options?: {
 
 	const agentDir = options?.agentDir ?? join(root, "agent");
 	await mkdir(agentDir, { recursive: true });
-	const configDir = options?.configDir ?? join(root, "config", "mihai-harness");
+	const configDir = options?.configDir ?? join(root, "config", "aiki");
 	await mkdir(configDir, { recursive: true });
 	const claudeDir = options?.claudeDir ?? join(root, "claude");
 	await mkdir(claudeDir, { recursive: true });

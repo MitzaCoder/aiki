@@ -105,7 +105,7 @@ New device -- claim secret/poll ---------> stores its own session; opens authent
   credentials. Coordinate browser tabs with a lock/transaction; resume staged rotation after a crash.
   Rotation does not revoke other devices. Revocation or absolute expiry invalidates every token generation.
 - **Web recommendation:** IndexedDB for retained per-backend secrets and staged rotation; memory for
-  access tokens. Keep `localStorage["mihai-harness.backends.v1"]` addresses/names/IDs unchanged and secrets
+  access tokens. Keep `localStorage["aiki.backends.v1"]` addresses/names/IDs unchanged and secrets
   separate, keyed by backend ID + origin. Never serialize them in backend exports, URLs or debug state.
   localStorage is simpler but synchronous and easy to copy accidentally; neither store resists XSS.
   Storage denied/evicted: warn, use a memory-only session, explain that reopening will require pairing.

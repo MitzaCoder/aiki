@@ -3,8 +3,8 @@
  * sentences, and the per-browser dismissal of one attempt. Pure functions, tested here.
  */
 import { describe, expect, test } from "bun:test";
-import { deployProblem, type DeployProblem } from "@mihai-harness/client";
-import type { DeployStatus, ReleaseInfo, ServerStatus } from "@mihai-harness/protocol";
+import { deployProblem, type DeployProblem } from "@aiki/client";
+import type { DeployStatus, ReleaseInfo, ServerStatus } from "@aiki/protocol";
 import {
 	DEPLOY_DISMISSALS_STORAGE_KEY,
 	MAX_DISMISSED_DEPLOYS,

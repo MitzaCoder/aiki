@@ -1,7 +1,7 @@
 import { afterEach, expect, it } from 'bun:test';
 import type { JsonObject } from '@earendil-works/pi-durable';
 import { fauxAssistantMessage, fauxToolCall } from '@earendil-works/pi-ai/providers/faux';
-import type { BoardTaskInput } from '@mihai-harness/protocol';
+import type { BoardTaskInput } from '@aiki/protocol';
 import { addSnapshot, buildTimeline, describeTask, emptyBoardState, normalizeBoard, saveTask, USER_WRITER, type TaskHistoryState } from '../src/board.ts';
 import { createSetup, TestClient, ViewClient, type TestSetup } from './support.ts';
 const NOW='2026-11-10T12:00:00.000Z';

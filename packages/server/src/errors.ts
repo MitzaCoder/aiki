@@ -1,5 +1,5 @@
 /** Errors that become a protocol `error` response with a stable code. */
-import type { ErrorCode } from "@mihai-harness/protocol";
+import type { ErrorCode } from "@aiki/protocol";
 
 export class ServerError extends Error {
 	readonly code: ErrorCode;

@@ -74,8 +74,8 @@
 	import { withWaiting } from '#lib/waiting.js';
 	import { threadActivityLine, type ThreadCards } from '#lib/threads.js';
 	import type { ProjectThreads } from '#lib/threads.svelte.js';
-	import { isMainThread, isThreadActive, shouldSendWorkerDefaults, threadFromAnchor } from '@mihai-harness/client';
-	import type { MemoryScope, ModelInfo, ThinkingLevel } from '@mihai-harness/protocol';
+	import { isMainThread, isThreadActive, shouldSendWorkerDefaults, threadFromAnchor } from '@aiki/client';
+	import type { MemoryScope, ModelInfo, ThinkingLevel } from '@aiki/protocol';
 
 	/**
 	 * One project's coordinator conversation: the transcript, the composer, the

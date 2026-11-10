@@ -17,7 +17,7 @@
 		parseNightlyTime
 	} from '#lib/memory.js';
 	import { modelKey, modelOptions } from '#lib/models.js';
-	import type { MemoryMaintenanceSettings, ThinkingLevel } from '@mihai-harness/protocol';
+	import type { MemoryMaintenanceSettings, ThinkingLevel } from '@aiki/protocol';
 
 	/**
 	 * A backend's memory maintenance: the model and thinking level a maintenance run uses, the nightly time in the

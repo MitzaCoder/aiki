@@ -3,7 +3,7 @@
 	import ListFilterIcon from '@lucide/svelte/icons/list-filter';
 	import TaskStatusBadge from '#lib/components/TaskStatusBadge.svelte';
 	import { linkGroups, subtaskFraction, subtaskProgressText } from '#lib/task-relations.js';
-	import type { BoardTask, BoardTaskBrief } from '@mihai-harness/protocol';
+	import type { BoardTask, BoardTaskBrief } from '@aiki/protocol';
 
 	/**
 	 * A task's links, grouped by kind and shown from this task's side: what it is a subtask of, its subtasks (with how far

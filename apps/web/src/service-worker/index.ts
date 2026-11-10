@@ -1,4 +1,4 @@
-import { markdownText } from "@mihai-harness/protocol";
+import { markdownText } from "@aiki/protocol";
 /// <reference lib="webworker" />
 /**
  * The app's service worker: an app shell that follows a deploy quickly, the push notifications themselves, and the
@@ -10,8 +10,8 @@ import { markdownText } from "@mihai-harness/protocol";
  * page registers the worker (`lib/notifications.svelte.ts`) and keeps it told which backends to re-register with if
  * the push service replaces the subscription.
  */
-import { isNotificationFailure, notificationUrl, parseNotificationPayload } from "@mihai-harness/client";
-import type { NotificationPayload, NotificationPreferences } from "@mihai-harness/protocol";
+import { isNotificationFailure, notificationUrl, parseNotificationPayload } from "@aiki/client";
+import type { NotificationPayload, NotificationPreferences } from "@aiki/protocol";
 import { dev, version } from "$app/env";
 import { assets, immutable } from "$app/manifest";
 const worker = self as unknown as ServiceWorkerGlobalScope;
@@ -19,12 +19,12 @@ const worker = self as unknown as ServiceWorkerGlobalScope;
 const SCOPE = worker.registration.scope;
 
 /** Hashed files from this build. A new deploy installs a new name, so nothing old is served from it. */
-const ASSET_CACHE = `mihai-harness-assets-${version}`;
+const ASSET_CACHE = `aiki-assets-${version}`;
 /** Same-origin responses fetched at runtime (`/backends.json`). Also versioned, so a deploy drops them. */
-const RUNTIME_CACHE = `mihai-harness-runtime-${version}`;
+const RUNTIME_CACHE = `aiki-runtime-${version}`;
 /** What the page tells the worker about this device's registrations; small JSON, kept apart from both. */
-const DATA_CACHE = "mihai-harness-notifications";
-const DATA_URL = "/__mihai-harness/notification-registrations";
+const DATA_CACHE = "aiki-notifications";
+const DATA_URL = "/__aiki/notification-registrations";
 const SHELL_URL = "/200.html";
 /** The adapter's fallback page is generated, not listed in `$service-worker`'s files. */
 
@@ -76,7 +76,7 @@ worker.addEventListener("activate", (event) => {
 	event.waitUntil(
 		(async () => {
 			for (const key of await caches.keys()) {
-				if (!key.startsWith("mihai-harness-")) continue;
+				if (!key.startsWith("aiki-")) continue;
 				if (key === ASSET_CACHE || key === RUNTIME_CACHE || key === DATA_CACHE) continue;
 				await caches.delete(key);
 			}
@@ -158,12 +158,12 @@ worker.addEventListener("push", (event) => {
 		(async () => {
 			const payload = readPushPayload(event.data);
 			const url = payload === null ? "/" : notificationUrl(payload);
-			const title = payload?.title ?? "mihai-harness";
+			const title = payload?.title ?? "aiki";
 			const options: NotificationOptions & { renotify?: boolean; timestamp?: number } = {
 				body: payload?.kind === "board_question" ? markdownText(payload.body) : payload?.body ?? "Open the app to see what happened.",
 				icon: ICON,
 				badge: BADGE,
-				tag: payload?.tag ?? "mihai-harness",
+				tag: payload?.tag ?? "aiki",
 				// A failure replaces the last notice of the same tag and buzzes again; a reply must not.
 				renotify: payload !== null && isNotificationFailure(payload.kind),
 				data: { url, payload },
@@ -251,12 +251,12 @@ worker.addEventListener("pushsubscriptionchange", (event) => {
 /** Re-register the new subscription with one backend, over its protocol socket. */
 async function registerWith(registration: WorkerRegistration, subscription: PushSubscription): Promise<void> {
 	if (typeof WebSocket === "undefined") return;
-	const { HarnessClient } = await import("@mihai-harness/client");
+	const { HarnessClient } = await import("@aiki/client");
 	const url = new URL("/ws", registration.origin);
 	url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
 	const client = new HarnessClient({
 		url: url.toString(),
-		clientName: "mihai-harness-service-worker",
+		clientName: "aiki-service-worker",
 		requestTimeoutMs: 10_000,
 		reconnect: false,
 	});

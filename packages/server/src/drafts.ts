@@ -24,7 +24,7 @@ import {
 	draftLimitError,
 	isEmptyDraftContent,
 	sameDraftContent,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { ServerError, errorMessage } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 

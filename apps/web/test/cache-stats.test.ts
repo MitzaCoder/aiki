@@ -1,6 +1,6 @@
 /** The Usage screen's prompt cache section: money, labels, what changed, and the what-if sentences. */
 import { describe, expect, test } from "bun:test";
-import type { CacheMissDetail, CacheStats } from "@mihai-harness/protocol";
+import type { CacheMissDetail, CacheStats } from "@aiki/protocol";
 import {
 	changeLines,
 	conversationLabel,

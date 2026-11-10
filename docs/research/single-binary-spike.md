@@ -32,7 +32,7 @@ Baseline compiled **1,395 modules** in 97 ms bundling + 434 ms compilation. No m
 For the web prototype, a Bun build plugin:
 
 1. Generates one `with { type: "file" }` import for each built web file, retaining an exact URL→embedded-file map. This embeds `.js` as **assets**, not executable server modules. No flattening of hashed Svelte paths.
-2. Adds static serving **after** `/ws` and `/artifacts/`, only when `MIHAI_HARNESS_SERVE_WEB=embedded`. Unset retains today's API-only 404. GET/HEAD and SPA `200.html` fallback are enough for this experiment; missing file-like URLs return 404.
+2. Adds static serving **after** `/ws` and `/artifacts/`, only when `AIKI_SERVE_WEB=embedded`. Unset retains today's API-only 404. GET/HEAD and SPA `200.html` fallback are enough for this experiment; missing file-like URLs return 404.
 3. Returns an empty `/backends.json` instead of the operator's published backends. A release must omit that personal file **at build time**, not merely shadow its route.
 
 Every run used a fresh `/tmp/t56-*` root for **data, config, agent, Claude and HOME**; port chosen on loopback. Browser origins were explicitly set to that same loopback origin. All background processes were launched with `setsid -f … < /dev/null`, bounded by `timeout`, and stopped by saved PID. No real keys, OAuth flow, provider request, push subscription or network-enabled schedule was used. Faux scripts are compiled only into separate test executables, never a hidden production environment switch.
@@ -66,7 +66,7 @@ The script pins installed package paths from this lockfile; regenerate them if d
 | Photon after fixes | Embedded WASM and in-process factory decode a valid PNG and resize **4×4→2×2**, returning image/png. This proves image processing, not just successful WASM instantiation. Off-thread image-worker packaging is still outstanding. |
 | Lazy providers | `opencode-go`, `anthropic`, `openai`, `openai-codex` each reach their real lazy SDK implementation's `onPayload`, which throws locally before send. Fake API keys / synthetic non-expired OAuth token only. Global fetch rejects all calls; **0 fetches**. This does not prove successful remote inference/auth. |
 | OAuth/Bedrock | Variable module imports fail in baseline. Static `registerBunOAuthFlows()` makes Anthropic OAuth **load**, without login. Static Bedrock override makes its SDK load and reach the rejecting payload hook; Bedrock is not a harness default provider. Other OAuth flows are bundled by the helper but not individually exercised. |
-| Missing zellij | With `MIHAI_HARNESS_ZELLIJ=/nonexistent`, `terminal.list` returns `available:false`, actionable install guidance, `survivesRestart:false`, no sessions. Backend stays healthy. A real PTY/zellij session was not opened. |
+| Missing zellij | With `AIKI_ZELLIJ=/nonexistent`, `terminal.list` returns `available:false`, actionable install guidance, `survivesRestart:false`, no sessions. Backend stays healthy. A real PTY/zellij session was not opened. |
 
 ## Sizes, startup and cross-compilation
 

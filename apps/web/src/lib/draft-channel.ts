@@ -2,8 +2,8 @@
  * One chat's line to the backend's draft store, for the composer: what `DraftSync` needs (`available`, `read`, `write`)
  * plus the pushes for this chat and who this device is. Built in `ProjectChat` for the chat on screen.
  */
-import { loadDeviceSettings, deviceNameFromUserAgent } from "@mihai-harness/client";
-import { draftThreadId, type ChatDraft, type DraftAuthor } from "@mihai-harness/protocol";
+import { loadDeviceSettings, deviceNameFromUserAgent } from "@aiki/client";
+import { draftThreadId, type ChatDraft, type DraftAuthor } from "@aiki/protocol";
 import { imageBytes, UploadTracker } from "./draft-images.ts";
 import type { DraftSyncTransport } from "./drafts-sync.ts";
 import type { BackendConnection } from "./harness.svelte.ts";

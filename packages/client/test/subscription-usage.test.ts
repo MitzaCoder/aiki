@@ -3,7 +3,7 @@
  * every screen shares: elapsed share, pace ratio, projected exhaustion and the tightest window.
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { SubscriptionUsage, UsageWindow } from "@mihai-harness/protocol";
+import type { SubscriptionUsage, UsageWindow } from "@aiki/protocol";
 import {
 	ClientError,
 	HarnessClient,

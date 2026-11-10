@@ -30,7 +30,7 @@ try {
 	console.log(`Live native data contract on ${origin}; Gradle log ${join(logs, "gradle.log")}`);
 	const tasks = process.argv.includes("--all")
 		? [":app:testDebugUnitTest", ":app:lintDebug", ":app:assembleDebug"]
-		: [":app:testDebugUnitTest", "--tests", "com.mihaisaru.harness.RealServerContractTest"];
+		: [":app:testDebugUnitTest", "--tests", "io.github.mitzacoder.aiki.RealServerContractTest"];
 	// build.sh takes this checkout's build lock itself.
 	gradle = Bun.spawn([resolve(import.meta.dir, "../scripts/build.sh"), ...tasks, "--rerun-tasks"], {
 		env: { ...process.env, ANDROID_REAL_CONTRACT_ORIGIN: origin },

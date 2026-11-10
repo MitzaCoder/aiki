@@ -5,7 +5,7 @@
  * The protocol carries the facts. What is shared here is what every consumer has to read the same way: a `memory.changed`
  * event names a scope and, for a project, its project; a snippet puts every match between `\u0002` and `\u0003`.
  */
-import type { MemoryChangedEvent, MemoryScope } from "@mihai-harness/protocol";
+import type { MemoryChangedEvent, MemoryScope } from "@aiki/protocol";
 
 /** The marker the server puts before a matching run in a search snippet. */
 export const MEMORY_MATCH_START = "\u0002";

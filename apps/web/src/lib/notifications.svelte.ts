@@ -1,7 +1,7 @@
 /**
  * This browser's notifications: one push subscription, one device identity, and a registration on every backend that
  * offers them. Svelte runes live here; the wording and the decision rules are in `notifications.ts`, and the wire
- * helpers in `@mihai-harness/client`.
+ * helpers in `@aiki/client`.
  *
  * The service worker (`src/service-worker.ts`) shows what arrives and opens the app on a click. This store keeps it fed:
  * the registrations it needs to re-register after `pushsubscriptionchange`, and this device's presence on every backend
@@ -25,8 +25,8 @@ import {
 	withMutedProject,
 	type DeviceNotificationSettings,
 	type QuietHours,
-} from "@mihai-harness/client";
-import type { NotificationDevice, NotificationKind } from "@mihai-harness/protocol";
+} from "@aiki/client";
+import type { NotificationDevice, NotificationKind } from "@aiki/protocol";
 import type { BackendConnection } from "./harness.svelte.ts";
 import {
 	backendNotificationView,

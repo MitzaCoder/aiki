@@ -21,7 +21,7 @@ import {
 	type ModelRef,
 	type ProviderInfo,
 	type ThinkingLevel,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 
 /** The providers the harness exposes to clients. */
 /**

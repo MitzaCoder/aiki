@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import {device,tree,tapNode,capture} from "./native-ui.ts";
 const out=process.env.HARNESS_ANDROID_DEVICE_CAPTURES;if(!out?.endsWith("/ROUND2/NATIVE"))throw Error("Use isolated captures");
-const wrapper=`${process.cwd()}/apps/android/verification/device.sh`,pkg="com.mihaisaru.harness",relative="files/datastore/harness-device.preferences_pb";
+const wrapper=`${process.cwd()}/apps/android/verification/device.sh`,pkg="io.github.mitzacoder.aiki",relative="files/datastore/harness-device.preferences_pb";
 const backup="/tmp/harness-verification/scratch/android-cache/r2-before-onboarding.preferences_pb";
 const installed=await Bun.file("/tmp/harness-verification/scratch/android-screens/ROUND2/installed-post-review-candidate.json").json();
 await device("adb","shell","am","force-stop",pkg);

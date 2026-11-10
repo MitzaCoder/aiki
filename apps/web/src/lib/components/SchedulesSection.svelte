@@ -17,8 +17,8 @@
 	import { Spinner } from '#lib/components/ui/spinner/index.js';
 	import { projectHref, threadHref, workerHref } from '#lib/backends.js';
 	import { taskHref } from '#lib/task-chat.js';
-	import { runHasWorker, scheduleAnchor } from '@mihai-harness/client';
-	import { isEventSpec } from '@mihai-harness/protocol';
+	import { runHasWorker, scheduleAnchor } from '@aiki/client';
+	import { isEventSpec } from '@aiki/protocol';
 	import { ProjectSchedules, type BackendConnection } from '#lib/harness.svelte.js';
 	import { relativeTime } from '#lib/relative-time.js';
 	import {
@@ -35,7 +35,7 @@
 		timezoneNote,
 		whenText
 	} from '#lib/schedules.js';
-	import type { Schedule, ScheduleInput, ScheduleRun } from '@mihai-harness/protocol';
+	import type { Schedule, ScheduleInput, ScheduleRun } from '@aiki/protocol';
 
 	/**
 	 * Project settings' "Scheduled tasks": the briefs the harness runs as workers of the project's coordinator on a

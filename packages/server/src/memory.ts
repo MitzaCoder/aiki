@@ -37,7 +37,7 @@ import type {
 	MemoryScope,
 	MemorySearchHit,
 	MemoryStatus,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { ServerError, errorMessage } from "./errors.ts";
 import { parseFrontmatter } from "./frontmatter.ts";
 
@@ -50,7 +50,7 @@ export const GLOBAL_DIR_NAME = "global";
 /** At most this many characters in a file ID: enough for a topic name, short enough to stay a name. */
 export const MAX_FILE_ID_LENGTH = 64;
 /** The git author every memory commit is made as; a memory repository needs no identity of its own. */
-const GIT_AUTHOR = ["-c", "user.name=mihai-harness", "-c", "user.email=memory@mihai-harness.invalid"];
+const GIT_AUTHOR = ["-c", "user.name=aiki", "-c", "user.email=memory@aiki.invalid"];
 /** No hooks, no signing, no prompts: a memory commit is a mechanical write. */
 const GIT_COMMIT_OPTIONS = [...GIT_AUTHOR, "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null"];
 /** How long a burst of filesystem events waits for the write that caused it to settle. */

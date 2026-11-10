@@ -7,7 +7,7 @@
  * every change is pushed as `server.status.changed`; `busy` is computed on demand because a restart only asks for it
  * before restarting.
  */
-import type { DeployStatus, DiskStatus, ReleaseInfo, ServerStatus } from "@mihai-harness/protocol";
+import type { DeployStatus, DiskStatus, ReleaseInfo, ServerStatus } from "@aiki/protocol";
 import { existsSync, readFileSync, realpathSync, watch, type FSWatcher } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -20,7 +20,7 @@ export const RELEASE_FILE_NAME = "RELEASE.json";
 /** The deploy writes it in the deploy root, atomically, after every attempt that concerned this backend. */
 export const DEPLOY_STATUS_FILE_NAME = "deploy-status.json";
 /** Names the deploy's status file outright, for a layout this server cannot derive from the release it runs. */
-export const DEPLOY_STATUS_FILE_ENV = "MIHAI_HARNESS_DEPLOY_STATUS_FILE";
+export const DEPLOY_STATUS_FILE_ENV = "AIKI_DEPLOY_STATUS_FILE";
 /** A watch sees every atomic write; this poll is only the fallback for a directory that cannot be watched. */
 export const DEPLOY_STATUS_POLL_INTERVAL_MS = 10_000;
 
@@ -29,7 +29,7 @@ export type BusyState = { conversations: number; workers: number; toolCalls?: nu
 
 /**
  * The directory holding the running code's root `package.json`, found from a module's location so it never depends on the
- * process's cwd: the release directory in a deploy (`~/.local/share/mihai-harness-deploy/releases/<name>`) and the
+ * process's cwd: the release directory in a deploy (`~/.local/share/aiki-deploy/releases/<name>`) and the
  * checkout in development. The nearest enclosing `package.json` that declares `workspaces` is the workspace root, so
  * from `packages/server/src` it is the root rather than `packages/server`; a stray `package.json` in a home directory or
  * any other ancestor cannot win it. Without a workspace declaration the nearest `package.json` is all there is.
@@ -55,7 +55,7 @@ export function resolveReleaseRoot(from: string = import.meta.dir): string {
 }
 
 /**
- * The deploy's status file for the release at `releaseRoot`: `${MIHAI_HARNESS_DEPLOY_STATUS_FILE}` when set, else
+ * The deploy's status file for the release at `releaseRoot`: `${AIKI_DEPLOY_STATUS_FILE}` when set, else
  * `<releaseRoot>/../../deploy-status.json` when the release sits in a deploy root's `releases/` directory (the layout
  * `current -> releases/<name>` gives, so the symlink is resolved first), else `null`: nothing wrote one.
  */

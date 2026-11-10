@@ -38,7 +38,7 @@ await writeFile(join(root, "project", "proof.bin"), Uint8Array.from({ length: 25
 const server = await startServer({
 	dataDir: join(root, "data"),
 	hostname: "127.0.0.1",
-	port: Number(process.env.MIHAI_HARNESS_PORT),
+	port: Number(process.env.AIKI_PORT),
 	models,
 	credentials,
 	images: null,

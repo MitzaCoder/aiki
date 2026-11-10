@@ -9,7 +9,7 @@ if(!models.models?.some((m:any)=>m.provider === "faux" && m.configured)) throw n
 const path = `${process.env.HOME}/scratch/android-verification-real/ui-project`;
 await Bun.write(`${path}/.android-verification`, "Scratch-only native UI test project\n");
 await device("start"); await device("phone");
-await device("adb","shell","am","force-stop","com.mihaisaru.harness"); await device("launch");
+await device("adb","shell","am","force-stop","io.github.mitzacoder.aiki"); await device("launch");
 // Remove only our earlier local fixture registration, preventing ambiguous duplicate browser fields.
 if ((await tree()).some(n => n.text === "Contract QA")) {
     await tap(/^Remove from device$/, "down");

@@ -2,7 +2,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import WorkerStatusBadge from '#lib/components/chat/WorkerStatusBadge.svelte';
 	import { splitLooseWorkers, workersWithoutTask } from '#lib/workers.js';
-	import type { WorkerSummary } from '@mihai-harness/protocol';
+	import type { WorkerSummary } from '@aiki/protocol';
 
 	/**
 	 * The workers no task lists: the coordinator started them without a task, so a task's Workers section cannot reach

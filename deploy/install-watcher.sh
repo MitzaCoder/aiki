@@ -16,7 +16,7 @@ REPO_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 export DEPLOY_CONFIG_DIR="${DEPLOY_CONFIG_DIR:-$REPO_DIR/deploy/local}"
 if [[ -f $DEPLOY_CONFIG_DIR/config.env ]]; then source "$DEPLOY_CONFIG_DIR/config.env"; fi
 UNIT_DIR=${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user
-WATCH_SERVICE=${DEPLOY_WATCH_SERVICE:-mihai-harness-deploy-watch.service}
+WATCH_SERVICE=${DEPLOY_WATCH_SERVICE:-aiki-deploy-watch.service}
 UNIT=$UNIT_DIR/$WATCH_SERVICE
 
 function log() { printf '%s [install] %s\n' "$(date -Is)" "$*"; }
@@ -37,7 +37,7 @@ systemctl --user daemon-reload
 systemctl --user enable "$WATCH_SERVICE"
 # `enable --now` leaves a running watcher on its old script, so restart it. A restart kills a deploy the watcher started,
 # so wait for the deploy lock first and hold it while the watcher restarts.
-STATE_DIR=${DEPLOY_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/mihai-harness-deploy}
+STATE_DIR=${DEPLOY_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/aiki-deploy}
 mkdir -p "$STATE_DIR"
 log "waiting for any running deploy to finish (lock $STATE_DIR/deploy.lock)"
 flock "$STATE_DIR/deploy.lock" systemctl --user restart "$WATCH_SERVICE"
@@ -47,5 +47,5 @@ if [[ $linger != yes ]]; then
 	log "note: Linger=$linger for $USER, so this service lives only as long as a login session."
 	log "      To keep it running after logout: loginctl enable-linger $USER (not done here)."
 fi
-log "watching refs/heads/main; log: journalctl --user -u mihai-harness-deploy-watch -f"
+log "watching refs/heads/main; log: journalctl --user -u aiki-deploy-watch -f"
 systemctl --user --no-pager status "$WATCH_SERVICE" | head -n 12 || true

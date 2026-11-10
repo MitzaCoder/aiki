@@ -1,6 +1,6 @@
 /** Link settings filled in from the host (`project-links.ts`) and the live state of refs (`ref-status.ts`). */
 import { describe, expect, it } from "bun:test";
-import type { ProjectLinks } from "@mihai-harness/protocol";
+import type { ProjectLinks } from "@aiki/protocol";
 import type { CommandResult, RunCommand } from "../src/host-commands.ts";
 import {
 	jiraSiteFromAuthStatus,

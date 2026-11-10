@@ -1,5 +1,5 @@
 /** Errors a client can raise, separate from protocol error responses. */
-import type { ErrorCode, ErrorInfo, ErrorResponse } from "@mihai-harness/protocol";
+import type { ErrorCode, ErrorInfo, ErrorResponse } from "@aiki/protocol";
 
 export type ClientErrorCode = ErrorCode | "disconnected" | "timeout" | "closed" | "protocol";
 

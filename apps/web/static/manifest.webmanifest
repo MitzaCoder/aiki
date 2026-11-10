@@ -1,6 +1,6 @@
 {
 	"id": "/",
-	"name": "mihai-harness",
+	"name": "aiki",
 	"short_name": "harness",
 	"description": "Every backend's projects, with their coordinators, workers and memory.",
 	"start_url": "/",

@@ -2,7 +2,7 @@
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import TagIcon from '@lucide/svelte/icons/tag';
-	import type { Artifact } from '@mihai-harness/protocol';
+	import type { Artifact } from '@aiki/protocol';
 	import { fade } from 'svelte/transition';
 	import { MediaQuery } from 'svelte/reactivity';
 	import Markdown from '#lib/components/markdown/Markdown.svelte';

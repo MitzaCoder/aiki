@@ -5,8 +5,8 @@
  * a task sent back from review needs the user's reason. Reordering To do sets the priority the coordinator works by;
  * the other columns sort themselves. Pure functions, so they are tested without a component.
  */
-import { formatMinutes } from "@mihai-harness/client";
-import type { Board, BoardQuestion, BoardTask, BoardTaskInput, BoardTaskStatus } from "@mihai-harness/protocol";
+import { formatMinutes } from "@aiki/client";
+import type { Board, BoardQuestion, BoardTask, BoardTaskInput, BoardTaskStatus } from "@aiki/protocol";
 import { compactRelativeTime, relativeTime } from "./relative-time.ts";
 import { isSettled, looseWaiting, rowGist, waitingOn, type TaskSectionId } from "./tasks.ts";
 
@@ -282,7 +282,7 @@ export function reasonMessage(reason: string): string {
 export type TasksViewMode = "list" | "board";
 
 /** Per device, like the sidebar. */
-export const TASKS_VIEW_STORAGE_KEY = "mihai-harness.tasks-view.v1";
+export const TASKS_VIEW_STORAGE_KEY = "aiki.tasks-view.v1";
 
 export function loadTasksViewMode(storage: Pick<Storage, "getItem"> | undefined = browserStorage()): TasksViewMode {
 	try {

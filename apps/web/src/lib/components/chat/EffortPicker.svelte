@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { ThinkingLevel } from '@mihai-harness/protocol';
+	import type { ThinkingLevel } from '@aiki/protocol';
 
 	const ORDER: ThinkingLevel[] = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'];
 

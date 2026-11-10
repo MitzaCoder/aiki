@@ -38,7 +38,7 @@
 	import { taskFilter } from '#lib/tasks-view.svelte.js';
 	import { looseWaiting, type TaskStatusTone } from '#lib/tasks.js';
 	import { questionAskedBy } from '#lib/threads.js';
-	import type { BoardQuestion, BoardTask, BoardTaskStatus, ThreadSummary, WorkerSummary } from '@mihai-harness/protocol';
+	import type { BoardQuestion, BoardTask, BoardTaskStatus, ThreadSummary, WorkerSummary } from '@aiki/protocol';
 
 	/**
 	 * The project's tasks as a board: one column per status, To do in the user's priority order and the rest sorted by

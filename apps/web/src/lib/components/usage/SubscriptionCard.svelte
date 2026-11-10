@@ -1,7 +1,7 @@
 <script lang="ts">
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 	import ClockAlertIcon from '@lucide/svelte/icons/clock-alert';
-	import type { SubscriptionUsage } from '@mihai-harness/protocol';
+	import type { SubscriptionUsage } from '@aiki/protocol';
 	import ProviderMark from './ProviderMark.svelte';
 	import UsageWindowRow from './UsageWindowRow.svelte';
 	import { exactTime } from '#lib/relative-time.js';

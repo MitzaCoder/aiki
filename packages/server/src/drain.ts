@@ -22,7 +22,7 @@
  */
 import type { Context } from "@earendil-works/chord/context";
 import { defineExtension, hook, ToolTask, type Extension, type ToolRegistration, type Wrap } from "@earendil-works/pi-durable";
-import { DEFAULT_DRAIN_TIMEOUT_MS } from "@mihai-harness/protocol";
+import { DEFAULT_DRAIN_TIMEOUT_MS } from "@aiki/protocol";
 
 export const DRAIN_EXTENSION_NAME = "server-drain";
 

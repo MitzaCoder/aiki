@@ -2,7 +2,7 @@
 	import PaperclipIcon from '@lucide/svelte/icons/paperclip';
 	import { imageFilesOf } from '#lib/chat/images.js';
 	import type { MessageImages } from '#lib/chat/message-images.svelte.js';
-	import { INPUT_MAX_IMAGES } from '@mihai-harness/protocol';
+	import { INPUT_MAX_IMAGES } from '@aiki/protocol';
 
 	/** The attach button next to a message box: opens the file picker for images (several at once) and adds them. */
 	let {

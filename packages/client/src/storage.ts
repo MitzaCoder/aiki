@@ -4,7 +4,7 @@
  *
  * The server decides when a disk is low (`DiskStatus.low`, its threshold); the app only shows it.
  */
-import type { DiskStatus, ProjectsStorageCleanResponse, ProjectsStorageResponse, ServerStatus, StorageItem } from "@mihai-harness/protocol";
+import type { DiskStatus, ProjectsStorageCleanResponse, ProjectsStorageResponse, ServerStatus, StorageItem } from "@aiki/protocol";
 
 /** A project's workspaces on disk, as `readProjectStorage` returns them. */
 export type ProjectStorage = Pick<ProjectsStorageResponse, "totalBytes" | "items" | "measuredAt">;

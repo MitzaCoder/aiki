@@ -66,7 +66,7 @@ async function assertFixture() {
 
 await device("start");
 await device("phone");
-await device("adb", "shell", "am", "force-stop", "com.mihaisaru.harness");
+await device("adb", "shell", "am", "force-stop", "io.github.mitzacoder.aiki");
 await device("launch");
 // No backend is added: this deliberately nonfunctional HTTPS address is previewed then cancelled.
 const payload = "v1." + Buffer.from("CONNECT PREVIEW ONLY\thttps://preview.invalid").toString("base64url");

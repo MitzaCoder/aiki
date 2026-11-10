@@ -41,8 +41,8 @@ val firebaseConfig: Map<String, String> = run {
     val project = json["project_info"] as Map<String, Any?>
     @Suppress("UNCHECKED_CAST")
     val client = (json["client"] as List<Map<String, Any?>>).firstOrNull {
-        ((it["client_info"] as Map<String, Any?>)["android_client_info"] as Map<String, Any?>)["package_name"] == "com.mihaisaru.harness"
-    } ?: throw GradleException("$path has no Android client for com.mihaisaru.harness")
+        ((it["client_info"] as Map<String, Any?>)["android_client_info"] as Map<String, Any?>)["package_name"] == "io.github.mitzacoder.aiki"
+    } ?: throw GradleException("$path has no Android client for io.github.mitzacoder.aiki")
     @Suppress("UNCHECKED_CAST")
     mapOf(
         "FIREBASE_APP_ID" to (client["client_info"] as Map<String, Any?>)["mobilesdk_app_id"].toString(),
@@ -53,11 +53,11 @@ val firebaseConfig: Map<String, String> = run {
 }
 
 android {
-    namespace = "com.mihaisaru.harness"
+    namespace = "io.github.mitzacoder.aiki"
     compileSdk = 37
     buildToolsVersion = "37.0.0"
     defaultConfig {
-        applicationId = "com.mihaisaru.harness"
+        applicationId = "io.github.mitzacoder.aiki"
         minSdk = 31
         targetSdk = 37
         versionCode = 1

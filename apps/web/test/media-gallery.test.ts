@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { Artifact } from "@mihai-harness/protocol";
+import type { Artifact } from "@aiki/protocol";
 import {
 	addTags,
 	clampPercent,

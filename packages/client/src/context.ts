@@ -2,7 +2,7 @@
  * Helpers on top of the protocol's conversation-context types: a context describes one conversation (a thread's
  * coordinator or one of its workers), and a consumer that watches several conversations has to tell them apart.
  */
-import type { ConversationContext } from "@mihai-harness/protocol";
+import type { ConversationContext } from "@aiki/protocol";
 import { isMainThread } from "./threads.ts";
 
 /** The conversation a context is about: `workerId` undefined for the coordinator, `threadId` undefined for main. */

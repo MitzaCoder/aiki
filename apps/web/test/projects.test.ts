@@ -30,7 +30,7 @@ import {
 	timeAgo,
 	type ProjectSeen,
 } from "../src/lib/projects.ts";
-import type { ProjectActivity, ProjectSummary } from "@mihai-harness/protocol";
+import type { ProjectActivity, ProjectSummary } from "@aiki/protocol";
 
 const NOW = Date.parse("2026-11-05T12:00:00.000Z");
 

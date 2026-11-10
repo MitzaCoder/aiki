@@ -26,7 +26,7 @@ import {
 	THREAD_MESSAGE_PREFIX,
 	type WakeReason,
 	WORKER_REPORT_PREFIX,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import type { Models } from "@earendil-works/pi-ai";
 import { defineExtension, type Extension, GenerationTask, hook } from "@earendil-works/pi-durable";
 import { errorMessage } from "./errors.ts";
@@ -39,7 +39,7 @@ import {
 } from "./prompt-fingerprint.ts";
 import { type ConversationIdentity, REQUEST_LOG_KEEP_DAYS, type RequestLogStore, type RequestRow } from "./request-log-store.ts";
 
-export const REQUEST_LOG_EXTENSION_NAME = "mihai.request-log";
+export const REQUEST_LOG_EXTENSION_NAME = "aiki.request-log";
 
 const UNKNOWN_IDENTITY: ConversationIdentity = {
 	kind: "other",

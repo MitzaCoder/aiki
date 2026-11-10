@@ -1,4 +1,4 @@
-# Provider sign-in when sharing mihai-harness
+# Provider sign-in when sharing aiki
 
 Research for T55, reviewed **10 November 2026** (host-local date; fetched pages are dated 9 November UTC).
 
@@ -82,7 +82,7 @@ The policy requires consumer-facing bots/agents to disclose that they are AI. It
 | Official Agent SDK with the user's own Claude Code login | SDK/`claude -p` subscription usage still exists; approval qualifications and unmodified-binary conditions also exist. | Different integration boundary, not proof that any third-party app is automatically allowed. Relevant to T3, **not our implementation**. |
 | User's Anthropic API key | Docs explicitly recommend Console keys or supported cloud-provider credentials for products. Commercial terms and Usage Policy still apply. | **Preferred direct-integration path.** Explain billing, optional eligible-plan API credits, workspace limits and data terms; no guarantee of unlimited or free usage. No resale or hidden intermediary billing. |
 
-The approved documented route for a **custom agent loop** is the Claude API using an API key (or separately supported cloud inference credentials). Specific written permission could change the OAuth assessment; none for mihai-harness was found. Owning the computer/account and letting the user click Anthropic's consent screen are worthwhile safeguards, **not a substitute for that permission**.
+The approved documented route for a **custom agent loop** is the Claude API using an API key (or separately supported cloud inference credentials). Specific written permission could change the OAuth assessment; none for aiki was found. Owning the computer/account and letting the user click Anthropic's consent screen are worthwhile safeguards, **not a substitute for that permission**.
 
 ### Public statements and enforcement, 2025–2026
 
@@ -188,7 +188,7 @@ First-party project sources: [README](https://github.com/pingdotgg/t3code/blob/m
 
 - Its FAQ says **“T3 Code uses those harnesses. It is not a harness, and it does not work without one.”** It identifies Anthropic's Agent SDK and Codex App Server. Claude setup uses Claude Code's login/configuration, not a pi-style replacement client masquerading as Claude Code.
 - Codex setup offers **Connect with ChatGPT** (explicit allowance sharing) and separately an existing Codex CLI login. It says **“Running `codex login` does not change a managed ChatGPT connection.”** This is the same important distinction our app should explain, even though we don't use its app-server architecture.
-- T3's FAQ claims **“We work with all of the labs and T3 Code is within the TOS of Claude Code, Codex, and Google Antigravity.”** That is a maintainer statement about **T3**, not provider confirmation for mihai-harness. Do not repeat its “you can trust it is safe” promise in our app.
+- T3's FAQ claims **“We work with all of the labs and T3 Code is within the TOS of Claude Code, Codex, and Google Antigravity.”** That is a maintainer statement about **T3**, not provider confirmation for aiki. Do not repeat its “you can trust it is safe” promise in our app.
 - It has had real **Claude friction**: its current FAQ says Agent SDK usage drains five-hour limits faster than Claude Code; the maintainer calls it an Anthropic bug and says weekly limits are unaffected. Attribute this to T3, rather than asserting an independently reproduced provider defect. [Issue #2680](https://github.com/pingdotgg/t3code/issues/2680) records concern about the announced May/June SDK billing change; the later official pause is the current answer. This was not proof that T3 was banned.
 - It has had real **OpenAI compatibility trouble**: [#29992](https://github.com/pingdotgg/t3code/issues/29992) reports Connect-with-ChatGPT rejecting forked Codex subagent items and preventing continuation. [#17445](https://github.com/pingdotgg/t3code/issues/17445) reports expired-token 401s during long managed runs. These are user-reported protocol/token-lifecycle failures, not established enforcement for violating terms. They show why sharing needs capability/error handling even through an official agent runtime.
 - No substantiated provider policy ban against T3 itself was found. Neither “T3 has never had trouble” nor “T3 is banned” is supported. Its choice of an official runtime, its provider discussions, and its billing/capability issues do not transfer permission or reliability to our direct pi client.
@@ -238,4 +238,4 @@ These are **estimates/interpretation**, not implemented work or verified guarant
 
 Official documentation and current terms take priority over old reporting, maintainer assurances and snippets. Full pages were fetched using the URL-to-Markdown skill; web searches were sequential, with timeouts. X statements and the OpenAI general-terms quote are explicitly identified as indexed excerpts. Direct OpenAI terms fetching returned 403; the January VentureBeat article returned 429, so it is not the sole evidence for enforcement. June's billing pause was checked against the current official help article rather than relying on May's announcements.
 
-No permission specific to mihai-harness was located, no provider was contacted, and absence of a found ban is not proof of safety. The launch recommendation distinguishes documented integration support from account security, runtime compatibility, discretionary enforcement and future pricing. Research changed only this document; no production settings, login flows, UI or credentials were changed.
+No permission specific to aiki was located, no provider was contacted, and absence of a found ban is not proof of safety. The launch recommendation distinguishes documented integration support from account security, runtime compatibility, discretionary enforcement and future pricing. Research changed only this document; no production settings, login flows, UI or credentials were changed.

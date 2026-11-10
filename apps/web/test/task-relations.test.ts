@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { BoardFeedback, BoardTask, BoardTimelineEntry } from "@mihai-harness/protocol";
+import type { BoardFeedback, BoardTask, BoardTimelineEntry } from "@aiki/protocol";
 import {
 	NO_TASK_FILTER,
 	TASK_FILTER_STORAGE_KEY,

@@ -4,7 +4,7 @@
  * state of the carousel, the compare divider, and tag completion. Design: docs/DESIGN.md "Artifact tags and the task
  * media carousel".
  */
-import { normalizeTag, normalizeTags, SUGGESTED_ARTIFACT_TAGS, type Artifact } from "@mihai-harness/protocol";
+import { normalizeTag, normalizeTags, SUGGESTED_ARTIFACT_TAGS, type Artifact } from "@aiki/protocol";
 import { artifactTitle } from "./artifacts.ts";
 
 type Tagged = Pick<Artifact, "tags">;

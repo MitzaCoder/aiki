@@ -31,7 +31,7 @@
 		type Schedule,
 		type ScheduleInput,
 		type ThinkingLevel
-	} from '@mihai-harness/protocol';
+	} from '@aiki/protocol';
 
 	/**
 	 * The scheduled task editor: a dialog over the project settings card. It holds the draft, validates it with the

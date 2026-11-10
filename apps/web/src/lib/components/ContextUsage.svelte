@@ -9,7 +9,7 @@
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import { cacheMissTotalsView } from '#lib/chat/cache.js';
 	import { contextUsageView } from '#lib/context-usage.js';
-	import type { ContextUsage } from '@mihai-harness/protocol';
+	import type { ContextUsage } from '@aiki/protocol';
 
 	/**
 	 * The Info tab's context usage block: how full the model's window is, where the background and blocking compaction

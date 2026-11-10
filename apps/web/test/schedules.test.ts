@@ -3,7 +3,7 @@
  * timezone, the last run, the worker badge, and the form's validation. All of it is outside the components on purpose.
  */
 import { describe, expect, test } from "bun:test";
-import type { Schedule, ScheduleRun, ScheduleSpec } from "@mihai-harness/protocol";
+import type { Schedule, ScheduleRun, ScheduleSpec } from "@aiki/protocol";
 import {
 	MAX_INTERVAL_MINUTES,
 	MIN_INTERVAL_MINUTES,

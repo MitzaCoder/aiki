@@ -1,6 +1,6 @@
 [Unit]
 # Runs on this host, as the installing user. @REPO_DIR@ is filled in by deploy/install-watcher.sh.
-Description=Deploy the mihai-harness app and backends when refs/heads/main moves
+Description=Deploy the aiki app and backends when refs/heads/main moves
 Documentation=file://@REPO_DIR@/README.md
 
 [Service]

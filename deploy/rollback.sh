@@ -19,8 +19,8 @@ REPO_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 export DEPLOY_CONFIG_DIR="${DEPLOY_CONFIG_DIR:-$REPO_DIR/deploy/local}"
 if [[ -f $DEPLOY_CONFIG_DIR/config.env ]]; then source "$DEPLOY_CONFIG_DIR/config.env"; fi
 BUN=${BUN:-bun}
-HOST_SERVICE=${DEPLOY_HOST_SERVICE:-mihai-harness.service}
-APP_ROOT=${DEPLOY_APP_ROOT:-/var/lib/mihai-harness-web}
+HOST_SERVICE=${DEPLOY_HOST_SERVICE:-aiki.service}
+APP_ROOT=${DEPLOY_APP_ROOT:-/var/lib/aiki-web}
 TARGET=${DEPLOY_TARGET:-vm}
 
 ARGS=()
@@ -50,12 +50,12 @@ source "$REPO_DIR/deploy/targets.sh"
 case $TARGET in
 web)
 	if [[ ${ARGS[0]:-} == --list ]]; then
-		MIHAI_HARNESS_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" list
+		AIKI_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" list
 	elif [[ ${ARGS[0]:-} == --status ]]; then
-		MIHAI_HARNESS_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" status
+		AIKI_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" status
 	else
 		log "asking the app deployer to roll back ${ARGS[0]:-to the previous release}"
-		MIHAI_HARNESS_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" rollback "${ARGS[0]:-}" ||
+		AIKI_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" rollback "${ARGS[0]:-}" ||
 			die "app rollback failed; see the log above"
 		log "rolled back the app"
 	fi

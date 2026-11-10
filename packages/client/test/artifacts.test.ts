@@ -3,7 +3,7 @@
  * client's own contract, so they are pinned here without a server.
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { Artifact, ArtifactsChangedEvent } from "@mihai-harness/protocol";
+import type { Artifact, ArtifactsChangedEvent } from "@aiki/protocol";
 import {
 	ARTIFACT_URL_MIN_REFRESH_MS,
 	ARTIFACT_URL_REFRESH_MARGIN_MS,

@@ -12,7 +12,7 @@ async function until(read:()=>Promise<any>,accept:(v:any)=>boolean,label:string)
 async function send(text:string){await find(/^Message the coordinator…$/);await type(/^Message the coordinator…$/,text,false,true);await tap(/^Send$/);await until(()=>req("conversation.page",{limit:500,order:"ascending"}),r=>r.entries.some((e:any)=>(e.model??[]).some((m:any)=>m.role==="user"&&contentText(m.content)===text)),text);await until(()=>req("threads.list"),r=>r.threads.some((t:any)=>t.main&&t.status!=="running"),"main settled "+text);}
 try {
  const initial=await req("threads.list");assert.equal(initial.threads.filter((t:any)=>!t.main).length,0,"Refusing to repeat fresh-state visual setup");
- await device("phone");await device("adb","reverse","tcp:4795","tcp:4795");await device("adb","shell","am","force-stop","com.mihaisaru.harness");await device("launch");await project(/Native visual states \(faux\)/);
+ await device("phone");await device("adb","reverse","tcp:4795","tcp:4795");await device("adb","shell","am","force-stop","io.github.mitzacoder.aiki");await device("launch");await project(/Native visual states \(faux\)/);
  for(const input of ["R2 visual states","R2 visual coding","R2 visual artifacts"])await send(input);
  process.env.ANDROID_NATIVE_UI_ORIGIN=target.origin;await import("./round2-seed-real-ui.ts");
  for(const input of ["R2 visual thinking","R2 visual coding"])await send(input);

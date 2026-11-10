@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The app half of a deploy. Runs on this host, where Caddy serves /var/lib/mihai-harness-web/current.
+# The app half of a deploy. Runs on this host, where Caddy serves /var/lib/aiki-web/current.
 #
 #   web.sh release <name> <build-dir>   publish a built SPA, point current at it, verify the files (roll back on failure)
 #   web.sh rollback [<name>]            switch back to <name> (default: the release before current)
@@ -10,7 +10,7 @@
 # it does not exist yet.
 set -euo pipefail
 
-ROOT=${MIHAI_HARNESS_WEB_ROOT:-/var/lib/mihai-harness-web}
+ROOT=${AIKI_WEB_ROOT:-/var/lib/aiki-web}
 RELEASES=$ROOT/releases
 CURRENT=$ROOT/current
 KEEP=${DEPLOY_KEEP_RELEASES:-5}

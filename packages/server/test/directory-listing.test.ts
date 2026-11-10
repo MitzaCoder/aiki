@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { chmod, mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { COMPLETION_LIMIT } from "@mihai-harness/protocol";
+import { COMPLETION_LIMIT } from "@aiki/protocol";
 import { completeDirectory, DIRECTORY_ENTRY_LIMIT, listDirectory } from "../src/directory-listing.ts";
 import { ServerError } from "../src/errors.ts";
 

@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import type { FauxResponseFactory } from "@earendil-works/pi-ai/providers/faux";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { ConversationView, ModelRef } from "@mihai-harness/protocol";
+import type { ConversationView, ModelRef } from "@aiki/protocol";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

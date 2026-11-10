@@ -29,7 +29,7 @@ import type {
 	SkillInfo,
 	SkillSource,
 	ToolInfo,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { type Dirent, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -40,7 +40,7 @@ import type { Project } from "./projects.ts";
 /** The AGENTS.md a directory may hold, in the order they win: one file per directory, whoever wrote it (pi's order). */
 export const CONTEXT_FILE_NAMES = ["AGENTS.md", "CLAUDE.md"] as const;
 /**
- * pi's two system prompt files, from the harness's own config directory and the project's `.mihai-harness`: `SYSTEM.md`
+ * pi's two system prompt files, from the harness's own config directory and the project's `.aiki`: `SYSTEM.md`
  * replaces the base instructions, `APPEND_SYSTEM.md` is added after them. pi's own files (`~/.pi/agent`, `.pi/`) are
  * deliberately not read.
  */
@@ -57,7 +57,7 @@ export const SKILLS_DIR_NAME = "skills";
 /** A project's skills live next to its pi configuration, as pi's do. */
 export const PROJECT_CONFIG_DIR = ".pi";
 /** A project's own SYSTEM.md and APPEND_SYSTEM.md live here, apart from its pi configuration and from pi's files. */
-export const PROJECT_HARNESS_DIR = ".mihai-harness";
+export const PROJECT_HARNESS_DIR = ".aiki";
 /** Claude Code's per-project configuration directory; its `.claude/skills` are offered too. */
 export const PROJECT_CLAUDE_DIR = ".claude";
 /** Claude Code's plugins home, below its home, and the file that records what is installed there. */
@@ -88,7 +88,7 @@ export const PREAMBLE_SECTION = "preamble";
 export const ADDENDUM_SECTION = "addendum";
 export const MODEL_NOTES_SECTION = "model_notes";
 /** The extension that provides those sections, installed for every conversation of a project. */
-export const AGENT_CONTEXT_EXTENSION = "mihai-agent-context";
+export const AGENT_CONTEXT_EXTENSION = "aiki-agent-context";
 
 /**
  * A skill as the harness knows it: where it came from, and whether this conversation has read it — the latter is per
@@ -216,7 +216,7 @@ function readPromptFile(
 }
 
 /**
- * The harness's rule for the two system prompt files: of `<cwd>/.mihai-harness/SYSTEM.md` and
+ * The harness's rule for the two system prompt files: of `<cwd>/.aiki/SYSTEM.md` and
  * `<configDir>/SYSTEM.md` the project's wins, and the two are never combined; the same for APPEND_SYSTEM.md. Only the
  * conversation's own cwd is looked at — unlike AGENTS.md, these are configuration for the directory the conversation runs
  * in, not instructions inherited from a parent. pi's own agent directory and `.pi` files are not read at all.
@@ -529,7 +529,7 @@ function uniqueSkills(candidates: readonly LoadedSkill[]): LoadedSkill[] {
  * to `cwd`, so the nearest file is last and wins.
  *
  * Skills come from three places, in this order: the harness's own (`<configDir>/skills`, then
- * `<cwd>/.mihai-harness/skills`), pi's (`<agentDir>/skills`, then `<cwd>/.pi/skills`), and Claude Code's
+ * `<cwd>/.aiki/skills`), pi's (`<agentDir>/skills`, then `<cwd>/.pi/skills`), and Claude Code's
  * (`<claudeDir>/skills` with its enabled plugins' skills, then `<cwd>/.claude/skills`). Within a source the global
  * directory comes before the project's, and a name keeps its first skill: harness over pi over Claude, then global over
  * project. A skill whose `SKILL.md` real path was already loaded is dropped too, so the same skill symlinked into two
@@ -713,7 +713,7 @@ export type ConversationContextSources = {
 	registry: Registry;
 	/** The directory whose AGENTS.md and skills every conversation reads. */
 	agentDir: string;
-	/** The directory whose SYSTEM.md and APPEND_SYSTEM.md apply unless the project's own `.mihai-harness` has one. */
+	/** The directory whose SYSTEM.md and APPEND_SYSTEM.md apply unless the project's own `.aiki` has one. */
 	configDir: string;
 	/** Claude Code's home, whose skills, plugins' skills and `.claude/skills` the conversation is also offered. */
 	claudeDir: string;

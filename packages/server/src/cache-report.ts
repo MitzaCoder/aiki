@@ -9,7 +9,7 @@
  * which is how a copy of another backend's data directory gets a log to dig in.
  */
 import { join } from "node:path";
-import { describePromptChange } from "@mihai-harness/protocol";
+import { describePromptChange } from "@aiki/protocol";
 import { cacheStatsRange, kindLabel, missReasonLabel, readCacheStats } from "./cache-stats.ts";
 import { FileCredentialStore } from "./credentials.ts";
 import { resolveDataDir } from "./data-dir.ts";

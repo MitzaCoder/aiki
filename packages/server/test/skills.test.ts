@@ -9,7 +9,7 @@ const cleanups: (() => Promise<void>)[] = [];
 
 /** A fresh directory, removed after the test. */
 async function tempDir(): Promise<string> {
-	const directory = await mkdtemp(join(tmpdir(), "mihai-harness-skills-"));
+	const directory = await mkdtemp(join(tmpdir(), "aiki-skills-"));
 	cleanups.push(() => rm(directory, { recursive: true, force: true }));
 	return directory;
 }
@@ -49,7 +49,7 @@ describe("skill sources", () => {
 		await mkdir(cwd, { recursive: true });
 
 		await writeSkill(join(configDir, "skills"), "harness-global", "Harness global.");
-		await writeSkill(join(cwd, ".mihai-harness", "skills"), "harness-project", "Harness project.");
+		await writeSkill(join(cwd, ".aiki", "skills"), "harness-project", "Harness project.");
 		await writeSkill(join(agentDir, "skills"), "pi-global", "pi global.");
 		await writeSkill(join(cwd, ".pi", "skills"), "pi-project", "pi project.");
 		await writeSkill(join(claudeDir, "skills"), "claude-global", "Claude global.");
@@ -87,7 +87,7 @@ describe("skill sources", () => {
 		await writeSkill(join(claudeDir, "skills"), "docs", "Claude global docs.");
 		await writeSkill(join(cwd, ".claude", "skills"), "docs", "Claude project docs.");
 		// The harness's project directory is still the harness's, ahead of pi and Claude.
-		await writeSkill(join(cwd, ".mihai-harness", "skills"), "ship", "Harness project ship.");
+		await writeSkill(join(cwd, ".aiki", "skills"), "ship", "Harness project ship.");
 		await writeSkill(join(agentDir, "skills"), "ship", "pi ship.");
 
 		const loaded = loadAgentContext({ agentDir, configDir, claudeDir, cwd });

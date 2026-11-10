@@ -1,5 +1,5 @@
 /**
- * A stand-in mihai-harness backend for the deploy tests: one WebSocket at `/ws` that answers `hello`, `server.status`,
+ * A stand-in aiki backend for the deploy tests: one WebSocket at `/ws` that answers `hello`, `server.status`,
  * `server.drain`, `projects.list` and `conversation.page`, and records what was asked. No storage, no harness, no repository imports.
  *
  * Its answers are read live from the mutable `state` or from files, so a test can make it busy, publish a release under
@@ -143,7 +143,7 @@ export function startFakeBackend(overrides: Partial<FakeBackendState> = {}): Fak
 					case "hello":
 						answer({
 							protocolVersion: 1,
-							server: { name: "mihai-harness", version: "0.1.0" },
+							server: { name: "aiki", version: "0.1.0" },
 							...(state.features === null ? {} : { features: state.features }),
 						});
 						return;

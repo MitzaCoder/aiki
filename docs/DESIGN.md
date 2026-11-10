@@ -1,6 +1,6 @@
 # Design
 
-Name: mihai-harness (command and data directory).
+Name: aiki (command and data directory).
 
 Decisions so far. Why each was made is noted where it isn't obvious.
 
@@ -159,7 +159,7 @@ leftover.
   empty field or on a row goes up, Escape clears the field and only then closes the dialog.
 - Quick places (a "Places" popover): Home, the parent folders of the backend's added projects (deduped) and recent
   picks. Recent picks and the last folder opened are kept per backend in `localStorage`
-  (`mihai-harness.folder-picker.v1`); the picker starts at the last folder and falls back to Home when it is gone.
+  (`aiki.folder-picker.v1`); the picker starts at the last folder and falls back to Home when it is gone.
 - Each row has a visible "Use" button (pick without opening) and a ⋯ menu with Rename and Delete, reachable by touch;
   the footer's "Use this folder" picks the current one.
 - Changing folders, safety rules (the server enforces all of them; the app only mirrors what it can for a clear
@@ -182,24 +182,24 @@ leftover.
 What a conversation's model is given besides the transcript. Clients read it with `conversation.context` (the `context`
 feature) and get it pushed as `conversation.context.changed` while they watch the conversation.
 
-- **AGENTS.md**: the user's agent directory first (`~/.pi/agent`, or `MIHAI_HARNESS_AGENT_DIR` when the server's `HOME`
+- **AGENTS.md**: the user's agent directory first (`~/.pi/agent`, or `AIKI_AGENT_DIR` when the server's `HOME`
   is not the user's, as under a system service), then every `AGENTS.md` — or `CLAUDE.md` when a directory has no
   `AGENTS.md` — from the filesystem root down to the conversation's cwd, so the nearest file is last and wins. In the
   prompt each file is a `<project_instructions path="…">` block; the response lists the files with their scope
   (`global` for the agent directory, `project` otherwise) and content.
 - **System prompt files**: the harness's own `SYSTEM.md` and `APPEND_SYSTEM.md`, not pi's, so the user's pi files are
-  never sent to the harness's models. They come from the harness's config directory (`MIHAI_HARNESS_CONFIG_DIR`, else
-  `${XDG_CONFIG_HOME:-~/.config}/mihai-harness`) and from the project's `<cwd>/.mihai-harness/`, one file per name — the
+  never sent to the harness's models. They come from the harness's config directory (`AIKI_CONFIG_DIR`, else
+  `${XDG_CONFIG_HOME:-~/.config}/aiki`) and from the project's `<cwd>/.aiki/`, one file per name — the
   project's wins over the config directory's and the two are never combined (pi's precedence, its placement). `SYSTEM.md`
   is the prompt's preamble (pi's section name and position: the leading text, not wrapped in a tag) and
   `APPEND_SYSTEM.md` the addendum right after it, both ahead of the AGENTS.md files and the skills, in the coordinator and
-  in every worker (a worker in a jj workspace reads its checkout's `.mihai-harness/`). pi's SYSTEM.md replaces its default
+  in every worker (a worker in a jj workspace reads its checkout's `.aiki/`). pi's SYSTEM.md replaces its default
   base prompt — role, tool list, rules, docs — while context files and skills stay; this harness writes no base
   instructions of its own, so SYSTEM.md only fills that preamble slot and never replaces the harness's coordinator or
   worker sections, the AGENTS.md files or the skills. Symlinks are followed, and an empty file counts as none.
 - **Skills**: three sources, in this order. The harness's own: `<configDir>/skills/*/SKILL.md` and
-  `<cwd>/.mihai-harness/skills/*/SKILL.md`. pi's: `<agentDir>/skills/*/SKILL.md` and `<cwd>/.pi/skills/*/SKILL.md`.
-  Claude Code's: `<claudeDir>/skills/*/SKILL.md` (its home — `MIHAI_HARNESS_CLAUDE_DIR`, else `~/.claude`) and
+  `<cwd>/.aiki/skills/*/SKILL.md`. pi's: `<agentDir>/skills/*/SKILL.md` and `<cwd>/.pi/skills/*/SKILL.md`.
+  Claude Code's: `<claudeDir>/skills/*/SKILL.md` (its home — `AIKI_CLAUDE_DIR`, else `~/.claude`) and
   `<cwd>/.claude/skills/*/SKILL.md`, plus the skills of the plugins Claude Code records as installed and enabled in
   `<claudeDir>/plugins/installed_plugins.json` and the `enabledPlugins` maps of `~/.claude/settings.json`,
   `.claude/settings.json` and `.claude/settings.local.json`; a plugin's skills are namespaced `plugin:skill` as
@@ -257,7 +257,7 @@ misses can be analysed with real numbers rather than per-conversation totals.
   Anthropic reports it), output, each cost and the total; prompt tokens; the idle gap since the conversation's previous
   request; the miss (tokens, cost, reason, every miss, no threshold) by the protocol's `CacheMissTracker`; what woke the
   agent; pi-ai's cache retention; what changed in the prompt; `live` or `backfill`; the response's duration.
-- Live capture (`request-log.ts`), off the request's path: the `mihai.request-log` extension (hooks only, no section or
+- Live capture (`request-log.ts`), off the request's path: the `aiki.request-log` extension (hooks only, no section or
   tool, so no prompt changes; workers and threads keep it) has a `beforeRequest` hook on pi-durable's generation task
   that tags the last message object with the project and conversation. The server's `Models` is wrapped (after the
   subscription usage wrapper): `streamSimple` finds the tag, copies the message list, chains an `onPayload` that keeps
@@ -317,7 +317,7 @@ The setting is a policy choice, not a guarantee of savings; provider behavior an
 - Workers keep short retention by default to avoid paying a larger write premium for short-lived conversations.
   `all` remains available for workloads with long-running tool calls.
 - How (`cache-retention.ts`): pi-durable's stream options are the Harness's, the same for every conversation, so the
-  `mihai.cache-retention` extension (a `beforeRequest` hook only: no section, no tool, so prompts stay byte-stable;
+  `aiki.cache-retention` extension (a `beforeRequest` hook only: no section, no tool, so prompts stay byte-stable;
   workers and threads keep it) tags each turn's last message with its conversation's retention, read from the project
   at every request, and `PromptCacheRetention.applyTo` wraps `Models` outside the request log's wrapper, adding the
   retention to that request's options so the log records it (`retention`). A request that sets its own keeps it
@@ -408,10 +408,10 @@ Status: backend, protocol, client and web UI done (milestone 2).
   `[check-in]` that carries that digest for each running worker and asks it to judge whether one is stuck or on a wrong
   path. The input is submitted as a follow-up, so it never interrupts a run: the coordinator handles it at its next turn
   boundary. Nothing is sent while no worker runs, and at most one check-in waits in the inbox at a time. The wait is a
-  durable sleep in a background task (`mihai.worker-checkin`), and the input's request ID derives from the task and the
+  durable sleep in a background task (`aiki.worker-checkin`), and the input's request ID derives from the task and the
   deadline, so a restart neither loses a check-in nor repeats one; the next deadline is computed from the current time,
   so a paused process cannot burst a backlog.
-- The list is a durable document on the coordinator conversation (`mihai.workers`), so it and the statuses survive a
+- The list is a durable document on the coordinator conversation (`aiki.workers`), so it and the statuses survive a
   restart. Statuses: `running`, `idle` (answered, waiting), `failed`, `stopped`, `done` (forgotten; the last 20 stay as
   history).
 - Isolation is the coordinator's choice per worker: `shared` (the project directory) or `workspace`, a `jj workspace`
@@ -512,7 +512,7 @@ Backend (`packages/server/src/threads.ts`, `coordinators.ts`), as built on 2026-
 
 - **Shape.** A background thread is a child conversation of main's, owned by a background anchor task like a worker;
   a kickoff task delivers its brief once (request ID from the starting call or schedule slot). The list is a durable
-  document on main (`mihai.threads`). `Coordinators` registers main and every thread (inside the creating commit,
+  document on main (`aiki.threads`). `Coordinators` registers main and every thread (inside the creating commit,
   and on open before anything resumes), so the worker, board, memory, history and compaction tools answer any
   coordinator and refuse workers.
 - **Extensions.** Threads keep every coordinator extension except `thread-start-tools` (`thread_start`,
@@ -559,7 +559,7 @@ Status: backend done (`packages/server/src/artifacts.ts`, `artifact-tools.ts`); 
   save copies into `<artifactId>.partial/` and renames it into place before the index names it. MIME from the
   extension and the first bytes (the bytes win, except a media extension on a container that holds video or audio:
   `.mkv`, `.weba`, `.ogv`); kind from the MIME; `durationSeconds` from `ffprobe` when it is on PATH. One file may
-  have `MIHAI_HARNESS_ARTIFACT_MAX_BYTES` (default 2 GiB); a project's total is unbounded.
+  have `AIKI_ARTIFACT_MAX_BYTES` (default 2 GiB); a project's total is unbounded.
 - `artifact_save { path, title?, note?, taskId? }`: every conversation (workers keep it, scripts may call it). The
   path is relative to the conversation's cwd or absolute (`~/` expands); after symlinks it must be a regular readable
   file under that cwd, the project directory or the system temp directory, and nothing in the data directory except
@@ -572,7 +572,7 @@ Status: backend done (`packages/server/src/artifacts.ts`, `artifact-tools.ts`); 
   `<data>/artifacts-secret`, valid 4 hours, compared in constant time; 403 without a valid token. One byte range
   (206/416), `Content-Disposition` inline or attachment (`download`), `Cache-Control: private`, `nosniff` and a
   sandboxing CSP (an HTML or SVG artifact runs no script on the backend's origin). CORS only for the allowed origins.
-  URLs are absolute on the origin the socket was opened at: `MIHAI_HARNESS_PUBLIC_URL`, else Caddy's
+  URLs are absolute on the origin the socket was opened at: `AIKI_PUBLIC_URL`, else Caddy's
   `X-Forwarded-Proto`/`X-Forwarded-Host`, else the request's.
 
 ### Artifact tags and the task media carousel
@@ -639,7 +639,7 @@ later from this section.
   "Before" and "After" labels. The strip uses the after image with a split badge; slide positions and the strip count the
   pair once (filter chip counts still count source artifacts). A **Show singly / Compare pairs** toggle in the slide and
   viewer switches all pairs to ordinary individual pages, keeping access to either image, its tags and download. The choice
-  is stored per device (`mihai-harness.media-separate.v1` on web, `DeviceSettings.mediaSeparate` in Android DataStore);
+  is stored per device (`aiki.media-separate.v1` on web, `DeviceSettings.mediaSeparate` in Android DataStore);
   compare is the default. The after image supplies the pair caption; its accessible slide name is
   "Before and after: <caption>". Opening a pair by tap or expand opens compare in the viewer too. Compare retains its
   existing fit-only view (zoom/pan are available on the individual pages). Divider drags start only at the handle; swipes
@@ -735,7 +735,7 @@ is where they talk.
   there as To do. Old web clients also decode JSON without enum rejection, but their old kanban can omit unknown
   statuses until refreshed; the new web falls back to To do. No wire downgrade or enum migration is needed.
 - **Work-day start (T48).** General settings → Appearance → Waiting tasks has “Work day starts at”, default
-  **08:00**, stored per device (web localStorage `mihai-harness.work-day-start.v1`; Android DeviceSettings/DataStore).
+  **08:00**, stored per device (web localStorage `aiki.work-day-start.v1`; Android DeviceSettings/DataStore).
   General preferences are not backend-synced; drafts have their own separate sync path. The device's current local
   zone interprets this wall time. Tomorrow, In 3 days and Next week retain **+1 / +3 / +7 calendar days**, not Monday.
   Quick picks and the date picker resolve to an exact UTC ISO timestamp on the client before saving. Past choices
@@ -756,7 +756,7 @@ Decided with the user on 2026-11-06. Web only; protocol addition: the optional `
 
 - **Where.** The sidebar's Tasks tab at its usual width keeps the list. Expanded (its expand control), or as the
   full-screen sheet on a narrow window, it is the full-width Tasks view with a List | Board switch, remembered per
-  device (`mihai-harness.tasks-view.v1`, list by default). The Tasks button in the header opens the tasks the way this
+  device (`aiki.tasks-view.v1`, list by default). The Tasks button in the header opens the tasks the way this
   device last looked at them: the list beside the chat, or the board full width. The chat stays the home screen.
 - **Columns by status.** To do, Working, Blocked, Ready for review, Waiting, Done. Done holds done and dropped tasks (dropped
   ones greyed and struck through), newest first, the 12 newest then "Show N more"; archived ones only with "Show
@@ -980,7 +980,7 @@ brief and instructions, same report — with the schedule's title, brief, model,
 - Shapes: `interval` (every N minutes, 5 to 7 days, anchored to when the schedule was created so it does not drift),
   `daily` and `weekly` (a `HH:MM` wall-clock time, weekly with one or more weekdays), and `cron` (five fields; numbers,
   `*`, ranges, steps and lists, no month or weekday names so it means the same everywhere). All times are read in the
-  backend's timezone (`schedules.list` reports it; `MIHAI_HARNESS_TIMEZONE` overrides the host's clock, and `UTC` is the
+  backend's timezone (`schedules.list` reports it; `AIKI_TIMEZONE` overrides the host's clock, and `UTC` is the
   fallback). Each schedule has an `enabled` flag and can be run on demand whether it is enabled or not.
 - What a report does (`onReport`): `review` posts it to the coordinator and wakes it, exactly like any worker's report;
   `record` appends it to the coordinator's transcript as an ordinary user entry (so the app draws it as a report card and
@@ -1266,7 +1266,7 @@ the server, from its own accepted write, a push or a read) and a flag `dirty` = 
    through `WaitingMessages`: a failure stays on the message's own bubble (text + Retry) and does *not* come back into
    the composer or the draft, so the text is never in both; Retry sends with `keepDraft`. "Edit" on a waiting bubble
    calls the composer's `restore`, which is a change like any other: it becomes the draft and syncs.
-5. **Local cache** (`localStorage["mihai-harness.drafts.v1"]`, the format of the first web-only version plus `rev` and
+5. **Local cache** (`localStorage["aiki.drafts.v1"]`, the format of the first web-only version plus `rev` and
    `base`): every change to `local` is saved there at once, with the `synced` it knows. It is the draft when the backend
    has no `chat-drafts`, when the connection is down or not yet up, and it is restored synchronously on mount, so typing
    never waits for the network. When the connection is up (and again after each reconnect) the client reads the chat's
@@ -1363,7 +1363,7 @@ the picker, receiver and thumbnails):
   content is the text block then the images.
 - Not on Android: a waiting-message bubble (the queue is not built there, see "Messages waiting in the queue"), so the
   count/thumbnail rules above are web only for now; several images in one sent message show as one transcript row each.
-- Debug builds only: `adb shell am broadcast -a com.mihaisaru.harness.DEBUG_COPY_IMAGE -p com.mihaisaru.harness --es label Shot
+- Debug builds only: `adb shell am broadcast -a io.github.mitzacoder.aiki.DEBUG_COPY_IMAGE -p io.github.mitzacoder.aiki --es label Shot
   --ei width 1200 --ei height 700` draws a picture and puts it on the clipboard (an emulator cannot copy one); then
   `adb shell input keyevent KEYCODE_PASTE` with a message box focused, or tap the keyboard's "Image" suggestion.
 
@@ -1376,7 +1376,7 @@ here and nothing depends on xterm.js.
 - **What it is.** A shell as the backend's own user, on the backend's own machine (the same power as an agent's `bash`).
   No separate service or port: it rides the `/ws` connection and its rules (the origin check, the tailnet in front).
   Anyone who can already drive the app on a backend can open one. It is a feature (`terminal`) the server can turn off
-  (`MIHAI_HARNESS_TERMINALS=off` or the server option `terminals: false`): then it is not advertised, and a request
+  (`AIKI_TERMINALS=off` or the server option `terminals: false`): then it is not advertised, and a request
   for it is refused (`unknown_request`). This is the one feature whose reach is "run anything", so it is stated here
   and in the Security note below rather than assumed.
 - **Every terminal is a zellij session.** The PTY runs `zellij attach --create <session>`. Closing the page, losing
@@ -1391,7 +1391,7 @@ here and nothing depends on xterm.js.
   the *user's* systemd manager to move the process into a transient scope under `user@<uid>.service/app.slice`; the zellij server the
   client forks lives and dies there, outside the unit's cgroup. Why this and not the others, and the experiment, are
   below. It needs the user manager running: the VM's backend already is a user service (linger on); the PC and the T14
-  run the backend as a *system* service and need **lingering** for the user (`users.users.mihai.linger = true`), and
+  run the backend as a *system* service and need **lingering** for the user (`users.users.aiki.linger = true`), and
   the server needs `XDG_RUNTIME_DIR=/run/user/<uid>` (the server sets it for the child itself, a system unit has none).
   When the user manager or `systemd-run` is not there, the PTY is started plainly, the session still works, and
   `terminal.list` says `survivesRestart: false` so the app can warn that a restart ends the terminals.
@@ -1440,14 +1440,14 @@ here and nothing depends on xterm.js.
   owns the terminals it opened and **detaches them (kills only the attach client) when its socket closes**; the same on
   `stop()`. Limits: 8 terminals per connection, 16 per server (`terminal_limit`), cols 1–500, rows 1–200, input frames
   64 KiB. Session names are checked (`bad_request`) so they cannot be an option or a path. The shell's environment is
-  the server's without `MIHAI_HARNESS_*`, with `TERM=xterm-256color`, `COLORTERM=truecolor`, `SHELL` set to the user's
+  the server's without `AIKI_*`, with `TERM=xterm-256color`, `COLORTERM=truecolor`, `SHELL` set to the user's
   login shell when unset (a system unit has none), and `XDG_RUNTIME_DIR` for the user manager. `terminal.list` runs
   `zellij list-sessions --no-formatting`; kill runs `zellij kill-session` then `delete-session`.
-- **Availability and installation.** The server finds zellij through `MIHAI_HARNESS_ZELLIJ`, then `PATH`, then
+- **Availability and installation.** The server finds zellij through `AIKI_ZELLIJ`, then `PATH`, then
   `~/.local/bin/zellij`. The PC and the T14 already have it on the service's PATH through
   `/home/user/.local/bin` (home-manager's `programs.zellij`), but that is an accident of the PATH line:
-  nix-config's `mihai-harness.nix` should list `zellij` in its `lib.makeBinPath` with the other tools, and the host
-  should declare `users.users.mihai.linger = true`. The VM has no zellij: `deploy/backend.sh` gains `ensure_zellij`
+  nix-config's `aiki.nix` should list `zellij` in its `lib.makeBinPath` with the other tools, and the host
+  should declare `users.users.aiki.linger = true`. The VM has no zellij: `deploy/backend.sh` gains `ensure_zellij`
   beside `ensure_bun`, which installs the pinned static (musl) release into `~/.local/bin` and checks its SHA-256.
   A backend without zellij answers `terminal.list` with `available: false` and the reason; `terminal.open` fails with
   `terminal_unavailable` and that sentence, and the app shows it where the terminal would be.
@@ -1464,9 +1464,9 @@ here and nothing depends on xterm.js.
   client library does this: `openTerminal` returns a handle that reopens on `ready`).
 - **Security.** The terminal is a shell as the backend's user: the same reach as an agent's `bash` tool, which the user
   already hands to every coordinator and worker. Who can open one is exactly who can drive the app on that backend:
-  an allowed browser origin (`MIHAI_HARNESS_ALLOWED_ORIGINS`) on the tailnet; there is no login, so a page from another
+  an allowed browser origin (`AIKI_ALLOWED_ORIGINS`) on the tailnet; there is no login, so a page from another
   origin cannot reach it and nobody off the tailnet can. A phone on the tailnet with the app open has a shell on the
-  PC. Turn it off per backend with `MIHAI_HARNESS_TERMINALS=off`. The server never logs terminal input or output.
+  PC. Turn it off per backend with `AIKI_TERMINALS=off`. The server never logs terminal input or output.
 - **Android** must port: the `terminal.*` JSON (generated into `Models.kt`), the binary framing and the ack window (a
   terminal emulator view is the work; the protocol has nothing web-specific), the reconnect-and-reattach loop, the
   key-bar keys as byte strings (Esc `\x1b`, Tab `\t`, arrows `\x1b[A`..., Ctrl as `byte & 0x1f`), and resize on
@@ -1526,7 +1526,7 @@ the Termux app itself is GPLv3, and these two libraries are its stated exception
   recreated on rotation and the emulators with their scrollback must survive it, so the deck owns the tabs, their handles and
   their emulators (`TerminalScreenSession`); the screen shows the active one. Leaving the terminal screen detaches every tab
   after four seconds (a rotation comes back within that; going back to a project does not), and the tab list is kept in
-  `SharedPreferences` per backend (`mihai-harness.terminal-tabs.v1`, the web's format) so the next visit, or a restart of the
+  `SharedPreferences` per backend (`aiki.terminal-tabs.v1`, the web's format) so the next visit, or a restart of the
   app, reattaches the same sessions. `parseTabs`, `reconcileTabs`, `terminalTarget`, `sessionForPrefix`, `terminalPrefix` are
   ports with the web's tests (`TerminalLogicTest`). Like the web, entering from a project picks the lowest-numbered running
   session of the project's prefix, and reattaching a tab whose session had exited resurrects it.
@@ -1979,7 +1979,7 @@ one quiet line; a failed one keeps the existing notice. The Info tab's usage blo
 - **Code in the chat: wrap or scroll (D21).** A bash command in a tool card wraps by default (a command is read, not
   column-aligned); a fenced block scrolls sideways. Every code block has a "Wrap" toggle (the bash card's Command row
   has one too), always shown, `aria-pressed`. One device-wide choice, `wrap code` (web `localStorage`
-  `mihai-harness.code-wrap.v1`, Android DataStore): until the reader chooses, a bash command wraps and a fenced block
+  `aiki.code-wrap.v1`, Android DataStore): until the reader chooses, a bash command wraps and a fenced block
   scrolls; after that every block follows the choice. Wrapped code marks each soft wrap with a small muted `↳` in the
   hanging indent of the continuation row, so it differs from a real newline; the mark is drawn (CSS mask / canvas), never
   text, so copy and selection give the original. A scrolling block fades the edge that has more behind it (right at
@@ -2324,7 +2324,7 @@ APNs/FCM would replace the transport, not the interface.
   with `notifications.registerFcm` (feature `fcm-push`) and the backend sends the same payload as FCM data through the
   HTTP v1 API (`packages/server/src/fcm.ts`). Kinds, quiet hours, mutes, the hold, dedupe and `lastDelivery` are the
   Web Push ones; only the last hop differs. The backend signs in with a service-account key of the app's Firebase
-  project, `<data>/notifications/fcm-service-account.json` or `MIHAI_HARNESS_FCM_KEY_FILE`, mode 0600, never committed;
+  project, `<data>/notifications/fcm-service-account.json` or `AIKI_FCM_KEY_FILE`, mode 0600, never committed;
   without it FCM is off (said once at start), FCM devices stay registered, and `notifications.config` answers
   `fcm: null` so the app can say why nothing arrives. Messages are data-only and high priority: the app draws the
   notification itself (channel per kind, tap opens the payload's route).

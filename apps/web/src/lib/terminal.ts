@@ -3,11 +3,11 @@
  * key bar and its sticky modifiers, and the xterm colours derived from the active theme's tones. Pure, so the
  * components only wire these to events and the behaviour is pinned in `test/terminal.test.ts`.
  */
-import { terminalPrefix } from "@mihai-harness/protocol";
-import type { TerminalSessionInfo } from "@mihai-harness/protocol";
+import { terminalPrefix } from "@aiki/protocol";
+import type { TerminalSessionInfo } from "@aiki/protocol";
 
 /** Per browser, like the backend list: the tabs each backend's terminal page has open. */
-export const TERMINAL_TABS_STORAGE_KEY = "mihai-harness.terminal-tabs.v1";
+export const TERMINAL_TABS_STORAGE_KEY = "aiki.terminal-tabs.v1";
 /** Tabs one page keeps attached; the backend allows eight per connection. */
 export const MAX_TERMINAL_TABS = 6;
 

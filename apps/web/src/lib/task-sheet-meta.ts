@@ -1,4 +1,4 @@
-import type { BoardTask } from '@mihai-harness/protocol';
+import type { BoardTask } from '@aiki/protocol';
 import { waitingSummary } from './task-waiting.js';
 
 /** Context formerly unique to the summary, kept compact in the wrapping header metadata. */

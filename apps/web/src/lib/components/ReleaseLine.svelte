@@ -1,6 +1,6 @@
 <script lang="ts">
 	import GitCommitHorizontalIcon from '@lucide/svelte/icons/git-commit-horizontal';
-	import type { DeployStatus, ReleaseInfo } from '@mihai-harness/protocol';
+	import type { DeployStatus, ReleaseInfo } from '@aiki/protocol';
 	import { Badge } from '#lib/components/ui/badge/index.js';
 	import { releaseView } from '#lib/server-status.js';
 	import { cn } from '#lib/utils.js';

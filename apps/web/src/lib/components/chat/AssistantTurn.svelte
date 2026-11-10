@@ -10,7 +10,7 @@
 	import { groupTurnParts, turnText, type TurnPart, type TurnUsage } from '#lib/transcript.js';
 	import { linkTaskMentions } from '#lib/task-chat.js';
 	import { useTaskLinks } from '#lib/task-links.svelte.js';
-	import type { CacheMiss, MemoryScope, WorkerSummary } from '@mihai-harness/protocol';
+	import type { CacheMiss, MemoryScope, WorkerSummary } from '@aiki/protocol';
 	import type { ThreadCards } from '#lib/threads.js';
 	import CallCard from './CallCard.svelte';
 	import CodingCalls from './CodingCalls.svelte';

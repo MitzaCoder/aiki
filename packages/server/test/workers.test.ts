@@ -5,7 +5,7 @@ import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@earendil-work
 import { InboxDoc, type JsonObject } from "@earendil-works/pi-durable";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { NO_NEW_WORKER_REPORT, WorkersDoc } from "../src/workers.ts";
-import type { ConversationView, ModelRef, WorkerModel, WorkersListResponse } from "@mihai-harness/protocol";
+import type { ConversationView, ModelRef, WorkerModel, WorkersListResponse } from "@aiki/protocol";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { SetTimer } from "@earendil-works/pi-durable";
@@ -1415,7 +1415,7 @@ describe("quiet worker reports", () => {
 		const reports = () => view.view!.entries.filter((e) => entryText(e).startsWith("[worker reader reported]"));
 		const settle = async (count: number) => {
 			await view.waitForView(() => reports().length === count);
-			await until(async () => !(await runtime.harness.inspect(BACKGROUND_CONTEXT)).tasks.some((t) => t.record.kind === "mihai.worker-reporter" && t.record.state.status !== "terminal"));
+			await until(async () => !(await runtime.harness.inspect(BACKGROUND_CONTEXT)).tasks.some((t) => t.record.kind === "aiki.worker-reporter" && t.record.state.status !== "terminal"));
 			await conversation.waitForIdle(BACKGROUND_CONTEXT);
 		};
 		return { test, client, projectId, view, runtime, conversation, worker, send, gate, reports, settle, counts: () => ({ workerRequests, reportTurns, reportNotifications, aborted }) };
@@ -1439,7 +1439,7 @@ describe("quiet worker reports", () => {
 		await view.waitForView((v) => v.entries.filter((e) => entryText(e).startsWith("[worker reader reported]")).length === 3);
 		const { runtime } = await restarted.manager.open(s.projectId);
 		const { conversation } = runtime;
-		await until(async () => !(await runtime.harness.inspect(BACKGROUND_CONTEXT)).tasks.some((t) => t.record.kind === "mihai.worker-reporter" && t.record.state.status !== "terminal"));
+		await until(async () => !(await runtime.harness.inspect(BACKGROUND_CONTEXT)).tasks.some((t) => t.record.kind === "aiki.worker-reporter" && t.record.state.status !== "terminal"));
 		await conversation.waitForIdle(BACKGROUND_CONTEXT);
 		expect(s.counts().reportTurns).toBe(1);
 	});
@@ -1484,7 +1484,7 @@ describe("quiet worker reports", () => {
 		const pending = await s.runtime.harness.commit((tx) => tx.createTask(s.runtime.workers.reporterTask, {
 			workerId: "reader", conversationId: s.worker.conversationId, callId: "delayed-send", message: "Must not arrive", followUp: true,
 		}, { ownership: { kind: "conversation" }, conversationId: s.conversation.id, background: true }), BACKGROUND_CONTEXT);
-		await until(async () => !(await s.runtime.harness.inspect(BACKGROUND_CONTEXT)).tasks.some((t) => t.record.kind === "mihai.worker-reporter" && t.record.id === pending && t.record.state.status !== "terminal"));
+		await until(async () => !(await s.runtime.harness.inspect(BACKGROUND_CONTEXT)).tasks.some((t) => t.record.kind === "aiki.worker-reporter" && t.record.id === pending && t.record.state.status !== "terminal"));
 		expect(await s.runtime.harness.commit((tx) => tx.submissionByRequest(s.worker.conversationId as never, "worker-message:delayed-send"), BACKGROUND_CONTEXT)).toBeUndefined();
 		s.gate.release();
 		await s.settle(1);

@@ -1,6 +1,6 @@
 /** The coordinator's prompt tells it to stay responsive, and memory's instructions tell it to confirm a failure first. */
 import { describe, expect, it } from "bun:test";
-import { DEFAULT_CHECK_INS } from "@mihai-harness/protocol";
+import { DEFAULT_CHECK_INS } from "@aiki/protocol";
 import { MEMORY_INSTRUCTIONS } from "../src/memory-tools.ts";
 import type { Project } from "../src/projects.ts";
 import { coordinatorSection } from "../src/workers.ts";

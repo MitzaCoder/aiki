@@ -7,7 +7,7 @@ import {
 	isTerminalSessionName,
 	terminalPrefix,
 	type ServerMessage,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -347,9 +347,9 @@ describe("terminals switched off or without zellij", () => {
 	test("the environment switch", async () => {
 		const { terminalsEnabled } = await import("../src/terminals.ts");
 		expect(terminalsEnabled({})).toBe(true);
-		expect(terminalsEnabled({ MIHAI_HARNESS_TERMINALS: "off" })).toBe(false);
-		expect(terminalsEnabled({ MIHAI_HARNESS_TERMINALS: "OFF" })).toBe(false);
-		expect(terminalsEnabled({ MIHAI_HARNESS_TERMINALS: "on" })).toBe(true);
+		expect(terminalsEnabled({ AIKI_TERMINALS: "off" })).toBe(false);
+		expect(terminalsEnabled({ AIKI_TERMINALS: "OFF" })).toBe(false);
+		expect(terminalsEnabled({ AIKI_TERMINALS: "on" })).toBe(true);
 	});
 });
 

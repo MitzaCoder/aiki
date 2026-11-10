@@ -53,7 +53,7 @@ import {
 	type WorkerModel,
 	type WorkerStatus,
 	type WorkerSummary,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { Type } from "typebox";
 import { mkdir } from "node:fs/promises";
 import {
@@ -127,7 +127,7 @@ export type WorkersState = {
  * system prompt section: it changes too often, and the coordinator reads it through `worker_list` instead.
  */
 export const WorkersDoc = defineDoc<WorkersState>({
-	kind: "mihai.workers",
+	kind: "aiki.workers",
 	version: 2,
 	scope: "conversation",
 	history: "latest",
@@ -181,7 +181,7 @@ function defaultsOf(state: WorkersState | Readonly<WorkersState> | undefined): W
  * and its idle waits; only `conversation.abort({ background: true })` reaches it.
  */
 const WorkerAnchor = defineTask<null, { phase: "done" }, null>({
-	name: "mihai.worker-anchor",
+	name: "aiki.worker-anchor",
 	version: 1,
 	initial: () => ({ phase: "done" }),
 	phases: {
@@ -223,7 +223,7 @@ type ReporterState =
  */
 function createWorkerReporter(service: WorkerService): Task<ReporterInput, ReporterState, null, object> {
 	return defineTask<ReporterInput, ReporterState, null>({
-		name: "mihai.worker-reporter",
+		name: "aiki.worker-reporter",
 		version: 1,
 		initial: () => ({ phase: "deliver" }),
 		phases: {
@@ -913,7 +913,7 @@ function createCheckInTask(service: WorkerService): Task<null, CheckInState, nul
 	};
 
 	return defineTask<null, CheckInState, null>({
-		name: "mihai.worker-checkin",
+		name: "aiki.worker-checkin",
 		version: 1,
 		initial: () => ({ phase: "wait" }),
 		phases: {

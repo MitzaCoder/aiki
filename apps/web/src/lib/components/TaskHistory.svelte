@@ -7,7 +7,7 @@
 	import type { ProjectBoard } from '#lib/board.svelte.js';
 	import { exactTime, relativeTime } from '#lib/relative-time.js';
 	import { hasChanges, REPORT_SECTIONS, taskChanges, type TaskState } from '#lib/tasks.js';
-	import type { BoardTask, BoardTaskSnapshot, BoardWriter } from '@mihai-harness/protocol';
+	import type { BoardTask, BoardTaskSnapshot, BoardWriter } from '@aiki/protocol';
 
 	/**
 	 * A task's snapshots, one at a time: step with the arrows, then read what changed in that snapshot (against the one

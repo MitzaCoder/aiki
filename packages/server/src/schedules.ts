@@ -48,7 +48,7 @@ import {
 	type ThinkingLevel,
 	ThinkingLevelSchema,
 	type WorkerIsolation,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { Type } from "typebox";
@@ -75,7 +75,7 @@ export const SCHEDULES_FILE = "schedules.json";
 /** How many runs of one schedule are kept, newest first. */
 export const KEPT_SCHEDULE_RUNS = 20;
 /** Overrides the backend's timezone, for a host whose clock setting is not what the user wants. */
-export const TIMEZONE_ENV = "MIHAI_HARNESS_TIMEZONE";
+export const TIMEZONE_ENV = "AIKI_TIMEZONE";
 /** How far ahead a cron expression is searched for its next slot before giving up on it. */
 const CRON_LOOKAHEAD_DAYS = 366 * 5;
 /** The longest gap a single timer covers; a longer wait is re-armed when it expires. */
@@ -127,7 +127,7 @@ export function isValidTimezone(timezone: string): boolean {
 }
 
 /**
- * The backend's timezone: `MIHAI_HARNESS_TIMEZONE` when it names a zone, else what this host's clock is set to, else
+ * The backend's timezone: `AIKI_TIMEZONE` when it names a zone, else what this host's clock is set to, else
  * UTC. Every schedule is read and written in it, and `schedules.list` reports it so the app can say which clock runs.
  */
 export function resolveTimezone(): string {

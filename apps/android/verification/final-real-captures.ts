@@ -1,6 +1,6 @@
 import {device,find,tap,type,capture,project,backends,swipe,tree} from "./native-ui.ts";
 await device("phone");
-await device("adb","shell","am","force-stop","com.mihaisaru.harness"); await device("launch");
+await device("adb","shell","am","force-stop","io.github.mitzacoder.aiki"); await device("launch");
 await device("adb","shell","cmd","uimode","night","no");
 await project(/Native UI · real checkout/);
 await tap(/^Models & effort$/);

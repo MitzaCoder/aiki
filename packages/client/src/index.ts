@@ -1,4 +1,4 @@
-/** Framework-free client for the mihai-harness protocol. */
+/** Framework-free client for the aiki protocol. */
 export { HarnessClient } from "./client.ts";
 export { TerminalSession } from "./terminal.ts";
 export type { TerminalHostApi, TerminalOpenOptions, TerminalState, TerminalStatus } from "./terminal.ts";

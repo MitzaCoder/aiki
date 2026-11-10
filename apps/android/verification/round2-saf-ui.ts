@@ -14,7 +14,7 @@ const artifacts=(await client.request("artifacts.list",{projectId})).artifacts;
 const artifact=artifacts.find((a:any)=>a.title==="Real saved file");if(!artifact)throw Error("Missing actual saved artifact");client.close();
 // Cancel a previous interrupted external picker before resetting the app task.
 await device("adb","shell","input","keyevent","KEYCODE_BACK");
-await device("phone");await device("adb","shell","am","force-stop","com.mihaisaru.harness");await device("launch");
+await device("phone");await device("adb","shell","am","force-stop","io.github.mitzacoder.aiki");await device("launch");
 await project(/Android real checkout \(faux model\)/);await tap(/^Open project panels$/);await tap(/^Artifacts$/);await tap(/^Real saved file$/,"down");
 await tap(/^Save a copy…$/);
 const filename=`harness-r2-final-${Date.now()}.bin`;

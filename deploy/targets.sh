@@ -12,7 +12,7 @@
 #   remote_bun               the `bun` the current target's remote shell runs
 #
 # Kept single-quoted on purpose: $HOME belongs to the remote shell.
-REMOTE_ROOT='$HOME/.local/share/mihai-harness-deploy'
+REMOTE_ROOT='$HOME/.local/share/aiki-deploy'
 # How long the probe waits for a laptop to answer, and how long an ssh to an intermittent target may sit silent.
 PROBE_TIMEOUT_SECONDS=${DEPLOY_PROBE_TIMEOUT_SECONDS:-6}
 

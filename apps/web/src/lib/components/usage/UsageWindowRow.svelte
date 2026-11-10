@@ -1,7 +1,7 @@
 <script lang="ts">
 	import TimerIcon from '@lucide/svelte/icons/timer';
-	import { windowPace } from '@mihai-harness/client';
-	import type { UsageWindow } from '@mihai-harness/protocol';
+	import { windowPace } from '@aiki/client';
+	import type { UsageWindow } from '@aiki/protocol';
 	import PacePill from './PacePill.svelte';
 	import UsageChart from './UsageChart.svelte';
 	import UsageGauge from './UsageGauge.svelte';

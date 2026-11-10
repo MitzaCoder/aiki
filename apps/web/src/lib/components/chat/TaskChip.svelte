@@ -1,6 +1,6 @@
 <script lang="ts">
 	import XIcon from '@lucide/svelte/icons/x';
-	import type { BoardTaskStatus } from '@mihai-harness/protocol';
+	import type { BoardTaskStatus } from '@aiki/protocol';
 	import { useTaskLinks } from '#lib/task-links.svelte.js';
 	import { taskStatusToneClass } from '#lib/tasks.js';
 

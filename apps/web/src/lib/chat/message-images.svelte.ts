@@ -4,11 +4,11 @@
  * `images.ts`, decoding in `image-encode.ts`, the bytes cache and upload bookkeeping in `draft-images.ts`.
  */
 import { untrack } from "svelte";
-import type { DraftAttachment, InputImageMimeType } from "@mihai-harness/protocol";
+import type { DraftAttachment, InputImageMimeType } from "@aiki/protocol";
 import { imageBytes, type BytesCache } from "#lib/draft-images.js";
 import { prepareImage } from "./image-encode.ts";
 import { base64ToBytes, bytesToBase64, messageLimitError, sha256Hex, type HeldImage } from "./images.ts";
-import { INPUT_MAX_IMAGES } from "@mihai-harness/protocol";
+import { INPUT_MAX_IMAGES } from "@aiki/protocol";
 
 /** One attached image as the box shows it. */
 export interface AttachedImage {

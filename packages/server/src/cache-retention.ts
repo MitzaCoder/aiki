@@ -10,11 +10,11 @@
  * "none"), and an untagged one is left alone. What "long" does per provider is pi-ai's: a one-hour `cache_control` on
  * Anthropic and Bedrock, a longer one on OpenAI's own API (where its compat allows), nothing on Codex.
  */
-import type { LongPromptCache } from "@mihai-harness/protocol";
+import type { LongPromptCache } from "@aiki/protocol";
 import type { CacheRetention, Models } from "@earendil-works/pi-ai";
 import { defineExtension, type Extension, GenerationTask, hook } from "@earendil-works/pi-durable";
 
-export const CACHE_RETENTION_EXTENSION_NAME = "mihai.cache-retention";
+export const CACHE_RETENTION_EXTENSION_NAME = "aiki.cache-retention";
 
 /** The retention a conversation asks for under a project's setting; undefined leaves pi-ai's default ("short"). */
 export function cacheRetentionFor(setting: LongPromptCache, isCoordinator: boolean): CacheRetention | undefined {

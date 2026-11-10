@@ -1,8 +1,8 @@
 <script lang="ts">
 	import ArrowLeftRightIcon from '@lucide/svelte/icons/arrow-left-right';
 	import ExpandIcon from '@lucide/svelte/icons/maximize-2';
-	import type { HarnessClient } from '@mihai-harness/client';
-	import type { Artifact } from '@mihai-harness/protocol';
+	import type { HarnessClient } from '@aiki/client';
+	import type { Artifact } from '@aiki/protocol';
 	import { onMount, untrack } from 'svelte';
 	import { artifactTitle } from '#lib/artifacts.js';
 	import { useArtifactFeed } from '#lib/artifacts.svelte.js';
@@ -58,7 +58,7 @@
 	let viewerAutoplay = $state(false);
 	let separate = $state(false);
 	onMount(() => {
-		try { separate = localStorage.getItem('mihai-harness.media-separate.v1') === 'true'; } catch { /* Storage can be unavailable. */ }
+		try { separate = localStorage.getItem('aiki.media-separate.v1') === 'true'; } catch { /* Storage can be unavailable. */ }
 	});
 	let carousel = $state<MediaCarousel | null>(null);
 	let videoSlides = $state<Record<number, MediaVideoSlide | undefined>>({});
@@ -134,7 +134,7 @@
 	function toggleCompare(id: string): void {
 		anchorId = id;
 		separate = !separate;
-		try { localStorage.setItem('mihai-harness.media-separate.v1', String(separate)); } catch { /* Keep the session choice. */ }
+		try { localStorage.setItem('aiki.media-separate.v1', String(separate)); } catch { /* Keep the session choice. */ }
 	}
 
 	function openViewer(at: number): void {

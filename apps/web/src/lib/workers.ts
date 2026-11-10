@@ -3,7 +3,7 @@
  * `worker_*` tool call to the worker it acted on, and the labels and colours a
  * status gets. Pure functions, so they can be tested without a component.
  */
-import { workerSpawnedByCall } from "@mihai-harness/client";
+import { workerSpawnedByCall } from "@aiki/client";
 import {
 	CHECK_IN_PREFIX,
 	type ModelRef,
@@ -11,7 +11,7 @@ import {
 	type WorkerModel,
 	type WorkerStatus,
 	type WorkerSummary,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { sameModel } from "./models.ts";
 import type { ToolPart, TranscriptItem } from "./transcript.ts";
 

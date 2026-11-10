@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# The backend half of a deploy. Runs on one machine that hosts a mihai-harness backend: this NixOS host (system
+# The backend half of a deploy. Runs on one machine that hosts a aiki backend: this NixOS host (system
 # service, mode `system`) or the remote VM (remote user service, mode `user`). deploy/deploy.sh copies it, with
-# health-check.ts and deploy-status.ts, to the target's ~/.local/share/mihai-harness-deploy/tools/ and calls it there, so
+# health-check.ts and deploy-status.ts, to the target's ~/.local/share/aiki-deploy/tools/ and calls it there, so
 # the tooling is the deploying host's copy rather than the release's: a release that cannot start can still be rolled back.
 #
 #   backend.sh system release <name> <sha> [subject]   publish <incoming>/<name>, restart, verify (roll back on failure)
@@ -23,19 +23,19 @@
 # again, and fails if one of them does not page. Projects that were not open before stay unchecked. At the end of the
 # attempt `<root>/deploy-status.json` records ok, failed or rolled_back for the app.
 #
-# Layout under ~/.local/share/mihai-harness-deploy:
+# Layout under ~/.local/share/aiki-deploy:
 #   releases/<YYYYMMDDTHHMMSSZ>-<sha7>/   one folder per deploy, the repository tree as of that commit, with RELEASE.json
 #   incoming/                             a tree being received; becomes a release when it is complete
 #   tools/                                this script, health-check.ts, deploy-status.ts and (for the VM) the systemd unit
 #   current -> releases/<name>            what the service runs
 #   deploy-status.json                    how the last attempt went, served as `server.status.deploy`
 #
-# The server's data (~/.local/share/mihai-harness) is untouched, so releases can be switched and rolled back freely.
+# The server's data (~/.local/share/aiki) is untouched, so releases can be switched and rolled back freely.
 #
 # Over a link that may drop (DEPLOY_SURVIVE_DISCONNECT=1, set by deploy.sh for intermittent targets) it keeps going: see
 # survive_disconnect.
 #
-# A deploy started from inside the mihai-harness unit's own cgroup (a tool of the server it deploys) is refused: the
+# A deploy started from inside the aiki unit's own cgroup (a tool of the server it deploys) is refused: the
 # restart kills it before the health check and rollback. Move the `main` bookmark instead; deploy/watch.sh deploys that.
 set -euo pipefail
 
@@ -51,11 +51,11 @@ BUN_VERSION=${DEPLOY_BUN_VERSION:-1.4.2}
 ZELLIJ_VERSION=${DEPLOY_ZELLIJ_VERSION:-0.45.1}
 ZELLIJ_SHA256_X86_64=d006c521dcb475a6005d741e9dd7c5758e5a23b28dd60a5c10cebfa4876319dd
 ZELLIJ_SHA256_AARCH64=2a2c0621e6f3b11ecbb05d66939a48000a2508604620aa20727a5fd61c49f451
-PORT=${MIHAI_HARNESS_PORT:-7317}
+PORT=${AIKI_PORT:-7317}
 # The tooling that travels with this script into tools/ and runs next to it, so a copy from the release that is being
 # deployed never lags behind the deploy that calls it.
 SELF_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-ROOT=$HOME/.local/share/mihai-harness-deploy
+ROOT=$HOME/.local/share/aiki-deploy
 RELEASES=$ROOT/releases
 INCOMING=$ROOT/incoming
 CURRENT=$ROOT/current
@@ -74,13 +74,13 @@ CGROUP_FILE=${DEPLOY_CGROUP_FILE:-/proc/self/cgroup}
 HEALTH_TIMEOUT_MS=${DEPLOY_HEALTH_TIMEOUT_MS:-20000}
 
 if [[ $MODE == user ]]; then
-	SERVICE=mihai-harness
+	SERVICE=aiki
 	BUN=$HOME/.local/bin/bun
 	UNIT_DIR=$HOME/.config/systemd/user
-	UNIT=$UNIT_DIR/mihai-harness.service
-	UNIT_SOURCE=$TOOLS/mihai-harness.service
+	UNIT=$UNIT_DIR/aiki.service
+	UNIT_SOURCE=$TOOLS/aiki.service
 else
-	SERVICE=${MIHAI_HARNESS_SERVICE:-mihai-harness.service}
+	SERVICE=${AIKI_SERVICE:-aiki.service}
 	BUN=${BUN:-bun}
 fi
 
@@ -111,8 +111,8 @@ function refuse_inside_server_unit() {
 	[[ -r $CGROUP_FILE ]] || return 0
 	cgroup=$(<"$CGROUP_FILE")
 	case $cgroup in
-	*mihai-harness.service*)
-		log "REFUSING to deploy from inside the mihai-harness server's cgroup ($CGROUP_FILE names mihai-harness.service)."
+	*aiki.service*)
+		log "REFUSING to deploy from inside the aiki server's cgroup ($CGROUP_FILE names aiki.service)."
 		log "The restart would kill this script after current moved, before the health check and the rollback."
 		log "Move the main bookmark instead: deploy/watch.sh deploys when it moves (README, Deploy)."
 		exit 2

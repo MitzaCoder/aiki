@@ -22,8 +22,8 @@
 		quietHoursDraft,
 		quietHoursProblem
 	} from '#lib/notifications.js';
-	import { mutedProjectEntries, quietHoursSummary, type QuietHours } from '@mihai-harness/client';
-	import type { NotificationKind } from '@mihai-harness/protocol';
+	import { mutedProjectEntries, quietHoursSummary, type QuietHours } from '@aiki/client';
+	import type { NotificationKind } from '@aiki/protocol';
 
 	/**
 	 * Notifications for this browser: turn them on for the device, see what each backend knows about it, choose which

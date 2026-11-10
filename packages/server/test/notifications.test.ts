@@ -9,8 +9,8 @@ import { afterEach, describe, expect, it } from "bun:test";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import type { Conversation, JsonObject } from "@earendil-works/pi-durable";
-import type { ConversationView, ModelRef, NotificationPreferences } from "@mihai-harness/protocol";
-import { DEFAULT_NOTIFICATION_KINDS } from "@mihai-harness/protocol";
+import type { ConversationView, ModelRef, NotificationPreferences } from "@aiki/protocol";
+import { DEFAULT_NOTIFICATION_KINDS } from "@aiki/protocol";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -66,7 +66,7 @@ function preferences(change: Partial<NotificationPreferences> = {}): Notificatio
 }
 
 async function tempDir(): Promise<string> {
-	const dir = await mkdtemp(join(tmpdir(), "mihai-harness-notify-"));
+	const dir = await mkdtemp(join(tmpdir(), "aiki-notify-"));
 	cleanups.push(() => rm(dir, { recursive: true, force: true }));
 	return dir;
 }
@@ -571,7 +571,7 @@ describe("filtering", () => {
 		expect(resolveVapidSubject([APP_ORIGIN])).toBe(APP_ORIGIN);
 		expect(resolveVapidSubject(["http://localhost:5173", APP_ORIGIN])).toBe(APP_ORIGIN);
 		expect(resolveVapidSubject(["http://localhost:5173"])).toBe("https://localhost");
-		expect(resolveVapidSubject([], { MIHAI_HARNESS_VAPID_SUBJECT: "https://other.test" })).toBe("https://other.test");
+		expect(resolveVapidSubject([], { AIKI_VAPID_SUBJECT: "https://other.test" })).toBe("https://other.test");
 	});
 });
 

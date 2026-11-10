@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import LayersIcon from '@lucide/svelte/icons/layers';
-	import type { ThreadSummary } from '@mihai-harness/protocol';
+	import type { ThreadSummary } from '@aiki/protocol';
 	import type { ToolPart } from '#lib/transcript.js';
 	import {
 		threadActivityLine,

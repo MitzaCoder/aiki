@@ -1,5 +1,5 @@
 /**
- * mihai-harness wire protocol, version 1.
+ * aiki wire protocol, version 1.
  *
  * One WebSocket at `/ws`. The client sends `hello` first, then requests; the server answers each request and pushes
  * events. Every message is a TypeBox schema (plain JSON Schema), exported here and collected in `PROTOCOL_SCHEMAS` for
@@ -1162,8 +1162,8 @@ export function protocolJsonSchema(): {
 } {
 	return {
 		$schema: "https://json-schema.org/draft/2020-12/schema",
-		$id: "https://mihai-harness.local/protocol/v1.json",
-		title: "mihai-harness protocol",
+		$id: "https://aiki.local/protocol/v1.json",
+		title: "aiki protocol",
 		description: "One WebSocket at /ws. Send hello first; requests and responses share `type` and `id`; events carry no id.",
 		protocolVersion: PROTOCOL_VERSION,
 		$defs: PROTOCOL_SCHEMAS,

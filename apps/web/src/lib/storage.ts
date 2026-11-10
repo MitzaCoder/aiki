@@ -2,8 +2,8 @@
  * How Project settings' Storage section reads: what each workspace is, what a cleanup would free, and what it did. Pure,
  * so the section and the tests agree.
  */
-import { removableStorage, type StorageCleanResult } from "@mihai-harness/client";
-import type { StorageItem } from "@mihai-harness/protocol";
+import { removableStorage, type StorageCleanResult } from "@aiki/client";
+import type { StorageItem } from "@aiki/protocol";
 import { formatBytes } from "./artifacts.ts";
 
 /** "Worker" or "Background thread": the kind of workspace a row is. */

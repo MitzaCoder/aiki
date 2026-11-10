@@ -1,5 +1,5 @@
 {
-	"name": "@mihai-harness/server",
+	"name": "@aiki/server",
 	"version": "0.0.0",
 	"private": true,
 	"type": "module",
@@ -17,7 +17,7 @@
 		"@earendil-works/pi-ai": "1.5.1",
 		"@earendil-works/pi-codemode": "1.5.1",
 		"@earendil-works/pi-durable": "1.5.1",
-		"@mihai-harness/protocol": "workspace:*",
+		"@aiki/protocol": "workspace:*",
 		"typebox": "1.3.27",
 		"web-push": "3.6.7"
 	},

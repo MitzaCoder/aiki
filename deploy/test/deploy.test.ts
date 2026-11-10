@@ -1,6 +1,6 @@
 /**
  * The deploy's scripts, against temporary directories and a stand-in backend (deploy/test/fake-backend.ts). Nothing here
- * touches a real service, a real port or ~/.local/share/mihai-harness-deploy: `systemctl`, `journalctl` and `ssh` are
+ * touches a real service, a real port or ~/.local/share/aiki-deploy: `systemctl`, `journalctl` and `ssh` are
  * stubs on PATH, HOME is a temporary directory, and `bun install` is stubbed out.
  */
 import "./clean-env.ts";
@@ -52,7 +52,7 @@ async function healthCheck(backend: FakeBackend, args: string[] = []): Promise<R
 
 /** A path in a fresh temporary directory, for the recorded open projects. */
 function temporaryFile(name: string): string {
-	return join(mkdtempSync(join(tmpdir(), "mihai-harness-deploy-projects.")), name);
+	return join(mkdtempSync(join(tmpdir(), "aiki-deploy-projects.")), name);
 }
 
 const COMMIT = "0f1e2d3c4b5a69788796a5b4c3d2e1f009182736";
@@ -71,7 +71,7 @@ describe("health-check", () => {
 		const backend = startBackend({ features: ["projects", "conversation"] });
 		const result = await healthCheck(backend);
 		expect(result.code).toBe(0);
-		expect(result.stdout).toContain("answers: mihai-harness 0.1.0");
+		expect(result.stdout).toContain("answers: aiki 0.1.0");
 	});
 
 	test("deep-checks the running commit and pages every open project", async () => {
@@ -308,9 +308,9 @@ function writeScript(path: string, body: string): void {
 }
 
 function makeMachine(): Machine {
-	const dir = mkdtempSync(join(tmpdir(), "mihai-harness-deploy-test."));
+	const dir = mkdtempSync(join(tmpdir(), "aiki-deploy-test."));
 	const home = join(dir, "home");
-	const root = join(home, ".local", "share", "mihai-harness-deploy");
+	const root = join(home, ".local", "share", "aiki-deploy");
 	const bin = join(dir, "bin");
 	mkdirSync(bin, { recursive: true });
 
@@ -344,7 +344,7 @@ function backendEnvironment(machine: Machine, port: number): Record<string, stri
 		HOME: machine.home,
 		PATH: `${machine.bin}:${process.env.PATH ?? ""}`,
 		BUN: join(machine.bin, "bun"),
-		MIHAI_HARNESS_PORT: String(port),
+		AIKI_PORT: String(port),
 		DEPLOY_IDLE_POLL_SECONDS: "1",
 		DEPLOY_IDLE_TIMEOUT_SECONDS: "5",
 		DEPLOY_HEALTH_TIMEOUT_MS: "1500",
@@ -492,14 +492,14 @@ describe("backend.sh", () => {
 		const machine = makeMachine();
 		writeFileSync(
 			machine.cgroupFile,
-			"0::/user.slice/user-1000.slice/user@1000.service/app.slice/mihai-harness.service\n",
+			"0::/user.slice/user-1000.slice/user@1000.service/app.slice/aiki.service\n",
 		);
 		const backend = startBackend({ deployRoot: machine.root });
 
 		const result = await deployBackend(machine, backend, "20261030T120000Z-0f1e2d3", COMMIT, "feat: refused");
 
 		expect(result.code).toBe(2);
-		expect(result.stdout).toContain("REFUSING to deploy from inside the mihai-harness server's cgroup");
+		expect(result.stdout).toContain("REFUSING to deploy from inside the aiki server's cgroup");
 		expect(result.stdout).toContain("Move the main bookmark instead");
 		expect(existsSync(join(machine.root, "releases"))).toBe(false);
 		expect(backend.requests.length).toBe(0);
@@ -562,9 +562,9 @@ describe("backend.sh", () => {
 describe("deploy.sh", () => {
 	/** A throwaway repository with this deploy/ in it, so `git archive` has a commit to materialise. */
 	async function makeRepository(): Promise<{ dir: string; sha: string }> {
-		const dir = mkdtempSync(join(tmpdir(), "mihai-harness-deploy-repo."));
+		const dir = mkdtempSync(join(tmpdir(), "aiki-deploy-repo."));
 		cpSync(DEPLOY_DIR, join(dir, "deploy"), { recursive: true, filter: (source) => source !== join(DEPLOY_DIR, "local") });
-		writeFileSync(join(dir, "package.json"), '{ "name": "mihai-harness", "private": true }\n');
+		writeFileSync(join(dir, "package.json"), '{ "name": "aiki", "private": true }\n');
 		const git = async (...args: string[]): Promise<void> => {
 			const result = await run(["git", "-C", dir, ...args]);
 			expect(result.code).toBe(0);
@@ -629,7 +629,7 @@ describe("deploy.sh", () => {
 		expect(hostStatus.message).toContain("tests failed");
 
 		const vmStatus = readJson<{ state: string; commit: string; message: string }>(
-			join(machine.dir, "vm-home", ".local", "share", "mihai-harness-deploy", "deploy-status.json"),
+			join(machine.dir, "vm-home", ".local", "share", "aiki-deploy", "deploy-status.json"),
 		);
 		expect(vmStatus).toMatchObject({ state: "failed", commit: sha });
 		expect(readFileSync(sshLog, "utf8")).toContain("deploy-status.json");
@@ -683,7 +683,7 @@ describe("deploy.sh", () => {
 	}
 
 	function vmRoot(machine: Machine): string {
-		return join(machine.dir, "vm-home", ".local", "share", "mihai-harness-deploy");
+		return join(machine.dir, "vm-home", ".local", "share", "aiki-deploy");
 	}
 
 	function restarts(machine: Machine): string[] {
@@ -737,7 +737,7 @@ describe("deploy.sh", () => {
 		const sha = await commitChanges(dir, ["docs/notes.md"]);
 		seedRunning(machine.root, running);
 		seedRunning(vmRoot(machine), running);
-		const keyFile = join(machine.home, ".local", "share", "mihai-harness", "notifications", "vapid.json");
+		const keyFile = join(machine.home, ".local", "share", "aiki", "notifications", "vapid.json");
 		mkdirSync(join(keyFile, ".."), { recursive: true });
 		writeFileSync(keyFile, '{"version":1,"publicKey":"p","privateKey":"k"}\n', { mode: 0o600 });
 		// The VM restarts, so the stand-in has to report its new release.
@@ -756,7 +756,7 @@ describe("deploy.sh", () => {
 		const machine = makeMachine();
 		const sshLog = addSshStub(machine);
 		const { dir, sha: running } = await makeRepository();
-		const sha = await commitChanges(dir, ["README.md", "deploy/systemd/mihai-harness.service"]);
+		const sha = await commitChanges(dir, ["README.md", "deploy/systemd/aiki.service"]);
 		seedRunning(machine.root, OTHER_COMMIT);
 		seedRunning(vmRoot(machine), running);
 		// The host deploys first, so by the VM's deep check the host's current is the new commit too.
@@ -766,7 +766,7 @@ describe("deploy.sh", () => {
 
 		expect(result.code).toBe(0);
 		expect(result.stdout).toContain(`host backend: cannot compare its running ${OTHER_COMMIT.slice(0, 12)}`);
-		expect(result.stdout).toContain(`VM backend: deploy/systemd/mihai-harness.service changed since its running ${running.slice(0, 12)}`);
+		expect(result.stdout).toContain(`VM backend: deploy/systemd/aiki.service changed since its running ${running.slice(0, 12)}`);
 		expect(restarts(machine).length).toBe(2);
 		for (const root of [machine.root, vmRoot(machine)]) {
 			const status = readJson<RecordedStatus>(join(root, "deploy-status.json"));
@@ -779,7 +779,7 @@ describe("deploy.sh", () => {
 		const machine = makeMachine();
 		writeFileSync(
 			machine.cgroupFile,
-			"0::/user.slice/user-1000.slice/user@1000.service/app.slice/mihai-harness.service\n",
+			"0::/user.slice/user-1000.slice/user@1000.service/app.slice/aiki.service\n",
 		);
 		const sshLog = addSshStub(machine);
 		const { dir, sha } = await makeRepository();
@@ -787,7 +787,7 @@ describe("deploy.sh", () => {
 		const result = await run(["bash", join(dir, "deploy", "deploy.sh"), sha], deployEnvironment(machine, sshLog));
 
 		expect(result.code).toBe(2);
-		expect(result.stdout).toContain("REFUSING to deploy from inside the mihai-harness server's cgroup");
+		expect(result.stdout).toContain("REFUSING to deploy from inside the aiki server's cgroup");
 		expect(result.stdout).toContain("Move the main bookmark instead");
 		expect(existsSync(join(machine.dir, "host-root", "deploy-status.json"))).toBe(false);
 		expect(readFileSync(sshLog, "utf8")).toBe("");
@@ -799,10 +799,10 @@ describe("deploy.sh", () => {
 			return join(machine.dir, "laptop-home");
 		}
 		function laptopRoot(machine: Machine): string {
-			return join(laptopHome(machine), ".local", "share", "mihai-harness-deploy");
+			return join(laptopHome(machine), ".local", "share", "aiki-deploy");
 		}
 		function pendingFile(machine: Machine): string {
-			return join(machine.dir, "state", "mihai-harness-deploy", "pending", "laptop.json");
+			return join(machine.dir, "state", "aiki-deploy", "pending", "laptop.json");
 		}
 
 		/**
@@ -925,7 +925,7 @@ describe("deploy.sh", () => {
 			const sshLog = addTargetsSshStub(machine);
 			const { dir, sha } = await repositoryWithWeb();
 			const environment = targetsEnvironment(machine, sshLog, null, false);
-			mkdirSync(join(machine.dir, "state", "mihai-harness-deploy", "pending"), { recursive: true });
+			mkdirSync(join(machine.dir, "state", "aiki-deploy", "pending"), { recursive: true });
 			writeFileSync(pendingFile(machine), "{}\n");
 
 			const result = await run(["bash", join(dir, "deploy", "deploy.sh"), "--only=laptop", sha], environment);
@@ -942,7 +942,7 @@ describe("deploy.sh", () => {
 			expect(readFileSync(join(root, "current", "RELEASE.json"), "utf8")).toContain(sha);
 			expect(readJson<RecordedStatus>(join(root, "deploy-status.json"))).toMatchObject({ state: "ok", commit: sha });
 			expect(existsSync(join(root, "tools", "backend.sh"))).toBe(true);
-			expect(existsSync(join(root, "tools", "mihai-harness.service"))).toBe(false);
+			expect(existsSync(join(root, "tools", "aiki.service"))).toBe(false);
 			expect(existsSync(pendingFile(machine))).toBe(false);
 			// Every command went through bash (the laptop's login shell is fish), and backend.sh got the laptop's Bun and
 			// the instruction to outlive a dropped connection.
@@ -950,7 +950,7 @@ describe("deploy.sh", () => {
 			expect(commands.length).toBeGreaterThan(4);
 			for (const command of commands) expect(command).toStartWith("bash -c '");
 			const release = commands.find((command) => command.includes("backend.sh system release"));
-			expect(release).toContain(`BUN=${join(laptopHome(machine), "bin", "bun")} DEPLOY_SURVIVE_DISCONNECT=1 MIHAI_HARNESS_PORT=`);
+			expect(release).toContain(`BUN=${join(laptopHome(machine), "bin", "bun")} DEPLOY_SURVIVE_DISCONNECT=1 AIKI_PORT=`);
 			expect(existsSync(join(root, "last-deploy.log"))).toBe(true);
 		}, 30_000);
 
@@ -992,7 +992,7 @@ describe("deploy.sh", () => {
 			/** A laptop that runs <running>, with a pending file for the current main. */
 			function laptopBehind(machine: Machine, running: string): void {
 				seedRunning(laptopRoot(machine), running);
-				mkdirSync(join(machine.dir, "state", "mihai-harness-deploy", "pending"), { recursive: true });
+				mkdirSync(join(machine.dir, "state", "aiki-deploy", "pending"), { recursive: true });
 				writeFileSync(pendingFile(machine), JSON.stringify({ name: "laptop", commit: running, since: "2026-11-08T00:00:00.000Z" }));
 			}
 
@@ -1040,8 +1040,8 @@ describe("deploy.sh", () => {
 				const environment = targetsEnvironment(machine, sshLog, null, true);
 				// The last full deploy already ran the checks on this commit: a failing `bun test` proves they are not run again.
 				writeScript(join(machine.bin, "bun"), `if [[ \${1:-} == test ]]; then echo "re-ran the tests" >&2; exit 7; fi\nexec ${BUN} "$@"`);
-				mkdirSync(join(machine.dir, "state", "mihai-harness-deploy", "verified"), { recursive: true });
-				writeFileSync(join(machine.dir, "state", "mihai-harness-deploy", "verified", sha), "");
+				mkdirSync(join(machine.dir, "state", "aiki-deploy", "verified"), { recursive: true });
+				writeFileSync(join(machine.dir, "state", "aiki-deploy", "verified", sha), "");
 				// The laptop's own tooling is where it left it by an earlier deploy, so it can note the pending deploy.
 				mkdirSync(join(laptopRoot(machine), "tools"), { recursive: true });
 				cpSync(join(DEPLOY_DIR, "deploy-status.ts"), join(laptopRoot(machine), "tools", "deploy-status.ts"));
@@ -1080,7 +1080,7 @@ describe("deploy.sh", () => {
 				expect(result.stdout).toContain("checking: bun test");
 				expect(result.stdout).toContain("checks passed");
 				expect(result.stdout).not.toContain("app:");
-				expect(existsSync(join(machine.dir, "state", "mihai-harness-deploy", "verified", sha))).toBe(true);
+				expect(existsSync(join(machine.dir, "state", "aiki-deploy", "verified", sha))).toBe(true);
 			}, 30_000);
 
 			test("leaves a laptop alone that already runs main, and one where main already failed", async () => {
@@ -1113,8 +1113,8 @@ describe("deploy.sh", () => {
 				const { dir, before, sha } = await twoCommits();
 				laptopBehind(machine, before);
 				const environment = targetsEnvironment(machine, sshLog, null, true);
-				mkdirSync(join(machine.dir, "state", "mihai-harness-deploy"), { recursive: true });
-				const lock = join(machine.dir, "state", "mihai-harness-deploy", "deploy.lock");
+				mkdirSync(join(machine.dir, "state", "aiki-deploy"), { recursive: true });
+				const lock = join(machine.dir, "state", "aiki-deploy", "deploy.lock");
 				const holder = Bun.spawn(["flock", lock, "sleep", "20"]);
 				await Bun.sleep(300);
 				try {
@@ -1169,7 +1169,7 @@ describe("deploy.sh", () => {
 		expect(result.code).toBe(0);
 		expect(result.stdout).toMatch(/VM backend: nothing it runs changed since/);
 		expect(result.stdout).toContain("deployed");
-		expect(readFileSync(sshLog, "utf8")).toContain("mkdir -p $HOME/.local/share/mihai-harness-deploy/tools");
+		expect(readFileSync(sshLog, "utf8")).toContain("mkdir -p $HOME/.local/share/aiki-deploy/tools");
 		// The VM's commands are sent unchanged: no bash wrapper and no extra environment.
 		expect(readFileSync(sshLog, "utf8")).not.toContain("bash -c '");
 		expect(readFileSync(sshLog, "utf8")).not.toContain("DEPLOY_SURVIVE_DISCONNECT");
@@ -1190,8 +1190,8 @@ describe("vapid-key.sh", () => {
 		sshLog: string;
 	} {
 		const machine = makeMachine();
-		const keyFile = join(machine.home, ".local", "share", "mihai-harness", "notifications", "vapid.json");
-		const vmKeyFile = join(machine.dir, "vm-home", ".local", "share", "mihai-harness", "notifications", "vapid.json");
+		const keyFile = join(machine.home, ".local", "share", "aiki", "notifications", "vapid.json");
+		const vmKeyFile = join(machine.dir, "vm-home", ".local", "share", "aiki", "notifications", "vapid.json");
 		if (key !== null) {
 			mkdirSync(join(keyFile, ".."), { recursive: true, mode: 0o700 });
 			writeFileSync(keyFile, key, { mode: 0o600 });
@@ -1285,7 +1285,7 @@ describe("watch.sh catch-up", () => {
 	}
 
 	function pend(state: string): void {
-		const pending = join(state, "mihai-harness-deploy", "pending");
+		const pending = join(state, "aiki-deploy", "pending");
 		mkdirSync(pending, { recursive: true });
 		writeFileSync(join(pending, "laptop.json"), "{}\n");
 	}

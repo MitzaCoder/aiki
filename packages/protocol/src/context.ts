@@ -46,7 +46,7 @@ export const SkillSourceSchema = Type.Union(
 	[Type.Literal("harness"), Type.Literal("pi"), Type.Literal("claude")],
 	{
 		description:
-			'"harness": the harness\'s config directory or the project\'s .mihai-harness; "pi": pi\'s agent directory or .pi/skills; "claude": Claude Code\'s home, its plugins or .claude/skills.',
+			'"harness": the harness\'s config directory or the project\'s .aiki; "pi": pi\'s agent directory or .pi/skills; "claude": Claude Code\'s home, its plugins or .claude/skills.',
 	},
 );
 export type SkillSource = Static<typeof SkillSourceSchema>;

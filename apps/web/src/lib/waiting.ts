@@ -7,8 +7,8 @@
  * becomes the real user entry (matched by submission ID, never by text). Pure: the screen's `WaitingMessages` holds the
  * state and the requests.
  */
-import type { EntryRecord, QueuedInput } from "@mihai-harness/protocol";
-import { parseTaskReference, withTaskReference } from "@mihai-harness/client";
+import type { EntryRecord, QueuedInput } from "@aiki/protocol";
+import { parseTaskReference, withTaskReference } from "@aiki/client";
 import type { HeldImage } from "./chat/images.ts";
 import { isTypedInput, type TranscriptItem, type WaitingInfo } from "./transcript.ts";
 

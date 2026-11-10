@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { applyImmutable } from "@earendil-works/chord/delta";
 import type { Op } from "@earendil-works/chord/delta";
 import type { ConversationView as DurableView } from "@earendil-works/pi-durable";
-import type { ConversationView } from "@mihai-harness/protocol";
+import type { ConversationView } from "@aiki/protocol";
 import { WatchWindow, resolveWindowBounds } from "../src/window.ts";
 
 function raw(ids: readonly number[], docs: Record<string, unknown> = {}): DurableView {

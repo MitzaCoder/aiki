@@ -3,7 +3,7 @@
 # here and on the remote VM.
 #
 # Runs as a systemd user service (deploy/systemd/deploy-watch.service.in, installed by install-watcher.sh); its
-# output is the deploy log, so `journalctl --user -u mihai-harness-deploy-watch -f` shows what happened.
+# output is the deploy log, so `journalctl --user -u aiki-deploy-watch -f` shows what happened.
 #
 # git only, deliberately: this is a colocated jj+git repository, and running jj here would snapshot the working copy
 # behind the user's back. `git rev-parse refs/heads/main` does not touch the working copy, and the commit it names is
@@ -14,7 +14,7 @@
 # reported in the log and waits for the next move instead of retrying in a loop.
 #
 # Catch-up: an intermittent target (the Laptop laptop) that was asleep or away at a deploy is left pending
-# ($XDG_STATE_HOME/mihai-harness-deploy/pending/<name>.json, written by deploy.sh). Every DEPLOY_CATCHUP_SECONDS (120) while
+# ($XDG_STATE_HOME/aiki-deploy/pending/<name>.json, written by deploy.sh). Every DEPLOY_CATCHUP_SECONDS (120) while
 # something is pending, `deploy.sh --catch-up` probes it, and deploys the current main to it alone when it answers and
 # is behind. It speaks only when it acts. It runs in this same loop, so it never overlaps a deploy the watcher started
 # (deploy.sh's lock also keeps it from a hand deploy: exit 75, tried again next round). A catch-up that failed for a
@@ -28,7 +28,7 @@ if [[ -f $DEPLOY_CONFIG_DIR/config.env ]]; then source "$DEPLOY_CONFIG_DIR/confi
 REF=${DEPLOY_REF:-refs/heads/main}
 INTERVAL=${DEPLOY_POLL_SECONDS:-10}
 CATCHUP_INTERVAL=${DEPLOY_CATCHUP_SECONDS:-120}
-STATE_DIR=${DEPLOY_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/mihai-harness-deploy}
+STATE_DIR=${DEPLOY_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/aiki-deploy}
 STATE=$STATE_DIR/last-seen-main
 PENDING_DIR=$STATE_DIR/pending
 

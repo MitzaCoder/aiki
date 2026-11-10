@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import type { SetTimer } from "@earendil-works/pi-durable";
-import type { Board, BoardTask, BoardTaskInput, BoardTaskSnapshot, ModelRef, Schedule, ScheduleInput } from "@mihai-harness/protocol";
+import type { Board, BoardTask, BoardTaskInput, BoardTaskSnapshot, ModelRef, Schedule, ScheduleInput } from "@aiki/protocol";
 import { emptyBoardState, recordScheduledReport, scheduleTaskForRun, saveTask } from "../src/board.ts";
 import { createSetup, errorOf, TestClient, type TestSetup } from "./support.ts";
 

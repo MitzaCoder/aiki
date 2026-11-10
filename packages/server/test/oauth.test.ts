@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import type { AuthLogin, ServerMessage } from "@mihai-harness/protocol";
+import type { AuthLogin, ServerMessage } from "@aiki/protocol";
 import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -64,7 +64,7 @@ describe("OAuth subscription logins", () => {
 		controls = fake.controls;
 		setup = await createSetup({
 			configureModels: (models) => models.setProvider(fake.provider),
-			logins: { deviceId: () => DEVICE_ID, agentName: "mihai-harness-test", idleTimeoutMs: 0 },
+			logins: { deviceId: () => DEVICE_ID, agentName: "aiki-test", idleTimeoutMs: 0 },
 			log: (message) => logs.push(message),
 		});
 		client = await TestClient.open(setup.server);
@@ -124,7 +124,7 @@ describe("OAuth subscription logins", () => {
 
 		// The device ID and agent name reach flows that identify the installation, like Sign in with ChatGPT.
 		expect(controls.lastDeviceId).toBe(DEVICE_ID);
-		expect(controls.lastAgentName).toBe("mihai-harness-test");
+		expect(controls.lastAgentName).toBe("aiki-test");
 
 		// Secrets stay on the server: neither tokens nor the pasted code appear on the wire or in the log.
 		const transcript = JSON.stringify(client.messages);

@@ -4,7 +4,7 @@
  * device, and never lets it overwrite text the user has typed and not yet synced, or text under a cursor in the middle of
  * typing. `DraftSync` runs the rest: the debounce, the compare-and-set write, the retry after a refused write.
  */
-import { draftLimitError, sameDraftContent, type ChatDraft, type DraftContent } from "@mihai-harness/protocol";
+import { draftLimitError, sameDraftContent, type ChatDraft, type DraftContent } from "@aiki/protocol";
 import { isEmptyDraft, type Draft, type SyncedDraft } from "./drafts.ts";
 
 /** Writes go out this long after the user stops typing. */

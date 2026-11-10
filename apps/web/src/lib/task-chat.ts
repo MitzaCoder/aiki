@@ -2,7 +2,7 @@
  * How the chat names board tasks: the link to a task, the places a task ID turns up in text, the `T12` mentions in the
  * coordinator's replies and the `#` picker in the composer. The chat stays short; the task is where the detail lives.
  */
-import type { BoardTask, BoardTaskStatus } from "@mihai-harness/protocol";
+import type { BoardTask, BoardTaskStatus } from "@aiki/protocol";
 
 /** The link to a task: the task sheet opens from `?task=` on the page the reader is on. */
 export function taskHref(taskId: string): string {

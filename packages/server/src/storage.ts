@@ -9,7 +9,7 @@
  * done, stopped or archived and that does not run; a thread that is done, stopped or archived. Sizes come from an
  * asynchronous walk and are cached for a few minutes, so a request never blocks the event loop on a big tree.
  */
-import { MAIN_THREAD_ID, type StorageItem } from "@mihai-harness/protocol";
+import { MAIN_THREAD_ID, type StorageItem } from "@aiki/protocol";
 import type { Dirent } from "node:fs";
 import { lstat, readdir, rm, stat } from "node:fs/promises";
 import { join } from "node:path";

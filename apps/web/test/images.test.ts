@@ -3,7 +3,7 @@
  * content a send carries, the bytes cache and upload bookkeeping of drafts, and waiting messages that keep their images.
  */
 import { describe, expect, test } from "bun:test";
-import { INPUT_IMAGE_MAX_BYTES, INPUT_IMAGES_MAX_BYTES, INPUT_MAX_IMAGES, type DraftContent, type QueuedInput } from "@mihai-harness/protocol";
+import { INPUT_IMAGE_MAX_BYTES, INPUT_IMAGES_MAX_BYTES, INPUT_MAX_IMAGES, type DraftContent, type QueuedInput } from "@aiki/protocol";
 import {
 	MIN_ENCODE_EDGE,
 	base64ToBytes,

@@ -9,7 +9,7 @@
 import type { JsonValue } from "@earendil-works/chord/json";
 import { diffRevisions } from "@earendil-works/chord/delta";
 import type { ConversationView as DurableConversationView, EntryRecord as DurableEntry } from "@earendil-works/pi-durable";
-import type { CacheWarmStretch, ChordOp, ConversationView } from "@mihai-harness/protocol";
+import type { CacheWarmStretch, ChordOp, ConversationView } from "@aiki/protocol";
 import { ServerError } from "./errors.ts";
 import type { QueueDecoration } from "./queued-inputs.ts";
 import { wireConversation, wireEntry } from "./wire.ts";

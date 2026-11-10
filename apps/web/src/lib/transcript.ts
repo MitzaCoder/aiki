@@ -1,4 +1,4 @@
-import type { CacheWarmStretch } from "@mihai-harness/protocol";
+import type { CacheWarmStretch } from "@aiki/protocol";
 import { cacheWarmByAnchor } from "./chat/cache-warm.js";
 /**
  * Turns protocol entries and the `pi.live` document into what the chat renders.
@@ -16,7 +16,7 @@ import {
 	type CacheMiss,
 	type ConversationView,
 	type EntryRecord,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { parseBoardNotice } from "./board.ts";
 import { parseCheckIn, parseWorkerNotice } from "./workers.ts";
 import { parseThreadNotice, threadIdOfNotice, type ThreadNotice } from "./threads.ts";

@@ -4,7 +4,7 @@
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import { onDestroy, untrack } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
-	import type { ModelInfo, ModelRef, ProviderInfo, ThinkingLevel } from '@mihai-harness/protocol';
+	import type { ModelInfo, ModelRef, ProviderInfo, ThinkingLevel } from '@aiki/protocol';
 	import EffortPicker from './EffortPicker.svelte';
 	import ModelPicker from './ModelPicker.svelte';
 	import { hashTrigger, pickerChoices, withoutTrigger, type TaskOption } from '#lib/task-chat.js';

@@ -5,8 +5,8 @@
  */
 import { getContext, setContext } from "svelte";
 import { SvelteMap } from "svelte/reactivity";
-import type { HarnessClient } from "@mihai-harness/client";
-import { MAX_REF_STATUS_REFS, type ProjectLinks, type RefStatus } from "@mihai-harness/protocol";
+import type { HarnessClient } from "@aiki/client";
+import { MAX_REF_STATUS_REFS, type ProjectLinks, type RefStatus } from "@aiki/protocol";
 
 export type RefLinks = {
 	/** Undefined from a backend older than link settings. */

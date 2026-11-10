@@ -7,12 +7,12 @@
  * coordinator model is chosen, and — when the backend sends it — the coordinator's
  * `activity`: working, failed, how many workers run, when it last answered.
  */
-import type { ProjectActivity, ProjectSummary } from "@mihai-harness/protocol";
+import type { ProjectActivity, ProjectSummary } from "@aiki/protocol";
 import { elapsedFor } from "./relative-time.ts";
 
 /** Per browser, like the backend list, the theme and the right sidebar. */
-export const PROJECTS_SEEN_STORAGE_KEY = "mihai-harness.projects-seen.v1";
-export const PROJECTS_NAV_STORAGE_KEY = "mihai-harness.projects-nav.v1";
+export const PROJECTS_SEEN_STORAGE_KEY = "aiki.projects-seen.v1";
+export const PROJECTS_NAV_STORAGE_KEY = "aiki.projects-nav.v1";
 
 /** The width from which the sidebar is persistent; below it the same content is a drawer. */
 export const PROJECTS_NAV_WIDE_QUERY = "(min-width: 64rem)";

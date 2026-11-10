@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { HarnessClient } from '@mihai-harness/client';
-	import type { Artifact } from '@mihai-harness/protocol';
+	import type { HarnessClient } from '@aiki/client';
+	import type { Artifact } from '@aiki/protocol';
 	import { MEDIA_RETRY_LIMIT, ZOOM_FIT, type Zoom } from '#lib/artifacts.js';
 	import { useArtifactSource } from '#lib/artifacts.svelte.js';
 	import ArtifactKindIcon from './ArtifactKindIcon.svelte';

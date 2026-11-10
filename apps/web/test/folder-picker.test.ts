@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { DirectoryEntry } from "@mihai-harness/protocol";
+import type { DirectoryEntry } from "@aiki/protocol";
 import {
 	completeInput,
 	deleteConfirmation,

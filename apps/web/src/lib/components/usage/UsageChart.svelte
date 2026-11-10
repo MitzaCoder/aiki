@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { WindowPace } from '@mihai-harness/client';
-	import type { UsageWindow } from '@mihai-harness/protocol';
+	import type { WindowPace } from '@aiki/client';
+	import type { UsageWindow } from '@aiki/protocol';
 	import { PACE_TONE_COLOR, clockTime, usageChart, type PaceTone } from '#lib/subscription-usage.js';
 
 	/**

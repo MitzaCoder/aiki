@@ -31,7 +31,7 @@
 		projectToneDotClass,
 		type ProjectRow,
 	} from '#lib/projects.js';
-	import type { ProjectSummary } from '@mihai-harness/protocol';
+	import type { ProjectSummary } from '@aiki/protocol';
 
 	/**
 	 * The projects sidebar: every backend's projects, grouped by backend, always beside

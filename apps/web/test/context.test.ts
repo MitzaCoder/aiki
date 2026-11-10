@@ -4,7 +4,7 @@
  * overview's numbers. Pure functions, tested here.
  */
 import { describe, expect, test } from "bun:test";
-import type { ConversationContext, SkillInfo, ToolInfo } from "@mihai-harness/protocol";
+import type { ConversationContext, SkillInfo, ToolInfo } from "@aiki/protocol";
 import {
 	contextAnswerIsCurrent,
 	contextCounts,
@@ -150,13 +150,13 @@ describe("context files", () => {
 	test("labels a system prompt file by its scope: the harness's config directory or the project", () => {
 		expect(
 			contextFileOrigin(
-				{ path: "/home/user/.config/mihai-harness/APPEND_SYSTEM.md", scope: "global", kind: "append" },
+				{ path: "/home/user/.config/aiki/APPEND_SYSTEM.md", scope: "global", kind: "append" },
 				roots.projectPath,
 			)
 		).toBe("config");
 		expect(
 			contextFileOrigin(
-				{ path: "/home/user/repos/demo/.mihai-harness/SYSTEM.md", scope: "project", kind: "system" },
+				{ path: "/home/user/repos/demo/.aiki/SYSTEM.md", scope: "project", kind: "system" },
 				roots.projectPath,
 			)
 		).toBe("project");
@@ -193,14 +193,14 @@ describe("context file kinds", () => {
 
 	test("groups the prompt files by kind, keeping prompt order inside each group", () => {
 		const files = [
-			{ path: "/home/user/repos/demo/.mihai-harness/SYSTEM.md", scope: "project" as const, kind: "system" as const, content: "s" },
-			{ path: "/home/user/.config/mihai-harness/APPEND_SYSTEM.md", scope: "global" as const, kind: "append" as const, content: "a" },
+			{ path: "/home/user/repos/demo/.aiki/SYSTEM.md", scope: "project" as const, kind: "system" as const, content: "s" },
+			{ path: "/home/user/.config/aiki/APPEND_SYSTEM.md", scope: "global" as const, kind: "append" as const, content: "a" },
 			{ path: "/home/user/.pi/agent/AGENTS.md", scope: "global" as const, kind: "agents" as const, content: "g" },
 			{ path: "/home/user/repos/demo/AGENTS.md", scope: "project" as const, kind: "agents" as const, content: "p" },
 		];
 		const grouped = contextFilesByKind(files);
-		expect(grouped.system.map((file) => file.path)).toEqual(["/home/user/repos/demo/.mihai-harness/SYSTEM.md"]);
-		expect(grouped.append.map((file) => file.path)).toEqual(["/home/user/.config/mihai-harness/APPEND_SYSTEM.md"]);
+		expect(grouped.system.map((file) => file.path)).toEqual(["/home/user/repos/demo/.aiki/SYSTEM.md"]);
+		expect(grouped.append.map((file) => file.path)).toEqual(["/home/user/.config/aiki/APPEND_SYSTEM.md"]);
 		expect(grouped.agents.map((file) => file.path)).toEqual([
 			"/home/user/.pi/agent/AGENTS.md",
 			"/home/user/repos/demo/AGENTS.md",
@@ -211,7 +211,7 @@ describe("context file kinds", () => {
 	test("labels model notes and names the pattern file they matched by", () => {
 		expect(contextFileKindLabel("model")).toBe("Model notes");
 		const file = {
-			path: "/home/user/.config/mihai-harness/models/openai-codex--gpt-*.md",
+			path: "/home/user/.config/aiki/models/openai-codex--gpt-*.md",
 			scope: "global" as const,
 			kind: "model" as const,
 			content: "Short sentences.",
@@ -224,22 +224,22 @@ describe("context file kinds", () => {
 	test("sizes and labels a system prompt file like any other, with its origin", () => {
 		const rows = contextFileRows(
 			[
-				{ path: "/home/user/repos/demo/.mihai-harness/SYSTEM.md", scope: "project", kind: "system", content: "Be terse." },
-				{ path: "/home/user/.config/mihai-harness/APPEND_SYSTEM.md", scope: "global", kind: "append", content: "Use rg." },
+				{ path: "/home/user/repos/demo/.aiki/SYSTEM.md", scope: "project", kind: "system", content: "Be terse." },
+				{ path: "/home/user/.config/aiki/APPEND_SYSTEM.md", scope: "global", kind: "append", content: "Use rg." },
 			],
 			roots,
 		);
 		expect(rows.map((row) => [row.kind, row.kindLabel, row.originLabel, row.short, row.size])).toEqual([
-			["system", "System prompt override", "project", ".mihai-harness/SYSTEM.md", "9 B"],
-			["append", "Appended instructions", "harness config", "~/.config/mihai-harness/APPEND_SYSTEM.md", "7 B"],
+			["system", "System prompt override", "project", ".aiki/SYSTEM.md", "9 B"],
+			["append", "Appended instructions", "harness config", "~/.config/aiki/APPEND_SYSTEM.md", "7 B"],
 		]);
 	});
 
 	test("counts only AGENTS.md files in the overview's file count", () => {
 		const withPromptFiles = context({
 			contextFiles: [
-				{ path: "/home/user/.config/mihai-harness/SYSTEM.md", scope: "global", kind: "system", content: "s" },
-				{ path: "/home/user/.config/mihai-harness/APPEND_SYSTEM.md", scope: "global", kind: "append", content: "a" },
+				{ path: "/home/user/.config/aiki/SYSTEM.md", scope: "global", kind: "system", content: "s" },
+				{ path: "/home/user/.config/aiki/APPEND_SYSTEM.md", scope: "global", kind: "append", content: "a" },
 				{ path: "/home/user/repos/demo/AGENTS.md", scope: "project", kind: "agents", content: "p" },
 			],
 		});
@@ -403,7 +403,7 @@ describe("toolGroupLabel", () => {
 	test("uses a friendly name for the known extensions", () => {
 		expect(toolGroupLabel("coding-tools")).toBe("Coding");
 		expect(toolGroupLabel("worker-tools")).toBe("Workers");
-		expect(toolGroupLabel("mihai-agent-context")).toBe("Context");
+		expect(toolGroupLabel("aiki-agent-context")).toBe("Context");
 	});
 
 	test("prettifies an unknown extension ID", () => {

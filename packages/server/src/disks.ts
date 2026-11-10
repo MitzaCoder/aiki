@@ -4,19 +4,19 @@
  * a disk turns low or back, or its numbers move notably, and announced with one `disk_low` notification per crossing.
  * The harness warns; it never blocks work on it.
  *
- * A disk is low below `MIHAI_HARNESS_DISK_LOW_PERCENT` (15) percent free or `MIHAI_HARNESS_DISK_LOW_BYTES` (10 GiB),
+ * A disk is low below `AIKI_DISK_LOW_PERCENT` (15) percent free or `AIKI_DISK_LOW_BYTES` (10 GiB),
  * whichever is smaller, so a large disk is not low with hundreds of gigabytes left and a small one not from the start.
  * Which disks are low is kept in `disks.json` in the data directory, so a restart does not announce a crossing again.
  */
-import type { DiskStatus } from "@mihai-harness/protocol";
+import type { DiskStatus } from "@aiki/protocol";
 import { stat, statfs } from "node:fs/promises";
 import { join } from "node:path";
 import { errorMessage } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 import { type NotificationEvent, notificationTag } from "./notifications.ts";
 
-export const DISK_LOW_PERCENT_ENV = "MIHAI_HARNESS_DISK_LOW_PERCENT";
-export const DISK_LOW_BYTES_ENV = "MIHAI_HARNESS_DISK_LOW_BYTES";
+export const DISK_LOW_PERCENT_ENV = "AIKI_DISK_LOW_PERCENT";
+export const DISK_LOW_BYTES_ENV = "AIKI_DISK_LOW_BYTES";
 export const DEFAULT_DISK_LOW_PERCENT = 15;
 export const DEFAULT_DISK_LOW_BYTES = 10 * 1024 ** 3;
 export const DISK_POLL_INTERVAL_MS = 3 * 60_000;

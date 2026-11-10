@@ -3,7 +3,7 @@
  * reconnect, because pushes sent while away are lost), then follow `subscriptions.usage.changed`. Only the usage screen
  * starts it, so the other screens never ask.
  */
-import type { SubscriptionUsage } from "@mihai-harness/protocol";
+import type { SubscriptionUsage } from "@aiki/protocol";
 import type { BackendConnection } from "./harness.svelte.ts";
 
 function messageOf(error: unknown): string {

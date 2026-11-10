@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import type { ConversationView, EntryRecord } from "@earendil-works/pi-durable";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { ModelRef, ProjectActivity, ServerMessage } from "@mihai-harness/protocol";
+import type { ModelRef, ProjectActivity, ServerMessage } from "@aiki/protocol";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -220,7 +220,7 @@ describe("activity values", () => {
 	});
 
 	it("stores the activity beside project.json and ignores a corrupt file", async () => {
-		const root = await mkdtemp(join(tmpdir(), "mihai-harness-activity-"));
+		const root = await mkdtemp(join(tmpdir(), "aiki-activity-"));
 		cleanups.push(async () => rm(root, { recursive: true, force: true }));
 		const store = new ProjectActivityStore(new ProjectStore(root));
 		expect(await store.read("proj-1")).toBeUndefined();

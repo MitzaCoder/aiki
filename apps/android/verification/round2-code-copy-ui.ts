@@ -10,7 +10,7 @@ const installed=await Bun.file("/tmp/harness-verification/scratch/android-screen
 const c=await connect(target.origin);await c.request("hello",{protocolVersion:1});const projectId=target.projectId;
 const page=()=>c.request("conversation.page",{projectId,limit:500,order:"ascending"});
 const models=(p:any)=>p.entries.flatMap((e:any)=>e.model??[]);
-async function fresh(){await device("adb","shell","am","force-stop","com.mihaisaru.harness");await device("launch");await project(/Native copy proof \(faux\)/);await find(/^Message the coordinator…$/);}
+async function fresh(){await device("adb","shell","am","force-stop","io.github.mitzacoder.aiki");await device("launch");await project(/Native copy proof \(faux\)/);await find(/^Message the coordinator…$/);}
 async function locate(label:RegExp,direction:"up"|"down"="down"){
  for(let i=0;i<24;i++){const n=(await tree()).find(n=>n.enabled&&(label.test(n.text)||label.test(n.desc)));if(n)return n;await device("adb","shell","input","swipe","550",direction==="up"?"700":"1200","550",direction==="up"?"1200":"700","500");}throw Error(`Missing actual copy control ${label}`);
 }
@@ -29,7 +29,7 @@ async function copy(label:string,expected:string,tag:string){
 }
 async function coding(which:"write"|"read"|"bash") {await fresh();await locate(/^Wrote 1 file · Read 1 file · Ran 1 command$/,"up");await tap(/^Wrote 1 file · Read 1 file · Ran 1 command$/);await locate(/^literal-copy-proof\.md$/);const ns=(await tree()).filter(n=>n.text==="literal-copy-proof.md");if(which!=="bash"){assert(ns[which==="write"?0:1]);await tapNode(ns[which==="write"?0:1]!);}else{await locate(/^printf /);await tap(/^printf /);}}
 try {
- await device("phone");await device("adb","reverse","tcp:4796","tcp:4796");await device("adb","shell","am","force-stop","com.mihaisaru.harness");await device("launch");await backends();
+ await device("phone");await device("adb","reverse","tcp:4796","tcp:4796");await device("adb","shell","am","force-stop","io.github.mitzacoder.aiki");await device("launch");await backends();
  let registered=false;for(let i=0;i<12;i++){const nodes=await tree();if(nodes.some(n=>n.text==="Literal checkout - faux")){registered=true;break;}if(nodes.some(n=>n.text==="Add backend"))break;await device("adb","shell","input","swipe","550","1400","550","900","500");}
  if(!registered){await type(/^Name \(optional; filled from address\)$/,"Literal checkout - faux");await type(/^URL, host, or published name$/,target.origin);await tap(/^Add backend$/,"down");}
  if(!resume){assert(!models(await page()).some((m:any)=>m.role==="user"),"Use a fresh owned4796 project for every full clipboard run; never select among old repeated proof cards");

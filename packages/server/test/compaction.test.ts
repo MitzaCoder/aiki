@@ -9,7 +9,7 @@ import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { DEFAULT_COMPACTION_POLICY } from "@earendil-works/pi-durable";
 import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { ModelRef } from "@mihai-harness/protocol";
+import type { ModelRef } from "@aiki/protocol";
 import {
 	COMPACTION_EXTENSION,
 	compactionThresholds,

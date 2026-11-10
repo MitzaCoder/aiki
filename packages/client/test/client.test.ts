@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
-import type { AuthLogin, ConversationView, WorkerDefaults, WorkerSummary } from "@mihai-harness/protocol";
+import type { AuthLogin, ConversationView, WorkerDefaults, WorkerSummary } from "@aiki/protocol";
 import {
 	ClientError,
 	HarnessClient,
@@ -117,7 +117,7 @@ describe("client requests", () => {
 		const test = await setup();
 		const client = await connect(test.server);
 		expect(client.state.status).toBe("ready");
-		expect(client.state.server?.name).toBe("mihai-harness");
+		expect(client.state.server?.name).toBe("aiki");
 
 		expect(await client.listProjects()).toEqual([]);
 		const project = await client.addProject(test.projectDir);

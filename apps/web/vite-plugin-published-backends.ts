@@ -14,7 +14,7 @@ import { parsePublishedBackendsJson, PUBLISHED_BACKENDS_PATH } from "./src/lib/p
 
 /** An explicit stable path survives archive builds; missing local config means no suggestions. */
 export function findPublishedBackendsSource(env = process.env, root = fileURLToPath(new URL("../..", import.meta.url))): string | undefined {
-	const path = env.MIHAI_HARNESS_PUBLISHED_BACKENDS_FILE || resolve(env.DEPLOY_CONFIG_DIR || resolve(root, "deploy/local"), "backends.json");
+	const path = env.AIKI_PUBLISHED_BACKENDS_FILE || resolve(env.DEPLOY_CONFIG_DIR || resolve(root, "deploy/local"), "backends.json");
 	return existsSync(path) ? path : undefined;
 }
 

@@ -2,7 +2,7 @@
  * Backend configuration: the list a browser keeps in localStorage, and the URLs routes use. Pure helpers, no runes,
  * so they can be tested and imported anywhere in the app.
  */
-import { threadAnchor } from "@mihai-harness/client";
+import { threadAnchor } from "@aiki/client";
 
 /** One configured harness backend: a stable ID for routes, a display name, and its origin. */
 export type BackendConfig = {
@@ -12,7 +12,7 @@ export type BackendConfig = {
 };
 
 /** Bumped if the stored shape ever changes incompatibly. */
-export const BACKENDS_STORAGE_KEY = "mihai-harness.backends.v1";
+export const BACKENDS_STORAGE_KEY = "aiki.backends.v1";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 

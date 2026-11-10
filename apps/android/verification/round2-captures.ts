@@ -59,7 +59,7 @@ async function stableEmptyUsage(){
  throw Error("Usage body never reached stable non-loading empty state");
 }
 await device(size);for(const port of [4794,4795])await device("adb","reverse",`tcp:${port}`,`tcp:${port}`);
-await device("adb","shell","am","force-stop","com.mihaisaru.harness");await device("launch");
+await device("adb","shell","am","force-stop","io.github.mitzacoder.aiki");await device("launch");
 await find(/^Appearance$/,"down");await tap(new RegExp(`^${palette}$`),"down");await tap(new RegExp(`^${mode}$`),"down");await swipe("down");
 if(section==="all"||section==="settings") {
  await shot("settings-appearance");await find(/^Backends$/,"up");await shot("settings-backends-real");

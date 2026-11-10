@@ -49,7 +49,7 @@
 </script>
 
 <svelte:head>
-	<title>Projects · mihai-harness</title>
+	<title>Projects · aiki</title>
 </svelte:head>
 
 <div class="relative mx-auto h-full w-full max-w-3xl">

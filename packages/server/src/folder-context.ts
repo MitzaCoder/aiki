@@ -28,7 +28,7 @@ export type AttachedFoldersState = { attached: string[] };
 
 /** The folder context files already attached to this conversation, by the context file's own absolute path. */
 export const AttachedFoldersDoc = defineDoc<AttachedFoldersState>({
-	kind: "mihai.attached-folders",
+	kind: "aiki.attached-folders",
 	version: 1,
 	scope: "conversation",
 	history: "latest",

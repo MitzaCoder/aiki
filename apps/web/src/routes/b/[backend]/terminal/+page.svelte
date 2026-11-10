@@ -19,7 +19,7 @@
 </script>
 
 <svelte:head>
-	<title>Terminal · {backend?.name ?? backendId} · mihai-harness</title>
+	<title>Terminal · {backend?.name ?? backendId} · aiki</title>
 </svelte:head>
 
 {#if backend}

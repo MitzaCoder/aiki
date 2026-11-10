@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { parseTaskReference } from '@mihai-harness/client';
+	import { parseTaskReference } from '@aiki/client';
 	import CopyButton from '#lib/components/CopyButton.svelte';
 	import { clockTime, fullTime } from '#lib/chat/time.js';
 	import ImageStrip from './ImageStrip.svelte';

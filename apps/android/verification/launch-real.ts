@@ -37,21 +37,21 @@ const env = {
 	XDG_CACHE_HOME: join(root, "cache"),
 	XDG_CONFIG_HOME: join(root, "config"),
 	BUN_INSTALL_CACHE_DIR: join(root, "cache", "bun"),
-	MIHAI_HARNESS_DATA_DIR: join(root, "data"),
-	MIHAI_HARNESS_AGENT_DIR: join(root, "agent"),
-	MIHAI_HARNESS_CONFIG_DIR: join(root, "config"),
-	MIHAI_HARNESS_CLAUDE_DIR: join(root, "claude"),
-	MIHAI_HARNESS_VAPID_KEY_FILE: join(root, "data", "vapid.json"),
-	MIHAI_HARNESS_VAPID_SUBJECT: "mailto:android-fixture@example.invalid",
-	MIHAI_HARNESS_HOST: "127.0.0.1",
-	MIHAI_HARNESS_PORT: process.env.PORT ?? "4789",
+	AIKI_DATA_DIR: join(root, "data"),
+	AIKI_AGENT_DIR: join(root, "agent"),
+	AIKI_CONFIG_DIR: join(root, "config"),
+	AIKI_CLAUDE_DIR: join(root, "claude"),
+	AIKI_VAPID_KEY_FILE: join(root, "data", "vapid.json"),
+	AIKI_VAPID_SUBJECT: "mailto:android-fixture@example.invalid",
+	AIKI_HOST: "127.0.0.1",
+	AIKI_PORT: process.env.PORT ?? "4789",
 	ARTIFACT_URL_TTL_MS: process.env.ARTIFACT_URL_TTL_MS ?? (process.argv.includes("--contracts") ? "2000" : "30000"),
-	MIHAI_HARNESS_TIMEZONE: "UTC",
+	AIKI_TIMEZONE: "UTC",
 	ANDROID_VERIFY_ROOT: root,
 	ANDROID_VERIFY_LONG_MODEL: process.env.ANDROID_VERIFY_LONG_MODEL ?? "",
 };
 console.log(
-	`REAL CHECKOUT SERVER (${normal ? "normal main.ts, no injected model" : "injected faux model, no credentials"}); root ${root}; port ${env.MIHAI_HARNESS_PORT}`,
+	`REAL CHECKOUT SERVER (${normal ? "normal main.ts, no injected model" : "injected faux model, no credentials"}); root ${root}; port ${env.AIKI_PORT}`,
 );
 const entry = normal
 	? "../../../packages/server/src/main.ts"

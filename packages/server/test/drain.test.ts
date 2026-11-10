@@ -7,7 +7,7 @@ import { BACKGROUND_CONTEXT, withCancel } from "@earendil-works/chord/context";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import type { FauxResponseFactory } from "@earendil-works/pi-ai/providers/faux";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { ConversationView, ModelRef, ServerStatus } from "@mihai-harness/protocol";
+import type { ConversationView, ModelRef, ServerStatus } from "@aiki/protocol";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ToolCallDrain } from "../src/drain.ts";

@@ -3,7 +3,7 @@
  * model's window, the thresholds where compaction starts and blocks, and how many summaries this conversation has.
  * Pure functions, so the panel only draws them.
  */
-import type { ContextUsage } from "@mihai-harness/protocol";
+import type { ContextUsage } from "@aiki/protocol";
 import { exactTime, relativeTime } from "./relative-time.ts";
 
 /** A token count as it reads: 840, 1.5k, 12.3k, 200k. */

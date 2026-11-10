@@ -14,7 +14,7 @@ async function until(read:()=>Promise<any>,accept:(r:any)=>boolean,label:string)
 async function viewer(){await project(/Native visual states \(faux\)/);await find(/^Message the coordinator…$/);await tap(/^Open project panels$/);await tap(/^Artifacts(?:,.*)?$/);await tap(/^Native implementation proof$/);await find(/^Copy text$/);}
 const codeNode=async()=>(await tree()).find(n=>n.text.startsWith("export function verificationScope"));
 try {
- await device("phone");await device("adb","shell","am","force-stop","com.mihaisaru.harness");await device("launch");const before=await list();await project(/Native visual states \(faux\)/);
+ await device("phone");await device("adb","shell","am","force-stop","io.github.mitzacoder.aiki");await device("launch");const before=await list();await project(/Native visual states \(faux\)/);
  await type(/^Message the coordinator…$/,"R2 visual artifacts",false,true);await tap(/^Send$/);
  const after=await until(list,a=>a.length===before.length+4,"four fresh actual saves");const fresh=after.filter((a:any)=>!before.some((b:any)=>b.id===a.id));const target=fresh.find((a:any)=>a.kind==="text");assert(target);
  await until(()=>c.request("threads.list",{projectId}),r=>r.threads.some((t:any)=>t.main&&t.status!=="running"),"main completed native saves");

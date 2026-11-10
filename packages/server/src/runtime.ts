@@ -16,7 +16,7 @@ import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite
 import type { ImageProcessor } from "@earendil-works/pi-durable/tools";
 import { createCodingTools } from "@earendil-works/pi-durable/tools";
 import type { SetTimer } from "@earendil-works/pi-durable";
-import type { MemoryMaintenanceSettings, MemoryScopeStatus } from "@mihai-harness/protocol";
+import type { MemoryMaintenanceSettings, MemoryScopeStatus } from "@aiki/protocol";
 import {
 	type ConversationContext,
 	type MemoryChange,
@@ -49,7 +49,7 @@ import {
 	type RefDetails,
 	type RefStatus,
 	NO_PROJECT_LINKS,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import {
 	DEFAULT_ACTIVITY,
 	ProjectActivityService,
@@ -181,18 +181,18 @@ export type ProjectManagerOptions = {
 	/** The Harness timer, for tests with a fake clock. Default: `setTimeout`. */
 	setTimer?: SetTimer;
 	/**
-	 * The directory whose AGENTS.md and skills every conversation is given. Default: `MIHAI_HARNESS_AGENT_DIR`, else
+	 * The directory whose AGENTS.md and skills every conversation is given. Default: `AIKI_AGENT_DIR`, else
 	 * `~/.pi/agent` of the user the server runs as.
 	 */
 	agentDir?: string;
 	/**
 	 * The harness's own config directory, whose SYSTEM.md and APPEND_SYSTEM.md apply to every conversation. Default:
-	 * `MIHAI_HARNESS_CONFIG_DIR`, else `${XDG_CONFIG_HOME:-~/.config}/mihai-harness`.
+	 * `AIKI_CONFIG_DIR`, else `${XDG_CONFIG_HOME:-~/.config}/aiki`.
 	 */
 	configDir?: string;
 	/**
 	 * Claude Code's home, whose skills, enabled plugins' skills and `.claude/skills` every conversation is also given.
-	 * Default: `MIHAI_HARNESS_CLAUDE_DIR`, else `~/.claude` of the user the server runs as.
+	 * Default: `AIKI_CLAUDE_DIR`, else `~/.claude` of the user the server runs as.
 	 */
 	claudeDir?: string;
 	log?: (message: string) => void;

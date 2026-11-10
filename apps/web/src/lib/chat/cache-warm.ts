@@ -1,4 +1,4 @@
-import type { CacheWarmStretch } from '@mihai-harness/protocol';
+import type { CacheWarmStretch } from '@aiki/protocol';
 /** Last version per stretch; pages and live history may overlap. Never draw an orphan anchor. */
 export function cacheWarmByAnchor(stretches: readonly CacheWarmStretch[], entryIds: ReadonlySet<number>): Map<number, CacheWarmStretch[]> {
 	const latest = new Map<string, CacheWarmStretch>();

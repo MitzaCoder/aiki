@@ -1,6 +1,6 @@
 /** What a ref's card shows (`ref-details.ts`): pull requests, issues and tickets read through faked `gh` and `acli`. */
 import { describe, expect, it } from "bun:test";
-import type { ProjectLinks } from "@mihai-harness/protocol";
+import type { ProjectLinks } from "@aiki/protocol";
 import type { CommandResult, RunCommand } from "../src/host-commands.ts";
 import { adfText, countChecks, excerptOf, RefDetailsService } from "../src/ref-details.ts";
 

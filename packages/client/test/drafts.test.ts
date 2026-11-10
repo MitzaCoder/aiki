@@ -1,6 +1,6 @@
 /** The draft requests and the pushed change, against a stub socket: their shapes are the client's own contract. */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { ChatDraft, DraftsChangedEvent } from "@mihai-harness/protocol";
+import type { ChatDraft, DraftsChangedEvent } from "@aiki/protocol";
 import { HarnessClient, type HarnessWebSocket } from "../src/index.ts";
 
 type StubMessage = { type: string; id?: string; [key: string]: unknown };

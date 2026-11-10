@@ -6,7 +6,7 @@
  * is a problem when it failed or rolled back, and also when it says `ok` for a commit other than the running release's —
  * the deploy published one commit and the server came back on another, so what runs is not what the deploy claims.
  */
-import type { DeployStatus, ReleaseInfo, ServerStatus } from "@mihai-harness/protocol";
+import type { DeployStatus, ReleaseInfo, ServerStatus } from "@aiki/protocol";
 
 /** Release names and git output show this many characters of a commit. */
 export const SHORT_COMMIT_LENGTH = 7;

@@ -3,7 +3,7 @@
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
 	import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list';
 	import { openQuestionsText, ownedTasksText, runningWorkersText } from '#lib/threads.js';
-	import type { ThreadSummary } from '@mihai-harness/protocol';
+	import type { ThreadSummary } from '@aiki/protocol';
 
 	/** A thread's live counts as small chips: workers running, the tasks it owns, questions waiting on the user. */
 	let { thread }: { thread: Pick<ThreadSummary, 'runningWorkers' | 'ownedTasks' | 'openQuestions'> } = $props();

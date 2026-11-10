@@ -45,7 +45,7 @@ import {
 	type CacheMissTotals,
 	type ContextUsage,
 	type ModelRef,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import type { Coordinators } from "./coordinators.ts";
 import { errorMessage } from "./errors.ts";
 import { type BoardState, BoardDoc, summaryBoardView } from "./board.ts";

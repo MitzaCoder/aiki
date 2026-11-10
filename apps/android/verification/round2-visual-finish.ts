@@ -11,7 +11,7 @@ const c=await connect(target.origin);await c.request("hello",{protocolVersion:1}
 async function until(read:()=>Promise<any>,accept:(r:any)=>boolean,label:string){for(let i=0;i<100;i++){const r=await read();if(accept(r))return r;await Bun.sleep(100);}throw Error(label);}
 try {
  const before=(await c.request("threads.list",{projectId})).threads;assert(before.some((t:any)=>t.id==="native-readiness-validation"&&t.status==="running"&&t.runningWorkers===1));
- await device("phone");await device("adb","shell","am","force-stop","com.mihaisaru.harness");await device("launch");await project(/Native visual states \(faux\)/);await find(/^Message the coordinator…$/);
+ await device("phone");await device("adb","shell","am","force-stop","io.github.mitzacoder.aiki");await device("launch");await project(/Native visual states \(faux\)/);await find(/^Message the coordinator…$/);
  await tap(/^Open project panels$/);await tap(/^Background(?:,.*)?$/);await tap(/^Stop Native readiness validation$/);await find(/^Stop Native readiness validation\?$/);await tap(/^Stop thread$/);
  const stopped=await until(()=>c.request("threads.list",{projectId}),r=>r.threads.some((t:any)=>t.id==="native-readiness-validation"&&t.status!=="running"&&t.runningWorkers===0),"Native Stop did not cancel actual coordinator+worker");
  await capture(`functional-visual-${projectId}-confirmed-stop`,false); // keep prior run's completed proof image untouched

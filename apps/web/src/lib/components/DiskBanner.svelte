@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ServerStatus } from '@mihai-harness/protocol';
+	import type { ServerStatus } from '@aiki/protocol';
 	import Banner from '#lib/components/Banner.svelte';
 	import { diskWarning } from '#lib/server-status.js';
 

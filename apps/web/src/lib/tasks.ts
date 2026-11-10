@@ -1,4 +1,4 @@
-import { markdownText } from "@mihai-harness/protocol";
+import { markdownText } from "@aiki/protocol";
 /**
  * How tasks read in the app once agents keep a report on each: the Tasks view's sections by what a task needs, the
  * `?task=` link that opens a task's sheet, a report's lines for a row, and what changed between two snapshots. Pure
@@ -14,7 +14,7 @@ import {
 	type ProjectLinks,
 	type ThreadSummary,
 	resolveRef,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { threadName } from "./threads.ts";
 
 // --- the link that opens a task ----------------------------------------------------------------------------------

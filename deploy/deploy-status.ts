@@ -6,7 +6,7 @@
  * `main` to never started, without reading the deploy log. The file lives beside `releases/` and `current`, so it
  * survives a rollback and always describes the newest attempt.
  *
- *   bun deploy/deploy-status.ts ok <commit> "<description>" --out=~/.local/share/mihai-harness-deploy/deploy-status.json
+ *   bun deploy/deploy-status.ts ok <commit> "<description>" --out=~/.local/share/aiki-deploy/deploy-status.json
  *   bun deploy/deploy-status.ts rolled_back <commit> "<description>" "<message>" --out=<path>
  *   bun deploy/deploy-status.ts failed <commit> "<description>" "<message>" --out=-
  *   bun deploy/deploy-status.ts ok <commit> "<description>" --backend-unchanged --out=<path>

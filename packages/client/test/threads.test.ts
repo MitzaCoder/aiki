@@ -3,7 +3,7 @@
  * socket: their shapes are the client's own contract, so they are pinned here without a server.
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { ConversationContext, ThreadSummary } from "@mihai-harness/protocol";
+import type { ConversationContext, ThreadSummary } from "@aiki/protocol";
 import {
 	HarnessClient,
 	backgroundThreads,

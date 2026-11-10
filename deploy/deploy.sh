@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Deploy one commit of this repository to every piece of the harness:
-#   - the web app, to /var/lib/mihai-harness-web/releases/<name> with a current symlink (Caddy serves it),
-#   - the backend on this host, under ~/.local/share/mihai-harness-deploy/ (system service from nix-config),
+#   - the web app, to /var/lib/aiki-web/releases/<name> with a current symlink (Caddy serves it),
+#   - the backend on this host, under ~/.local/share/aiki-deploy/ (system service from nix-config),
 #   - the backend on each remote target of deploy/targets.json, under the same layout there: the remote VM (remote user
 #     service) and the Laptop laptop (system service from nix-config, intermittent: see below).
 #
@@ -25,7 +25,7 @@
 #
 # An intermittent target (`"optional": true` in targets.json: a laptop that is often asleep or away) gets a quick ssh
 # probe first. No answer means it is skipped, not failed: a log line, and a "pending" file under
-# $XDG_STATE_HOME/mihai-harness-deploy/pending/<name>.json that the watcher's catch-up reads. The deploy still exits 0 for it.
+# $XDG_STATE_HOME/aiki-deploy/pending/<name>.json that the watcher's catch-up reads. The deploy still exits 0 for it.
 # One that answered the probe and then fails is a real failure, except that a step failing while the target no longer
 # answers is taken for the laptop going away (pending again). Its backend.sh runs detached from the ssh session
 # (DEPLOY_SURVIVE_DISCONNECT), so a dropped connection cannot stop it between the switch and the health check; it ends
@@ -37,7 +37,7 @@
 # checks are skipped when this host already ran them on that commit (a `verified/<sha>` marker the last full deploy
 # left), else they run once. It never overlaps another deploy: it takes the same lock, and exits 75 when it is held.
 #
-# It refuses to run from inside the mihai-harness unit's cgroup (a server tool): restarting the unit there kills the
+# It refuses to run from inside the aiki unit's cgroup (a server tool): restarting the unit there kills the
 # deploy after `current` moved, before the health check and the rollback. Move the `main` bookmark instead.
 set -euo pipefail
 
@@ -46,14 +46,14 @@ REPO_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 export DEPLOY_CONFIG_DIR="${DEPLOY_CONFIG_DIR:-$REPO_DIR/deploy/local}"
 if [[ -f $DEPLOY_CONFIG_DIR/config.env ]]; then source "$DEPLOY_CONFIG_DIR/config.env"; fi
 # The web build runs inside an archive; retain the deploying checkout's optional published list.
-export MIHAI_HARNESS_PUBLISHED_BACKENDS_FILE="${MIHAI_HARNESS_PUBLISHED_BACKENDS_FILE:-$DEPLOY_CONFIG_DIR/backends.json}"
+export AIKI_PUBLISHED_BACKENDS_FILE="${AIKI_PUBLISHED_BACKENDS_FILE:-$DEPLOY_CONFIG_DIR/backends.json}"
 PORT=${DEPLOY_PORT:-7317}
 BUN=${BUN:-bun}
 KEEP=${DEPLOY_KEEP_RELEASES:-5}
-APP_ROOT=${DEPLOY_APP_ROOT:-/var/lib/mihai-harness-web}
-HOST_ROOT=${DEPLOY_HOST_ROOT:-$HOME/.local/share/mihai-harness-deploy}
-HOST_SERVICE=${DEPLOY_HOST_SERVICE:-mihai-harness.service}
-STATE_DIR=${DEPLOY_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/mihai-harness-deploy}
+APP_ROOT=${DEPLOY_APP_ROOT:-/var/lib/aiki-web}
+HOST_ROOT=${DEPLOY_HOST_ROOT:-$HOME/.local/share/aiki-deploy}
+HOST_SERVICE=${DEPLOY_HOST_SERVICE:-aiki.service}
+STATE_DIR=${DEPLOY_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/aiki-deploy}
 LOCK=$STATE_DIR/deploy.lock
 # One file per intermittent target the last deploy skipped, and one marker per commit whose checks passed on this host.
 PENDING_DIR=$STATE_DIR/pending
@@ -90,8 +90,8 @@ REV=${REV:-refs/heads/main}
 # The harness server runs its tools inside its own cgroup, and `systemctl restart` takes that cgroup down: a deploy
 # started from there dies after `current` moved, with no health check and no rollback. The watcher is not in the cgroup,
 # so moving `main` is the road that works.
-if [[ -r $CGROUP_FILE ]] && grep -q mihai-harness.service "$CGROUP_FILE"; then
-	log "REFUSING to deploy from inside the mihai-harness server's cgroup ($CGROUP_FILE names mihai-harness.service)."
+if [[ -r $CGROUP_FILE ]] && grep -q aiki.service "$CGROUP_FILE"; then
+	log "REFUSING to deploy from inside the aiki server's cgroup ($CGROUP_FILE names aiki.service)."
 	log "The restart would kill this deploy after current moved, before the health check and the rollback."
 	log "Move the main bookmark instead: deploy/watch.sh deploys when it moves (README, Deploy)."
 	exit 2
@@ -333,7 +333,7 @@ if ((PARTIAL)); then
 	log "only:$only_names (no app, no host backend)"
 fi
 
-STAGE=$(mktemp -d "${TMPDIR:-/tmp}/mihai-harness-deploy-check.XXXXXX")
+STAGE=$(mktemp -d "${TMPDIR:-/tmp}/aiki-deploy-check.XXXXXX")
 function cleanup() { rm -rf "$STAGE"; }
 trap cleanup EXIT
 
@@ -366,7 +366,7 @@ if ((PARTIAL)); then
 	:
 elif [[ ! -d $APP_ROOT ]]; then
 	log "app: $APP_ROOT does not exist yet (nix-config creates it); skipping app deploy"
-elif MIHAI_HARNESS_WEB_ROOT=$APP_ROOT DEPLOY_KEEP_RELEASES=$KEEP bash "$REPO_DIR/deploy/web.sh" release "$NAME" "$STAGE/apps/web/build"; then
+elif AIKI_WEB_ROOT=$APP_ROOT DEPLOY_KEEP_RELEASES=$KEEP bash "$REPO_DIR/deploy/web.sh" release "$NAME" "$STAGE/apps/web/build"; then
 	log "app: deployed $NAME"
 else
 	failed "app: $APP_ROOT was not updated"
@@ -383,7 +383,7 @@ function publish_host() {
 		failed_host "sending the tree failed"
 		return 0
 	fi
-	if MIHAI_HARNESS_PORT=$PORT DEPLOY_KEEP_RELEASES=$KEEP \
+	if AIKI_PORT=$PORT DEPLOY_KEEP_RELEASES=$KEEP \
 		bash "$REPO_DIR/deploy/backend.sh" system release "$NAME" "$SHA" "$SUBJECT"; then
 		log "host backend: deployed $NAME"
 	else
@@ -402,7 +402,7 @@ else
 		log "WARNING: host backend: could not update the tooling in $HOST_ROOT/tools"
 	HOST_RUNNING=$(release_commit 2>/dev/null <"$HOST_ROOT/current/RELEASE.json") || HOST_RUNNING=""
 	if backend_unchanged "host backend" "$HOST_RUNNING" &&
-		MIHAI_HARNESS_PORT=$PORT bash "$REPO_DIR/deploy/backend.sh" system unchanged "$SHA" "$SUBJECT"; then
+		AIKI_PORT=$PORT bash "$REPO_DIR/deploy/backend.sh" system unchanged "$SHA" "$SUBJECT"; then
 		log "host backend: still runs ${HOST_RUNNING:0:12}; recorded ${SHA:0:12} as deployed without a restart"
 	else
 		publish_host
@@ -442,7 +442,7 @@ function publish_target() {
 		return 0
 	fi
 	log "tree and tooling on $T_SSH; publishing there"
-	if tssh "$(remote_backend_env)MIHAI_HARNESS_PORT=$T_PORT DEPLOY_KEEP_RELEASES=$KEEP bash $REMOTE_ROOT/tools/backend.sh $T_UNIT release $NAME $SHA $(printf '%q' "$SUBJECT")"; then
+	if tssh "$(remote_backend_env)AIKI_PORT=$T_PORT DEPLOY_KEEP_RELEASES=$KEEP bash $REMOTE_ROOT/tools/backend.sh $T_UNIT release $NAME $SHA $(printf '%q' "$SUBJECT")"; then
 		log "$T_LABEL backend: deployed $NAME"
 		TARGET_STATE=ok
 	elif [[ -n $T_OPTIONAL ]] && ! probe_target; then
@@ -476,8 +476,8 @@ function deploy_target() {
 	local tooling_ok=0
 	if [[ $T_UNIT == user ]]; then
 		local unit_dir="$REPO_DIR/deploy/systemd"
-		if [[ -f $DEPLOY_CONFIG_DIR/mihai-harness.service ]]; then unit_dir=$DEPLOY_CONFIG_DIR; fi
-		tar -c -C "$REPO_DIR/deploy" "${tools[@]}" -C "$unit_dir" mihai-harness.service | tssh "tar -x -C $REMOTE_ROOT/tools" && tooling_ok=1
+		if [[ -f $DEPLOY_CONFIG_DIR/aiki.service ]]; then unit_dir=$DEPLOY_CONFIG_DIR; fi
+		tar -c -C "$REPO_DIR/deploy" "${tools[@]}" -C "$unit_dir" aiki.service | tssh "tar -x -C $REMOTE_ROOT/tools" && tooling_ok=1
 	else
 		tar -c -C "$REPO_DIR/deploy" "${tools[@]}" | tssh "tar -x -C $REMOTE_ROOT/tools" && tooling_ok=1
 	fi
@@ -490,7 +490,7 @@ function deploy_target() {
 		log "$T_LABEL backend: it just received the VAPID key and reads it at start; publishing and restarting"
 		publish_target
 	elif backend_unchanged "$T_LABEL backend" "$running" &&
-		tssh "$(remote_backend_env)MIHAI_HARNESS_PORT=$T_PORT bash $REMOTE_ROOT/tools/backend.sh $T_UNIT unchanged $SHA $(printf '%q' "$SUBJECT")"; then
+		tssh "$(remote_backend_env)AIKI_PORT=$T_PORT bash $REMOTE_ROOT/tools/backend.sh $T_UNIT unchanged $SHA $(printf '%q' "$SUBJECT")"; then
 		log "$T_LABEL backend: still runs ${running:0:12}; recorded ${SHA:0:12} as deployed without a restart"
 		TARGET_STATE=ok
 	else
@@ -509,19 +509,19 @@ for index in "${ACTIVE[@]}"; do
 		if "$BUN" run "$REPO_DIR/deploy/health-check.ts" "http://$T_TAILNET:$T_PORT" --timeout-ms=10000; then
 			log "reachable from here over the tailnet: http://$T_TAILNET:$T_PORT"
 		else
-			log "WARNING: ${SHA:0:12} is deployed but http://$T_TAILNET:$T_PORT does not answer from here; the server probably binds 127.0.0.1 (MIHAI_HARNESS_HOST=0.0.0.0 in the unit?)"
+			log "WARNING: ${SHA:0:12} is deployed but http://$T_TAILNET:$T_PORT does not answer from here; the server probably binds 127.0.0.1 (AIKI_HOST=0.0.0.0 in the unit?)"
 		fi
 	fi
 done
 
 # Where to read what each server says.
-LOGS="journalctl --user -u mihai-harness-deploy-watch"
+LOGS="journalctl --user -u aiki-deploy-watch"
 for index in "${ACTIVE[@]}"; do
 	use_target "$index"
 	if [[ $T_UNIT == user ]]; then
-		LOGS+="; $T_LABEL server: ssh $T_SSH journalctl --user -u mihai-harness"
+		LOGS+="; $T_LABEL server: ssh $T_SSH journalctl --user -u aiki"
 	else
-		LOGS+="; $T_LABEL server: ssh $T_SSH journalctl -u mihai-harness"
+		LOGS+="; $T_LABEL server: ssh $T_SSH journalctl -u aiki"
 	fi
 done
 if ((!PARTIAL)); then LOGS+="; host server: journalctl -u $HOST_SERVICE"; fi

@@ -5,7 +5,7 @@
 import type { CredentialStore, Models } from "@earendil-works/pi-ai";
 import type { SetTimer } from "@earendil-works/pi-durable";
 import type { ImageProcessor } from "@earendil-works/pi-durable/tools";
-import { HARNESS_FEATURES, SERVER_NAME } from "@mihai-harness/protocol";
+import { HARNESS_FEATURES, SERVER_NAME } from "@aiki/protocol";
 import { basename, join } from "node:path";
 import {
 	ArtifactStore,
@@ -67,12 +67,12 @@ import { resolveToolCallCapMs } from "./tool-caps.ts";
 export type StartServerOptions = {
 	/** Usually `resolveDataDir()`; tests use a temp directory. */
 	dataDir: string;
-	/** Default: `MIHAI_HARNESS_PORT`, else 7317. `0` picks a free port (the handle reports it). */
+	/** Default: `AIKI_PORT`, else 7317. `0` picks a free port (the handle reports it). */
 	port?: number;
-	/** Default: `MIHAI_HARNESS_HOST`, else 127.0.0.1. `0.0.0.0` listens on every interface. */
+	/** Default: `AIKI_HOST`, else 127.0.0.1. `0.0.0.0` listens on every interface. */
 	hostname?: string;
 	/**
-	 * Browser origins allowed to open `/ws`. Default: `MIHAI_HARNESS_ALLOWED_ORIGINS`, else none. Requests without an
+	 * Browser origins allowed to open `/ws`. Default: `AIKI_ALLOWED_ORIGINS`, else none. Requests without an
 	 * Origin header are always allowed, so native clients, tests and health checks work without an allow-list.
 	 */
 	allowedOrigins?: readonly string[];
@@ -83,18 +83,18 @@ export type StartServerOptions = {
 	/** Where the request log lives (`request-log.sqlite` in the data directory by default); `false` keeps none. */
 	requestLog?: { file?: string } | false;
 	/**
-	 * The directory whose AGENTS.md and skills every conversation is given. Default: `MIHAI_HARNESS_AGENT_DIR`, else
+	 * The directory whose AGENTS.md and skills every conversation is given. Default: `AIKI_AGENT_DIR`, else
 	 * `~/.pi/agent` of the user this process runs as.
 	 */
 	agentDir?: string;
 	/**
 	 * The harness's own config directory, whose SYSTEM.md and APPEND_SYSTEM.md apply to every conversation. Default:
-	 * `MIHAI_HARNESS_CONFIG_DIR`, else `${XDG_CONFIG_HOME:-~/.config}/mihai-harness`.
+	 * `AIKI_CONFIG_DIR`, else `${XDG_CONFIG_HOME:-~/.config}/aiki`.
 	 */
 	configDir?: string;
 	/**
 	 * Claude Code's home, whose skills, enabled plugins' skills and `.claude/skills` every conversation is also given.
-	 * Default: `MIHAI_HARNESS_CLAUDE_DIR`, else `~/.claude` of the user this process runs as.
+	 * Default: `AIKI_CLAUDE_DIR`, else `~/.claude` of the user this process runs as.
 	 */
 	claudeDir?: string;
 	/** Must match the store the models were created with. Default: `credentials.json` in the data directory. */
@@ -108,13 +108,13 @@ export type StartServerOptions = {
 	/** How long the user's board edits wait before they reach the coordinator as one input. Default 3 s. */
 	boardEditDebounceMs?: number;
 	/**
-	 * The timezone schedules run in. Default: `MIHAI_HARNESS_TIMEZONE` when it names a zone, else the host's clock, else
+	 * The timezone schedules run in. Default: `AIKI_TIMEZONE` when it names a zone, else the host's clock, else
 	 * UTC; `schedules.list` reports what is in effect.
 	 */
 	timezone?: string;
 	/**
 	 * How long the coordinator's own `bash`/`powershell` calls may run before they are stopped with a message to
-	 * delegate the work. Default: `MIHAI_HARNESS_TOOL_CALL_CAP_MINUTES`, else two minutes. Workers are unaffected.
+	 * delegate the work. Default: `AIKI_TOOL_CALL_CAP_MINUTES`, else two minutes. Workers are unaffected.
 	 */
 	toolCallCapMs?: number;
 	/**
@@ -141,13 +141,13 @@ export type StartServerOptions = {
 		"fetch" | "anthropicBaseUrl" | "chatgptBaseUrl" | "pollIntervalMs" | "afterTurnQuietMs" | "minReadGapMs"
 	>;
 	/**
-	 * Artifacts. Defaults: `MIHAI_HARNESS_ARTIFACT_MAX_BYTES` (else 2 GiB) per file, URLs valid 4 hours, durations from
+	 * Artifacts. Defaults: `AIKI_ARTIFACT_MAX_BYTES` (else 2 GiB) per file, URLs valid 4 hours, durations from
 	 * `ffprobe` when it is on PATH.
 	 */
 	artifacts?: Pick<ArtifactStoreOptions, "maxFileBytes" | "probeDuration"> & { urlTtlMs?: number };
 	/**
 	 * Terminals (feature `terminal`): a PTY per attached session, each a zellij session. Default: on, unless
-	 * `MIHAI_HARNESS_TERMINALS` is `off`; `false` turns it off (it is then not advertised and its requests are refused).
+	 * `AIKI_TERMINALS` is `off`; `false` turns it off (it is then not advertised and its requests are refused).
 	 * Tests hand in a plain-shell host or their own zellij sockets.
 	 */
 	terminals?: false | TerminalHostOptions;
@@ -168,9 +168,9 @@ export type StartServerOptions = {
 	 * point the transport at a fake push service and hand in a subject.
 	 */
 	notifications?: {
-		/** The VAPID key pair file. Default: `MIHAI_HARNESS_VAPID_KEY_FILE`, else `<data>/notifications/vapid.json`. */
+		/** The VAPID key pair file. Default: `AIKI_VAPID_KEY_FILE`, else `<data>/notifications/vapid.json`. */
 		vapidKeyFile?: string;
-		/** The VAPID `sub`. Default: `MIHAI_HARNESS_VAPID_SUBJECT`, else the first HTTPS allowed origin. */
+		/** The VAPID `sub`. Default: `AIKI_VAPID_SUBJECT`, else the first HTTPS allowed origin. */
 		subject?: string;
 		/** How a push is posted. Default: `fetch`. */
 		send?: PushTransport;
@@ -183,7 +183,7 @@ export type StartServerOptions = {
 		/** Runs the hold timers. Default: `setTimeout`; a test passes a fake clock. */
 		schedule?: HoldScheduler;
 		/**
-		 * The FCM service-account key file for Android devices. Default: `MIHAI_HARNESS_FCM_KEY_FILE`, else
+		 * The FCM service-account key file for Android devices. Default: `AIKI_FCM_KEY_FILE`, else
 		 * `<data>/notifications/fcm-service-account.json`; a missing file (or `null`) turns FCM off.
 		 */
 		fcmKeyFile?: string | null;
@@ -330,7 +330,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	});
 	// Events that were in their hold when the last process ended carry on with the rest of their time.
 	notifications.restore();
-	log(`mihai-harness: notifications ${notificationStore.file} (VAPID key ${vapidKeyFile}, sub ${notifications.subject})`);
+	log(`aiki: notifications ${notificationStore.file} (VAPID key ${vapidKeyFile}, sub ${notifications.subject})`);
 	const agentDir = options.agentDir ?? resolveAgentDir();
 	const configDir = options.configDir ?? resolveConfigDir();
 	const claudeDir = options.claudeDir ?? resolveClaudeDir();
@@ -347,14 +347,14 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			? "no SYSTEM.md or APPEND_SYSTEM.md"
 			: globalPromptFiles.map((file) => basename(file.path)).join(" and ");
 	log(
-		`mihai-harness: agent dir ${agentDir} (${globalFile === undefined ? "no AGENTS.md" : globalFile.path}; ${globalSkillsFrom("pi")} global skill${globalSkillsFrom("pi") === 1 ? "" : "s"})`,
+		`aiki: agent dir ${agentDir} (${globalFile === undefined ? "no AGENTS.md" : globalFile.path}; ${globalSkillsFrom("pi")} global skill${globalSkillsFrom("pi") === 1 ? "" : "s"})`,
 	);
-	log(`mihai-harness: config dir ${configDir} (${promptFileLabel})`);
+	log(`aiki: config dir ${configDir} (${promptFileLabel})`);
 	log(
-		`mihai-harness: claude dir ${claudeDir} (${globalSkillsFrom("claude")} global skill${globalSkillsFrom("claude") === 1 ? "" : "s"})`,
+		`aiki: claude dir ${claudeDir} (${globalSkillsFrom("claude")} global skill${globalSkillsFrom("claude") === 1 ? "" : "s"})`,
 	);
 	log(
-		`mihai-harness: global skills ${globalSkillsFrom("harness")} harness, ${globalSkillsFrom("pi")} pi, ${globalSkillsFrom("claude")} claude`,
+		`aiki: global skills ${globalSkillsFrom("harness")} harness, ${globalSkillsFrom("pi")} pi, ${globalSkillsFrom("claude")} claude`,
 	);
 
 	// Set below, once the maintenance clock exists; a memory write is what tells it a scope may be due.
@@ -370,9 +370,9 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	// The global scope exists and is watched from the start, so an edit made by hand reaches the index and the app even
 	// before a request names it.
 	await memory.start().catch((error: unknown) => {
-		log(`mihai-harness: memory at ${memory.globalDir} is unavailable: ${errorMessage(error)}`);
+		log(`aiki: memory at ${memory.globalDir} is unavailable: ${errorMessage(error)}`);
 	});
-	log(`mihai-harness: memory ${memory.globalDir} (global) and projects/<id>/memory/ per project`);
+	log(`aiki: memory ${memory.globalDir} (global) and projects/<id>/memory/ per project`);
 	const logins = new OAuthLoginManager({
 		models,
 		log,
@@ -576,9 +576,9 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	// after a restart too, and the persisted marker keeps it to once per attempt.
 	void notifications.deployProblem(serverStatus.deploy);
 	const release = serverStatus.release;
-	log(`mihai-harness: release ${release === null ? "none (running from a checkout)" : release.name}`);
+	log(`aiki: release ${release === null ? "none (running from a checkout)" : release.name}`);
 	log(
-		`mihai-harness: deploy status ${
+		`aiki: deploy status ${
 			serverStatus.deployStatusFile === null ? `none (no deploy root for ${serverStatus.releaseRoot})` : serverStatus.deployStatusFile
 		}`,
 	);
@@ -610,7 +610,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					(response) => response ?? new Response("Not found", { status: 404 }),
 				);
 			}
-			return new Response("mihai-harness is an API-only backend; the app is deployed separately.", {
+			return new Response("aiki is an API-only backend; the app is deployed separately.", {
 				status: 404,
 				headers: { "content-type": "text/plain; charset=utf-8" },
 			});
@@ -676,8 +676,8 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	});
 
 	const actualPort = server.port ?? port;
-	log(`mihai-harness: schedules run in ${schedules.timezone}`);
-	log(`mihai-harness: memory maintenance settings ${maintenanceStore.file}`);
+	log(`aiki: schedules run in ${schedules.timezone}`);
+	log(`aiki: memory maintenance settings ${maintenanceStore.file}`);
 	// Catch up on runs missed while the process was off, then arm the timer for the next one.
 	await scheduleScheduler.start();
 	// Event schedules listen from here: GitHub is read at once if one is enabled, and every two minutes while one is.
@@ -768,11 +768,11 @@ function openRequestLog(
 	const file = config?.file ?? join(dataDir, REQUEST_LOG_FILE);
 	try {
 		const store = RequestLogStore.open(file, options.now === undefined ? {} : { now: options.now() });
-		options.log(`mihai-harness: request log ${file}`);
+		options.log(`aiki: request log ${file}`);
 		return new RequestLog({ store, ...options });
 	} catch (error) {
 		// Model requests go on without it.
-		options.log(`mihai-harness: request log ${file} is unavailable: ${errorMessage(error)}`);
+		options.log(`aiki: request log ${file} is unavailable: ${errorMessage(error)}`);
 		return undefined;
 	}
 }

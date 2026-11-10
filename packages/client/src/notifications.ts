@@ -10,7 +10,7 @@ import {
 	type NotificationKind,
 	type NotificationPayload,
 	type NotificationPreferences,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 
 /**
  * Every kind the protocol declares, in its order. The protocol exports the type and the two lists but not the schema, so
@@ -277,10 +277,10 @@ export function deviceLabel(): string {
 }
 
 /** Where a browser keeps the device identity it made up; it must survive reloads, not reinstalls. */
-export const NOTIFICATION_DEVICE_STORAGE_KEY = "mihai-harness.notification-device.v1";
+export const NOTIFICATION_DEVICE_STORAGE_KEY = "aiki.notification-device.v1";
 
 /** Where this browser keeps what it wants to be told about, per device. */
-export const NOTIFICATION_SETTINGS_STORAGE_KEY = "mihai-harness.notifications.v1"; // gitleaks:allow -- localStorage namespace, not a credential
+export const NOTIFICATION_SETTINGS_STORAGE_KEY = "aiki.notifications.v1"; // gitleaks:allow -- localStorage namespace, not a credential
 
 /** A time of day a device may be quiet at, in its own timezone. Same shape as the protocol's non-null quiet hours. */
 export type QuietHours = {

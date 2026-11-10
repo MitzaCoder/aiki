@@ -1,6 +1,6 @@
 /** "Show UI changes" (`uiProof`): the default, persistence, and the prompt paragraph per value. */
 import { afterEach, describe, expect, it } from "bun:test";
-import { DEFAULT_CHECK_INS, type ProjectSummary, type UiProof } from "@mihai-harness/protocol";
+import { DEFAULT_CHECK_INS, type ProjectSummary, type UiProof } from "@aiki/protocol";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Project } from "../src/projects.ts";

@@ -9,7 +9,7 @@ import type {
 	ModelRef,
 	ThreadSummary,
 	WorkersListResponse,
-} from "@mihai-harness/protocol";
+} from "@aiki/protocol";
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
 import { type BoardState, changeOwner, emptyBoardState, saveTask } from "../src/board.ts";

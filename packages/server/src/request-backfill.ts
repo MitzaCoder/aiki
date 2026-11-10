@@ -20,7 +20,7 @@ import {
 	ROOT_CONVERSATION_ID,
 	type Storage,
 } from "@earendil-works/pi-durable";
-import { MAIN_THREAD_ID } from "@mihai-harness/protocol";
+import { MAIN_THREAD_ID } from "@aiki/protocol";
 import { errorMessage } from "./errors.ts";
 import { messageText } from "./prompt-fingerprint.ts";
 import { ConversationRequests, type RequestLog, wakeOf } from "./request-log.ts";
@@ -124,7 +124,7 @@ async function identities(storage: Storage): Promise<Map<number, ConversationIde
 		[main, { kind: "main", threadId: MAIN_THREAD_ID, workerId: null, taskId: null, scheduleId: null }],
 	]);
 	const places: { conversationId: number; threadId: string }[] = [{ conversationId: main, threadId: MAIN_THREAD_ID }];
-	const threads = (await documentValue(storage, "mihai.threads", main))?.threads;
+	const threads = (await documentValue(storage, "aiki.threads", main))?.threads;
 	if (typeof threads === "object" && threads !== null) {
 		for (const thread of Object.values(threads as Record<string, ThreadLike>)) {
 			const id = text(thread.id);
@@ -140,7 +140,7 @@ async function identities(storage: Storage): Promise<Map<number, ConversationIde
 		}
 	}
 	for (const place of places) {
-		const workers = (await documentValue(storage, "mihai.workers", place.conversationId))?.workers;
+		const workers = (await documentValue(storage, "aiki.workers", place.conversationId))?.workers;
 		if (typeof workers !== "object" || workers === null) continue;
 		for (const worker of Object.values(workers as Record<string, WorkerLike>)) {
 			const id = text(worker.id);
@@ -162,8 +162,8 @@ async function identityByOwner(storage: Storage, record: ConversationRecord): Pr
 	const unknown: ConversationIdentity = { kind: "other", threadId: null, workerId: null, taskId: null, scheduleId: null };
 	if (record.owner === undefined) return unknown;
 	const task = await storage.task(record.owner.taskId, BACKGROUND_CONTEXT);
-	if (task?.kind === "mihai.worker-anchor") return { ...unknown, kind: "worker" };
-	if (task?.kind === "mihai.thread-anchor") return { ...unknown, kind: "thread" };
+	if (task?.kind === "aiki.worker-anchor") return { ...unknown, kind: "worker" };
+	if (task?.kind === "aiki.thread-anchor") return { ...unknown, kind: "thread" };
 	return unknown;
 }
 

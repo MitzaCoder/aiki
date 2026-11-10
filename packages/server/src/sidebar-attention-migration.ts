@@ -6,7 +6,7 @@ import type { BoardState } from "./board.ts";
 import type { WorkersState } from "./workers.ts";
 import type { ThreadsState } from "./threads.ts";
 import { boardAttention, workerAttention, threadAttention, EMPTY_ATTENTION } from "./sidebar-attention.ts";
-import type { ProjectAttention } from "@mihai-harness/protocol";
+import type { ProjectAttention } from "@aiki/protocol";
 
 export async function readStoredAttention(file: string): Promise<ProjectAttention> {
 	if (!(await Bun.file(file).exists())) return { ...EMPTY_ATTENTION };
@@ -19,11 +19,11 @@ export async function readStoredAttention(file: string): Promise<ProjectAttentio
 			const record = await storage.findDocument({ kind, scope: { kind: "conversation", conversationId } }, "current", BACKGROUND_CONTEXT);
 			return record === undefined ? undefined : (await storage.document(record.id, "current", BACKGROUND_CONTEXT))?.value as T | undefined;
 		}
-		const board = await doc<BoardState>(main.id, "mihai.board");
-		const threads = Object.values((await doc<ThreadsState>(main.id, "mihai.threads"))?.threads ?? {});
+		const board = await doc<BoardState>(main.id, "aiki.board");
+		const threads = Object.values((await doc<ThreadsState>(main.id, "aiki.threads"))?.threads ?? {});
 		const workers = [];
 		for (const conversationId of [main.id, ...threads.map((thread) => thread.conversationId as ConversationId)]) {
-			workers.push(...Object.values((await doc<WorkersState>(conversationId, "mihai.workers"))?.workers ?? {}));
+			workers.push(...Object.values((await doc<WorkersState>(conversationId, "aiki.workers"))?.workers ?? {}));
 		}
 		return {
 			...EMPTY_ATTENTION,

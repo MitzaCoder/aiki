@@ -11,8 +11,8 @@
 # next deploy shares it. A failure is a warning, not a deploy failure — the remote backend keeps the key it has, and
 # push subscriptions registered against another key stop verifying until the key is shared.
 #
-# Overrides: MIHAI_HARNESS_DATA_DIR or DEPLOY_HOST_DATA_DIR (this host's data directory),
-#            MIHAI_HARNESS_VAPID_KEY_FILE (the key file itself),
+# Overrides: AIKI_DATA_DIR or DEPLOY_HOST_DATA_DIR (this host's data directory),
+#            AIKI_VAPID_KEY_FILE (the key file itself),
 #            DEPLOY_VM_DATA_DIR (the remote data directory, expanded on the remote side),
 #            DEPLOY_SSH_OPTIONS (extra ssh arguments, split on spaces: the target's key, BatchMode, ConnectTimeout),
 #            DEPLOY_SSH_SHELL (the target's login shell when it is not bash: commands then go through `bash -c`).
@@ -20,10 +20,10 @@ set -euo pipefail
 
 SSH_TARGET=${1:-${DEPLOY_SSH_TARGET:-}}
 if [[ -z $SSH_TARGET ]]; then printf "A remote target argument or DEPLOY_SSH_TARGET is required.\n" >&2; exit 2; fi
-DATA_DIR=${MIHAI_HARNESS_DATA_DIR:-${DEPLOY_HOST_DATA_DIR:-$HOME/.local/share/mihai-harness}}
-VAPID_FILE=${MIHAI_HARNESS_VAPID_KEY_FILE:-$DATA_DIR/notifications/vapid.json}
+DATA_DIR=${AIKI_DATA_DIR:-${DEPLOY_HOST_DATA_DIR:-$HOME/.local/share/aiki}}
+VAPID_FILE=${AIKI_VAPID_KEY_FILE:-$DATA_DIR/notifications/vapid.json}
 # Kept single-quoted on purpose: $HOME belongs to the remote shell.
-REMOTE_DATA_DIR=${DEPLOY_VM_DATA_DIR:-'$HOME/.local/share/mihai-harness'}
+REMOTE_DATA_DIR=${DEPLOY_VM_DATA_DIR:-'$HOME/.local/share/aiki'}
 REMOTE_VAPID=$REMOTE_DATA_DIR/notifications/vapid.json
 
 # shellcheck disable=SC2206 # split on purpose

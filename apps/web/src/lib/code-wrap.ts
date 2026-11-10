@@ -4,7 +4,7 @@
  */
 
 /** Per browser, like the theme and the sidebar. Bumped when the stored shape changes. */
-export const CODE_WRAP_STORAGE_KEY = "mihai-harness.code-wrap.v1";
+export const CODE_WRAP_STORAGE_KEY = "aiki.code-wrap.v1";
 
 /** What the reader chose with a Wrap toggle; `undefined` until they chose once. */
 export type CodeWrapPreference = "wrap" | "scroll" | undefined;

@@ -58,7 +58,7 @@ export const DiskStatusSchema = Type.Object({
 	path: Type.String({ description: "A path on that filesystem." }),
 	freeBytes: Type.Integer({ minimum: 0 }),
 	totalBytes: Type.Integer({ minimum: 0 }),
-	low: Type.Boolean({ description: "Below the warning threshold (MIHAI_HARNESS_DISK_LOW_*, default 15% or 10 GiB free)." }),
+	low: Type.Boolean({ description: "Below the warning threshold (AIKI_DISK_LOW_*, default 15% or 10 GiB free)." }),
 });
 export type DiskStatus = Static<typeof DiskStatusSchema>;
 

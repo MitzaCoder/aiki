@@ -10,8 +10,8 @@ import {
 	MEMORY_MATCH_START,
 	memorySnippetParts,
 	type MemorySnippetPart
-} from "@mihai-harness/client";
-import type { MemoryScope } from "@mihai-harness/protocol";
+} from "@aiki/client";
+import type { MemoryScope } from "@aiki/protocol";
 import type { ToolPart } from "#lib/transcript.js";
 
 export const MEMORY_TOOL_NAMES = ["memory_search", "memory_read", "memory_write", "memory_archive"] as const;

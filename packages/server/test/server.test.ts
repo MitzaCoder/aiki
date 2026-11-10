@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import { HARNESS_FEATURES, type ConversationView, type ServerMessage } from "@mihai-harness/protocol";
+import { HARNESS_FEATURES, type ConversationView, type ServerMessage } from "@aiki/protocol";
 import { mkdir, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -71,7 +71,7 @@ describe("handshake", () => {
 		expect(response.type).toBe("hello");
 		if (response.type !== "hello") return;
 		expect(response.protocolVersion).toBe(1);
-		expect(response.server.name).toBe("mihai-harness");
+		expect(response.server.name).toBe("aiki");
 		// hello advertises what this backend implements so the app can hide the rest.
 		expect(response.features).toEqual([...HARNESS_FEATURES]);
 	});
