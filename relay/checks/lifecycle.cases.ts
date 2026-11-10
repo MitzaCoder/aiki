@@ -18,6 +18,7 @@ import {
 	call,
 	random,
 	linkGoogleIdentity,
+	fixtureCiphertext,
 } from "./support";
 
 const phases: CleanupPhase[] = [
@@ -246,7 +247,7 @@ test("operator settings and lifecycle logs contain no UID, email, tokens, body, 
 		credentials.send,
 		credentials.deletion,
 		JSON.stringify(body),
-		body.envelope.c,
+		fixtureCiphertext(body),
 		"127.0.0.1",
 	])
 		expect(logs.join("\n")).not.toContain(secret);

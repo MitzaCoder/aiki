@@ -1,6 +1,20 @@
 import { expect, test } from "bun:test";
 import { type FcmResult } from "../src/core";
-import { fixture, store, random, call, assertStatus, begin, finish, enroll, route, payload, waitFor } from "./support";
+import {
+	fixture,
+	store,
+	random,
+	call,
+	assertStatus,
+	begin,
+	finish,
+	enroll,
+	route,
+	payload,
+	waitFor,
+	patchEnvelope,
+	fixtureCiphertext,
+} from "./support";
 import { DAY } from "../src/ports";
 test("corrupt, reserved keys, wrong version/route and noncanonical base64 rejected before FCM", async () => {
 	const phone = await enroll();
@@ -19,7 +33,7 @@ test("corrupt, reserved keys, wrong version/route and noncanonical base64 reject
 		{ extra: true },
 	]) {
 		const body = payload(credentials.routeId);
-		Object.assign(body.envelope, change);
+		body.envelope = patchEnvelope(body, change);
 		expect((await call("send", body, credentials.send)).status).toBe(400);
 	}
 	expect(fixture.captures.length).toBe(0);
@@ -29,7 +43,7 @@ test("serialized data cap and HTTP body cap rejected before FCM; exact single ai
 	const credentials = await route(phone.installationId);
 	fixture.captures = [];
 	const tooLarge = payload(credentials.routeId);
-	tooLarge.envelope.c = random(2600);
+	tooLarge.envelope = patchEnvelope(tooLarge, { c: random(2600) });
 	expect((await call("send", tooLarge, credentials.send)).status).toBe(413);
 	expect((await call("send", {}, credentials.send, { body: "x".repeat(4097) })).status).toBe(413);
 	expect(fixture.captures.length).toBe(0);
@@ -50,7 +64,7 @@ test("duplicate sends and lost HTTP reply reuse result; conflicting envelope giv
 	expect(retry.body).toEqual({ state: "accepted", code: "accepted" });
 	expect(fixture.captures.length).toBe(1);
 	expect(
-		(await call("send", { ...body, envelope: { ...body.envelope, c: random(32) } }, credentials.send)).status,
+		(await call("send", { ...body, envelope: patchEnvelope(body, { c: random(272) }) }, credentials.send)).status,
 	).toBe(409);
 	expect(
 		(await call("send/status", { routeId: credentials.routeId, messageId: body.messageId }, credentials.send)).body,
@@ -154,7 +168,7 @@ test("full flow logs contain no identity, body, tokens, credentials, challenge o
 			phone.challengeId,
 			credentials.send,
 			credentials.deletion,
-			body.envelope.c,
+			fixtureCiphertext(body),
 			JSON.stringify(body),
 		];
 		await call("send", body, credentials.send);
@@ -186,7 +200,7 @@ test("transient 429/503 results retry the same digest only after retryAt, includ
 			retryAt: fixture.now + 60000,
 		});
 		expect(
-			(await call("send", { ...body, envelope: { ...body.envelope, c: random(32) } }, credentials.send)).status,
+			(await call("send", { ...body, envelope: patchEnvelope(body, { c: random(272) }) }, credentials.send)).status,
 		).toBe(409);
 		fixture.now += 59000;
 		expect((await call("send", body, credentials.send)).headers["Retry-After"]).toBe("1");

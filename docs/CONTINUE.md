@@ -1,5 +1,33 @@
 # Continue
 
+## D53 relay format parity and backend audit
+
+Based on rebased T94 `ynzrrnts` / `819b4841`. This supersedes T94's credential-framing and deletion-polling warnings.
+Relay credentials now hash UTF-8 compact JSON ["aiki-push-v1","credential",fullBearer], lowercase hex at routes/create.
+No production package import: checks read the frozen shared JSON only as data. The audit also fixed relay bugs hidden
+by synthetic fixtures: envelope must be a canonical JSON string (not an object), with exact outer key order/text;
+ciphertext must be 272–2,064 bytes and (bytes - 16) divisible by 256. Duplicate keys and noncanonical encodings reject.
+Old emulator rows with raw bearer hashes need reset/phone-owned removal; there is no live migration or legacy fallback.
+
+All 22 positive envelopes and both bearer/hash vectors pass byte-for-byte through the core to fake FCM; 21 applicable
+negatives reject before FCM. The other 39 are explicitly classified: 25 require decryption or phone key/session
+context; 14 are phone-only point/confirmation/sequence/plaintext-construction inputs. The fixture contains both
+credential vectors, so none were invented or missing. No frozen fixture/library/backend contract files were edited.
+D53 accepts the existing UTC-window approximation and treats 410 account_deleted after a delete request as complete
+for the phone: authority/content records are erased before Auth, while reconciliation finishes final markers.
+
+Two backend audit findings remain for the coordinator: transport.ts reads top-level code or error.code, not the
+relay's string error. 403 account_disabled therefore becomes rejected without pausing; named 410 reasons collapse to
+route_expired. D52/D53 relay errors were not redesigned. The backend document also overstates physical purge at
+absolute expiry +24h; authorization expires in code, but TTL/repair are eventual. Retry-After, transient 429/5xx,
+200 accepted/pending/failed and delete retry/204 handling otherwise match. README has the full audit and skip list.
+
+Checks: relay 84 pass / 1,275 assertions / 56.52s (79.58s full offline namespace command); root 2,110 pass / 24,295
+assertions / 176 files / 203.56s, zero failures or root retry. No relay auto-discovery. Typecheck/build/format and
+public/Gitleaks pass. Existing 20/10, 31/21/1 and 33/13/9 SDK-operation assertions still pass. Emulators/helper processes
+and test listeners stopped; no credentials, real Firebase project/login, main move, push, deployment or standalone
+Aiki server. Recipe remains relay/ bun run build, then unshare -Urn sh -c 'ip link set lo up && bun run test:emulator'.
+
 ## Real-project push relay operator checklist (T100)
 
 [Operator checklist](push-relay-operator-checklist.md) collects settled choices, twelve private fact questions,

@@ -3072,9 +3072,10 @@ Global/IP daily use survives account deletion. Application logs contain no ident
 
 Operator actions are plain tested core functions and a scrubbed, demo-only CLI; there is no operator HTTP endpoint.
 Account markers block immediately, before Auth/cascade work; phase checkpoints and leases make outages retryable.
-Deletion completion is returned only after relay/Auth erasure. Auth removal can prevent subsequent revocation-checked
-polling during a finalization crash: 410 means Auth is gone, not proof every relay work item has finished; hourly repair
-finishes the durable cascade. Reconciliation scrubs expired rows, orphan ownership and stale capacity maps.
+Deletion completion is returned only after relay/Auth erasure. D53 also treats 410 `account_deleted` after a delete
+request as complete for the phone: routes, tokens, challenges, attempts and UID counters are erased before Auth is
+deleted; reconciliation finishes any final account/cleanup/capacity markers. Reconciliation also scrubs expired rows,
+orphan ownership and stale capacity maps.
 
 D52 uses JSON bytes with `application/octet-stream`, leaving body caps/parsing
 and fixed no-store responses inside our handler. Malformed non-protocol `application/json` still hits the upstream
@@ -3087,9 +3088,13 @@ meters 20 reads/10 writes for one accepted send, 31 reads/21 writes/1 delete for
 9 deletes for deletion of a one-phone/one-route/one-attempt account; these supersede the design's 6+6 send estimate.
 The trusted-IP adapter uses only the direct Google front end's appended X-Forwarded-For address; verify the actual
 project's ingress suffix before enabling IP limits. README maps the in-scope design acceptance items to tests.
-Integration warning found after rebasing on T92: the relay hashes the raw full bearer; the frozen crypto helper hashes
-compact JSON `["aiki-push-v1","credential",bearer]`. A synthetic cross-check confirms different digests. Neither side
-was silently changed by T94; reconcile this contract before server/Android transport integration.
+D53 aligns credential digests with frozen T92: SHA-256 of UTF-8 compact JSON
+`["aiki-push-v1","credential",bearer]`, lowercase hex at route creation. The send envelope is the canonical serialized
+JSON string, with 256-byte padded ciphertext plus its 16-byte tag (272–2,064 bytes). Relay checks read the shared
+vectors only as test data: all 22 positive envelopes, both bearer/hash vectors and 21 applicable negatives agree.
+They explicitly classify 39 key-dependent or non-relay cases; production imports no package code or fixtures.
+README records the remaining backend audit findings: flat relay error strings are not consumed by the current server
+parser, and the backend's physical-purge-at-horizon wording is stronger than eventual TTL/reconciliation guarantees.
 
 ### Existing notification transports
 

@@ -8,7 +8,7 @@ import { getAuth } from "firebase-admin/auth";
 import { createRelay } from "../src/core";
 import { createStore } from "../src/documents";
 import type { CoreRequest, CoreResponse, FcmMessage, FcmResult, Dependencies } from "../src/ports";
-import { requireCondition, sha256 } from "../src/validation";
+import { requireCondition, credentialHash } from "../src/validation";
 interface AuthFixture {
 	idToken: string;
 	localId: string;
@@ -219,8 +219,8 @@ export function routeCredentials(installationId: string, predecessorId?: string)
 			installationId,
 			routeId,
 			operationId: random(),
-			sendHash: sha256(send),
-			deleteHash: sha256(deletion),
+			sendHash: credentialHash(send),
+			deleteHash: credentialHash(deletion),
 			...(predecessorId ? { predecessorId } : {}),
 		},
 	};
@@ -242,14 +242,14 @@ export function payload(routeId: string, messageId = random()) {
 	return {
 		routeId,
 		messageId,
-		envelope: {
+		envelope: JSON.stringify({
 			v: 1,
 			r: routeId,
 			k: random(),
 			m: messageId,
 			n: random(12),
-			c: random(32),
-		},
+			c: random(272),
+		}),
 	};
 }
 /** Wait for a controlled race barrier, never an unbounded sleep. */
@@ -373,4 +373,14 @@ export async function linkGoogleIdentity(user: AuthFixture): Promise<AuthFixture
 			}),
 		}).toString(),
 	});
+}
+
+/** Corrupt a synthetic serialized envelope without changing the actual v1 HTTP wire type. */
+export function patchEnvelope(body: { envelope: string }, patch: Record<string, unknown>): string {
+	const envelope = JSON.parse(body.envelope) as Record<string, unknown>;
+	return JSON.stringify({ ...envelope, ...patch });
+}
+/** Return synthetic ciphertext only for the no-sensitive-log assertion. */
+export function fixtureCiphertext(body: { envelope: string }): string {
+	return (JSON.parse(body.envelope) as { c: string }).c;
 }

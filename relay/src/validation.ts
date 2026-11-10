@@ -30,9 +30,13 @@ export function isBase64url(input: unknown, bytes?: number): input is string {
 export function requireId(input: unknown): asserts input is string {
 	requireCondition(isBase64url(input, 16));
 }
-/** Hash a full domain-separated capability, nonce, token or serialized envelope. */
+/** Hash a nonce, token or serialized envelope; capabilities additionally use credentialHash framing. */
 export function sha256(input: string): string {
 	return createHash("sha256").update(input).digest("hex");
+}
+/** Hash a complete purpose-separated bearer with the frozen v1 UTF-8 compact-JSON domain separator. */
+export function credentialHash(bearer: string): string {
+	return sha256(JSON.stringify(["aiki-push-v1", "credential", bearer]));
 }
 /** Require the lowercase hexadecimal representation used for stored SHA-256 digests. */
 export function requireDigest(input: unknown): asserts input is string {
@@ -59,18 +63,30 @@ export function parseCapability(header: string | undefined, scheme: "send" | "de
 		404,
 		"not_found",
 	);
-	return { routeId: match[2], digest: sha256(match[1] + "." + match[2] + "." + match[3]) };
+	return { routeId: match[2], digest: credentialHash(match[1] + "." + match[2] + "." + match[3]) };
 }
 /** Validate only the strict outer envelope; ciphertext is opaque and never decoded as JSON. */
 export function serializeEnvelope(input: unknown, routeId: string, messageId: string): string {
-	const record = parseObject(input, ["v", "r", "k", "m", "n", "c"]);
+	requireCondition(typeof input === "string");
+	requireCondition(Buffer.byteLength(input) <= 3584, 413, "body_too_large");
+	let decoded: unknown;
+	try {
+		decoded = JSON.parse(input);
+	} catch {
+		throw new RelayError(400, "invalid_request");
+	}
+	const record = parseObject(decoded, ["v", "r", "k", "m", "n", "c"]);
 	requireCondition(record.v === 1 && record.r === routeId && record.m === messageId);
 	requireId(record.r);
 	requireId(record.k);
 	requireId(record.m);
 	requireCondition(isBase64url(record.n, 12));
-	requireCondition(isBase64url(record.c) && Buffer.from(record.c, "base64url").length >= 16);
+	requireCondition(isBase64url(record.c));
+	const cipherLength = Buffer.from(record.c, "base64url").length;
+	requireCondition(cipherLength <= 2064, 413, "body_too_large");
+	requireCondition(cipherLength >= 272 && (cipherLength - 16) % 256 === 0);
 	const compact = JSON.stringify({ v: 1, r: record.r, k: record.k, m: record.m, n: record.n, c: record.c });
+	requireCondition(compact === input);
 	requireCondition(Buffer.byteLength(JSON.stringify({ aiki: compact })) <= 3584, 413, "body_too_large");
 	return compact;
 }

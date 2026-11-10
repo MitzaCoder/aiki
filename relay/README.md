@@ -3,8 +3,8 @@
 Isolated Bun package, **not a root workspace**, not deployed and not used by any Aiki backend.
 Implements T93 and T94 of the approved [design](../docs/research/push-relay-design.md).
 No real Firebase project, login, credentials, key file, FCM or App Check service is used by the tests.
-Do not deploy this package: real-project IAM/provider/ingress acceptance and the credential-digest integration
-mismatch below are not resolved. T94's budgets, switches, durable cleanup and reconciliation are implemented. D51 makes both relay accounts and relay push optional: Aiki works fully without them.
+Do not deploy this package: real-project IAM/provider/ingress acceptance is not complete; the remaining backend
+contract findings are listed below. D53 resolves the credential-digest framing mismatch. T94's budgets, switches, durable cleanup and reconciliation are implemented. D51 makes both relay accounts and relay push optional: Aiki works fully without them.
 D52 settles the original parser, deletion, retry and lost-challenge questions as documented below.
 
 ## Exact emulator recipe
@@ -193,12 +193,12 @@ counters. Re-enable is explicit, requires completed cleanup, and restores no pho
 counters too, deletes Auth, then removes the final account marker/work. Global/IP counters and unlinkable route
 revocation markers are not refunded. A phone-only removal/sign-out preserves other phones and account budgets.
 
-**Auth-finalization ambiguity:** after Auth has been deleted, its old ID token can no longer pass required revocation
-checking. A crash before final marker removal therefore prevents authenticated completion polling: status/delete give
-410 account_deleted, not a false 200 erasure confirmation. Reconciliation finishes the work; a test covers that gap.
-Successful 200 deleted is returned only after both relay and Auth deletion. Repeated calls before Auth removal are
-idempotent. If the app needs an authenticated final erasure receipt after Auth removal, that requires a separate
-approved protocol decision; this implementation does not bypass revocation or retain a new deletion credential.
+**Android completion (D53):** after a delete request, **410 account_deleted means complete for the phone**, just like
+200 deleted. Routes, tokens, challenges, attempts and UID-specific counters are erased before the Auth user is deleted.
+A crash afterward can leave only blocked account/cleanup/capacity bookkeeping; reconciliation finishes those final
+markers. The phone can finish local erasure and stop polling on 410. Required revocation checking is not bypassed,
+and no new deletion credential is retained. Before Auth removal, 202 deleting remains pending with Retry-After;
+repeated requests reuse the durable operation.
 
 The v2 `onSchedule` export `reconcile` runs every 60 minutes. Its plain `reconcileRelay` core checks uncached Auth
 state, queues the same durable cascade for missing/disabled users, resumes work, prunes capacity maps, removes orphan
@@ -243,13 +243,71 @@ the measured specimens. Index-storage work, TTL, Auth API calls, FCM and platfor
 The design's 6-read/6-write send assumption is superseded. Uncached Auth checks also add provider API latency/quota.
 Transaction retries, larger cascades and reconciliation add operations; these numbers are not a bill or cost ceiling.
 
-### Integration mismatch found after the T92 rebase
+### D53 frozen-format cross-check
 
-T93 hashes the raw full bearer string. The frozen T92 helper instead hashes compact JSON
-`["aiki-push-v1","credential",bearer]`. A synthetic cross-check returned credential_hashes_match=false.
-Both preserve disjoint send/delete purpose, but they are **not interoperable**. T94 did not silently change either
-approved contract. Resolve the digest input framing (and hex encoding at routes/create) before server/Android
-integration; do not connect these components just because their individual tests pass.
+Credential hashing now agrees with the frozen library/vectors: SHA-256 over UTF-8 compact JSON
+`["aiki-push-v1","credential",<full bearer>]`. routes/create receives lowercase hex; the fixture's base64url digest is
+compared byte for byte after decoding. Both bearer schemes are present in the fixture, as are both direction-negative
+vectors. No credential/bearer vectors were missing, and no frozen files were changed.
+
+The cross-check found and fixed these relay bugs:
+
+1. The raw-full-bearer hash did not use the frozen JSON domain frame (0/2 digest vectors matched before the fix).
+2. send accepted only an object envelope, but every frozen sendBody and the server serialize envelope as a string
+   (0/22 positive envelopes were accepted before the fix). The wire now requires the canonical string, not an object.
+3. Ciphertext length admitted unpadded/truncated/oversize data. It now requires 272–2,064 decoded bytes and
+   `(ciphertextBytes - 16) % 256 == 0`, matching the frozen padded plaintext format.
+4. Object normalization lost duplicate keys and non-canonical text. Serialized envelopes must now exactly equal the
+   canonical v/r/k/m/n/c JSON, rejecting duplicates, whitespace, key reorder and alternate numeric/escape forms.
+
+checks/shared-vectors.cases.ts reads ../packages/protocol/test-vectors/push-relay-v1.json only as test data.
+Production imports neither packages/ nor the fixture. All 19 encryption and 3 opaque-payload receive vectors go
+through the real core as send bodies, using the fixture's hashes to create the route, and reach fake FCM byte for
+byte. The fixture's delete bearer then receives idempotent 204. The 21 applicable negatives reject before FCM:
+15 public-envelope failures, 2 wrong bearer directions and 4 FCM maps submitted as unsupported POST bodies. The FCM
+map tests are schema rejection, not a claim that clients may supply raw FCM data. Unknown fixture additions fail
+classification rather than silently disappearing from coverage.
+
+The remaining 39 negatives are explicitly excluded from keyless rejection:
+
+- Authentication/context (9): ciphertext, tag, nonce, aad-r/k/m, wrong-key, wrong-key-id, wrong-session. The relay
+  has no AES key or registered phone key/session context. A well-formed opaque envelope remains transport-valid.
+- Encrypted plaintext (16): invalidUtf8, excessivePadding, extra, sequenceOverflow, eventIdLength, negativeTime,
+  tooLongLived, duplicateWrapper, duplicatePayloadWrapper, wrapperNumber, wrapperWhitespace, payloadArray, payloadNull,
+  payloadString, payloadInvalidLiteral, payloadInvalidNumber (all prefixed plaintext- in the fixture). These require
+  decryption; plaintext-unpadded is instead rejected because its ciphertext length reveals invalid padding.
+- Other phone-only inputs (14): point-short/prefix/infinity/offCurve/outOfField; transcript/swapped-direction;
+  sequence--1/01/18446744073709551616/1.0/empty/1e3; identity-overflow. Points, confirmations, plaintext sequence and
+  plaintext construction are not inputs to the relay API. T92 tests those operations.
+
+Derived cases also exercise nonzero base64 padding bits, canonical text, legacy object rejection, cipher bounds and
+exact 4,096-byte send-body acceptance versus 4,097-byte rejection. Old emulator rows containing raw bearer hashes
+must be reset or removed by the owning phone; there is deliberately no legacy-hash fallback and no live migration.
+
+### Backend contract audit (D52/D53)
+
+Checked docs/push-relay-backend-v1.md and packages/server/src/push-relay/transport.ts:
+
+| Behaviour | Result |
+| --- | --- |
+| POST octet-stream JSON, no-store, no redirects | Matches; canonical string envelope is now accepted |
+| 200 accepted removes the send; 200 pending retries | Matches; pending includes Retry-After |
+| 429/503/other 5xx/timeouts transient | Matches; unknown quota scopes still retry and Retry-After seconds are honored |
+| Terminal 200 failed/token_invalid | Matches: top-level code is recognized |
+| 404/410/409 and unknown 4xx | Terminal-message classification matches; named error handling mismatch below |
+| Delete 204 erases outbox secret, all other statuses retry including 404 | Matches D52 absent/wrong-secret behaviour |
+| First-reservation TTL and duplicate ambiguity | Matches; server's 10s deadline may time out around FCM acceptance, handled by persisted IDs/60s lease |
+
+Two findings remain outside the relay side of D52/D53:
+
+1. Relay fixed errors are `{error:"account_disabled"}` etc. The server parser currently reads top-level code or
+   error.code, **not a string error**. Thus 403 account_disabled becomes rejected and does not pause the route as the
+   backend document promises; 410 token_invalid/account_deleted/route_inactive collapse to route_expired (still
+   terminal, but diagnosis is lost). 409 message_conflict falls back correctly. 429/5xx retry and Retry-After remain
+   correct, but quota scope is generic rate_limited. Relay error shapes were not changed to hide this backend gap.
+2. The backend document says the relay has physically purged a route at absolute expiry +24h. Relay authorization
+   does expire in code, but TTL/hourly repair are eventual. The safe local cleanup_expired deadline/diagnosis is
+   compatible with expired authority; the physical-purge claim needs softer wording, not a relay authorization change.
 
 ## HTTP API
 
@@ -288,8 +346,9 @@ Auth infrastructure errors give `503 relay_unavailable`. Account row is created 
 | `delete` | `{routeId}` | 204 for any absent route with a well-formed delete bearer, including never-existing/already-deleted/purged routes; existing wrong-secret route is 404 |
 
 Send/status bearer: `aiki_push1.<routeId>.<32-byte secret>`; delete-only bearer:
-`aiki_push_delete1.<routeId>.<independent 32-byte secret>`. `sendHash`/`deleteHash` are SHA-256 of those **full strings**
-(without `Bearer `), not just secrets. Schemes are disjoint, stored hashes compared with `timingSafeEqual`.
+`aiki_push_delete1.<routeId>.<independent 32-byte secret>`. `sendHash`/`deleteHash` are lowercase hex SHA-256 over
+UTF-8 compact JSON `["aiki-push-v1","credential",fullBearer]` (without the HTTP `Bearer ` prefix), not raw bearer or
+secret hashes. Schemes are disjoint, stored hashes compared with `timingSafeEqual`.
 Pending/disabled/expired routes never send. Leases last 30 days, renew only under seven days, absolute life 90 days.
 An initial pending route reserves a slot for ten minutes. One pending successor per active predecessor is allowed,
 up to 24/account in addition to the 24 active/initial-pending slots; only activation releases predecessor's slot.
@@ -304,8 +363,9 @@ The active token does not move until confirmation. Only a completed challenge mo
 token generation. Operation receipts contain no nonce or raw token; T94 charges each new challenge operation.
 A replayed confirm is a receipt lookup only and cannot reapply a token switch.
 
-Envelope is exactly `{v:1,r,k,m,n,c}`, where `r=routeId`, `m=messageId`, `c` is canonical base64url ciphertext plus
-at least a 16-byte tag. Only the outer envelope keys are strict. The relay does not decrypt or inspect plaintext;
+The send body's envelope field is a **canonical JSON string**, not an object. Its decoded outer shape is exactly
+`{v:1,r,k,m,n,c}` in that order, where `r=routeId`, `m=messageId`. c is canonical base64url for 256-byte-bucket padded
+ciphertext plus the 16-byte tag: 272–2,064 bytes, `(bytes - 16) % 256 == 0`. Only the outer envelope keys are strict. The relay does not decrypt or inspect plaintext;
 unknown fields inside the encrypted payload are the phone's concern (T92). FCM data is exactly `{aiki:compactEnvelopeJson}`, serialized data
 JSON <=3584 UTF-8 bytes; normal notification sends use fixed Android high priority and the stored installation token.
 TTL is min(12 hours from **first reservation**, remaining lease), never refreshed on ambiguous retry. Sender cannot
@@ -454,11 +514,11 @@ Verified email-provider claim does not prove email-link UI use; this is the desi
 This remains emulator-only and has no live deployment recipe. Preserve first-reservation times, digest/generation
 fencing and deletion without quota. Server retries must distinguish quota scope and Retry-After from capability
 failure, never churn routes/message IDs to evade budgets. Android needs recent reauthentication for account deletion,
-202 pending progress, account-wide versus phone-only removal, disabled/operator-paused states and the status quota
-fields. Neither account sign-in nor relay push is required for ordinary Aiki use.
+202 pending progress, D53's terminal 410 account_deleted after a deletion request, account-wide versus phone-only
+removal, disabled/operator-paused states and the status quota fields. Neither account sign-in nor relay push is required for ordinary Aiki use.
 
 Server transport must persist ciphertext/message IDs and delete-only outbox entries, pin the relay URL, use only route
 capabilities, never phone Firebase tokens/FCM addresses, and keep Notifier's policy before transport. Do not advertise
 this relay to clients yet. Use octet-stream, honor Retry-After and retain the same digest/message ID; an absent-route
-204 completes the delete outbox indefinitely. Cross-check validators against T92's shared
-vectors without coupling root installation to firebase-tools.
+204 completes the delete outbox indefinitely. Frozen-vector parity is now checked without coupling production
+or root installation to firebase-tools; the backend error-parser finding above still needs a server-side fix.
