@@ -23,3 +23,5 @@ try {
 	await db.terminate();
 	await deleteApp(app);
 }
+// Bun can retain gRPC channel handles after SDK termination. This one-shot child must finish before readiness.
+process.exit(0);
