@@ -1,0 +1,138 @@
+{
+	"indexes": [],
+	"fieldOverrides": [
+		{
+			"collectionGroup": "challenges",
+			"fieldPath": "purgeAt",
+			"ttl": true,
+			"indexes": []
+		},
+		{
+			"collectionGroup": "routes",
+			"fieldPath": "purgeAt",
+			"ttl": true,
+			"indexes": []
+		},
+		{
+			"collectionGroup": "sendAttempts",
+			"fieldPath": "purgeAt",
+			"ttl": true,
+			"indexes": []
+		},
+		{
+			"collectionGroup": "rateLimits",
+			"fieldPath": "purgeAt",
+			"ttl": true,
+			"indexes": []
+		},
+		{
+			"collectionGroup": "accountCleanup",
+			"fieldPath": "purgeAt",
+			"ttl": true,
+			"indexes": []
+		},
+		{
+			"collectionGroup": "accounts",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "installations",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "challenges",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "routes",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "sendAttempts",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "rateLimits",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "relayControl",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "accountCleanup",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "tokenOwners",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "routes",
+			"fieldPath": "installationId",
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "challenges",
+			"fieldPath": "installationId",
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "installations",
+			"fieldPath": "purgeAt",
+			"ttl": true,
+			"indexes": []
+		},
+		{
+			"collectionGroup": "routeRevocations",
+			"fieldPath": "purgeAt",
+			"ttl": true,
+			"indexes": []
+		},
+		{
+			"collectionGroup": "routeRevocations",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "challengeOperations",
+			"fieldPath": "purgeAt",
+			"ttl": true,
+			"indexes": []
+		},
+		{
+			"collectionGroup": "challengeOperations",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "challengeOperations",
+			"fieldPath": "installationId",
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		}
+	]
+}

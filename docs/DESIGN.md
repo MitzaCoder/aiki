@@ -2959,6 +2959,33 @@ cross-key event dedupe; storage, concurrency, key retirement and monotonic-time 
 belong to the later integration task, not this library. Keys must rotate before a restored
 counter can repeat a sequence. A persistence failure must not display a notification.
 
+### Firebase relay emulator package (T93)
+
+`relay/` is an isolated TypeScript/Bun package outside the root workspaces, with its own dependencies/lockfile,
+Node 22 v2 HTTPS function, Firestore deny-all client rules, TTL/index configuration and strict local validators.
+It implements verified-account phone enrollment/FCM possession challenges, generation-safe token replacement,
+installation inventory/removal, pending/active routes with bounded capacity and leases, independent send/delete
+capabilities and digest-reserved encrypted sends/status. The pure core injects Auth, Firestore, sender, clock,
+randomness and App Check monitoring. Production wiring uses ADC; emulator flags cannot enable a production bypass.
+A relay account and relay push are optional (D51): Aiki works fully without either.
+
+`relay/README.md` has the exact scrubbed `demo-` emulator recipe and API/storage contracts. Tests call the core
+against Auth/Firestore emulators and smoke-test the actual Functions emulator over HTTP with loopback fake FCM.
+A successful user/network-namespace run proves cached execution works without outbound networking. Relay tests
+have explicit `.cases.ts` names so root tests/typecheck need neither relay dependencies nor Java.
+Nothing is deployed or used by any backend. T94's rate budgets, control switches, disable/delete cascade and
+reconciliation remain unimplemented. D52 uses JSON bytes with `application/octet-stream`, leaving body caps/parsing
+and fixed no-store responses inside our handler. Malformed non-protocol `application/json` still hits the upstream
+framework's parser/logs; real clients never use that media type. Absent-route delete is indefinitely idempotent 204
+with a well-formed delete bearer; no delete credential tombstones remain. Secret-free revocation markers only prevent
+stale create retries from reviving authority. Transient sends retain retry times/Retry-After and the same digest;
+accepted/token-invalid alone are terminal. A new challenge operation atomically replaces the old pending challenge.
+Typed Firestore converters and concern-separated source/tests make transaction guarantees reviewable before T94.
+The trusted-IP adapter uses only the direct Google front end's appended X-Forwarded-For address; verify the actual
+project's ingress suffix before enabling IP limits. README maps every in-scope design acceptance item to tests.
+
+### Existing notification transports
+
 Web Push, behind one server-side `Notifier` that every event source calls: the activity watch (a reply, a failed
 compaction), the worker reporter, the schedule runner, the deploy status, the login prompts and memory maintenance.
 APNs/FCM would replace the transport, not the interface.

@@ -40,3 +40,12 @@ request-log.sqlite*
 
 # Machine-specific deployment, build and publication guard configuration.
 /deploy/local
+
+# Standalone push relay emulator state and compiled function.
+/relay/dist/
+/relay/.emulator/
+/relay/*-debug.log*
+/relay/.emulator-setup.log
+/relay/.emulator-config.json
+/relay/.firebase/
+/relay/.firebaserc

@@ -1,5 +1,49 @@
 # Continue
 
+## Push relay D52 rework (T93)
+
+Reworked the emulator-only `relay/` package on top of `xlqlowlw`. D52 is implemented: clients send UTF-8 JSON bytes
+with `Content-Type: application/octet-stream`; rawBody caps/parsing and fixed no-store errors stay inside the handler.
+Other media types reaching it get 415. Malformed non-protocol application/json still hits the framework's own parser;
+an HTTP test documents that residual. Another proves valid JSON-looking octet-stream enrollment plus scalar/malformed
+handler errors and no client body probes in framework logs. Nothing is deployed or used by a backend. D51 makes relay
+accounts and push optional; Aiki works fully without them.
+
+Absent route + well-formed delete bearer now returns 204 indefinitely; existing wrong delete secret returns generic
+404; wrong schemes fail before lookup. Route credentials are physically erased. Only a secret-free
+`routeRevocations/{routeId}` marker (purgeAt, no UID/hash) remains through original absolute expiry +24h to prevent
+stale create/revoke races from reviving authority. This is not a delete receipt or lookup dependency. Phone route
+deletion is also idempotent. Challenge replacement with a new operation immediately deletes the previous challenge;
+24h `challengeOperations/{installationId}_{operationId}` receipts preserve same-operation idempotence without a raw
+token/nonce. Phone removal erases those receipts too; T94 account cleanup must include them.
+
+Accepted/token-invalid are the only terminal sends. FCM 429 returns 429 fcm_rate_limited; timeout/5xx return 503
+fcm_unavailable, each with Retry-After and a persisted retryAt. Same digest before that time does not call FCM; after
+it reserves another attempt, preserving first-reservation TTL. In-flight/crashed reservations stay pending with their
+60s lease/Retry-After. send/status adds retry with code/retryAt; terminal token-invalid remains queryable. Conflicting
+digests still 409; elapsed message/route lifetime is 410. README has exact API, storage, error codes and an acceptance
+table linking every in-scope design item to tests.
+
+Source is split by admission/enrollment/installations/routes/send/delete/router, with ports and runtime-checked typed
+Firestore converters for every collection; no any rows in handlers. Tests mirror those concerns with one support
+file/lifecycle. Formatting uses tabs/double quotes/120 columns and Prettier 3.6.2; typecheck now includes tests/tools.
+The trusted-client-IP adapter takes only the direct GFE-appended rightmost XFF entry, never earlier client values;
+missing/malformed metadata fails closed. Verify the real ingress suffix before IP budgets rely on it.
+
+Recipe remains: from relay/, `bun install --frozen-lockfile`, `bun run typecheck`, `bun run build`, online once
+`bun run emulator:setup`, then `bun run test:emulator`; offline proof:
+`unshare -Urn sh -c 'ip link set lo up && bun run test:emulator'`. Launcher uses env -i, isolated HOME/XDG,
+demo-aiki-relay, loopback 19371–19377, disabled UI and bounded emulators:exec. Jar cache:
+`.emulator/home/.cache/firebase/emulators/`. Runtime declares Node 22; available Node 24 runs the function locally.
+
+Checks: 41 emulator tests / 518 assertions / 27.40s test time (50.54s full offline command); all pass.
+Root: unchanged 1,937 tests / 23,224 assertions / 168 files / 212.89s, no flaky rerun. Root install 1.216s,
+typecheck 1.22s, public/Gitleaks 1.13s pass. Relay frozen install 0.01s, source+checks typecheck 2.93s, build 1.36s;
+format check passes. Relay dependencies now ~306 MiB (Prettier added). No root workspace/dependency changes.
+All Auth/Firestore/Functions/hub/logging/helper processes shut down; in-process Auth/fake FCM listeners closed;
+port/process inspection finds none remaining. No real Firebase login/config/credentials, main movement, push, deploy
+or Aiki server. T94 limits/switches/disable/account deletion/reconciliation remain deliberately untouched.
+
 ## Relay payload compatibility and reviewability (T92 follow-up)
 
 Review found a real version-skew flaw: a crypto-layer list of payload keys/kinds would reject
