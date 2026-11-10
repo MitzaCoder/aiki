@@ -1,5 +1,5 @@
 node_modules/
 dist/
 .emulator/
-.emulator-config.json
+.emulator-config*.json
 .firebase/

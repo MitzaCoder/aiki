@@ -30,7 +30,8 @@ Only explicit PATH, isolated HOME/XDG directories, CI/update/analytics suppressi
 project ID and local test ports are supplied. The CLI cannot discover the operator's existing login/config.
 Never run Firebase directly with the operator's HOME. No `.firebaserc` is used or committed.
 State, CLI logs, HOME, config and cache are under gitignored `relay/.emulator/`; emulator jar is under
-`.emulator/home/.cache/firebase/emulators/`. Generated `.emulator-config.json`, `.env.local`, `.firebase/`,
+`.emulator/home/.cache/firebase/emulators/` (linked into each stack's private HOME). Generated
+`.emulator-config-<functions-port>.json`, per-stack function copies/`.env.local`, `.firebase/`,
 `*-debug.log*` and compiled `dist/` are ignored. Setup requires network; cached test runs do not.
 The wrapper checks `ss -ltn` before startup, validates distinct ports, and applies a four-minute exec deadline
 (two minutes for setup). Node 24 emits an expected warning about the declared Node 22 runtime.
@@ -53,10 +54,61 @@ to the primary emulator project). That listener and the fake FCM listener are ex
 Functions discovery briefly uses an ephemeral loopback port. Test script names end in `.cases.ts`, not Bun's automatic
 `test/spec` patterns: root `bun test` neither discovers them nor needs relay dependencies/Java.
 
-For manual inspection, `bun run emulator:start` runs for at most ten minutes; the fake FCM listener exists only while
-`bun run test:cases` is running, so do not expect a manual challenge to deliver without that test process. Prefer the
-bounded exec recipe. If detaching for debugging, use `setsid -f ... > <ignored-log> 2>&1 < /dev/null`, record its PID,
-and kill only that PID (never `pkill -f`). Do not start an Aiki server.
+### Standalone demo stack
+
+From `relay/`, after the one-time install/cache setup above:
+
+```sh
+mkdir -p .emulator
+setsid -f bun run demo:stack --minutes 30 > .emulator/demo-stack.log 2>&1 < /dev/null
+# Wait for the one JSON readiness line in the log, or .emulator/stack-19373/ready.json.
+# Read the pid from that JSON, then stop only that PID:
+kill -TERM <pid-from-ready-json>
+```
+
+`demo:stack` builds automatically, starts Auth/Firestore/Functions plus a **standalone fake FCM** listener,
+and explicitly seeds `relayControl/settings` enabled with enrollment open. It never contacts real FCM, Auth or
+Firestore. It accepts only `--minutes <1..120>` (default 30), a fixed synthetic `demo-aiki-relay` project and the
+seven port variables above. There is no project/host override. It stops its own listener and asks the CLI to stop
+all owned emulators on SIGTERM/SIGINT/SIGHUP, failure or deadline. Stop by the readiness JSON's PID, not a broad
+process-name match; wait for its exit/ports to close before reusing them. Nothing starts an Aiki server.
+
+The readiness object includes `pid`, `projectId`, `functionBaseUrl` (ends in `/v1/`),
+`authEmulatorHost`, `firestoreHost`, `fakeFcmUrl` and `captureFile`. CLI/build logs go to stderr; readiness is one
+stdout JSON line. Each stack has its own generated config, function snapshot, fake-FCM `.env.local`, HOME and
+capture file under ignored `.emulator/stack-<functions-port>/`. Distinct complete port sets can coexist even in
+the same checkout; only the downloaded jar cache is linked/shared. Rebuild/restart a demo to pick up source changes.
+
+```sh
+curl -s 'http://127.0.0.1:19377/captured?after=0'
+curl -s -X POST http://127.0.0.1:19377/mode -H 'Content-Type: application/json' --data '{"mode":"unavailable"}'
+```
+
+`GET /captured?after=n` returns `{"messages":[...],"next":N}`; indices start at **1**, so `after=0` returns
+everything, and subsequent polls use the previous `next`. Each message is also appended as one JSON line to
+`captureFile`: `index,time,token,data,priority,ttlMs`, with time in Unix milliseconds. No captures are printed.
+Only use synthetic demo identities/tokens; captures contain possession nonces and encrypted payloads and must stay
+ignored/private. A fresh run starts a fresh file/cursor. A driver can forward `message.data` to the phone test
+delivery hook; fake acceptance alone does not prove phone delivery/decryption.
+
+`POST /mode` accepts exactly `{"mode":"accepted|unregistered|rate_limited|unavailable|timeout"}` (choose one).
+Default is accepted; every send is captured even on failure. Timeout is a deterministic ambiguous reply, not an
+indefinitely open connection. Both POST endpoints require JSON content type.
+
+Android Emulator sees host loopback as **10.0.2.2**: replace the host in the printed URLs for emulator-side clients,
+but do not change the listeners' bind address. Alternatively run `adb reverse tcp:19373 tcp:19373` and
+`adb reverse tcp:19371 tcp:19371` so the app can keep loopback Functions/Auth URLs; reverse any additional port the
+driver actually needs, using that stack's selected ports. A host-side capture-forwarding driver uses ordinary host
+loopback. This is emulator-only plumbing, not a release URL or a real Firebase login recipe.
+
+`bun run test:demo` starts an alternate-port stack (19671–19677), performs email-link emulator sign-in and phone
+enrollment entirely through HTTP, reads/confirms the captured challenge, checks capture cursors and all five fake
+results, signals its PID and verifies every port closed. Run it offline as
+`unshare -Urn sh -c 'ip link set lo up && bun run test:demo'`.
+Other workers reserve 19471–19477 and 19571–19577; default relay ports remain 19371–19377.
+
+Bare `bun run emulator:start` still runs for at most ten minutes without standalone fake FCM; prefer `demo:stack`
+for manual/end-to-end drivers and the bounded exec recipe for checks.
 
 The test preload denies non-loopback fetch, socket/TLS connections, Bun/default/named DNS lookups and explicit DNS
 queries. It replaces both DNS module namespaces because Bun does not synchronize their named exports. This guard is

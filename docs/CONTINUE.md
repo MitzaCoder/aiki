@@ -1,5 +1,19 @@
 # Continue
 
+## Standalone relay demo stack
+
+`relay/ bun run demo:stack [--minutes 1..120]` builds and starts scrubbed demo-only loopback Auth/Firestore/Functions
+plus standalone fake FCM, explicitly enables demo control/enrollment and prints one readiness JSON line (including
+PID and `/v1/` base URL). SIGTERM that PID or let the 30-minute default limit stop all owned processes. Captures are
+private ignored JSONL; `/captured?after=0` returns messages/next, and `/mode` selects accepted/unregistered/rate_limited/
+unavailable/timeout. README documents polling, detached start/stop and Android 10.0.2.2/adb reverse.
+
+Generated function copies/config/HOME are isolated per Functions port; only the cached emulator jar is shared. Default
+ports remain 19371–19377; the standalone HTTP enrollment smoke check uses 19671–19677 (other workers own 19471 and
+19571 ranges). No package/root dependency changes and no production configuration or credentials. Operator/deploy
+work follows in a separate commit; this demo never grants real-project access. Offline standalone gate: 2 pass / 51
+assertions / 26.51s, including clean SIGTERM/port shutdown. Relay typecheck/build and public/Gitleaks pass.
+
 ## D53 relay format parity and backend audit
 
 Based on rebased T94 `ynzrrnts` / `819b4841`. This supersedes T94's credential-framing and deletion-polling warnings.

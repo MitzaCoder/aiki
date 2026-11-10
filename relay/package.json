@@ -11,6 +11,8 @@
 		"test:emulator": "bun run tools/emulators.ts test",
 		"emulator:setup": "bun run tools/emulators.ts setup",
 		"emulator:start": "bun run tools/emulators.ts start",
+		"demo:stack": "bun run tools/demo-stack.ts",
+		"test:demo": "bun test --preload ./checks/network-guard.ts ./checks/demo-stack.cases.ts",
 		"test:cases": "bun test --preload ./checks/network-guard.ts ./checks/emulator.cases.ts",
 		"format": "prettier --write \"src/**/*.ts\" \"checks/**/*.ts\" \"tools/**/*.ts\" \"*.json\"",
 		"format:check": "prettier --check \"src/**/*.ts\" \"checks/**/*.ts\" \"tools/**/*.ts\" \"*.json\""
