@@ -48,7 +48,10 @@ paid API keys are the straightforward alternative. A saved credential is not pro
 
 - `aiki start`: foreground, loopback only. Ctrl-C closes it cleanly. It never auto-opens a browser.
 - `aiki open`: open the local URL; prints it if no browser is available. `AIKI_NO_BROWSER=1` prints only.
-- `aiki pair`: print a one-time local first-device URL and code using the running server’s owner socket.
+- `aiki pair`: print a one-time local first-device URL and code using this installation’s running owner socket.
+- `aiki auth ...`: existing owner commands, explicitly targeting this installation: `status`, `devices list`,
+  `devices revoke ID`, `mode required`, `migration list`, and the other source owner-CLI commands. These and `pair`
+  work from a normal shell, SSH, or an agent child shell; they do not depend on an inherited backend or port setting.
 - `aiki status`: check the selected port for Aiki's local discovery endpoint; nonzero when unavailable.
 - `aiki version`: release and private Bun versions.
 - `aiki doctor`: tool availability/versions, local paths, platform and whether the configured port is free.
@@ -67,8 +70,10 @@ retains the tiny ownership metadata so reinstalling into the same root reuses yo
 
 The installed CLI deliberately uses its recorded data/config directories, not another backend's inherited
 `AIKI_DATA_DIR`, `AIKI_CONFIG_DIR` or `AIKI_ENV_FILE`. Activation creates an empty owned `server.env` when absent;
-the installed CLI loads that explicit file, never a fallback HOME/XDG file. Startup prints effective data/config
-paths before importing the server. Keep
+the installed CLI loads that explicit file, never a fallback HOME/XDG file. It uses T82’s shared loader and immutable
+private settings snapshot, not process-environment assignments or a second isolation layer. The source and installed
+entry points then use the same startup/auth dispatcher and live-owner socket check. Startup prints effective data/config
+paths before importing the server. CLI-spawned helpers use the same shared child-environment scrubber. Keep
 persistent storage identity settings stable; never borrow another installation's environment or credential files.
 The source/deploy entry point retains its existing environment behavior.
 

@@ -34,16 +34,26 @@ test("fresh installed SPA requires sign-in and pairs through the CLI's existing 
  // Generate installation metadata without installing a service or copying a runtime.
  await mkdir(join(root, "releases/v0.0.1-test"), { recursive: true });
  await writeFile(join(root, "releases/v0.0.1-test/.ready"), "v0.0.1-test");
+ await mkdir(join(root, "releases/v0.0.1-test/packages/server/src"), { recursive: true });
+ await writeFile(join(root, "releases/v0.0.1-test/packages/server/src/main.ts"), `export { runServerEntry } from ${JSON.stringify(join(import.meta.dir, "../src/main.ts"))};`);
  await writeFile(join(root, ".aiki-managed"), "aiki-installer-v1\n");
  const cli = resolve(import.meta.dir, "../../../scripts/aiki.ts");
  const env = { HOME: join(root, "home"), PATH: process.env.PATH, AIKI_INSTALL_DIR: root, AIKI_PORT: String(server.port), AIKI_DATA_DIR: join(root, "foreign-data"), AIKI_CONFIG_DIR: join(root, "foreign-config"), AIKI_ENV_FILE: join(root, "foreign.env") };
- async function command(...args: string[]) {
-  const child = Bun.spawn([process.execPath, cli, ...args], { env, stdout: "pipe", stderr: "pipe", timeout: 10000 });
+ async function command(args: string[], extra: Record<string, string | undefined> = {}, expectedExit = 0) {
+  const child = Bun.spawn([process.execPath, cli, ...args], { env: { ...env, ...extra }, stdout: "pipe", stderr: "pipe", timeout: 10000 });
   const [out, err, code] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited]);
-  expect(err).toBe(""); expect(code).toBe(0); return out;
+  if (expectedExit === 0) expect(err).toBe("");
+  expect(code).toBe(expectedExit); return expectedExit === 0 ? out : out + err;
  }
- await command("activate", root, configDir, "v0.0.1-test", join(root, "home/.local/bin/aiki"));
- const grant = JSON.parse(await command("pair"));
+ await command(["activate", root, configDir, "v0.0.1-test", join(root, "home/.local/bin/aiki")]);
+ for (const extra of [{}, { AIKI_CHILD_PROCESS: "1", AIKI_AUTH_MODE: "off", AIKI_PORT: "not-needed-for-owner-control" }]) {
+  expect(JSON.parse(await command(["auth", "status"], extra))).toMatchObject({ mode: "required" });
+ }
+ const refused = await command(["start"], { AIKI_CHILD_PROCESS: "1" }, 1);
+ expect(refused).toContain(`Aiki data: ${dataDir}`);
+ expect(refused).toContain("Another live server owns data directory");
+ expect((await fetch(server.url + "/auth/status")).status).toBe(200);
+ const grant = JSON.parse(await command(["pair"], { AIKI_CHILD_PROCESS: "1", AIKI_PORT: "not-needed-for-owner-control" }));
  expect(grant.url).toBe(`${server.url}/pair#bootstrap=${grant.code}`);
  const response = await fetch(server.url + "/auth/bootstrap/redeem", {
   method: "POST", headers: { "content-type": "application/json", origin: server.url },
@@ -55,4 +65,5 @@ test("fresh installed SPA requires sign-in and pairs through the CLI's existing 
  expect(await authenticated.request({ type: "hello", protocolVersion: 1, auth: { accessToken: enrollment.credentials.accessToken } })).toMatchObject({ type: "hello" });
  expect(await authenticated.request({ type: "projects.list" })).toMatchObject({ type: "projects.list", projects: [] });
  expect(server.auth.mode).toBe("required");
-});
+ expect(JSON.parse(await command(["auth", "devices", "list"], { AIKI_CHILD_PROCESS: "1" })).devices).toHaveLength(1);
+}, 15000);

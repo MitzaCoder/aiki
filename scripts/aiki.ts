@@ -2,6 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { childEnvironment } from "../packages/server/src/child-environment.ts";
 
 export const BUN_VERSION = "1.4.4";
 type Installation = { root: string; config: string; data: string; launcher: string; version: string };
@@ -62,7 +63,7 @@ function requireStopped(root: string): void {
 	if (running(root)) throw new Error("Aiki is running. Stop the foreground process (Ctrl-C) or your user service before changing releases.");
 }
 async function run(command: string[], options: { env?: Record<string, string | undefined> } = {}): Promise<void> {
-	const child = Bun.spawn(command, { stdin: "ignore", stdout: "inherit", stderr: "inherit", ...options });
+	const child = Bun.spawn(command, { stdin: "ignore", stdout: "inherit", stderr: "inherit", env: childEnvironment(options.env) });
 	const timer = setTimeout(() => child.kill(), 300_000);
 	try { if (await child.exited !== 0) throw new Error(`${command[0]} failed`); }
 	finally { clearTimeout(timer); }
@@ -136,16 +137,19 @@ async function main(args: string[]): Promise<void> {
 	}
 	const root = resolve(command === "uninstall" ? rest[0]! : process.env.AIKI_INSTALL_DIR || join(homedir(), ".local/share/aiki"));
 	const installation = metadata(root);
-	// An installed launcher must not inherit another backend's storage/config paths.
-	process.env.AIKI_CONFIG_DIR = installation.config;
-	process.env.AIKI_DATA_DIR = installation.data;
-	const envFile = join(installation.config, "server.env");
-	// Activation creates this file, so main never falls back to another HOME/XDG env file.
-	process.env.AIKI_ENV_FILE = envFile;
-	const { loadServerEnv } = await import("../packages/server/src/server-env.ts");
-	loadServerEnv();
-	const port = process.env.AIKI_PORT || "7317";
-	if (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535) throw new Error("AIKI_PORT must be 1–65535");
+	// Use T82's one environment boundary and private loader, not mutable process settings.
+	const { loadServerEnv, resolvedServerConfig } = await import("../packages/server/src/server-env.ts");
+	const settings = loadServerEnv({
+		...childEnvironment(),
+		AIKI_ENV_FILE: join(installation.config, "server.env"),
+		AIKI_DATA_DIR: installation.data,
+		AIKI_CONFIG_DIR: installation.config,
+		AIKI_HOST: "127.0.0.1",
+		AIKI_WEB_DIR: join(root, "current/apps/web/build"),
+		...(process.env.AIKI_PORT ? { AIKI_PORT: process.env.AIKI_PORT } : {}),
+	});
+	const port = settings.AIKI_PORT || "7317";
+	if (command !== "auth" && command !== "pair" && (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535)) throw new Error("AIKI_PORT must be 1–65535");
 	const url = `http://127.0.0.1:${port}`;
 	switch (command) {
 		case "start": {
@@ -153,12 +157,17 @@ async function main(args: string[]): Promise<void> {
 			try { writeFileSync(join(root, "server.pid"), String(process.pid), { mode: 0o600, flag: "wx" }); }
 			catch { throw new Error("server.pid already exists. If a previous process crashed, confirm it is stopped before removing this stale file."); }
 			process.on("exit", () => { try { rmSync(join(root, "server.pid")); } catch { /* already removed */ } });
-			process.env.AIKI_HOST = "127.0.0.1";
-			process.env.AIKI_WEB_DIR = join(root, "current/apps/web/build");
-			console.log(`Aiki data: ${process.env.AIKI_DATA_DIR}\nAiki config: ${process.env.AIKI_CONFIG_DIR}`);
+			const effective = resolvedServerConfig(settings);
+			console.log(`Aiki data: ${effective.dataDir}\nAiki config: ${effective.configDir}`);
 			// Resolve the selected release now; a running process never changes imports underneath itself.
 			const entry = join(realpathSync(join(root, "current")), "packages/server/src/main.ts");
-			await import(entry); break;
+			const { runServerEntry } = await import(entry);
+			await runServerEntry(settings, []); break;
+		}
+		case "auth": {
+			// Explicit env-file/data settings identify this installation even in an agent child shell.
+			const { runServerEntry } = await import(join(realpathSync(join(root, "current")), "packages/server/src/main.ts"));
+			await runServerEntry(settings, ["auth", ...rest]); break;
 		}
 		case "open":
 			console.log(url);
@@ -177,7 +186,7 @@ async function main(args: string[]): Promise<void> {
 			const grant = await response.json() as { url?: string; expiresAt?: string; error?: { code: string } };
 			if (!response.ok || !grant.url) throw new Error(`Pairing failed: ${grant.error?.code || "invalid owner response"}`);
 			const link = new URL(grant.url);
-			if (link.origin !== url) throw new Error("Pairing URL uses a different port. Set AIKI_PORT to the running server port.");
+			if (link.protocol !== "http:" || link.hostname !== "127.0.0.1" || link.pathname !== "/pair") throw new Error("Owner socket returned an invalid local pairing URL.");
 			console.log(JSON.stringify({ url: grant.url, code: link.hash.slice("#bootstrap=".length), expiresAt: grant.expiresAt }, null, 2));
 			break;
 		}
@@ -230,7 +239,7 @@ async function main(args: string[]): Promise<void> {
 			}
 			console.log(rest[1] === "1" ? "Uninstalled and purged Aiki data/config. Repositories were not touched." : "Uninstalled. Data and config kept. Re-run the installer to reinstall."); break;
 		}
-		default: console.log("Usage: aiki start|open|pair|status|update|rollback|version|doctor|service install|remove\nSee docs/INSTALL.md. Stop Aiki before updating or rolling back.");
+		default: console.log("Usage: aiki start|open|pair|auth|status|update|rollback|version|doctor|service install|remove\nSee docs/INSTALL.md. Stop Aiki before updating or rolling back.");
 	}
 }
 if (import.meta.main) {

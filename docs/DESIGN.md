@@ -27,6 +27,15 @@ Credentials stay on the backend and providers remain direct pi-ai integrations; 
 and subscription sign-in remains subject to the provider's terms. After adding a folder, existing project settings
 choose the coordinator model. Generic release builds never include personal backend suggestions or local config.
 
+The installed CLI builds an explicit private snapshot with T82’s `childEnvironment` and `loadServerEnv`, naming its
+owned env file/data/config plus loopback and static assets. It passes that snapshot to the same `runServerEntry`
+used by the source executable; it never populates `process.env` with server settings. File-selected port settings
+therefore work too; explicit `AIKI_PORT` remains the one supported calling-shell server override. Every CLI-spawned
+helper uses `childEnvironment`. `aiki auth ...` delegates the existing owner commands with that explicit target;
+`aiki pair` addresses its recorded owner socket and uses the actual owner-provided URL, independent of shell port
+settings. Normal, SSH and `AIKI_CHILD_PROCESS=1` shells use the same target. PID bookkeeping is update safety only;
+the shared T82 socket preflight decides whether backend data already has a live owner.
+
 ## Installation identity and private compatibility
 
 Public packages use `@aiki/*`, server settings use `AIKI_*`, and new installations use XDG `aiki` data/config
@@ -106,6 +115,7 @@ exact-statement regression guards the capture/child-environment boundaries again
 | `AIKI_DEPLOY_STATUS_FILE` | `server-status.ts` |
 | `AIKI_TERMINALS`, `AIKI_ZELLIJ` | `terminals.ts` (explicit terminal env/options may override) |
 | `AIKI_TIMEZONE` | `schedules.ts` |
+| `AIKI_WEB_DIR` | `main.ts` private-snapshot opt-in to serving public local SPA assets |
 | `AIKI_ENV_FILE` | `server-env.ts` raw startup file selector; private owner-CLI explicit-target guard |
 | `AIKI_CHILD_PROCESS` | Generated child marker; `server-env.ts` discovery suppression and private owner-CLI guard |
 

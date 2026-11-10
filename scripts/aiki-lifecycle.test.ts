@@ -17,7 +17,7 @@ async function setup() {
 	await writeFile(join(root, ".aiki-managed"), "aiki-installer-v1\n");
 	async function run(...args: string[]) {
 		const child = Bun.spawn([process.execPath, cli, ...args], {
-			env: { HOME: home, PATH: `${join(home, "bin")}:${process.env.PATH}`, AIKI_INSTALL_DIR: root, AIKI_DATA_DIR: join(home, "foreign-data"), AIKI_CONFIG_DIR: join(home, "foreign-config"), AIKI_ENV_FILE: join(home, "foreign.env") },
+			env: { HOME: home, PATH: `${join(home, "bin")}:${process.env.PATH}`, AIKI_INSTALL_DIR: root, AIKI_NO_BROWSER: "1", AIKI_DATA_DIR: join(home, "foreign-data"), AIKI_CONFIG_DIR: join(home, "foreign-config"), AIKI_ENV_FILE: join(home, "foreign.env") },
 			stdout: "pipe", stderr: "pipe",
 		});
 		const [code, out, err] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
@@ -27,7 +27,7 @@ async function setup() {
 		const path = join(root, "releases", version);
 		await mkdir(join(path, "packages/server/src"), { recursive: true });
 		await writeFile(join(path, ".ready"), version);
-		await writeFile(join(path, "packages/server/src/main.ts"), `await Bun.write(process.env.AIKI_DATA_DIR + '/observed.json', JSON.stringify({data:process.env.AIKI_DATA_DIR, config:process.env.AIKI_CONFIG_DIR, host:process.env.AIKI_HOST}));`);
+		await writeFile(join(path, "packages/server/src/main.ts"), `export async function runServerEntry(settings) { await Bun.write(settings.AIKI_DATA_DIR + '/observed.json', JSON.stringify({data:settings.AIKI_DATA_DIR, config:settings.AIKI_CONFIG_DIR, host:settings.AIKI_HOST})); await Bun.write(settings.AIKI_DATA_DIR + '/settings-check.json', JSON.stringify({privateSetting:settings.AIKI_FUTURE_SETTING, nativeSetting:process.env.AIKI_FUTURE_SETTING ?? null})); }`);
 		return run("activate", root, config, version, launcher);
 	}
 	return { root, home, config, launcher, run, release };
@@ -48,9 +48,12 @@ test("activation is idempotent; update/rollback retain one previous code release
 
 test("installed start ignores inherited backend data/config/env-file paths", async () => {
 	const fixture = await setup(); await fixture.release("v0.1.0");
+	await writeFile(join(fixture.config, "server.env"), "AIKI_FUTURE_SETTING=synthetic-private\nAIKI_PORT=18475\n");
 	const started = await fixture.run("start");
 	expect(started.err).toBe(""); expect(started.code).toBe(0);
 	expect(JSON.parse(await readFile(join(fixture.root, "data/observed.json"), "utf8"))).toEqual({ data: join(fixture.root, "data"), config: fixture.config, host: "127.0.0.1" });
+	expect(JSON.parse(await readFile(join(fixture.root, "data/settings-check.json"), "utf8"))).toEqual({ privateSetting: "synthetic-private", nativeSetting: null });
+	expect((await fixture.run("open")).out).toContain("http://127.0.0.1:18475");
 	expect(existsSync(join(fixture.home, "foreign-data"))).toBe(false);
 	expect(existsSync(join(fixture.root, "server.pid"))).toBe(false);
 });
@@ -67,8 +70,9 @@ test("an unavailable user service session leaves no unit and does not block unin
 	if (process.platform !== "linux") return;
 	const fixture = await setup(); await fixture.release("v0.1.0");
 	// A fixture command only: never contact the host's service manager.
-	await writeFile(join(fixture.home, "bin/systemctl"), "#!/bin/sh\necho 'synthetic unavailable user session' >&2\nexit 1\n", { mode: 0o755 });
+	await writeFile(join(fixture.home, "bin/systemctl"), "#!/bin/sh\nprintf '%s %s %s\\n' \"${AIKI_DATA_DIR-unset}\" \"${AIKI_ENV_FILE-unset}\" \"${AIKI_CHILD_PROCESS-unset}\" > \"$HOME/command-environment.txt\"\necho 'synthetic unavailable user session' >&2\nexit 1\n", { mode: 0o755 });
 	expect((await fixture.run("service", "install")).code).toBe(1);
+	expect((await readFile(join(fixture.home, "command-environment.txt"), "utf8")).trim()).toBe("unset unset 1");
 	expect(existsSync(join(fixture.home, ".config/systemd/user/aiki-local.service"))).toBe(false);
 	expect(existsSync(join(fixture.root, ".service-path"))).toBe(false);
 	expect((await fixture.run("uninstall", fixture.root, "0")).code).toBe(0);
