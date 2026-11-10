@@ -2925,6 +2925,25 @@ apps/<native>/      later; technology not chosen
 
 ## Notifications
 
+### Android relay account screens (T97)
+
+D51 keeps the relay account optional. Only the explicit switch in Settings → Notifications may construct Firebase
+Auth or start a relay request. First run, pairing, projects and direct notifications do not ask for an account.
+The default-off row explains the account requirement and has a Learn more disclosure. Opt-in explains email/profile
+storage, encrypted content, visible metadata, limits/operator control and deletion before Google or email sign-in.
+Email links use the configured Hosting host and exact `/__/auth/links` path; paste recovery rejects other hosts,
+credentials, fragments and non-HTTPS links. The email is remembered locally, never placed in a continuation URL.
+
+Private build values supply the Web OAuth client ID, Hosting link domain and privacy contact. Empty values disable
+relay sign-in with a plain reason, without affecting the rest of the app. Debug-only source sets own Auth emulator
+configuration, synthetic Google credentials and fake FCM tokens. Release builds have no emulator settings or fake
+providers. Demo configurations are synthetic and stay outside the checkout; FCM auto-init remains disabled.
+
+The intended flow is consent → Google/email → phone check → on. Cancelling any unfinished step keeps relay off.
+Account sign-out removes this phone's receive keys and queues remote deletion before Firebase sign-out and Credential
+Manager clearing. Turn off keeps the account. Account deletion requires recent authentication, explicit confirmation
+and truthful pending/completed status; backend sign-in and project data are independent.
+
 ### Android relay plumbing (T96)
 
 The emulator-first gate and remaining provider checks are tracked in [push relay acceptance](push-relay-acceptance.md).

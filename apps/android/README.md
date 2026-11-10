@@ -129,6 +129,43 @@ Use the installed package's name if privately configured differently. `:app:chec
 release manifest and fails if this component/action is present. The seam has no release source or main-manifest entry.
 No emulator/device was used to implement this plumbing; all new verification is JVM/fake HTTP.
 
+## Optional relay account build values
+
+Relay accounts are optional (D51). Only Settings → Notifications → Phone notifications through the relay opens
+sign-in. No account is requested during install, first run, backend pairing or normal project use. Direct push stays
+available to backends that do not support relay notifications. A build with no private values still builds and works;
+relay settings explain that sign-in is unavailable.
+
+Alongside `harness.pushRelayUrl` / `HARNESS_PUSH_RELAY_URL` and the existing external Firebase client config:
+
+| Gradle property | Environment variable | Meaning |
+| --- | --- | --- |
+| `harness.relayGoogleClientId` | `HARNESS_RELAY_GOOGLE_CLIENT_ID` | Web OAuth client ID, never the Android client ID or a secret |
+| `harness.relayEmailLinkDomain` | `HARNESS_RELAY_EMAIL_LINK_DOMAIN` | Hosting host only; HTTPS App Link with exact `/__/auth/links` path |
+| `harness.relayPrivacyContact` | `HARNESS_RELAY_PRIVACY_CONTACT` | Operator contact shown in consent |
+
+All default to empty. The email host's release SHA-256 App Links association and Google package/certificate setup
+are operator responsibilities. Email uses current Hosting links, not Dynamic Links. Paste recovery checks the exact
+host/path before Firebase checks the code. The address is kept locally until completion; links/codes are never logged.
+Sign-out and turn-off are distinct from deletion; backend sign-ins remain independent.
+
+Debug source set only:
+
+| Gradle property | Environment variable | Meaning |
+| --- | --- | --- |
+| `harness.relayAuthEmulator` | `HARNESS_RELAY_AUTH_EMULATOR` | Loopback/Android emulator host:port |
+| `harness.relayFakeGoogle` | `HARNESS_RELAY_FAKE_GOOGLE` | Synthetic Google credential, defaults false |
+| `harness.relayFakeFcm` | `HARNESS_RELAY_FAKE_FCM` | Synthetic FCM token, defaults false; skips Messaging initialization |
+
+Fake controls require the Auth emulator and the synthetic `demo-aiki-relay` project. Demo client config must be
+created outside the repo with obviously fake public values. Never supply real Firebase config for emulator proofs.
+The manifest keeps FCM auto-init off. `:app:checkReleaseRelayAuth` inspects the release APK DEX for debug controls and
+providers; `:app:checkReleaseRelaySeam` checks the merged release manifest. Neither debug fake exists in release.
+
+Dependencies: Firebase Auth 25.0.0, Credential Manager and Play services bridge 1.6.0, Google ID 1.2.1. See
+`licenses/relay-dependencies.md` for attribution and terms. Real Google sign-in, email delivery/App Links verification,
+FCM delivery, Play services behavior and release-signed sideloading require separate consented real-service testing.
+
 ## Verification: actual behavior versus appearance
 
 See [verification/README.md](verification/README.md). Round-two evidence is staged

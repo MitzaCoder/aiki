@@ -32,6 +32,12 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="${appLinkHost}" android:path="/pair" />
             </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${relayEmailLinkHost}" android:path="/__/auth/links" />
+            </intent-filter>
             <!-- Project links of the web app (/b/<backend>/projects/<id>...): unverified too, so they open here only when
                  the user lets the app handle the domain; they navigate and never change anything. -->
             <intent-filter tools:ignore="AppLinkWarning">

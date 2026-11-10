@@ -1,6 +1,7 @@
 import groovy.json.JsonSlurper
 import java.util.Properties
 import java.net.URI
+import java.util.zip.ZipFile
 
 plugins {
     id("com.android.application")
@@ -26,6 +27,12 @@ require(appUri.scheme == "https" && appUri.host != null && appUri.rawUserInfo ==
     "harness.appOrigin must be a plain HTTPS origin"
 }
 val pushRelayUrl = privateBuildProperty("harness.pushRelayUrl", "HARNESS_PUSH_RELAY_URL").trim()
+val relayGoogleClientId = privateBuildProperty("harness.relayGoogleClientId", "HARNESS_RELAY_GOOGLE_CLIENT_ID")
+val relayEmailLinkDomain = privateBuildProperty("harness.relayEmailLinkDomain", "HARNESS_RELAY_EMAIL_LINK_DOMAIN")
+val relayPrivacyContact = privateBuildProperty("harness.relayPrivacyContact", "HARNESS_RELAY_PRIVACY_CONTACT")
+require(relayEmailLinkDomain.isEmpty() || Regex("[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?").matches(relayEmailLinkDomain)) {
+    "harness.relayEmailLinkDomain must be a host, without a scheme or path"
+}
 val publishedBackendsUrl = privateBuildProperty("harness.publishedBackendsUrl", "HARNESS_PUBLISHED_BACKENDS_URL")
 fun buildString(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\""
 
@@ -68,6 +75,10 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["appLinkHost"] = appUri.host
+        manifestPlaceholders["relayEmailLinkHost"] = relayEmailLinkDomain.ifEmpty { "relay.example.invalid" }
+        buildConfigField("String", "RELAY_GOOGLE_CLIENT_ID", buildString(relayGoogleClientId))
+        buildConfigField("String", "RELAY_EMAIL_LINK_DOMAIN", buildString(relayEmailLinkDomain))
+        buildConfigField("String", "RELAY_PRIVACY_CONTACT", buildString(relayPrivacyContact))
         manifestPlaceholders["previousActivityAlias"] = if (installedApplicationId != "io.github.mitzacoder.aiki") "$installedApplicationId.MainActivity" else "io.github.mitzacoder.aiki.PreviousActivity"
         manifestPlaceholders["previousActivityEnabled"] = (installedApplicationId != "io.github.mitzacoder.aiki").toString()
         buildConfigField("String", "PREFERENCES_PREFIX", buildString(preferencesPrefix))
@@ -78,6 +89,16 @@ android {
         buildConfigField("String", "PUSH_RELAY_URL", buildString(pushRelayUrl))
         for (name in listOf("FIREBASE_APP_ID", "FIREBASE_API_KEY", "FIREBASE_PROJECT_ID", "FIREBASE_SENDER_ID")) {
             buildConfigField("String", name, "\"${firebaseConfig[name].orEmpty()}\"")
+        }
+    }
+    buildTypes {
+        getByName("debug") {
+            buildConfigField("String", "RELAY_AUTH_EMULATOR", buildString(privateBuildProperty(
+                "harness.relayAuthEmulator", "HARNESS_RELAY_AUTH_EMULATOR")))
+            buildConfigField("boolean", "RELAY_FAKE_GOOGLE", privateBuildProperty(
+                "harness.relayFakeGoogle", "HARNESS_RELAY_FAKE_GOOGLE", "false").toBoolean().toString())
+            buildConfigField("boolean", "RELAY_FAKE_FCM", privateBuildProperty(
+                "harness.relayFakeFcm", "HARNESS_RELAY_FAKE_FCM", "false").toBoolean().toString())
         }
     }
     compileOptions {
@@ -109,6 +130,24 @@ tasks.register("checkReleaseRelaySeam") {
     }
 }
 
+/** Checks the actual release APK, not just source-set intent. */
+tasks.register("checkReleaseRelayAuth") {
+    dependsOn("assembleRelease", "checkReleaseRelaySeam")
+    val apk = layout.buildDirectory.file("outputs/apk/release/app-release-unsigned.apk").get().asFile
+    doLast {
+        check(apk.isFile) { "Release APK was not generated" }
+        ZipFile(apk).use { archive ->
+            archive.entries().asSequence().filter { it.name.endsWith(".dex") }.forEach { entry ->
+                val content = archive.getInputStream(entry).use { it.readBytes().toString(Charsets.ISO_8859_1) }
+                for (marker in listOf("RELAY_AUTH_EMULATOR", "RELAY_FAKE_GOOGLE", "RELAY_FAKE_FCM",
+                    "demo-google-user", "demo-fcm-phone-token", "DebugRelayReceiver", "DEBUG_RELAY")) {
+                    check(!content.contains(marker)) { "Debug relay code in release: $marker" }
+                }
+            }
+        }
+    }
+}
+
 dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("io.github.rosemoe:language-textmate:0.24.6")
@@ -132,6 +171,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("com.squareup.okhttp3:okhttp:5.5.0")
     implementation("com.google.firebase:firebase-messaging:26.0.1")
+    implementation("com.google.firebase:firebase-auth:25.0.0")
+    implementation("androidx.credentials:credentials:1.6.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.6.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.2.1")
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
