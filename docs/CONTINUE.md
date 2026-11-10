@@ -2,22 +2,28 @@
 
 ## Local installer and Welcome (T71)
 
-The eight installer commits are rebased on the device sign-in/usage/migration main. Private pinned Bun 1.4.4,
-zellij 0.45.1, versioned source/web releases, stopped-process update/rollback and optional user services remain.
-Only the CLI opts into same-origin public SPA delivery; hello, auth HTTP and private artifact checks stay intact.
-Fresh data remains required. Pre-auth Welcome explains `aiki pair`, which delegates `pair --local` to the existing
-owner-only socket and prints its one-time URL/code. Existing `/pair` confirmation enrolls the browser; provider
-settings and folder selection follow. No auth redesign, automatic grant, mode downgrade or network binding.
-Activation creates its explicit owned env file; CLI startup prints effective data/config before server import.
+Latest merge verification: the twelve-commit stack now follows the duplicate-report fix and required-mode rollout
+docs. All sections are retained. Root: 1,911 tests / 23,121 assertions pass on the first run; typecheck passes.
+Web check has zero errors/warnings and build passes; public guard/Gitleaks pass. No installer executable changes,
+container rerun, new media, main movement or push. The earlier platform limitations below still apply.
 
-Clean non-root Debian rehearsal used env-i, temporary paths and three distinct original server logs. Install/rerun,
-first-device pairing, actual Chromium Welcome/provider/project setup, update and rollback retaining sign-in,
-uninstall/reinstall and purge pass. Refreshed desktop light/dark and phone dark comparisons, a 9.8-second recording,
-container log and all three first server logs are on T71. Root: 1,841 tests / 12,170 assertions pass; the first env-i
-run omitted USER and broke three existing watcher fixtures, corrected by supplying that required non-AIKI variable.
-Web: 837 tests / 2,887 assertions, zero check errors/warnings, build passes. Typecheck, generator --check (330 DTOs /
-88 overloads, exit 0), shellcheck and public/Gitleaks pass. Real services, macOS execution and remote HTTPS/phone
-setup remain untested. No main move, push, tag or deployment. Single-binary packaging is still T72.
+The ten-commit installer stack is rebased on T82/task families/graph, including the later docs-only rollout note.
+Private Bun 1.4.4/zellij 0.45.1, versioned releases and required local first-device sign-in remain. The CLI uses
+T82’s `childEnvironment`/`loadServerEnv` and passes an explicit owned file/data/config snapshot to the shared
+`runServerEntry`; it no longer sets backend values in `process.env`. Source and installed starts share T82’s live-owner
+preflight. `aiki pair` addresses its recorded socket; `aiki auth ...` delegates owner commands with an explicit target,
+including from child-marked shells without a port setting. Every CLI helper spawn uses the existing scrubber too.
+Owned-file port resolution, private-only file settings, scrubbed helpers, child owner commands and live-owner refusal
+are regression-tested. Effective data/config are printed before backend state opens.
+
+Clean non-root Debian with env-i/temp paths passes install/rerun, child-marked owner commands, pairing, actual Chromium
+Welcome/provider/project setup, update/rollback retaining sign-in, uninstall/reinstall and purge. All three original
+server logs are retained. No visible flow change: existing T71 screenshots/recording still apply, no new media captured.
+Root: 1,902 tests / 23,064 assertions pass; one initial existing migration-cap timeout passed in isolation and the
+full retry, without changing that test. Web: 877 tests / 13,585 assertions; zero check errors/warnings, build passes.
+Typecheck, generator --check (330 DTOs / 88 overloads, exit 0), shellcheck and public/Gitleaks pass. Real services,
+macOS/WSL execution, remote HTTPS/phone setup and provider inference remain untested. No main move, push, tag or
+live-service action. The T82 lifetime-lock caveat remains unchanged; single-binary packaging is still T72.
 
 ## One delivery per worker answer (T85)
 
