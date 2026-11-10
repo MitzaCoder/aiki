@@ -85,6 +85,12 @@ android {
     buildFeatures { compose = true; buildConfig = true }
     testOptions.unitTests.isReturnDefaultValues = true
 }
+// JVM relay tests read this one fixture directly; changing it must invalidate Gradle's test cache.
+tasks.withType<Test>().configureEach {
+    inputs.file(rootProject.file("../../packages/protocol/test-vectors/push-relay-v1.json"))
+        .withPropertyName("pushRelayVectors")
+}
+
 dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("io.github.rosemoe:language-textmate:0.24.6")

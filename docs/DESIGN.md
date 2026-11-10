@@ -2924,6 +2924,41 @@ apps/<native>/      later; technology not chosen
 
 ## Notifications
 
+### Encrypted relay v1 library (T92)
+
+Relay accounts and relay push are optional (D51): Aiki works fully without either, and
+nothing here is used unless the user turns relay notifications on. This is library code
+only; neither the running server nor the Android app calls it yet.
+`packages/protocol/src/push-relay.ts` and Android notifications' `relay` package freeze the
+P-256/HKDF-SHA-256/AES-256-GCM format from the relay design. The single shared fixture is
+`packages/protocol/test-vectors/push-relay-v1.json`; regenerate/check with
+`bun scripts/generate-push-relay-vectors.ts [--check]`. Encoding details and integration API
+requirements are in [the frozen v1 reference](push-relay-v1.md).
+
+Envelope and plaintext wrapper JSON are compact, with the documented field order; binary
+strings are canonical unpadded base64url. The authenticated payload is an opaque JSON object:
+receivers preserve unknown fields/kinds and allow arbitrary JSON number/escape formatting.
+The existing app payload parser, not the crypto wrapper, decides what can be displayed.
+Plaintext is UTF-8 JSON followed by ASCII spaces to the next 256-byte boundary
+(no extra bucket at an exact boundary), at most 2,048 bytes including padding. JSON ends
+with `}`, so padding is unambiguous. Times are nonnegative safe-integer Unix milliseconds;
+sequences are canonical unsigned 64-bit decimal strings. IDs are 16 bytes; salts/secrets
+32 bytes. Credential hashes are SHA-256 of compact JSON `["aiki-push-v1","credential",bearer]`.
+Identity strings are at most 128 UTF-8 bytes, routing fields/tag 128, title 256 and `at` 64.
+Oversized previews lose complete Unicode code points until they fit; oversized other payload
+fields produce an encrypted “Open the app” payload. Invalid/overlong optional routing is
+removed, never truncated into a different ID; overlong backend-local routing becomes empty.
+Backend/session identity itself cannot be truncated and raises a typed oversize error.
+
+Encrypt once and durably store the returned envelope for retry; the production encrypt API
+has no nonce argument. Test-only nonce injection lives outside the package entry point.
+Receive code must supply trusted backend time (offset anchored to monotonic time), validate
+local route/session identity, and durably persist admission state before display. Uncertain
+clock state fails closed. Admission state is per backend/session, with a window per key and
+cross-key event dedupe; storage, concurrency, key retirement and monotonic-time acquisition
+belong to the later integration task, not this library. Keys must rotate before a restored
+counter can repeat a sequence. A persistence failure must not display a notification.
+
 Web Push, behind one server-side `Notifier` that every event source calls: the activity watch (a reply, a failed
 compaction), the worker reporter, the schedule runner, the deploy status, the login prompts and memory maintenance.
 APNs/FCM would replace the transport, not the interface.

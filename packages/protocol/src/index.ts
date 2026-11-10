@@ -1,3 +1,4 @@
+export * from "./push-relay.ts";
 export * from "./device-auth.ts";
 import {
 	DeviceAuthModeSchema,
