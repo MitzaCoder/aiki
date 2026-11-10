@@ -1,4 +1,10 @@
 <data-extraction-rules>
-    <cloud-backup><exclude domain="file" path="datastore/aiki-device-auth.preferences_pb" /></cloud-backup>
-    <device-transfer><exclude domain="file" path="datastore/aiki-device-auth.preferences_pb" /></device-transfer>
+    <cloud-backup>
+        <exclude domain="file" path="datastore/aiki-device-auth.preferences_pb" />
+        <exclude domain="file" path="datastore/aiki-push-relay.preferences_pb" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="datastore/aiki-device-auth.preferences_pb" />
+        <exclude domain="file" path="datastore/aiki-push-relay.preferences_pb" />
+    </device-transfer>
 </data-extraction-rules>
