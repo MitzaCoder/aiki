@@ -135,7 +135,7 @@ import type {
 	WorkersDefaultsSetResponse,
 	WorkersListResponse,
 } from "@aiki/protocol";
-import { HARNESS_FEATURES, PROTOCOL_VERSION, TERMINAL_FRAME, decodeTerminalFrame, encodeTerminalAck, encodeTerminalFrame } from "@aiki/protocol";
+import { LEGACY_HARNESS_FEATURES, PROTOCOL_VERSION, TERMINAL_FRAME, decodeTerminalFrame, encodeTerminalAck, encodeTerminalFrame } from "@aiki/protocol";
 import { backoffDelay, canRetry, type BackoffOptions } from "./backoff.ts";
 import { ClientError, errorFromResponse, errorMessage } from "./errors.ts";
 import { memoryChangedIsFor, type MemoryTarget } from "./memory.ts";
@@ -1502,7 +1502,7 @@ export class HarnessClient {
 				status: "ready",
 				attempt: 0,
 				server: response.server,
-				features: response.features ?? [...HARNESS_FEATURES],
+				features: response.features ?? [...LEGACY_HARNESS_FEATURES],
 				error: undefined,
 			});
 		} catch (error) {

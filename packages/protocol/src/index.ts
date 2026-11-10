@@ -1,3 +1,31 @@
+export * from "./device-auth.ts";
+import {
+	DeviceAuthModeSchema,
+	DeviceAuthStateSchema,
+	AuthDeviceSchema,
+	AuthPairingSchema,
+	AuthRenewRequestSchema,
+	AuthRenewResponseSchema,
+	AuthDevicesListRequestSchema,
+	AuthDevicesListResponseSchema,
+	AuthDevicesRenameRequestSchema,
+	AuthDevicesRenameResponseSchema,
+	AuthDevicesRevokeRequestSchema,
+	AuthDevicesRevokeResponseSchema,
+	AuthPairingsCreateRequestSchema,
+	AuthPairingsCreateResponseSchema,
+	AuthPairingsListRequestSchema,
+	AuthPairingsListResponseSchema,
+	AuthPairingsCancelRequestSchema,
+	AuthPairingsCancelResponseSchema,
+	AuthPairingsApproveRequestSchema,
+	AuthPairingsApproveResponseSchema,
+	AuthPairingsDenyRequestSchema,
+	AuthPairingsDenyResponseSchema,
+	AuthDevicesChangedEventSchema,
+	AuthPairingRequestedEventSchema,
+	AuthSessionRevokedEventSchema,
+} from "./device-auth.ts";
 /**
  * aiki wire protocol, version 1.
  *
@@ -640,6 +668,15 @@ import {
 
 /** Everything a client may send. */
 export const ClientMessageSchema = Type.Union([
+	AuthRenewRequestSchema,
+	AuthDevicesListRequestSchema,
+	AuthDevicesRenameRequestSchema,
+	AuthDevicesRevokeRequestSchema,
+	AuthPairingsCreateRequestSchema,
+	AuthPairingsListRequestSchema,
+	AuthPairingsCancelRequestSchema,
+	AuthPairingsApproveRequestSchema,
+	AuthPairingsDenyRequestSchema,
 	HelloRequestSchema,
 	ProjectsListRequestSchema,
 	ProjectsAddRequestSchema,
@@ -732,6 +769,15 @@ export const RequestSchema = ClientMessageSchema;
 export type Request = ClientMessage;
 
 export const ResponseSchema = Type.Union([
+	AuthRenewResponseSchema,
+	AuthDevicesListResponseSchema,
+	AuthDevicesRenameResponseSchema,
+	AuthDevicesRevokeResponseSchema,
+	AuthPairingsCreateResponseSchema,
+	AuthPairingsListResponseSchema,
+	AuthPairingsCancelResponseSchema,
+	AuthPairingsApproveResponseSchema,
+	AuthPairingsDenyResponseSchema,
 	HelloResponseSchema,
 	ProjectsListResponseSchema,
 	ProjectsAddResponseSchema,
@@ -816,6 +862,9 @@ export const ResponseSchema = Type.Union([
 export type Response = Static<typeof ResponseSchema>;
 
 export const ServerEventSchema = Type.Union([
+	AuthDevicesChangedEventSchema,
+	AuthPairingRequestedEventSchema,
+	AuthSessionRevokedEventSchema,
 	ConversationViewEventSchema,
 	ConversationWatchEndedEventSchema,
 	ProjectStateEventSchema,
@@ -844,6 +893,31 @@ export type ServerMessage = Static<typeof ServerMessageSchema>;
  * them to a generator directly.
  */
 export const PROTOCOL_SCHEMAS: Readonly<Record<string, TSchema>> = {
+	DeviceAuthMode: DeviceAuthModeSchema,
+	DeviceAuthState: DeviceAuthStateSchema,
+	AuthDevice: AuthDeviceSchema,
+	AuthPairing: AuthPairingSchema,
+	AuthRenewRequest: AuthRenewRequestSchema,
+	AuthRenewResponse: AuthRenewResponseSchema,
+	AuthDevicesListRequest: AuthDevicesListRequestSchema,
+	AuthDevicesListResponse: AuthDevicesListResponseSchema,
+	AuthDevicesRenameRequest: AuthDevicesRenameRequestSchema,
+	AuthDevicesRenameResponse: AuthDevicesRenameResponseSchema,
+	AuthDevicesRevokeRequest: AuthDevicesRevokeRequestSchema,
+	AuthDevicesRevokeResponse: AuthDevicesRevokeResponseSchema,
+	AuthPairingsCreateRequest: AuthPairingsCreateRequestSchema,
+	AuthPairingsCreateResponse: AuthPairingsCreateResponseSchema,
+	AuthPairingsListRequest: AuthPairingsListRequestSchema,
+	AuthPairingsListResponse: AuthPairingsListResponseSchema,
+	AuthPairingsCancelRequest: AuthPairingsCancelRequestSchema,
+	AuthPairingsCancelResponse: AuthPairingsCancelResponseSchema,
+	AuthPairingsApproveRequest: AuthPairingsApproveRequestSchema,
+	AuthPairingsApproveResponse: AuthPairingsApproveResponseSchema,
+	AuthPairingsDenyRequest: AuthPairingsDenyRequestSchema,
+	AuthPairingsDenyResponse: AuthPairingsDenyResponseSchema,
+	AuthDevicesChangedEvent: AuthDevicesChangedEventSchema,
+	AuthPairingRequestedEvent: AuthPairingRequestedEventSchema,
+	AuthSessionRevokedEvent: AuthSessionRevokedEventSchema,
 	ClientMessage: ClientMessageSchema,
 	ServerMessage: ServerMessageSchema,
 	Request: RequestSchema,

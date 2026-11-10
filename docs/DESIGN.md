@@ -29,6 +29,151 @@ unchanged to update an installed app. None of this grants backend access or chan
 
 Decisions so far. Why each was made is noted where it isn't obvious.
 
+
+## Device sign-in
+
+The backend is the authority; every admitted device is a full owner (shell/file/provider access), not a scoped user.
+There is no account service or push relay. TLS and network ACLs are still necessary. Auth does not stop host jobs.
+
+### Discovery, modes and credentials
+
+`GET /auth/status` returns only `{backendId,mode,authVersion:1}`. The random stable backend ID survives address changes
+and restart. Pin auth support and the exact backend origin: never fall back to legacy auth after advertisement, follow
+redirects with credentials, or send credentials to edited/discovered addresses without authenticated confirmation.
+Mode is `off|optional|required`, persisted in `auth.sqlite`. A directory containing pre-existing data without an auth
+setting starts **optional**, an empty/new directory **required**. `off` is explicit development only. Owner CLI changes
+mode; `AIKI_AUTH_MODE` / `startServer({auth:{mode}})` override for development/tests. Optional retains all old
+ordinary RPCs and legacy signed URLs, but anonymous callers cannot manage devices or grants. Required authenticates
+before constructing the ordinary connection. Switching required closes all legacy connections and migration enrollment.
+
+Tokens: retained `mh_s1.<32 lowercase hex session ID>.<43 unpadded base64url characters, 32 random bytes>`;
+access `mh_a1.<32 lowercase hex access ID>.<same random format>`. Retained idle expiry 180 days, absolute 365 days;
+access 15 minutes. Only hashes are retained (constant-time secret comparisons), plus encrypted 60-second claim delivery
+copies. Storage directory 0700, files 0600. Access held only in client memory; retained web credentials belong in IndexedDB,
+Android in Keystore-encrypted separate storage, never address exports, backup, logs or localStorage backend lists.
+
+Refresh every access lifetime. Every 30 days durably stage a fresh retained successor with the **same session ID** before
+rotation. POST rotate using the old bearer. Atomically commit old→new; retries with that old token accept only the identical
+successor for 60 seconds (including after restart). Coordinate browser tabs. The response never returns a retained token.
+Active sockets count as session use, last-used disk writes throttled to one/minute. Revocation/expiry is checked on requests.
+
+### HTTP contract
+
+All bodies/replies JSON, `Cache-Control: no-store`, never cookies or redirects. Errors `{error:{code}}`, with HTTP 400
+malformed, 401 invalid/expired credential, 403 revoked/closed migration, 409 used grant or conflicting claim/batch, 429
+rate limit (`Retry-After` seconds; RPC errors use `error.data.retryAfter`). Host/Origin rejection uses
+`forbidden_host` / `forbidden_origin` with 403. Unknown resources expose no private content. Exact allowed Origin CORS on HTTP and WS;
+OPTIONS allows `Authorization, Content-Type` and `GET, POST, OPTIONS`. No wildcard credential CORS. Missing Origin does not
+supply authority. Public exchanges below carry their own proofs. Other private HTTP requires access bearer in required.
+Body cap 8 KiB. IDs/secrets/labels must be strings, labels <=120, platform <=40, claim IDs 1–80 ASCII alphanumeric/underscore/
+hyphen. A client generates random claim ID and `mh_c1.<32 random bytes base64url>` claim secret **before** redemption and
+persists them for lost-response recovery. Pair secrets are `mh_p1.<32 bytes base64url>`; local bootstrap `mh_b1.<32 bytes>`.
+
+- `GET /auth/status`: response above; no auth.
+- `POST /auth/bootstrap/redeem`: `{requestId,code,claimId,claimSecret,label,platform}` for headless; local URL uses
+  `{requestId:"local",code:<mh_b1 secret>,claimId,claimSecret,label,platform}`. Same claim delivery as pairing, no owner approval.
+  Local redemption requires an actual loopback peer, loopback Host, and no proxy forwarding. Ten-minute one-use grant,
+  one active bootstrap; five wrong codes invalidate. Only owner CLI creates these (no network “empty server” race).
+- `POST /auth/pairings/redeem`: `{grantId,secret,claimId,claimSecret,label,platform}`. Atomic unused→claimed, bad secret
+  does not consume. Return **ClaimResult** `{claimId,state,comparisonCode,credentials}`. States `pending|approved|denied|
+  acknowledged|expired`. `credentials` null unless approved/delivery still live. Claim-result schema same on every exchange.
+- `POST /auth/claims/poll`: `{claimId,claimSecret}` → ClaimResult. Max one/sec/claim. Approvals deliver only to the bound
+  claim proof; retryable 60 seconds after issue. After expiry re-pair (no new delivery to another claim).
+- `POST /auth/claims/ack`: `{claimId,claimSecret}` → `{ok:true}`; idempotently deletes encrypted delivery. Persist session first.
+- **Credentials**: `{backendId,sessionId,sessionToken,accessToken,accessExpiresAt,sessionExpiresAt,rotateAfter}`; timestamps
+  ISO8601 UTC. `sessionExpiresAt` is min(idle,absolute); refresh returns updated expiry.
+- `POST /auth/session/refresh`: `Authorization: Bearer <retained>`, empty JSON `{}` →
+  `{backendId,sessionId,accessToken,accessExpiresAt,sessionExpiresAt,rotateAfter}`.
+- `POST /auth/session/rotate`: retained bearer, `{successorToken}` → `{sessionId,rotateAfter}`.
+- `POST /auth/migration/claims`: optional only, `{claimId,claimSecret,label,platform}` → ClaimResult. Re-registration with
+  same proof updates last-seen without creating a new claim; pending claims expire after ten minutes. No auto enrollment.
+
+Enrollment limits: 5/min/grant+source and 30/min/backend; 10 grants/hour/session, 5 pending/session; 500 global pending
+claims (migration additionally capped 100); handshake and refresh source/global/session limits. Use backoff on 429.
+
+### WebSocket contract
+
+`hello` adds optional `auth:{accessToken}`. Response adds `backendId` and
+`auth:{mode,sessionId,accessExpiresAt}` (last two null for anonymous). Optional response fields allow older-server decode.
+Features `device-auth-v1`, `device-pairing-v1`, `device-management-v1` are explicit, not baseline fallback inference.
+Shared `LEGACY_HARNESS_FEATURES` excludes all three; transport and generated Android defaults use that list.
+Pre-auth first frame must be textual hello <=8 KiB within five seconds. No binary/ordinary activity before required auth.
+Identity is immutable per socket. `auth.renew {accessToken}` → `{accessExpiresAt}`; same session only, 60-second renewal
+grace after access expiry (ordinary dispatch remains blocked after expiry). Error envelope `auth_required|auth_invalid|
+auth_expired` and close 4401; `auth_revoked` and 4403. Reasons contain only the code. Device expiry/sign-out stops reconnect.
+
+Every RPC includes normal `type,id`, response echoes both. Management requires authenticated session even optional/off:
+
+- `auth.devices.list {}` → `{devices:[Device]}`. Device `{id,label,platform,createdAt,lastSeenAt,connectedCount,expiresAt,current}`.
+- `auth.devices.rename {sessionId,label}` → `{}`; `auth.devices.revoke {sessionId}` → `{}`. Self revoke signs out.
+- `auth.pairings.create {confirm?}` (default true) → `{pairing:Pairing,secret}`; expires five minutes. Secret returned once.
+- `auth.pairings.list {}` → `{pairings:[Pairing]}` (caller-created unexpired grants).
+- `auth.pairings.cancel {grantId}` → `{}`; `auth.pairings.approve {grantId,claimId}` / `.deny` same → `{}`.
+  Only the creating session approves, exact claim bound, before original expiry. Claimed grants never admit another device.
+- Pairing `{id,expiresAt,confirm,state,claimId,comparisonCode,label,platform}`; nullable last four until claimed;
+  state `unused|claimed|approved|denied|cancelled`. No hashes anywhere on wire. No mode-changing network RPC.
+- Events `auth.devicesChanged {}` (reload list), `auth.pairingRequested {pairing}` to creator,
+  `auth.sessionRevoked {sessionId}` before closing affected sockets.
+
+### Byte-exact pairing link and comparison
+
+Old v1 address links are import-only. New link `<webApp>/pair#pair=v2.<payload>`.
+`payload` is unpadded RFC4648 base64url of UTF-8 of compact JSON array
+`[backendId,backendOrigin,grantId,secret]` in exactly that order (no spaces). JSON strings use JSON.stringify escaping;
+all generated IDs and secrets ASCII. Origin canonical `https://host[:port]` (HTTP only loopback), no slash/path/userinfo.
+Helpers `encodePairingFragment`/`decodePairingFragment` exported by protocol enforce format and canonical encoding.
+Client removes fragment with history.replaceState before network activity, disables analytics/referrers, confirms full access.
+
+Comparison input UTF-8 bytes of `aiki-device-claim-v1\n` + backendId + `\n` + grantId + `\n` + claimId + `\n` +
+**full prefixed claimSecret**, no trailing newline. SHA-256; take first five bytes; encode those 40 bits as eight RFC4648
+uppercase base32 characters (`ABCDEFGHIJKLMNOPQRSTUVWXYZ234567`, MSB first, no padding), display `XXXX-XXXX`.
+`deviceComparisonCode` shared async helper implements this. Fixture: backend `backend-example`, grant `grant-example`,
+claim `claim-example`, secret `mh_c1.` followed by 43 `A` characters produces `3KDW-XZOE`. Migration uses literal grantId `migration`. Never approve by
+label, source address or code alone: owner approval names exact claim ID(s). Labels/platform/source are untrusted hints.
+
+### Revocation, artifacts, notifications and routing
+
+Durable revoke precedes acknowledgement; invalidate all generations and unused grants created by that session, close its
+sockets 4403 (detach watches/terminals), remove push/FCM registrations and held presence/deliveries, abort its artifact
+streams. Host PTYs, agent turns and jobs keep running. Already sent bytes/push cannot be retracted.
+`artifacts.url` retains `{url,expiresAt}`, default TTL ten minutes. Session-bound token query:
+`token=v2.<unix expiry seconds>.<i|a>.<sessionId>.<base64url HMAC-SHA256>`; HMAC input UTF-8
+`artifact-v2\n<projectId>\n<artifactId>\n<expiry>\n<i|a>\n<sessionId>` (no trailing newline).
+Validate session on GET/HEAD; required rejects unbound old URLs. Optional anonymous minting retains legacy signature
+format. Clients remint on expiry without reloading sessions. Responses private/no-store, nosniff, no-referrer, restrictive
+sandbox CSP; hostile HTML/SVG attachment. URLs narrow bearer grants, not public share links.
+Authenticated notification registration binds stored subscription/FCM token to session, not caller deviceId. Authenticated
+re-registration rebinds existing legacy subscription. Anonymous registrations remain optional/off only. No relay here.
+
+Backend origins configured through CLI hosts or `AIKI_BACKEND_ORIGINS` comma-separated canonical origins /
+`auth.backendOrigins` (the existing explicit `AIKI_PUBLIC_URL` is also a fallback configured origin).
+Configure these before a remote migration: mismatched optional Hosts are observed, never used to mint URLs.
+Required rejects mismatched Host (including scheme/port); optional records and logs once per host,
+never auto-allows. Loopback exact host:listener-port accepted. Origin allowlist `AIKI_ALLOWED_ORIGINS` remains
+separate. Only X-Forwarded-Host/Proto/For headers are used, and only for peers configured in `AIKI_TRUSTED_PROXIES` / `auth.trustedProxies`.
+Artifact origin comes only from an allowed backend origin, never an untrusted forwarded authority.
+
+### Owner CLI and migration
+
+`bun packages/server/src/main.ts auth ...` reaches the **running** backend over `<data>/auth.sock` (0600, directory 0700).
+Select directory with `AIKI_DATA_DIR`; never delete auth data to recover. Commands:
+`status`; `mode off|optional|required`; `pair [--local] [--backend <origin>] [--web-app <origin>]`;
+`devices list|revoke <id>`; `revoke-all`; `hosts list|allow <origin>|remove <origin>`;
+`migration list [--json]`; `migration approve --batch <batchId> <claimId...>`.
+Remote `pair` is explicit network enable via `--backend` (must already be allowed); web app from `--web-app`,
+`AIKI_WEB_APP` or first allowed browser origin. Output `<webApp>/pair#bootstrap=v1.<base64url UTF8 compact JSON
+[backendId,backendOrigin,requestId]>` and a **separate** 12-character uppercase base32 code. Local prints
+`<loopbackOrigin>/pair#bootstrap=<mh_b1 secret>` (bundled UI not shipped; trusted hosted UI can use explicit route).
+Only CLI displays secrets, never service journal. Local channel commands never expose hashes/session tokens.
+
+Updated legacy clients persist pending claim proofs, register via HTTP, display comparison codes and poll. Owner reviews
+fixed `migration list` inventory (ID/code/label/platform/first/last-seen/coarse source), approves **exact IDs** under durable
+batch ID. Same batch+ordered IDs retry is idempotent; altered set rejected. Poll/ack is identical to pairing. Each backend
+has separate authority; no global atomicity. Keep optional until every known client has acknowledged and re-registered
+push, including offline phones. Required closes migration; do not silently grandfather reachable peers. No deployment
+bundle generator or cross-backend approval UI is included in this server contract.
+
+
 ## Projects sidebar: Needs you
 
 Feature `sidebar-attention` adds optional `ProjectSummary.attention`: separate open question/warning counts,
@@ -635,12 +780,12 @@ Status: backend done (`packages/server/src/artifacts.ts`, `artifact-tools.ts`); 
   it; `workerId` comes from that list. The ID is memoized, so a rerun saves once.
 - Protocol: `artifacts.list` / `artifacts.url` / `artifacts.delete` in `connection.ts`; `artifacts.changed` to every
   connection on each save and delete.
-- HTTP: `GET|HEAD|OPTIONS /artifacts/<projectId>/<artifactId>?token=<expiry>.<i|a>.<hmac>`, HMAC-SHA256 with
-  `<data>/artifacts-secret`, valid 4 hours, compared in constant time; 403 without a valid token. One byte range
-  (206/416), `Content-Disposition` inline or attachment (`download`), `Cache-Control: private`, `nosniff` and a
-  sandboxing CSP (an HTML or SVG artifact runs no script on the backend's origin). CORS only for the allowed origins.
-  URLs are absolute on the origin the socket was opened at: `AIKI_PUBLIC_URL`, else Caddy's
-  `X-Forwarded-Proto`/`X-Forwarded-Host`, else the request's.
+- HTTP: signed `GET|HEAD|OPTIONS /artifacts/<projectId>/<artifactId>?token=…`; session-bound v2 capabilities and
+  legacy optional-mode format are specified under **Device sign-in**. HMAC-SHA256 with `<data>/artifacts-secret`,
+  valid ten minutes, constant-time verification; 403 without a valid token/active issuing session. One byte range
+  (206/416), inline or attachment (`download`), `private, no-store`, `nosniff`, no-referrer and sandbox CSP.
+  HTML/SVG force attachment. Exact Origin CORS. URLs use a validated configured backend origin (or loopback),
+  never arbitrary Host/Forwarded values. Revocation aborts the issuing session's tracked streams.
 
 ### Artifact tags and the task media carousel
 
@@ -1298,8 +1443,8 @@ A composer attaches images (png, jpeg, webp or gif, up to 5 MiB each, up to 8 a 
   through `drafts.attachment.get` with the type the uploader declared.
 - Why not the artifact store: artifacts are for the agents' files, show in the Artifacts list, are never swept and carry
   tags; a draft's image is temporary and private to the composer. Why not an upload endpoint: the WebSocket already
-  carries base64 images and has a 32 MiB frame limit, so there is no second channel to authenticate (there is no login;
-  the origin check is the guard) or to build.
+  carries base64 images and has a 32 MiB post-auth frame limit, so there is no second channel to authenticate
+  or build. The whole socket, including binary frames, is behind the Device sign-in gate.
 - Both composers use this (web and Android); at most `DRAFT_MAX_ATTACHMENTS` = 8 references, as many as a message
   carries images.
 
@@ -1531,9 +1676,9 @@ here and nothing depends on xterm.js.
   client library does this: `openTerminal` returns a handle that reopens on `ready`).
 - **Security.** The terminal is a shell as the backend's user: the same reach as an agent's `bash` tool, which the user
   already hands to every coordinator and worker. Who can open one is exactly who can drive the app on that backend:
-  an allowed browser origin (`AIKI_ALLOWED_ORIGINS`) on the tailnet; there is no login, so a page from another
-  origin cannot reach it and nobody off the tailnet can. A phone on the tailnet with the app open has a shell on the
-  PC. Turn it off per backend with `AIKI_TERMINALS=off`. The server never logs terminal input or output.
+  a valid full-owner device session in required mode, plus the exact browser Origin allowlist
+  (`AIKI_ALLOWED_ORIGINS`). Legacy optional/off traffic retains its former access during migration;
+  tailnet reachability alone is never enrollment authority. Revocation detaches terminals without killing host jobs. Turn it off per backend with `AIKI_TERMINALS=off`. The server never logs terminal input or output.
 - **Android** must port: the `terminal.*` JSON (generated into `Models.kt`), the binary framing and the ack window (a
   terminal emulator view is the work; the protocol has nothing web-specific), the reconnect-and-reattach loop, the
   key-bar keys as byte strings (Esc `\x1b`, Tab `\t`, arrows `\x1b[A`..., Ctrl as `byte & 0x1f`), and resize on

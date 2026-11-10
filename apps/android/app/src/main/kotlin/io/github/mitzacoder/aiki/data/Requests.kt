@@ -4,6 +4,42 @@ package io.github.mitzacoder.aiki.data
 import io.github.mitzacoder.aiki.protocol.*
 import kotlinx.serialization.json.*
 
+suspend fun HarnessClient.request(value: AuthRenewRequest, explicitNulls: Set<String> = emptySet()): AuthRenewResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(AuthRenewRequest.serializer(), value).jsonObject, explicitNulls), AuthRenewResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: AuthDevicesListRequest, explicitNulls: Set<String> = emptySet()): AuthDevicesListResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(AuthDevicesListRequest.serializer(), value).jsonObject, explicitNulls), AuthDevicesListResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: AuthDevicesRenameRequest, explicitNulls: Set<String> = emptySet()): AuthDevicesRenameResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(AuthDevicesRenameRequest.serializer(), value).jsonObject, explicitNulls), AuthDevicesRenameResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: AuthDevicesRevokeRequest, explicitNulls: Set<String> = emptySet()): AuthDevicesRevokeResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(AuthDevicesRevokeRequest.serializer(), value).jsonObject, explicitNulls), AuthDevicesRevokeResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: AuthPairingsCreateRequest, explicitNulls: Set<String> = emptySet()): AuthPairingsCreateResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(AuthPairingsCreateRequest.serializer(), value).jsonObject, explicitNulls), AuthPairingsCreateResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: AuthPairingsListRequest, explicitNulls: Set<String> = emptySet()): AuthPairingsListResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(AuthPairingsListRequest.serializer(), value).jsonObject, explicitNulls), AuthPairingsListResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: AuthPairingsCancelRequest, explicitNulls: Set<String> = emptySet()): AuthPairingsCancelResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(AuthPairingsCancelRequest.serializer(), value).jsonObject, explicitNulls), AuthPairingsCancelResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: AuthPairingsApproveRequest, explicitNulls: Set<String> = emptySet()): AuthPairingsApproveResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(AuthPairingsApproveRequest.serializer(), value).jsonObject, explicitNulls), AuthPairingsApproveResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: AuthPairingsDenyRequest, explicitNulls: Set<String> = emptySet()): AuthPairingsDenyResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(AuthPairingsDenyRequest.serializer(), value).jsonObject, explicitNulls), AuthPairingsDenyResponse.serializer()
+)
+
 suspend fun HarnessClient.request(value: HelloRequest, explicitNulls: Set<String> = emptySet()): HelloResponse = exchange(
     value.id, withExplicitNulls(wireJson.encodeToJsonElement(HelloRequest.serializer(), value).jsonObject, explicitNulls), HelloResponse.serializer()
 )

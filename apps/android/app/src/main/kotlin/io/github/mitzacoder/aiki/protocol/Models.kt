@@ -54,6 +54,177 @@ open class UnionSerializer<T : Any>(
 }
 
 @Serializable
+data class DeviceAuthState(
+    val `mode`: String,
+    val `sessionId`: String?,
+    val `accessExpiresAt`: String?
+)
+
+@Serializable
+data class AuthDevice(
+    val `id`: String,
+    val `label`: String,
+    val `platform`: String,
+    val `createdAt`: String,
+    val `lastSeenAt`: String,
+    val `connectedCount`: Long,
+    val `expiresAt`: String,
+    val `current`: Boolean
+)
+
+@Serializable
+data class AuthPairing(
+    val `id`: String,
+    val `expiresAt`: String,
+    val `confirm`: Boolean,
+    val `state`: String,
+    val `claimId`: String?,
+    val `comparisonCode`: String?,
+    val `label`: String?,
+    val `platform`: String?
+)
+
+@Serializable
+data class AuthRenewRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.renew",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `accessToken`: String
+)
+
+@Serializable
+data class AuthRenewResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.renew",
+    val `id`: String,
+    val `accessExpiresAt`: String
+)
+
+@Serializable
+data class AuthDevicesListRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.devices.list",
+    val `id`: String = java.util.UUID.randomUUID().toString()
+)
+
+@Serializable
+data class AuthDevicesListResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.devices.list",
+    val `id`: String,
+    val `devices`: List<AuthDevice>
+)
+
+@Serializable
+data class AuthDevicesRenameRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.devices.rename",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `sessionId`: String,
+    val `label`: String
+)
+
+@Serializable
+data class AuthDevicesRenameResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.devices.rename",
+    val `id`: String
+)
+
+@Serializable
+data class AuthDevicesRevokeRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.devices.revoke",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `sessionId`: String
+)
+
+@Serializable
+data class AuthDevicesRevokeResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.devices.revoke",
+    val `id`: String
+)
+
+@Serializable
+data class AuthPairingsCreateRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.pairings.create",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `confirm`: Boolean? = null
+)
+
+@Serializable
+data class AuthPairingsCreateResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.pairings.create",
+    val `id`: String,
+    val `pairing`: AuthPairing,
+    val `secret`: String
+)
+
+@Serializable
+data class AuthPairingsListRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.pairings.list",
+    val `id`: String = java.util.UUID.randomUUID().toString()
+)
+
+@Serializable
+data class AuthPairingsListResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.pairings.list",
+    val `id`: String,
+    val `pairings`: List<AuthPairing>
+)
+
+@Serializable
+data class AuthPairingsCancelRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.pairings.cancel",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `grantId`: String
+)
+
+@Serializable
+data class AuthPairingsCancelResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.pairings.cancel",
+    val `id`: String
+)
+
+@Serializable
+data class AuthPairingsApproveRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.pairings.approve",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `grantId`: String,
+    val `claimId`: String
+)
+
+@Serializable
+data class AuthPairingsApproveResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.pairings.approve",
+    val `id`: String
+)
+
+@Serializable
+data class AuthPairingsDenyRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.pairings.deny",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `grantId`: String,
+    val `claimId`: String
+)
+
+@Serializable
+data class AuthPairingsDenyResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.pairings.deny",
+    val `id`: String
+)
+
+@Serializable
+data class AuthDevicesChangedEvent(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.devicesChanged"
+) : ProtocolEvent
+
+@Serializable
+data class AuthPairingRequestedEvent(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.pairingRequested",
+    val `pairing`: AuthPairing
+) : ProtocolEvent
+
+@Serializable
+data class AuthSessionRevokedEvent(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "auth.sessionRevoked",
+    val `sessionId`: String
+) : ProtocolEvent
+
+@Serializable
 data class ErrorResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "error",
     val `id`: String? = null,
@@ -147,7 +318,13 @@ data class HelloRequest(
     @kotlinx.serialization.EncodeDefault val `type`: String = "hello",
     val `id`: String = java.util.UUID.randomUUID().toString(),
     val `protocolVersion`: Long,
+    val `auth`: HelloRequestAuth? = null,
     val `client`: HelloRequestClient? = null
+)
+
+@Serializable
+data class HelloRequestAuth(
+    val `accessToken`: String
 )
 
 @Serializable
@@ -161,6 +338,8 @@ data class HelloResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "hello",
     val `id`: String,
     @kotlinx.serialization.EncodeDefault val `protocolVersion`: Long = 1L,
+    val `backendId`: String? = null,
+    val `auth`: DeviceAuthState? = null,
     val `server`: HelloResponseServer,
     val `features`: List<String>? = null
 )
@@ -2791,6 +2970,9 @@ data class MemoryChangedEvent(
 data class UnknownEvent(val raw: JsonObject) : ProtocolEvent
 
 fun decodeProtocolEvent(raw: JsonObject, json: Json): ProtocolEvent = when(raw["type"]?.jsonPrimitive?.content) {
+    "auth.devicesChanged" -> json.decodeFromJsonElement(AuthDevicesChangedEvent.serializer(), raw)
+    "auth.pairingRequested" -> json.decodeFromJsonElement(AuthPairingRequestedEvent.serializer(), raw)
+    "auth.sessionRevoked" -> json.decodeFromJsonElement(AuthSessionRevokedEvent.serializer(), raw)
     "project.state" -> json.decodeFromJsonElement(ProjectStateEvent.serializer(), raw)
     "credentials.login" -> json.decodeFromJsonElement(CredentialsLoginEvent.serializer(), raw)
     "conversation.view" -> json.decodeFromJsonElement(ConversationViewEvent.serializer(), raw)

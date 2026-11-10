@@ -1,11 +1,7 @@
+import { DeviceAuthStateSchema } from "./device-auth.ts";
 /** Projects, the model catalog and credentials. */
 import { type Static, Type } from "typebox";
-import {
-	ModelRefSchema,
-	ProjectIdSchema,
-	RequestIdSchema,
-	ThinkingLevelSchema,
-} from "./common.ts";
+import { ModelRefSchema, ProjectIdSchema, RequestIdSchema, ThinkingLevelSchema } from "./common.ts";
 import { ProjectLinkSettingsSchema, ProjectLinksSchema } from "./refs.ts";
 
 /**
@@ -67,7 +63,11 @@ export const DEFAULT_CHECK_INS: ProjectCheckIns = { enabled: true, intervalMinut
  * between 5 and 60 minutes (a coordinator between check-ins) reads its prompt from the cache instead of paying for it
  * again. Codex ignores it; OpenAI's own API keeps the prompt for up to 24 hours at no extra cost.
  */
-export const LongPromptCacheSchema = Type.Union([Type.Literal("off"), Type.Literal("coordinators"), Type.Literal("all")]);
+export const LongPromptCacheSchema = Type.Union([
+	Type.Literal("off"),
+	Type.Literal("coordinators"),
+	Type.Literal("all"),
+]);
 export type LongPromptCache = Static<typeof LongPromptCacheSchema>;
 
 /** Coordinators often wait between turns; workers default to short retention to limit write premiums. */
@@ -78,7 +78,11 @@ export const DEFAULT_LONG_PROMPT_CACHE: LongPromptCache = "coordinators";
  * screen) with screenshots, or screenshots and a short screen recording, before it goes to review. `off` adds nothing to
  * the prompts. It is only about user interfaces: no backend or terminal recordings.
  */
-export const UiProofSchema = Type.Union([Type.Literal("off"), Type.Literal("screenshots"), Type.Literal("screenshots-and-videos")]);
+export const UiProofSchema = Type.Union([
+	Type.Literal("off"),
+	Type.Literal("screenshots"),
+	Type.Literal("screenshots-and-videos"),
+]);
 export type UiProof = Static<typeof UiProofSchema>;
 
 /** What every project starts with, and what a project saved before the setting reads as. */
@@ -106,18 +110,23 @@ export const ProjectActivitySchema = Type.Object({
 	}),
 	runningWorkers: Type.Integer({ minimum: 0 }),
 	lastReplyAt: Type.Union([Type.String(), Type.Null()], {
-		description: "ISO 8601, when the coordinator last finished an answer; clients compare it with when the user last looked.",
+		description:
+			"ISO 8601, when the coordinator last finished an answer; clients compare it with when the user last looked.",
 	}),
 	lastReplyEntryId: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
 	backgroundThreads: Type.Optional(
-		Type.Integer({ minimum: 0, description: "Background threads running or idle (not done). Absent on an older server." }),
+		Type.Integer({
+			minimum: 0,
+			description: "Background threads running or idle (not done). Absent on an older server.",
+		}),
 	),
 	openQuestions: Type.Optional(
 		Type.Integer({ minimum: 0, description: "Board questions waiting on the user. Absent on an older server." }),
 	),
 	runningTool: Type.Optional(
 		Type.Union([ProjectRunningToolSchema, Type.Null()], {
-			description: "The coordinator's current tool call, or null while idle or only generating text. Absent on an older server.",
+			description:
+				"The coordinator's current tool call, or null while idle or only generating text. Absent on an older server.",
 		}),
 	),
 });
@@ -179,6 +188,7 @@ export const HelloRequestSchema = Type.Object({
 	type: Type.Literal("hello"),
 	id: RequestIdSchema,
 	protocolVersion: Type.Integer(),
+	auth: Type.Optional(Type.Object({ accessToken: Type.String() })),
 	client: Type.Optional(Type.Object({ name: Type.String(), version: Type.Optional(Type.String()) })),
 });
 export type HelloRequest = Static<typeof HelloRequestSchema>;
@@ -221,14 +231,18 @@ export const ProjectsConfigureRequestSchema = Type.Object({
 	),
 	longPromptCache: Type.Optional(
 		Type.Union([LongPromptCacheSchema, Type.Null()], {
-			description: 'Which conversations keep their prompt cached for an hour; null restores the default ("coordinators").',
+			description:
+				'Which conversations keep their prompt cached for an hour; null restores the default ("coordinators").',
 		}),
 	),
 	keepPromptCacheWarm: Type.Optional(Type.Union([Type.Boolean(), Type.Null()])),
-	promptCacheWarmHours: Type.Optional(Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(4), Type.Literal(8), Type.Null()])),
+	promptCacheWarmHours: Type.Optional(
+		Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(4), Type.Literal(8), Type.Null()]),
+	),
 	uiProof: Type.Optional(
 		Type.Union([UiProofSchema, Type.Null()], {
-			description: 'Show UI changes (feature ui-proof): whether agents prove visible UI work with screenshots or screenshots and videos; null restores the default ("screenshots-and-videos").',
+			description:
+				'Show UI changes (feature ui-proof): whether agents prove visible UI work with screenshots or screenshots and videos; null restores the default ("screenshots-and-videos").',
 		}),
 	),
 	links: Type.Optional(
@@ -317,8 +331,16 @@ export const HARNESS_FEATURES = [
 	"task-waiting",
 	"sidebar-attention",
 	"cache-keep-warm",
+	"device-auth-v1",
+	"device-pairing-v1",
+	"device-management-v1",
 ] as const;
 export type HarnessFeature = (typeof HARNESS_FEATURES)[number];
+
+/** Missing hello.features is never evidence of device-auth support. */
+export const LEGACY_HARNESS_FEATURES = HARNESS_FEATURES.filter(
+	(feature) => feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
+);
 
 export const HarnessFeatureSchema = Type.Union([
 	Type.Literal("projects"),
@@ -362,6 +384,9 @@ export const HarnessFeatureSchema = Type.Union([
 	Type.Literal("task-waiting"),
 	Type.Literal("sidebar-attention"),
 	Type.Literal("cache-keep-warm"),
+	Type.Literal("device-auth-v1"),
+	Type.Literal("device-pairing-v1"),
+	Type.Literal("device-management-v1"),
 ]);
 export type HarnessFeatureValue = Static<typeof HarnessFeatureSchema>;
 
@@ -369,6 +394,8 @@ export const HelloResponseSchema = Type.Object({
 	type: Type.Literal("hello"),
 	id: RequestIdSchema,
 	protocolVersion: Type.Literal(1),
+	backendId: Type.Optional(Type.String()),
+	auth: Type.Optional(DeviceAuthStateSchema),
 	server: Type.Object({ name: Type.String(), version: Type.String() }),
 	features: Type.Optional(
 		Type.Array(Type.String(), {
@@ -411,7 +438,9 @@ export type ProviderOAuthInfo = Static<typeof ProviderOAuthInfoSchema>;
 export const ProviderInfoSchema = Type.Object({
 	id: Type.String(),
 	name: Type.String(),
-	configured: Type.Boolean({ description: "A credential resolves for this provider (stored or from its environment)." }),
+	configured: Type.Boolean({
+		description: "A credential resolves for this provider (stored or from its environment).",
+	}),
 	authType: Type.Optional(
 		Type.Union([Type.Literal("api_key"), Type.Literal("oauth")], { description: "How the provider is configured." }),
 	),

@@ -55,6 +55,18 @@ export type ThinkingLevel = Static<typeof ThinkingLevelSchema>;
 
 /** Machine-readable failure kinds. Clients branch on these, never on the message. */
 export const ERROR_CODES = [
+	"auth_required",
+	"auth_invalid",
+	"auth_expired",
+	"auth_revoked",
+	"rate_limited",
+	"pending_limit",
+	"not_found",
+	"grant_used",
+	"claim_exists",
+	"claim_pending",
+	"migration_closed",
+	"batch_mismatch",
 	"bad_request",
 	"not_ready",
 	"unsupported_protocol",
@@ -83,6 +95,18 @@ export const ERROR_CODES = [
 	"internal",
 ] as const;
 export const ErrorCodeSchema = Type.Union([
+	Type.Literal("auth_required"),
+	Type.Literal("auth_invalid"),
+	Type.Literal("auth_expired"),
+	Type.Literal("auth_revoked"),
+	Type.Literal("rate_limited"),
+	Type.Literal("pending_limit"),
+	Type.Literal("not_found"),
+	Type.Literal("grant_used"),
+	Type.Literal("claim_exists"),
+	Type.Literal("claim_pending"),
+	Type.Literal("migration_closed"),
+	Type.Literal("batch_mismatch"),
 	Type.Literal("bad_request"),
 	Type.Literal("not_ready"),
 	Type.Literal("unsupported_protocol"),
