@@ -3,6 +3,7 @@
  * touches a real service, a real port or ~/.local/share/mihai-harness-deploy: `systemctl`, `journalctl` and `ssh` are
  * stubs on PATH, HOME is a temporary directory, and `bun install` is stubbed out.
  */
+import "./clean-env.ts";
 import { afterEach, describe, expect, test } from "bun:test";
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

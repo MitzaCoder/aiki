@@ -1,4 +1,5 @@
 /** `deploy/targets.ts`: the list of remote backend targets, its environment overrides and what it refuses. */
+import "./clean-env.ts";
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
