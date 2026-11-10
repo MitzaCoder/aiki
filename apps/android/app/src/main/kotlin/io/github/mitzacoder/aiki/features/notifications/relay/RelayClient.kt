@@ -122,6 +122,13 @@ class RelayClient(
                 RelayResult.Success(decode(raw), retry)
             }
         } catch (error: CancellationException) { throw error }
+        catch (error: RelaySignInException) {
+            RelayResult.Failure(when (error.problem) {
+                RelaySignInProblem.AccountDeleted -> RelayErrorCode.AccountDeleted
+                RelaySignInProblem.AccountDisabled -> RelayErrorCode.AccountDisabled
+                else -> RelayErrorCode.NotSignedIn
+            })
+        }
         catch (_: IOException) { RelayResult.Failure(RelayErrorCode.Network) }
         catch (_: Exception) { RelayResult.Failure(RelayErrorCode.InvalidResponse) }
     }

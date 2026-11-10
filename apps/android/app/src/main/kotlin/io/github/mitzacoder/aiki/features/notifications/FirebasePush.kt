@@ -33,6 +33,10 @@ object FirebasePush : PushTokens {
     override val projectId: String? = BuildConfig.FIREBASE_PROJECT_ID.ifEmpty { null }
 
     fun initialize(context: Context) {
+        if (io.github.mitzacoder.aiki.features.notifications.relay.RelayAuthPlatform.fakePushToken() != null) {
+            reason = null
+            return // The demo must not instantiate Messaging or contact the FCM service.
+        }
         if (BuildConfig.FIREBASE_APP_ID.isEmpty()) return
         try {
             if (FirebaseApp.getApps(context).isEmpty()) {
@@ -55,6 +59,7 @@ object FirebasePush : PushTokens {
     // same kind of registration token synchronously; onRegistered is handled too, so either flow reaches the backends.
     @Suppress("DEPRECATION")
     override suspend fun token(): String {
+        io.github.mitzacoder.aiki.features.notifications.relay.RelayAuthPlatform.fakePushToken()?.let { return it }
         reason?.let { throw IllegalStateException(it) }
         val messaging = FirebaseMessaging.getInstance()
         messaging.isAutoInitEnabled = true
@@ -63,6 +68,7 @@ object FirebasePush : PushTokens {
 
     @Suppress("DEPRECATION")
     override suspend fun delete() {
+        if (io.github.mitzacoder.aiki.features.notifications.relay.RelayAuthPlatform.fakePushToken() != null) return
         if (reason != null) return
         val messaging = FirebaseMessaging.getInstance()
         messaging.isAutoInitEnabled = false
