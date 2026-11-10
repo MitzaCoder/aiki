@@ -11,6 +11,8 @@ import { randomBytes } from "node:crypto";
 import { createRelay, type FcmMessage, type FcmResult } from "./core";
 import { runtimeMode } from "./startup";
 import { trustedClientAddress } from "./client-address";
+import { relayDatabase, relayMaxInstances, relayRegion, runtimeServiceAccount } from "./deployment";
+import { requireDatabaseId } from "./database";
 const mode = runtimeMode({
 	FUNCTIONS_EMULATOR: process.env.FUNCTIONS_EMULATOR,
 	FIREBASE_AUTH_EMULATOR_HOST: process.env.FIREBASE_AUTH_EMULATOR_HOST,
@@ -66,27 +68,41 @@ async function sender(message: FcmMessage): Promise<FcmResult> {
 		clearTimeout(timer);
 	}
 }
-const dependencies: Dependencies = {
-	firestore: getFirestore(app),
-	auth: getAuth(app),
-	projectId: mode.projectId,
-	send: sender,
-	now: Date.now,
-	random: (size) => randomBytes(size).toString("base64url"),
-	verifyAppCheck: async (token) => {
-		if (!token) return false;
-		await getAppCheck(app).verifyToken(token);
-		return true;
-	},
-	monitor: (outcome) => {
-		console.info("app_check", outcome);
-	},
-};
-const handle = createRelay(dependencies);
+let dependencies: Dependencies | undefined;
+/** Resolve the database only at invocation, after the CLI has supplied parameter values. */
+function runtimeDependencies(): Dependencies {
+	return (dependencies ??= {
+		firestore: getFirestore(app, requireDatabaseId(relayDatabase.value())),
+		auth: getAuth(app),
+		projectId: mode.projectId,
+		send: sender,
+		now: Date.now,
+		random: (size) => randomBytes(size).toString("base64url"),
+		verifyAppCheck: async (token) => {
+			if (!token) return false;
+			await getAppCheck(app).verifyToken(token);
+			return true;
+		},
+		monitor: (outcome) => {
+			console.info("app_check", outcome);
+		},
+	});
+}
+let handle: ReturnType<typeof createRelay> | undefined;
 /** One production v2 HTTPS export; protocol clients send JSON bytes as application/octet-stream. */
 export const relay = onRequest(
-	{ timeoutSeconds: 30, minInstances: 0, maxInstances: 2, memory: "256MiB", invoker: "public", cors: false },
+	{
+		region: relayRegion,
+		serviceAccount: runtimeServiceAccount,
+		timeoutSeconds: 30,
+		minInstances: 0,
+		maxInstances: relayMaxInstances,
+		memory: "256MiB",
+		invoker: "public",
+		cors: false,
+	},
 	async (request, response) => {
+		handle ??= createRelay(runtimeDependencies());
 		const result = await handle({
 			method: request.method,
 			path: request.path,
@@ -109,8 +125,18 @@ export const relay = onRequest(
 
 /** Hourly repair uses the same plain durable reconciliation core exercised by the emulator checks. */
 export const reconcile = onSchedule(
-	{ schedule: "every 60 minutes", timeoutSeconds: 540, maxInstances: 1 },
+	{
+		region: relayRegion,
+		serviceAccount: runtimeServiceAccount,
+		schedule: "every 60 minutes",
+		timeoutSeconds: 540,
+		maxInstances: 1,
+	},
 	async () => {
-		await reconcileRelay(dependencies);
+		try {
+			await reconcileRelay(runtimeDependencies());
+		} catch {
+			throw new Error("relay_reconciliation_failed");
+		}
 	},
 );

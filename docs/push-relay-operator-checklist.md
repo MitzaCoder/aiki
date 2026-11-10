@@ -15,8 +15,9 @@ outboxes and optional Android storage/receive/registration plumbing have fake-se
 
 Not proven: real Google/email sign-in, email delivery, App Links, FCM/background delivery, runtime IAM, billing,
 App Check or production ingress. Android sign-in/account screens and their build settings are **not built yet**
-on this baseline. Production deploy/admin tooling is **not built yet**. The relay README also records an unresolved
-credential-digest mismatch; the agent must reconcile it with the frozen format before integration. Do not deploy yet.
+on this baseline. Production deploy/admin tooling and the IAM starting plan are built in
+[relay/DEPLOY.md](../relay/DEPLOY.md), but **not verified on a real project**. D53 resolved credential-digest/envelope
+parity against the frozen vectors. Nothing here permits deployment; finish the remaining release/live gates first.
 
 References: [design](research/push-relay-design.md), [relay package](../relay/README.md),
 [encrypted format](push-relay-v1.md), [backend contract](push-relay-backend-v1.md),
@@ -95,12 +96,14 @@ config files, keys, fingerprints, account emails or console screenshots containi
 ## 4. Steps only the operator can do
 
 Do these in order after agreeing to staging. Each item states the result to check. No production commands are supplied
-where tooling is missing. Do not adapt the emulator launcher to reach the real project.
+where unrelated tooling is missing. The relay's copyable operator procedure is [DEPLOY.md](../relay/DEPLOY.md);
+its commands are for you after agreement, never for the agent. Do not adapt the emulator launcher to reach the real project.
 
 - [ ] **Agree to the scope first.** Confirm project/app, incident owner, region, offline grace and shared-workload
   impact from section 3. Result: a private staging plan and explicit permission, not permission inferred from answers.
-  Verify the agent's remaining blockers are resolved before deployment: Android account flow, digest interoperability,
-  reviewed production deploy/admin tooling, runtime identity/region and scheduled repair configuration.
+  Verify the remaining release blockers before deployment: Android account flow/build settings and live acceptance.
+  Frozen digest interoperability is checked. Review the built deploy/admin procedure, runtime identity/region/database
+  and scheduled repair configuration; emulator checks do not prove real IAM or production readiness.
 - [ ] **Costs money: enable Blaze if needed.** Attach the agreed billing account yourself. Check effective regional
   pricing/currency and other workloads. Result: billing-enabled deployment and email-link quota, not unlimited usage.
   Verify the project billing status and effective email-link send allowance; do not request higher Auth quotas.
@@ -116,17 +119,21 @@ where tooling is missing. Do not adapt the emulator launcher to reach the real p
   permissions; do not enable unrelated services. Deployment/build/artifact/scheduler use can cost money.
 - [ ] **Create a dedicated runtime service account; no key file.** Grant Firestore data access and FCM send, not
   project Owner/Editor. Give the deployer only needed deploy and service-account attachment rights.
-  **IAM gap to resolve:** the built code also calls Auth get/update/revoke/delete. Firestore plus FCM permissions alone
-  cannot run account checks/deletion. A reviewed least-privilege Auth permission set is **not built yet** as a deploy
-  recipe; do not hide this by granting broad admin. Verify effective runtime permissions with synthetic live acceptance,
-  and verify both exports use the agreed runtime identity. Never download a service-account key.
+  Use the [runtime/deployer permission tables](../relay/DEPLOY.md#runtime-permissions--verify-on-the-real-project):
+  six Firestore data/transaction permissions, FCM message-create, and Auth user get/update/delete (revocation uses update).
+  Signature/App Check verification needs public keys, not a new Auth/App Check admin role. The Scheduler job also needs
+  its reviewed OIDC/invoker binding. Every role/scope is **verify on the real project**; do not grant Owner/Editor to hide
+  a failure. Verify both exports share the agreed runtime identity/region/database. Never download a service-account key.
 - [ ] **Hard to undo; costs money: confirm/create Firestore only after region review.** Use the compatible Native-mode
   database. If an existing edition/mode is incompatible, stop rather than replacing it. Database location cannot simply
   be edited later. Result: the approved database, with no assumption of a second free allowance.
-  Apply `relay/firestore.rules` and `relay/firestore.indexes.json` through the future reviewed deploy procedure
-  (**not built yet**). TTL deletes are billed. Verify deny-all direct client access, TTL fields, index readiness and
-  expiry queries. If the database serves other apps, review rule/index merging first; never overwrite their access rules
-  with a project-wide deny-all file. Leave relay backups/PITR off unless separately agreed and disclosed.
+  Choose `(default)` or an approved dedicated named database consistently in Functions params, deploy config and CLI.
+  Follow [DEPLOY.md's two database cases](../relay/DEPLOY.md#4-firestore-rulesindexes-without-damaging-another-app).
+  Only a sole-use database gets `relay/firestore.rules`; shared rules keep their existing owner/source and merge the
+  exact guarded blocks in `relay/firestore.shared.rules.example`. False denies do not override broader allows.
+  Preserve unrelated indexes using the config generator's shared-index merge. All relay collection groups are prefixed
+  `relay`; stop on a namespace collision. TTL deletes are billed. Verify client denial, TTL/index readiness and expiry
+  queries on the actual chosen database; keep unfinished cleanup work out of TTL. Leave relay backups/PITR off.
 - [ ] **Configure Auth providers and abuse controls.** Enable Google and Email/Password with Email link enabled;
   disable unused providers. Aiki must expose no password flow. Enable email enumeration protection and review effective
   signup/mail quotas, generic send-link responses and provider shutdown controls. Add only needed authorized domains
@@ -159,16 +166,18 @@ where tooling is missing. Do not adapt the emulator launcher to reach the real p
   traffic for redaction. Record actual provider/audit-log exceptions in the privacy text: seven days is not a promise
   to erase Google's required logs. Review artifact cleanup so old deploy images do not accumulate charges.
 - [ ] **Prepare switches before deployment.** In the Firestore document `relayControl/settings`, set boolean
-  `enabled=false` and `enrollmentEnabled=false`. Missing settings default to enabled; absence is not safe staging.
-  Verify the document privately and retain agreed default limits from the README. Give the incident owner tested
-  permission to update this document. `enabled=false` stops sends/challenges/create/activate/renew; deletion stays
+  `enabled=false` and `enrollmentEnabled=false`, using `operator.ts seed-control --yes` with the selected mode/database.
+  Missing settings/boolean fields now mean disabled; numeric limits alone cannot open the relay. Seed paused **before**
+  deploying a reachable function; seed refuses to overwrite an existing document. Verify with `status --yes`, retain
+  agreed default limits and give the incident owner tested permission to run the operator tool. `enabled=false` stops sends/challenges/create/activate/renew; deletion stays
   available. `enrollmentEnabled=false` stops new relay accounts/phones only, not Auth signup or existing token repair.
-- [ ] **Deploy paused, only after the missing production procedure is built and approved.** There is no live deploy
-  script yet. It must set region/runtime identity, deploy reviewed rules/indexes and configure hourly reconciliation.
-  Verify Node 22 support, zero minimum/two maximum HTTPS instances, 30-second request timeout, separate bounded
-  scheduler runtime and no emulator flags. Confirm the real Google front-end forwarding suffix before IP budgets
-  rely on it. Result: paused function plus working repair schedule, not public enrollment. Verify 503 `relay_disabled`
-  for a synthetic send and that deletion still works. Keep the complete HTTPS v1 base URL privately in operator notes.
+- [ ] **Deploy paused, only after the built procedure is reviewed and explicitly approved.** Follow
+  [DEPLOY.md](../relay/DEPLOY.md): private parameter file (region/runtime SA/database/HTTPS maximum instances), local
+  config generation and selectors for only codebase `aiki-push-relay` exports `relay` and `reconcile`. Verify Node 22,
+  zero minimum/two default maximum HTTPS instances, 30-second request timeout, hourly bounded scheduler, the same
+  runtime identity/database and no emulator flags. Verify private Scheduler invocation and actual repair. Prove the real
+  forwarding suffix before relying on IP budgets (a paused smoke does not exercise it). Expect 503 `relay_disabled` on
+  synthetic send, 204/no-store on well-formed absent-route delete. Keep the HTTPS v1 base URL privately; do not open enrollment.
 - [ ] **Supply private Android build values yourself.** Point `harness.googleServicesJson` /
   `HARNESS_GOOGLE_SERVICES_JSON` at client config outside the checkout. Set `harness.pushRelayUrl` /
   `HARNESS_PUSH_RELAY_URL` to the approved HTTPS v1 base URL. Use ignored `apps/android/local.properties`, or private
@@ -186,21 +195,44 @@ where tooling is missing. Do not adapt the emulator launcher to reach the real p
   Verify subsequent authorizations stop; in-flight FCM cannot be recalled. Keep provider shutdown access too: neither
   switch stops direct Auth signups/emails. Removing runtime send permission or disabling the function is a last resort
   and may interrupt cleanup; retain an approved way to finish deletion.
-- [ ] **Know the admin script's limits.** From `relay/`, `bun run tools/admin.ts disable synthetic-uid` demonstrates
-  blocking an emulator account and durable cleanup. `enable`, `phone-disable`, `resume` and `reconcile` are also built.
-  This CLI is deliberately demo/loopback-only: live admin tooling is **not built yet**. There is **no `delete` command**.
-  Do not point it at production. Live account deletion needs the future in-app recent-auth action, or a separately
-  approved operator erasure procedure for lost/disabled accounts. Verify disable blocks immediately, completed cleanup
-  erases routes/tokens, explicit re-enable restores none, and deletion erases both Auth and relay state. Auth deletion
-  alone is not immediate relay erasure; hourly repair must finish. Keep account IDs only in private support notes.
+- [ ] **Auth sign-up volume alert (needs the real project).** Identify the actual supported metric/quota/report for
+  this project's Auth edition, measure other apps' baseline and set short-interval/day warning and critical thresholds
+  for unexpected sign-ups. The relay's 20 new accounts/day does not cap Auth. Record metric/query, windows, concrete
+  thresholds, owner/backup recipients and a tested notification privately; do not generate a quota/billing spike.
+- [ ] **Monthly-active-user alert (needs the real project).** Configure warning/critical notifications against the
+  effective shared MAU allowance/approved spend and expected pilot, not a guessed universal quota. Record actual metric
+  or aggregate-only report monitor and thresholds; test notification routing. Do not upgrade Identity Platform to get it.
+- [ ] **Sign-in-email volume/quota alert (needs the real project).** Configure warnings before the effective email-link
+  send allowance is exhausted, accounting for existing usage (50%/80% of reviewed available quota is a proposal, not a
+  promised quota). Record actual windows/thresholds/recipients and a notification test. If native MAU/mail/sign-up metrics
+  are unavailable, agree an aggregate-only monitor or stop public enrollment; never export identities or sign-in links.
+  Exact metric IDs/console paths depend on the project. See [DEPLOY.md](../relay/DEPLOY.md#8-alerts-provider-shutdown-and-logging--needs-the-real-project).
+- [ ] **Provider/sign-up shutdown drill beside the kill switch (needs the real project).** In an approved shared-app
+  maintenance window, first verify a synthetic provider flow, then pause relay/close enrollment and separately disable
+  the agreed Google/email-link providers or a verified supported sign-up control. Standard Auth is not assumed to have
+  an independent signup-only switch. Confirm one synthetic new sign-in/signup/email request is blocked at Auth, counts
+  stop rising, relay sends fail and deletion remains available. Existing JWTs may remain valid; do not mass-revoke other
+  apps' users. Restore only through the privately recorded recovery plan, leaving relay paused until approved. If provider
+  disable would break an unapproved shared workload or no safe shutdown exists, stop staging. Keep only sanitized pass/fail
+  and timing, never links/IDs. These alerts and this drill are operator configuration, not mocked code coverage.
+- [ ] **Rehearse the built operator CLI.** [DEPLOY.md's command table](../relay/DEPLOY.md#7-operator-cli-and-account-support)
+  covers status, seed-control, pause/resume, enrollment open/close, limits, account disable/enable/delete, phone disable
+  and reconcile. Choose explicit `--emulator` or operator-only `--project <project-id> --confirm-real-project`; every
+  action/read needs `--yes`, otherwise no SDK/ADC/network access. Real mode refuses emulator variables; emulator mode
+  re-execs scrubbed and refuses non-demo targets. `admin.ts` is an alias, not the old settings-JSON interface. Lost/disabled
+  account deletion uses the same durable cascade including project-wide Auth deletion; review other apps' identity use.
+  Verify immediate block, complete token/route cleanup, no restoration on enable and eventual pending-work completion.
+  `complete:false` needs retry/reconciliation, not removal of its work. Auth deletion alone is not relay erasure.
+  Keep UIDs/commands privately; status never returns email, tokens or individual quota keys.
 
 ## 5. What the agent will do after agreement
 
 - [ ] Turn your plain facts into a scoped staging plan and copyable commands for you to review and run yourself.
-  Identify costs, exact targets and rollback before each change. Missing deploy/IAM/live-admin procedures and Android
-  sign-in/build settings must be built and checked separately; this checklist does not implement them.
-- [ ] Resolve the relay credential-digest integration mismatch against the frozen vectors. Finish the account/UI seams
-  and emulator/fake-service gates before proposing live acceptance. Update stale implementation warnings when proven.
+  Identify costs, exact targets and rollback before each change. Deploy/IAM/live-admin preparation is built and emulator
+  checked in DEPLOY.md; effective IAM, quotas, alerts/provider shutdown and ingress still need your real project.
+  Android sign-in/build settings and release-device acceptance remain separate work.
+- [x] Relay credential-digest and canonical-envelope parity match the frozen vectors (D53). Production imports no
+  shared package code/fixtures. Finish remaining account/UI seams and release gates before proposing live acceptance.
 - [ ] Help interpret sanitized status facts and record acceptance results without identities or payloads.
   You run login, billing, IAM, provider configuration, deployment and live checks; results come back as plain facts.
 

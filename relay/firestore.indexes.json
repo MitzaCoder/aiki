@@ -2,30 +2,19 @@
 	"indexes": [],
 	"fieldOverrides": [
 		{
-			"collectionGroup": "challenges",
+			"collectionGroup": "relayChallenges",
 			"fieldPath": "purgeAt",
 			"ttl": true,
 			"indexes": []
 		},
 		{
-			"collectionGroup": "routes",
+			"collectionGroup": "relayRoutes",
 			"fieldPath": "purgeAt",
 			"ttl": true,
 			"indexes": []
 		},
 		{
-			"collectionGroup": "sendAttempts",
-			"fieldPath": "purgeAt",
-			"ttl": true,
-			"indexes": [
-				{
-					"order": "ASCENDING",
-					"queryScope": "COLLECTION"
-				}
-			]
-		},
-		{
-			"collectionGroup": "rateLimits",
+			"collectionGroup": "relaySendAttempts",
 			"fieldPath": "purgeAt",
 			"ttl": true,
 			"indexes": [
@@ -36,32 +25,43 @@
 			]
 		},
 		{
-			"collectionGroup": "accounts",
+			"collectionGroup": "relayRateLimits",
+			"fieldPath": "purgeAt",
+			"ttl": true,
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "relayAccounts",
 			"fieldPath": "*",
 			"indexes": []
 		},
 		{
-			"collectionGroup": "installations",
+			"collectionGroup": "relayInstallations",
 			"fieldPath": "*",
 			"indexes": []
 		},
 		{
-			"collectionGroup": "challenges",
+			"collectionGroup": "relayChallenges",
 			"fieldPath": "*",
 			"indexes": []
 		},
 		{
-			"collectionGroup": "routes",
+			"collectionGroup": "relayRoutes",
 			"fieldPath": "*",
 			"indexes": []
 		},
 		{
-			"collectionGroup": "sendAttempts",
+			"collectionGroup": "relaySendAttempts",
 			"fieldPath": "*",
 			"indexes": []
 		},
 		{
-			"collectionGroup": "rateLimits",
+			"collectionGroup": "relayRateLimits",
 			"fieldPath": "*",
 			"indexes": []
 		},
@@ -71,17 +71,17 @@
 			"indexes": []
 		},
 		{
-			"collectionGroup": "accountCleanup",
+			"collectionGroup": "relayAccountCleanup",
 			"fieldPath": "*",
 			"indexes": []
 		},
 		{
-			"collectionGroup": "tokenOwners",
+			"collectionGroup": "relayTokenOwners",
 			"fieldPath": "*",
 			"indexes": []
 		},
 		{
-			"collectionGroup": "routes",
+			"collectionGroup": "relayRoutes",
 			"fieldPath": "installationId",
 			"indexes": [
 				{
@@ -91,7 +91,7 @@
 			]
 		},
 		{
-			"collectionGroup": "challenges",
+			"collectionGroup": "relayChallenges",
 			"fieldPath": "installationId",
 			"indexes": [
 				{
@@ -101,29 +101,13 @@
 			]
 		},
 		{
-			"collectionGroup": "installations",
+			"collectionGroup": "relayInstallations",
 			"fieldPath": "purgeAt",
 			"ttl": true,
 			"indexes": []
 		},
 		{
-			"collectionGroup": "routeRevocations",
-			"fieldPath": "purgeAt",
-			"ttl": true,
-			"indexes": [
-				{
-					"order": "ASCENDING",
-					"queryScope": "COLLECTION"
-				}
-			]
-		},
-		{
-			"collectionGroup": "routeRevocations",
-			"fieldPath": "*",
-			"indexes": []
-		},
-		{
-			"collectionGroup": "challengeOperations",
+			"collectionGroup": "relayRouteRevocations",
 			"fieldPath": "purgeAt",
 			"ttl": true,
 			"indexes": [
@@ -134,12 +118,28 @@
 			]
 		},
 		{
-			"collectionGroup": "challengeOperations",
+			"collectionGroup": "relayRouteRevocations",
 			"fieldPath": "*",
 			"indexes": []
 		},
 		{
-			"collectionGroup": "challengeOperations",
+			"collectionGroup": "relayChallengeOperations",
+			"fieldPath": "purgeAt",
+			"ttl": true,
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "relayChallengeOperations",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "relayChallengeOperations",
 			"fieldPath": "installationId",
 			"indexes": [
 				{
@@ -149,7 +149,7 @@
 			]
 		},
 		{
-			"collectionGroup": "installations",
+			"collectionGroup": "relayInstallations",
 			"fieldPath": "uid",
 			"indexes": [
 				{
@@ -159,7 +159,7 @@
 			]
 		},
 		{
-			"collectionGroup": "routes",
+			"collectionGroup": "relayRoutes",
 			"fieldPath": "uid",
 			"indexes": [
 				{
@@ -169,7 +169,7 @@
 			]
 		},
 		{
-			"collectionGroup": "challenges",
+			"collectionGroup": "relayChallenges",
 			"fieldPath": "uid",
 			"indexes": [
 				{
@@ -179,7 +179,7 @@
 			]
 		},
 		{
-			"collectionGroup": "challengeOperations",
+			"collectionGroup": "relayChallengeOperations",
 			"fieldPath": "uid",
 			"indexes": [
 				{
@@ -189,7 +189,7 @@
 			]
 		},
 		{
-			"collectionGroup": "sendAttempts",
+			"collectionGroup": "relaySendAttempts",
 			"fieldPath": "uid",
 			"indexes": [
 				{
@@ -199,7 +199,7 @@
 			]
 		},
 		{
-			"collectionGroup": "tokenOwners",
+			"collectionGroup": "relayTokenOwners",
 			"fieldPath": "uid",
 			"indexes": [
 				{
@@ -209,7 +209,7 @@
 			]
 		},
 		{
-			"collectionGroup": "rateLimits",
+			"collectionGroup": "relayRateLimits",
 			"fieldPath": "uid",
 			"indexes": [
 				{
@@ -224,7 +224,7 @@
 			"indexes": []
 		},
 		{
-			"collectionGroup": "challenges",
+			"collectionGroup": "relayChallenges",
 			"fieldPath": "deadline",
 			"indexes": [
 				{

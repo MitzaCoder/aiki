@@ -3047,13 +3047,20 @@ cross-key event dedupe; storage, concurrency, key retirement and monotonic-time 
 belong to the later integration task, not this library. Keys must rotate before a restored
 counter can repeat a sequence. A persistence failure must not display a notification.
 
-### Firebase relay emulator package (T93–T94)
+### Firebase relay package (T93–T94, T101)
 
 Before any real-project use, follow the [operator checklist](push-relay-operator-checklist.md):
 private facts, operator-only setup, live acceptance and three-backend rollout/rollback. Nothing there authorizes deployment.
+[relay/DEPLOY.md](../relay/DEPLOY.md) supplies the operator-only procedure, least-privilege IAM starting plan, private
+Functions parameters, sole/shared database rules/indexes, alerts/provider shutdown, retention and rollback. Every real
+permission, quota, ingress, provider and release-device result remains a live acceptance gate; the agent never logs in or deploys.
 
 `relay/` is an isolated TypeScript/Bun package outside the root workspaces, with its own dependencies/lockfile,
-Node 22 v2 HTTPS function, Firestore deny-all client rules, TTL/index configuration and strict local validators.
+Node 22 v2 HTTPS function, TTL/index configuration and strict local validators. All twelve collection IDs are `relay`-prefixed
+(including accounts/installations/challenges/routes/attempts/counters/cleanup/revocations); no unprefixed application data
+is touched. A deploy-time database ID defaults to `(default)` and can select a dedicated named database. Sole-use rules
+are deny-all; shared databases retain their existing policy and merge exact guarded collection blocks. False denies
+cannot override a broad allow. The local deploy-config generator preserves unrelated shared indexes and omits shared rules.
 It implements verified-account phone enrollment/FCM possession challenges, generation-safe token replacement,
 installation inventory/removal, pending/active routes with bounded capacity and leases, independent send/delete
 capabilities and digest-reserved encrypted sends/status. The pure core injects Auth, Firestore, sender, clock,
@@ -3064,15 +3071,26 @@ A relay account and relay push are optional (D51): Aiki works fully without eith
 against Auth/Firestore emulators and smoke-test the actual Functions emulator over HTTP with loopback fake FCM.
 A successful user/network-namespace run proves cached execution works without outbound networking. Relay tests
 have explicit `.cases.ts` names so root tests/typecheck need neither relay dependencies nor Java.
-Nothing is deployed or used by any backend. T94 adds transactional route/account/IP/global budgets, kill/enrollment
+The checks deploy nothing. A standalone `demo:stack` builds and runs loopback Auth/Firestore/Functions/fake FCM without
+a test process, emits endpoint/PID JSON and private capture JSONL/polling, and stops on signals or a bounded deadline.
+Per-port config/function/HOME isolation supports concurrent stacks; the default range stays 19371–19377.
+T94 adds transactional route/account/IP/global budgets, kill/enrollment
 switches, durable leased account disable/deletion, recent-auth account deletion and hourly Auth/expiry reconciliation.
-All ceilings are tunable in `relayControl/settings`; defaults match the pilot table. Minute/hour windows are fixed
+All numeric ceilings are tunable in `relayControl/settings`; defaults match the pilot table. Missing settings or
+boolean fields mean **disabled/closed**. Fresh deployment stays paused; tests/demo explicitly opt in, and the operator
+seeds paused control before deploying a reachable function. Minute/hour windows are fixed
 UTC-aligned counters: N per aligned window, at most 2N in an arbitrary rolling window (documented approximation).
 A bounded coarse IP reservation precedes costly proof lookups and is refunded for new external sends; deletion remains
 available with budgets exhausted. Source-IP buckets use a daily rotating HMAC key and expire logically at UTC midnight.
 Global/IP daily use survives account deletion. Application logs contain no identities, bodies or IP addresses.
 
-Operator actions are plain tested core functions and a scrubbed, demo-only CLI; there is no operator HTTP endpoint.
+Operator actions are plain tested core functions behind one CLI: explicit `--emulator` re-execs scrubbed/demo/loopback;
+operator-only `--project <id> --confirm-real-project` uses their ADC and refuses every emulator variable. Every command,
+including status reads, needs `--yes`; a dry run initializes no SDK/ADC/network. Status exposes only switches, limits,
+reserved capacity and today's global aggregates. Account/phone targets and provider errors are never echoed. Lost/disabled
+account `delete` uses the same durable cascade including Auth deletion; `admin.ts` is an alias, not an alternate unsafe path.
+There is no operator HTTP endpoint. Both exports share region/runtime-SA/database parameters; HTTP maximum instances
+is parameterized (default two), while hourly repair remains bounded at one. Real IAM is not proven by the emulator.
 Account markers block immediately, before Auth/cascade work; phase checkpoints and leases make outages retryable.
 Deletion completion is returned only after relay/Auth erasure. D53 also treats 410 `account_deleted` after a delete
 request as complete for the phone: routes, tokens, challenges, attempts and UID counters are erased before Auth is

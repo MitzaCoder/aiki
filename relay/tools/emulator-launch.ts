@@ -1,5 +1,6 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { DEFAULT_DATABASE_ID, requireDatabaseId } from "../src/database";
 
 export const DEMO_PROJECT = "demo-aiki-relay";
 export const relayRoot = resolve(import.meta.dir, "..");
@@ -48,6 +49,7 @@ export function requireFreePorts(ports: EmulatorPorts, includeFcm = true): void 
 
 /** Generate per-stack function/config/home state, never sharing a mutable .env.local between concurrent stacks. */
 export function prepareEmulators(ports: EmulatorPorts) {
+	const databaseId = requireDatabaseId(process.env.RELAY_DATABASE_ID ?? DEFAULT_DATABASE_ID);
 	const shared = resolve(relayRoot, ".emulator");
 	const state = resolve(shared, `stack-${ports.functions}`);
 	for (const name of ["home/.cache", "config", "cache", "functions"])
@@ -68,6 +70,7 @@ export function prepareEmulators(ports: EmulatorPorts) {
 		GCLOUD_PROJECT: DEMO_PROJECT,
 		// Never probe a cloud metadata server: checks must run with loopback networking only.
 		METADATA_SERVER_DETECTION: "none",
+		RELAY_DATABASE_ID: databaseId,
 		RELAY_TEST_FCM_PORT: String(ports.fcm),
 		RELAY_DEMO_STATE: state,
 	};
@@ -81,6 +84,8 @@ export function prepareEmulators(ports: EmulatorPorts) {
 		config.emulators[key].port = ports[key];
 	}
 	config.emulators.firestore.websocketPort = ports.websocket;
+	// Pinned CLI supports loading one rules file; named-database client IAM/rules need live acceptance.
+	config.firestore.database = databaseId;
 	config.emulators.ui = { enabled: false };
 	config.functions.source = `.emulator/stack-${ports.functions}/functions`;
 	const source = resolve(state, "functions");
@@ -94,7 +99,12 @@ export function prepareEmulators(ports: EmulatorPorts) {
 			dependencies: packageJson.dependencies,
 		}),
 	);
-	writeFileSync(resolve(source, ".env.local"), `RELAY_TEST_FCM_PORT=${ports.fcm}\n`);
+	writeFileSync(
+		resolve(source, ".env.local"),
+		`RELAY_TEST_FCM_PORT=${ports.fcm}\nRELAY_REGION=us-central1\n` +
+			`RELAY_RUNTIME_SERVICE_ACCOUNT=relay-runtime@${DEMO_PROJECT}.iam.gserviceaccount.com\n` +
+			`RELAY_DATABASE_ID=${databaseId}\nRELAY_MAX_INSTANCES=2\n`,
+	);
 	const modules = resolve(source, "node_modules");
 	if (!existsSync(modules)) symlinkSync(resolve(relayRoot, "node_modules"), modules, "dir");
 	if (existsSync(resolve(relayRoot, "dist"))) {

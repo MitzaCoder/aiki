@@ -1,5 +1,31 @@
 # Continue
 
+## T101 relay deploy/admin preparation (emulator verified only)
+
+Fresh/missing relayControl settings/booleans now mean paused/closed; numeric defaults cannot grant authority. Tests and
+the standalone demo explicitly seed enabled flags. All twelve collection IDs use the relay prefix; unprefixed app data
+is left alone. Runtime database ID is a Functions parameter (default `(default)`), also selected explicitly by operator
+CLI/deploy config. Both exports share parameterized region/SA/database, HTTP max instances defaults to two, hourly stays
+one. Parameter database resolution is deferred to invocation; the scheduler wrapper redacts provider errors.
+
+`relay/tools/operator.ts` is one implementation: explicit emulator (scrubbed env/home, demo project, loopback) or
+operator-only real project + confirmation using their ADC. Every operation/read needs --yes; dry run has no SDK/ADC/
+network. Built commands: status, seed-control paused once, pause/resume, enrollment open/close, limits set, account
+ disable/enable/delete, phone disable, reconcile. IDs/provider errors are not echoed. Lost/disabled account deletion
+shares the durable relay-before-Auth cascade. admin.ts is an alias; old settings-JSON syntax is removed.
+
+`relay/DEPLOY.md`, placeholder-only `.env.example`, local deploy-config generator and exact shared-rules fragment
+cover the operator procedure/IAM, named/sole/shared database cases, paused seed-before-deploy, narrow function selectors,
+synthetic smoke, ingress gate, logs/rollback and real-project Auth sign-up/MAU/email alerts + provider shutdown drill.
+Shared config preserves unrelated composite indexes/field overrides and deliberately omits rules; the existing app
+owner merges rules, including exclusions from every overlapping allow. False denies alone never override an allow.
+Neither named-database IAM/rule association, provider quotas/alerts, runtime/build IAM nor real ingress is proven here.
+No real project/login/credential access/deploy/main move/push; these remain operator-only live acceptance gates.
+
+Initial T101 offline relay gate: 99 pass / 1,655 assertions / 87.15s test time, including every operator command through
+its real CLI entry, shared compiled rules, named Admin/HTTP isolation, namespace sentinels and standalone SIGTERM smoke.
+Typecheck/build pass; final root/e2e/public checks follow after rebasing onto the coordinator's completed e2e stack.
+
 ## Standalone relay demo stack
 
 `relay/ bun run demo:stack [--minutes 1..120]` builds and starts scrubbed demo-only loopback Auth/Firestore/Functions

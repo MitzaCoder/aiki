@@ -253,26 +253,19 @@ test("operator settings and lifecycle logs contain no UID, email, tokens, body, 
 		expect(logs.join("\n")).not.toContain(secret);
 }, 30_000);
 
-test("emulator-only admin launcher scrubs its child environment and applies settings without exposing identifiers", async () => {
-	const child = Bun.spawn(
-		[
-			process.execPath,
-			"tools/admin.ts",
-			"settings",
-			JSON.stringify({
-				enabled: false,
-				limits: { relaySendDay: 7 },
-			}),
-		],
-		{ cwd: process.cwd(), stdout: "pipe", stderr: "pipe", timeout: 15_000 },
-	);
+test("admin alias uses the explicit scrubbed operator CLI without exposing identifiers", async () => {
+	const child = Bun.spawn([process.execPath, "tools/admin.ts", "--emulator", "pause", "--yes"], {
+		cwd: process.cwd(),
+		stdout: "pipe",
+		stderr: "pipe",
+		timeout: 15_000,
+	});
 	expect(await child.exited).toBe(0);
 	const output = await new Response(child.stdout).text();
-	expect(output).toContain("Operator action finished");
+	expect(output).toContain('"changed":true');
 	expect(output).not.toContain(fixture.primary.localId);
 	expect((await store.control.doc("settings").get()).data()?.enabled).toBe(false);
-	expect((await store.control.doc("settings").get()).data()?.limits?.relaySendDay).toBe(7);
-}, 20000);
+}, 20_000);
 
 test("reconciliation removes a phone after its last route without waiting thirty days", async () => {
 	const phone = await enroll();

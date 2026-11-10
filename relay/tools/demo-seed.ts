@@ -2,6 +2,7 @@ import { initializeApp, deleteApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { resolve } from "node:path";
 import { createStore } from "../src/documents";
+import { DEFAULT_DATABASE_ID, requireDatabaseId } from "../src/database";
 import { DEMO_PROJECT, emulatorPorts, relayRoot } from "./emulator-launch";
 
 const ports = emulatorPorts();
@@ -14,7 +15,7 @@ if (
 	throw new Error("Scrubbed loopback demo launcher required");
 }
 const app = initializeApp({ projectId: DEMO_PROJECT });
-const db = getFirestore(app);
+const db = getFirestore(app, requireDatabaseId(process.env.RELAY_DATABASE_ID ?? DEFAULT_DATABASE_ID));
 try {
 	// A demo explicitly opts in; a production/fresh database must never inherit this setting.
 	await createStore(db).control.doc("settings").create({ enabled: true, enrollmentEnabled: true });

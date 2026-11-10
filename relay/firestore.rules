@@ -1,3 +1,5 @@
+// Sole-use database only. For shared databases, merge firestore.shared.rules.example;
+// false rules do not override overlapping allows. See DEPLOY.md; never replace other apps' rules.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {

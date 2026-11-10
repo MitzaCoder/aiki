@@ -15,3 +15,6 @@ await import("./lifecycle.cases");
 await import("./metering.cases");
 
 await import("./shared-vectors.cases");
+await import("./operator-cli.cases");
+await import("./deployment.cases");
+await import("./demo-stack.cases");

@@ -2,11 +2,25 @@
 	"functions": {
 		"source": ".",
 		"runtime": "nodejs22",
-		"ignore": ["node_modules", ".emulator", "checks", "tools"]
+		"ignore": [
+			"node_modules",
+			".emulator*",
+			".deploy*",
+			".env*",
+			".firebase",
+			"*-debug.log*",
+			"checks",
+			"tools",
+			"*.example",
+			"README.md",
+			"DEPLOY.md"
+		],
+		"codebase": "aiki-push-relay"
 	},
 	"firestore": {
 		"rules": "firestore.rules",
-		"indexes": "firestore.indexes.json"
+		"indexes": "firestore.indexes.json",
+		"database": "(default)"
 	},
 	"emulators": {
 		"auth": {

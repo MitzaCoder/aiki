@@ -1,0 +1,23 @@
+// Fragment only: paste INSIDE match /databases/{database}/documents in the existing policy.
+// Firestore allows are ORed. These false rules do NOT override overlapping allows.
+// Exclude isRelayCollection(collectionId) from EVERY overlapping allow, including recursive ones.
+// Keep all unrelated application rules. Never deploy this fragment as a complete policy.
+function isRelayCollection(collectionId) {
+  return collectionId in [
+    'relayAccounts', 'relayInstallations', 'relayChallenges', 'relayChallengeOperations',
+    'relayTokenOwners', 'relayRoutes', 'relaySendAttempts', 'relayRateLimits',
+    'relayControl', 'relayRuntime', 'relayAccountCleanup', 'relayRouteRevocations'
+  ];
+}
+match /relayAccounts/{document=**} { allow read, write: if false; }
+match /relayInstallations/{document=**} { allow read, write: if false; }
+match /relayChallenges/{document=**} { allow read, write: if false; }
+match /relayChallengeOperations/{document=**} { allow read, write: if false; }
+match /relayTokenOwners/{document=**} { allow read, write: if false; }
+match /relayRoutes/{document=**} { allow read, write: if false; }
+match /relaySendAttempts/{document=**} { allow read, write: if false; }
+match /relayRateLimits/{document=**} { allow read, write: if false; }
+match /relayControl/{document=**} { allow read, write: if false; }
+match /relayRuntime/{document=**} { allow read, write: if false; }
+match /relayAccountCleanup/{document=**} { allow read, write: if false; }
+match /relayRouteRevocations/{document=**} { allow read, write: if false; }

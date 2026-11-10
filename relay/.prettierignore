@@ -2,4 +2,5 @@ node_modules/
 dist/
 .emulator/
 .emulator-config*.json
+.deploy*
 .firebase/

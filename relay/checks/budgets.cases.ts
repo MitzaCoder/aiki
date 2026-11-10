@@ -24,6 +24,8 @@ import { deleteAccount } from "../src/accounts";
 
 async function settings(limits: Partial<typeof DEFAULT_LIMITS>) {
 	await store.control.doc("settings").set({
+		enabled: true,
+		enrollmentEnabled: true,
 		limits: {
 			managementMinute: 10000,
 			managementDay: 10000,
@@ -38,10 +40,11 @@ async function settings(limits: Partial<typeof DEFAULT_LIMITS>) {
 	});
 }
 
-test("missing control uses every pilot default; malformed/unreadable control fails closed before FCM", async () => {
+test("missing control pauses both switches with pilot limits; malformed/unreadable control fails closed before FCM", async () => {
 	await store.control.doc("settings").delete();
 	expect((await readControl(store)).limits).toEqual(DEFAULT_LIMITS);
-	expect((await readControl(store)).enabled).toBe(true);
+	expect((await readControl(store)).enabled).toBe(false);
+	expect((await readControl(store)).enrollmentEnabled).toBe(false);
 	await db.collection("relayControl").doc("settings").set({ enabled: "invalid" });
 	expect((await call("accounts/status")).status).toBe(503);
 	const broken = new Proxy(db, {
@@ -241,7 +244,7 @@ test("management request budgets are IP-scoped, while deletion is exempt with ev
 test("kill and enrollment switches stop only their specified operations, including a final pre-FCM recheck", async () => {
 	const phone = await enroll();
 	const credentials = await route(phone.installationId);
-	await store.control.doc("settings").set({ enrollmentEnabled: false });
+	await store.control.doc("settings").set({ enabled: true, enrollmentEnabled: false });
 	expect(
 		(await call("installations/begin", { installationId: random(), operationId: random(), token: "synthetic-new" }))
 			.body?.error,
@@ -254,7 +257,7 @@ test("kill and enrollment switches stop only their specified operations, includi
 	expect(
 		(await call("routes/renew", { installationId: phone.installationId, routeId: credentials.routeId })).body?.error,
 	).toBe("relay_disabled");
-	await store.control.doc("settings").set({});
+	await store.control.doc("settings").set({ enabled: true, enrollmentEnabled: true });
 	let checks = 0;
 	restartHandler({
 		auth: {

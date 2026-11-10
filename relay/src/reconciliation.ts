@@ -105,7 +105,7 @@ export async function reconcileRelay(deps: Dependencies): Promise<void> {
 		store.routeRevocations,
 	]) {
 		const due =
-			collection.id === "challenges"
+			collection.id === store.challenges.id
 				? await store.challenges.where("deadline", "<=", deps.now()).get()
 				: await collection.where("purgeAt", "<=", Timestamp.fromMillis(deps.now())).get();
 		for (const row of due.docs) {
@@ -118,7 +118,7 @@ export async function reconcileRelay(deps: Dependencies): Promise<void> {
 						("deadline" in current &&
 							typeof current.deadline === "number" &&
 							current.deadline <= deps.now() &&
-							collection.id === "challenges"))
+							collection.id === store.challenges.id))
 				) {
 					transaction.delete(row.ref);
 				}

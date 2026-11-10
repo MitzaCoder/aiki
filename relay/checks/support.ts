@@ -6,6 +6,7 @@ import { initializeApp, deleteApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { createRelay } from "../src/core";
+import { DEFAULT_DATABASE_ID, requireDatabaseId } from "../src/database";
 import { createStore } from "../src/documents";
 import type { CoreRequest, CoreResponse, FcmMessage, FcmResult, Dependencies } from "../src/ports";
 import { requireCondition, credentialHash } from "../src/validation";
@@ -32,7 +33,8 @@ if (!/^127\.0\.0\.1:\d+$/.test(authHost) || !/^127\.0\.0\.1:\d+$/.test(firestore
 	throw new Error("Emulators required");
 }
 const app = initializeApp({ projectId }, "checks");
-export const db = getFirestore(app);
+export const databaseId = requireDatabaseId(process.env.RELAY_DATABASE_ID ?? DEFAULT_DATABASE_ID);
+export const db = getFirestore(app, databaseId);
 export const auth = getAuth(app);
 export const store = createStore(db);
 export const fixture = {
@@ -299,7 +301,7 @@ export function registerEmulatorChecks(): void {
 		});
 	}, 30000);
 	beforeEach(async () => {
-		await fetch(`http://${firestoreHost}/emulator/v1/projects/${projectId}/databases/(default)/documents`, {
+		await fetch(`http://${firestoreHost}/emulator/v1/projects/${projectId}/databases/${databaseId}/documents`, {
 			method: "DELETE",
 		});
 		fixture.now = Date.now();
@@ -309,6 +311,8 @@ export function registerEmulatorChecks(): void {
 		fixture.httpFcmResult = "accepted";
 		// Legacy protocol checks exercise semantics independently of activity quotas. Dedicated T94 cases restore defaults.
 		await store.control.doc("settings").set({
+			enabled: true,
+			enrollmentEnabled: true,
 			limits: {
 				managementMinute: 10000,
 				managementDay: 10000,

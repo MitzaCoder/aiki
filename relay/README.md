@@ -1,10 +1,11 @@
-# Push relay (emulator only)
+# Push relay (emulator-verified; operator-run deployment only)
 
-Isolated Bun package, **not a root workspace**, not deployed and not used by any Aiki backend.
+Isolated Bun package, **not a root workspace**. These checks deploy nothing and never use a real Firebase project.
 Implements T93 and T94 of the approved [design](../docs/research/push-relay-design.md).
 No real Firebase project, login, credentials, key file, FCM or App Check service is used by the tests.
-Do not deploy this package: real-project IAM/provider/ingress acceptance is not complete; the remaining backend
-contract findings are listed below. D53 resolves the credential-digest framing mismatch. T94's budgets, switches, durable cleanup and reconciliation are implemented. D51 makes both relay accounts and relay push optional: Aiki works fully without them.
+Real-project IAM/provider/ingress acceptance is not complete. [DEPLOY.md](DEPLOY.md) contains the reviewed-to-be-run
+operator procedure, private Functions parameters, database/rules/index cases and explicit ADC operator CLI; this is not
+permission for the agent to log in, inspect config or deploy. D53 resolves the credential-digest framing mismatch. T94's budgets, switches, durable cleanup and reconciliation are implemented. D51 makes both relay accounts and relay push optional: Aiki works fully without them.
 D52 settles the original parser, deletion, retry and lost-challenge questions as documented below.
 
 ## Exact emulator recipe
@@ -74,7 +75,7 @@ all owned emulators on SIGTERM/SIGINT/SIGHUP, failure or deadline. Stop by the r
 process-name match; wait for its exit/ports to close before reusing them. Nothing starts an Aiki server.
 
 The readiness object includes `pid`, `projectId`, `functionBaseUrl` (ends in `/v1/`),
-`authEmulatorHost`, `firestoreHost`, `fakeFcmUrl` and `captureFile`. CLI/build logs go to stderr; readiness is one
+`authEmulatorHost`, `firestoreHost`, `databaseId`, `fakeFcmUrl` and `captureFile`. CLI/build logs go to stderr; readiness is one
 stdout JSON line. Each stack has its own generated config, function snapshot, fake-FCM `.env.local`, HOME and
 capture file under ignored `.emulator/stack-<functions-port>/`. Distinct complete port sets can coexist even in
 the same checkout; only the downloaded jar cache is linked/shared. Rebuild/restart a demo to pick up source changes.
@@ -99,11 +100,12 @@ Android Emulator sees host loopback as **10.0.2.2**: replace the host in the pri
 but do not change the listeners' bind address. Alternatively run `adb reverse tcp:19373 tcp:19373` and
 `adb reverse tcp:19371 tcp:19371` so the app can keep loopback Functions/Auth URLs; reverse any additional port the
 driver actually needs, using that stack's selected ports. A host-side capture-forwarding driver uses ordinary host
-loopback. This is emulator-only plumbing, not a release URL or a real Firebase login recipe.
+loopback. `RELAY_DATABASE_ID` can choose a validated named demo database (default `(default)`); seed and Functions use
+the same ID, and readiness reports it. It never changes the synthetic project or loopback hosts. This is emulator-only plumbing, not a release URL or a real Firebase login recipe.
 
 `bun run test:demo` starts an alternate-port stack (19671–19677), performs email-link emulator sign-in and phone
 enrollment entirely through HTTP, reads/confirms the captured challenge, checks capture cursors and all five fake
-results, signals its PID and verifies every port closed. Run it offline as
+results, signals its PID and verifies every port closed. It also checks named-database HTTP isolation. Run it offline as
 `unshare -Urn sh -c 'ip link set lo up && bun run test:demo'`.
 Other workers reserve 19471–19477 and 19571–19577; default relay ports remain 19371–19377.
 
@@ -131,7 +133,8 @@ to its platform log; application logging is restricted to `app_check valid|inval
 - `src/startup.ts`: production rejects emulator/test configuration; emulator requires a demo project and loopback
   Auth/Firestore, always uses local fake FCM. No App Check bypass exists. Discovery uses default fake port until
   `.env.local` overrides it at invocation. App Check is monitored only; backend send/status/delete never require it.
-- `firestore.rules`: deny every direct client read/write, including authenticated clients.
+- `firestore.rules`: deny every direct client read/write in a database solely owned by relay. Never overwrite shared
+  rules with it: use the exact guarded blocks in `firestore.shared.rules.example` and DEPLOY.md.
 - `firestore.indexes.json`: TTL overrides and disabled automatic indexes; only installation cascade query fields indexed.
 - `src/client-address.ts`: extracts only the GFE-appended rightmost X-Forwarded-For address for the direct 2nd-gen
   endpoint, never a client-supplied earlier value. Missing/malformed metadata is empty (T94 must fail closed).
@@ -157,8 +160,8 @@ Build output is not committed. Bun blocks two optional dependency postinstalls; 
 
 ### Implemented limits
 
-All values are tunable nonnegative integers under `relayControl/settings.limits`. Missing settings use these code
-defaults; an unreadable/malformed document fails closed. A value of zero exhausts that budget. Operator changes do
+All numeric limits are tunable nonnegative integers under `relayControl/settings.limits`. Missing numeric values use
+these code defaults; missing settings/boolean switches mean **paused/closed**, not enabled; an unreadable/malformed document fails closed. A value of zero exhausts that budget. Operator changes do
 not reset counters. All applicable ceilings compose; an exhausted budget wins, with the latest reset among ties.
 
 | Limit keys | Pilot default |
@@ -217,6 +220,10 @@ slot. Daily-account admission limits have a real midnight reset. New accounts an
 
 ### Switches and status
 
+A fresh deploy starts paused: missing `relayControl/settings`, `{}` or omitted booleans mean `enabled=false` and
+`enrollmentEnabled=false`. Tests/demo explicitly seed enabled switches. `seed-control` creates paused settings before
+operator deployment. No read/parse failure can become permission. Numeric limits alone never enable the relay.
+
 `enabled:false` pauses send/challenge/route-create/activate/renew request paths with 503 relay_disabled, including
 idempotent calls on those write paths. `send/status`, inventory and account status remain readable subject to request
 budgets; deletion remains available. The reservation and final pre-FCM check both read uncached control/account state.
@@ -233,7 +240,7 @@ Transient FCM errors keep D52's error-only bodies and Retry-After.
 ### Durable cleanup and authentication
 
 `accounts/delete` requires `{operationId}`, verified/revocation-checked phone identity and auth_time no older than
-five minutes (future auth_time is refused too). It first commits a deleting marker plus accountCleanup work. The
+five minutes (future auth_time is refused too). It first commits a deleting marker plus relayAccountCleanup work. The
 marker blocks every send/challenge/create/renew before any cascade. Work uses a 60-second owner lease, batches of 50,
 and at most 100 phase steps per run. Each batch and phase advance commit together. Crashes/outages leave pending work;
 retries and the hourly core resume it. Completed work is deleted, never TTL-expired while unfinished.
@@ -256,29 +263,47 @@ The v2 `onSchedule` export `reconcile` runs every 60 minutes. Its plain `reconci
 state, queues the same durable cascade for missing/disabled users, resumes work, prunes capacity maps, removes orphan
 ownership and expires records in code. Expiry queries for high-volume attempt/operation/quota rows are indexed so
 hourly repair does not reread every unexpired send. Account/route/installation scans are pilot-bounded.
-Functions emulator discovers the scheduled export but ignores automatic triggering without Pub/Sub; tests call its
-plain core directly. The suite does not claim production Scheduler/IAM acceptance.
+Functions emulator discovers the scheduled export but does not run the production HTTP/OIDC Scheduler job; tests
+call its plain core directly. The suite does not claim production Scheduler/IAM acceptance.
 
-### Emulator operator commands (no operator HTTP endpoint)
+### Operator commands (no operator HTTP endpoint)
 
-Start the emulators in a separate terminal with `bun run emulator:start` (bounded to ten minutes), then from relay/:
+Start `demo:stack` separately for HTTP drivers, or bounded `emulator:start` for admin-only inspection. From relay/:
 
 ```sh
-bun run tools/admin.ts settings '{"enabled":false}'
-bun run tools/admin.ts settings '{"enabled":true,"enrollmentEnabled":false}'
-bun run tools/admin.ts settings '{"limits":{"relaySendDay":5000,"accountDay":2000}}'
-bun run tools/admin.ts disable synthetic-uid
-bun run tools/admin.ts enable synthetic-uid
-bun run tools/admin.ts phone-disable synthetic-uid synthetic-installation-id
-bun run tools/admin.ts resume synthetic-uid
-bun run tools/admin.ts reconcile
+bun --no-env-file tools/operator.ts --emulator status --yes
+bun --no-env-file tools/operator.ts --emulator pause --yes
+bun --no-env-file tools/operator.ts --emulator enrollment close --yes
+bun --no-env-file tools/operator.ts --emulator limits set relaySendDay 5000 --yes
+bun --no-env-file tools/operator.ts --emulator account disable '<uid>' --yes
+bun --no-env-file tools/operator.ts --emulator account enable '<uid>' --yes
+bun --no-env-file tools/operator.ts --emulator account delete '<uid>' --yes
+bun --no-env-file tools/operator.ts --emulator phone disable '<installation-id>' --yes
+bun --no-env-file tools/operator.ts --emulator reconcile --yes
 ```
 
-Replace synthetic identifiers with emulator fixture IDs; do not put real account identifiers in public reports.
-The wrapper always re-execs its child with env -i, explicit PATH, isolated HOME/XDG, demo-aiki-relay and loopback
-Auth/Firestore endpoints. The child refuses other homes/projects/hosts. Ports honor RELAY_AUTH_PORT and
-RELAY_FIRESTORE_PORT. Fixed success/failure output contains no UID or settings body. Operator functions are directly
-tested; a subprocess smoke checks the scrubbed CLI. Real-project use is a later, separately operator-approved task.
+Replace placeholders only with the synthetic fixture IDs you intend to change. Add `--database '<database-id>'` for
+a named database (default `(default)`); use that stack's `RELAY_*_PORT` values. `seed-control` creates missing settings
+paused, but refuses to overwrite existing settings; a demo already seeded enabled settings. `resume` enables operations
+without opening enrollment, and `enrollment open` is separate. Limits never reset counters. Status returns only switches,
+limits, today's aggregate counters and reserved capacity, not identity/token rows.
+
+**Every operation, even status reads, needs `--yes`; omit it for a plan with no SDK/ADC/network access.** Emulator apply
+re-executes under `env -i`, isolated HOME/XDG, a demo-only project and validated loopback ports. Account/phone targets
+and provider errors are never echoed. `admin.ts` is an alias using the same explicit mode/syntax, not the old JSON settings
+interface. Busy/partial cleanup returns `complete:false,retryAfterSeconds:60`; repeat or reconcile, never delete its work.
+
+The same tool supports an explicitly selected real project with the operator's ADC, using
+`--project '<project-id>' --confirm-real-project` **instead** of `--emulator`. It refuses any emulator variable in
+real mode. Nobody has run that path against a real project here. See [DEPLOY.md](DEPLOY.md) for exact commands,
+least-privilege IAM, sole/shared database rules/indexes, paused deployment, alerts, provider shutdown, ingress verification,
+log retention and rollback. Account erasure deletes the project-wide Auth identity, including a lost/disabled account;
+review shared-app impact. Neither relay switch stops direct Auth signup/email charges.
+
+T101 gates exercise every command through the real CLI entry, absent-switch pause/deletion, namespace isolation,
+sole/shared compiled rules, private deploy-config merging, named-database selection and shared export identity/region.
+All are emulator/local-file checks; IAM, named-database rule association, TTL timing and alert/control acceptance need
+real-project verification by the operator.
 
 ### Metered Firestore operations
 
@@ -462,30 +487,30 @@ a permission check. Single-field wildcard indexing is disabled; cascade query fi
 
 | Collection / document ID | Fields |
 | --- | --- |
-| `accounts/{uid}` | uid, state, createdAt, lastManagementAt, phoneAllowance, routeAllowance; `phones` map of installation ID to deadline/challengeDeadline, `routes` map of route ID to installationId/deadline/predecessorId. These bounded maps serialize capacity transactions. Expired entries pruned on management mutations/status. A completed disable retains only uid/state/cleanupComplete. |
-| `installations/{installationId}` | uid, state (pending/active/token_invalid/deleted), token/tokenHash nullable, generation, createdAt, lastManagementAt, deadline, challengeDeadline, pendingOperationId, hadRoutes, confirmation receipt (operationId/challengeId/nonceHash/replacing/generation), last 32 completedOperations; deleted rows retain uid/generation/create time and purgeAt only. |
-| `challenges/{installationId}_{operationId}` | uid, installationId, operationId, replacing, challengeId, nonceHash, tokenHash, stagedToken, deadline, attempts, purgeAt; deleted atomically on completion. |
-| `challengeOperations/{installationId}_{operationId}` | uid, installationId, tokenHash, replacing, challengeId, deadline, purgeAt; 24-hour idempotent begin receipt, no token or nonce; retained across replacement/completion, erased on phone removal. |
-| `tokenOwners/{sha256(token)}` | uid, installationId, generation; one global owner; replaced only in confirm transaction. Old owner's token scrubbed atomically. |
-| `routes/{routeId}` | uid, installationId, operationId, sendHash, deleteHash, predecessorId nullable, state, createdAt, pendingUntil, leaseExpiresAt, absoluteExpiresAt, generation, purgeAt. Physically deleted on revoke; no send/delete credential tombstones. |
-| `routeRevocations/{routeId}` | purgeAt only, through original absolute expiry +24 hours; no UID/installationId/credential hashes. Prevents a stale phone create retry from reviving deleted authority, **not** used to authorize delete. |
-| `sendAttempts/{routeId}_{messageId}` | uid, routeId, messageId, digest, reservedAt, state, code when settled, leaseUntil, retryAt for transient failure, attemptId, purgeAt; no ciphertext/token/provider reply. |
+| `relayAccounts/{uid}` | uid, state, createdAt, lastManagementAt, phoneAllowance, routeAllowance; `phones` map of installation ID to deadline/challengeDeadline, `routes` map of route ID to installationId/deadline/predecessorId. These bounded maps serialize capacity transactions. Expired entries pruned on management mutations/status. A completed disable retains only uid/state/cleanupComplete. |
+| `relayInstallations/{installationId}` | uid, state (pending/active/token_invalid/deleted), token/tokenHash nullable, generation, createdAt, lastManagementAt, deadline, challengeDeadline, pendingOperationId, hadRoutes, confirmation receipt (operationId/challengeId/nonceHash/replacing/generation), last 32 completedOperations; deleted rows retain uid/generation/create time and purgeAt only. |
+| `relayChallenges/{installationId}_{operationId}` | uid, installationId, operationId, replacing, challengeId, nonceHash, tokenHash, stagedToken, deadline, attempts, purgeAt; deleted atomically on completion. |
+| `relayChallengeOperations/{installationId}_{operationId}` | uid, installationId, tokenHash, replacing, challengeId, deadline, purgeAt; 24-hour idempotent begin receipt, no token or nonce; retained across replacement/completion, erased on phone removal. |
+| `relayTokenOwners/{sha256(token)}` | uid, installationId, generation; one global owner; replaced only in confirm transaction. Old owner's token scrubbed atomically. |
+| `relayRoutes/{routeId}` | uid, installationId, operationId, sendHash, deleteHash, predecessorId nullable, state, createdAt, pendingUntil, leaseExpiresAt, absoluteExpiresAt, generation, purgeAt. Physically deleted on revoke; no send/delete credential tombstones. |
+| `relayRouteRevocations/{routeId}` | purgeAt only, through original absolute expiry +24 hours; no UID/installationId/credential hashes. Prevents a stale phone create retry from reviving deleted authority, **not** used to authorize delete. |
+| `relaySendAttempts/{routeId}_{messageId}` | uid, routeId, messageId, digest, reservedAt, state, code when settled, leaseUntil, retryAt for transient failure, attemptId, purgeAt; no ciphertext/token/provider reply. |
 
 Additional typed collections:
 
 | Collection / document ID | Fields and retention |
 | --- | --- |
-| relayControl/settings | enabled, enrollmentEnabled, partial limits; missing means defaults; no credentials |
+| relayControl/settings | enabled/enrollmentEnabled default false, partial limits default numerically; no credentials |
 | relayRuntime/state | ipDay, current ipKey, accounts UID membership, phones installationId → uid/deadline; pilot-bounded capacity |
-| rateLimits/ip-day-hmac, global, account-hash, route-hash | day, windows name → count/startedAt, bounded requests id/at, purgeAt; UID only on authenticated account/route rows |
-| accountCleanup/uid | uid, operationId, mode, phase, leaseOwner/leaseUntil, purgeAt reserved metadata (not applied to unfinished work); no token/profile/content; no TTL on unfinished work |
+| relayRateLimits/ip-day-hmac, global, account-hash, route-hash | day, windows name → count/startedAt, bounded requests id/at, purgeAt; UID only on authenticated account/route rows |
+| relayAccountCleanup/uid | uid, operationId, mode, phase, leaseOwner/leaseUntil, purgeAt reserved metadata (not applied to unfinished work); no token/profile/content; no TTL on unfinished work |
 
 TTL: challenges/challenge-operation receipts/attempts/deleted installations 24 hours; active route purge lease +24 hours.
 All delete-only receipt tombstones are removed. The secret-free revocation marker is retained solely for create/revoke
 race safety; deletion of an absent route writes nothing, including when that marker exists.
-TokenOwners has no TTL; confirmation/invalidation/removal and reconciliation update it atomically. The hourly core
+relayTokenOwners has no TTL; confirmation/invalidation/removal and reconciliation update it atomically. The hourly core
 scrubs orphan ownership and expired records, prunes maps and removes installations after the last route (hadRoutes)
-or thirty days without a route. routeRevocations deliberately cannot be linked to a UID. Query indexes cover UID
+or thirty days without a route. relayRouteRevocations deliberately cannot be linked to a UID. Query indexes cover UID
 cascades and due expiry; other automatic indexes remain disabled.
 
 ## D52 residual and lifecycle decisions
@@ -552,25 +577,3 @@ Each table row is the in-scope part of a section 12 acceptance item; nothing bel
 | Recent auth/revocation, pending deletion/status, Auth-erased polling residual | lifecycle: “account deletion requires recent revoked-checked authentication…”; “Auth-erased deletion polling…” |
 | Re-enable requires fresh enrollment; old routes never revive; marker minimal | lifecycle: “operator disable/re-enable…”; “disabled marker stays minimal…” |
 | One-phone disable/sign-out preserves other phones and counters | lifecycle: “one-phone disable and sign-out…” |
-| Out-of-band Auth change; unfinished work; expiry/orphan/map cleanup | lifecycle: “out-of-band Auth disable/delete…”; “reconciliation resumes unfinished deletion…” |
-| Last route removes its phone; linked providers share one UID/quota | lifecycle: “reconciliation removes a phone after its last route…”; “linked Google/email providers…” |
-| No sensitive logs; scrubbed operator CLI | lifecycle: “operator settings and lifecycle logs…”; “emulator-only admin launcher…” |
-| Real document-operation cost | metering: “meter actual SDK reads and committed writes/deletes…” |
-
-Deferred, not falsely counted: integrated ECDH/AEAD/replay/client registration/transport outboxes (T92 and subsequent
-server/Android work); provider linking UI/conflict handling, OS delivery, web worker lifecycle and real-project acceptance.
-Verified email-provider claim does not prove email-link UI use; this is the design's explicit admission boundary.
-
-## Server and Android integration boundary
-
-This remains emulator-only and has no live deployment recipe. Preserve first-reservation times, digest/generation
-fencing and deletion without quota. Server retries must distinguish quota scope and Retry-After from capability
-failure, never churn routes/message IDs to evade budgets. Android needs recent reauthentication for account deletion,
-202 pending progress, D53's terminal 410 account_deleted after a deletion request, account-wide versus phone-only
-removal, disabled/operator-paused states and the status quota fields. Neither account sign-in nor relay push is required for ordinary Aiki use.
-
-Server transport must persist ciphertext/message IDs and delete-only outbox entries, pin the relay URL, use only route
-capabilities, never phone Firebase tokens/FCM addresses, and keep Notifier's policy before transport. Do not advertise
-this relay to clients yet. Use octet-stream, honor Retry-After and retain the same digest/message ID; an absent-route
-204 completes the delete outbox indefinitely. Frozen-vector parity is now checked without coupling production
-or root installation to firebase-tools; the backend error-parser finding above still needs a server-side fix.

@@ -83,6 +83,7 @@ try {
 	const ready = {
 		pid: process.pid,
 		projectId: DEMO_PROJECT,
+		databaseId: launcher.environment.RELAY_DATABASE_ID,
 		functionBaseUrl: base,
 		authEmulatorHost: `127.0.0.1:${ports.auth}`,
 		firestoreHost: `127.0.0.1:${ports.firestore}`,

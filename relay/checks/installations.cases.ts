@@ -50,7 +50,7 @@ test("direct client Firestore reads and writes denied", async () => {
 test("Firestore converters fail closed on malformed typed documents", async () => {
 	await enroll();
 	await db
-		.collection("accounts")
+		.collection("relayAccounts")
 		.doc(fixture.primary.localId)
 		.update({ phones: { invalid: { deadline: "not a number" } } });
 	expect((await call("accounts/status")).body).toEqual({ error: "relay_unavailable" });

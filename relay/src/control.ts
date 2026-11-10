@@ -10,16 +10,16 @@ export interface RelayControl {
 	limits: Limits;
 }
 
-/** Missing settings mean the documented defaults; read/parse failures never fall back to permissive defaults. */
+/** Missing switches are paused; only numeric limits have defaults. Read/parse failures never become permission. */
 export async function readControl(store: RelayStore, transaction?: Transaction): Promise<RelayControl> {
 	const ref = store.control.doc("settings");
 	const control = (transaction ? await transaction.get(ref) : await ref.get()).data();
 	for (const key of Object.keys(control?.limits ?? {})) {
-		if (!(key in DEFAULT_LIMITS)) throw new Error("Unknown relay limit");
+		if (!Object.hasOwn(DEFAULT_LIMITS, key)) throw new Error("Unknown relay limit");
 	}
 	return {
-		enabled: control?.enabled ?? true,
-		enrollmentEnabled: control?.enrollmentEnabled ?? true,
+		enabled: control?.enabled ?? false,
+		enrollmentEnabled: control?.enrollmentEnabled ?? false,
 		limits: { ...DEFAULT_LIMITS, ...control?.limits },
 	};
 }

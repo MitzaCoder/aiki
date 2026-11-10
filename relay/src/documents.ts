@@ -394,16 +394,16 @@ export function createStore(firestore: Firestore) {
 	return {
 		control: firestore.collection("relayControl").withConverter(converter(control)),
 		runtime: firestore.collection("relayRuntime").withConverter(converter(runtime)),
-		rateLimits: firestore.collection("rateLimits").withConverter(converter(rateLimit)),
-		accountCleanup: firestore.collection("accountCleanup").withConverter(converter(cleanup)),
-		accounts: firestore.collection("accounts").withConverter(converter(account)),
-		installations: firestore.collection("installations").withConverter(converter(installation)),
-		challenges: firestore.collection("challenges").withConverter(converter(challenge)),
-		challengeOperations: firestore.collection("challengeOperations").withConverter(converter(challengeOperation)),
-		tokenOwners: firestore.collection("tokenOwners").withConverter(converter(tokenOwner)),
-		routes: firestore.collection("routes").withConverter(converter(route)),
-		routeRevocations: firestore.collection("routeRevocations").withConverter(converter(routeRevocation)),
-		sendAttempts: firestore.collection("sendAttempts").withConverter(converter(sendAttempt)),
+		rateLimits: firestore.collection("relayRateLimits").withConverter(converter(rateLimit)),
+		accountCleanup: firestore.collection("relayAccountCleanup").withConverter(converter(cleanup)),
+		accounts: firestore.collection("relayAccounts").withConverter(converter(account)),
+		installations: firestore.collection("relayInstallations").withConverter(converter(installation)),
+		challenges: firestore.collection("relayChallenges").withConverter(converter(challenge)),
+		challengeOperations: firestore.collection("relayChallengeOperations").withConverter(converter(challengeOperation)),
+		tokenOwners: firestore.collection("relayTokenOwners").withConverter(converter(tokenOwner)),
+		routes: firestore.collection("relayRoutes").withConverter(converter(route)),
+		routeRevocations: firestore.collection("relayRouteRevocations").withConverter(converter(routeRevocation)),
+		sendAttempts: firestore.collection("relaySendAttempts").withConverter(converter(sendAttempt)),
 	};
 }
 export type RelayStore = ReturnType<typeof createStore>;

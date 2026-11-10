@@ -50,5 +50,8 @@ request-log.sqlite*
 /relay/.emulator-setup.log
 /relay/.emulator-config.json
 /relay/.emulator-config-*.json
+/relay/.env*
+!/relay/.env.example
+/relay/.deploy*
 /relay/.firebase/
 /relay/.firebaserc

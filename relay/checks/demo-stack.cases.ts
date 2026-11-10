@@ -24,6 +24,7 @@ test("standalone demo: alternate ports, HTTP enrollment, capture cursor/modes an
 	const environment: Record<string, string | undefined> = {
 		...process.env,
 		GCLOUD_PROJECT: "synthetic-forbidden-project",
+		RELAY_DATABASE_ID: "relay-demo-checks",
 		GOOGLE_APPLICATION_CREDENTIALS: "/nonexistent-synthetic/adc.json",
 	};
 	["AUTH", "FIRESTORE", "FUNCTIONS", "HUB", "LOGGING", "WEBSOCKET", "FCM"].forEach((name, index) => {
@@ -53,6 +54,7 @@ test("standalone demo: alternate ports, HTTP enrollment, capture cursor/modes an
 		const ready = JSON.parse(line) as {
 			pid: number;
 			projectId: string;
+			databaseId: string;
 			functionBaseUrl: string;
 			authEmulatorHost: string;
 			firestoreHost: string;
@@ -61,6 +63,7 @@ test("standalone demo: alternate ports, HTTP enrollment, capture cursor/modes an
 		};
 		expect(ready.pid).toBe(child.pid);
 		expect(ready.projectId).toBe("demo-aiki-relay");
+		expect(ready.databaseId).toBe("relay-demo-checks");
 		expect(ready.functionBaseUrl).toBe("http://127.0.0.1:19673/demo-aiki-relay/us-central1/relay/v1/");
 		expect(ready.authEmulatorHost).toBe("127.0.0.1:19671");
 		expect(ready.firestoreHost).toBe("127.0.0.1:19672");
@@ -125,6 +128,17 @@ test("standalone demo: alternate ports, HTTP enrollment, capture cursor/modes an
 		});
 		expect(confirm.status).toBe(200);
 		expect(((await confirm.json()) as { generation: number }).generation).toBe(1);
+		// Owner is the Auth/Firestore emulator's synthetic admin marker, never a real credential.
+		for (const [databaseId, status] of [
+			["relay-demo-checks", 200],
+			["(default)", 404],
+		] as const) {
+			const control = await fetch(
+				`http://${ready.firestoreHost}/v1/projects/demo-aiki-relay/databases/${databaseId}/documents/relayControl/settings`,
+				{ headers: { Authorization: "Bearer owner" } },
+			);
+			expect(control.status).toBe(status);
+		}
 		expect(
 			((await (await fetch(ready.fakeFcmUrl + "/captured?after=1")).json()) as { messages: unknown[] }).messages,
 		).toEqual([]);
