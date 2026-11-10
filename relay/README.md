@@ -14,6 +14,8 @@ Requirements: Bun, Node (host has 24; function declares Node 22), Java (host has
 No system installation is needed. From the repository root:
 
 ```sh
+# Root compiler/test helpers are needed for relay checks/e2e, not for deployed runtime dependencies.
+bun install --frozen-lockfile
 cd relay
 bun install --frozen-lockfile
 bun run typecheck
@@ -30,7 +32,8 @@ unshare -Urn sh -c 'ip link set lo up && bun run test:emulator'
 Only explicit PATH, isolated HOME/XDG directories, CI/update/analytics suppression, a synthetic `demo-aiki-relay`
 project ID and local test ports are supplied. The CLI cannot discover the operator's existing login/config.
 Never run Firebase directly with the operator's HOME. No `.firebaserc` is used or committed.
-State, CLI logs, HOME, config and cache are under gitignored `relay/.emulator/`; emulator jar is under
+Per-stack HOME/config/cache and captures are under gitignored `relay/.emulator/`; CLI debug logs in `relay/` are also
+ignored and must stay private. Emulator jar is under
 `.emulator/home/.cache/firebase/emulators/` (linked into each stack's private HOME). Generated
 `.emulator-config-<functions-port>.json`, per-stack function copies/`.env.local`, `.firebase/`,
 `*-debug.log*` and compiled `dist/` are ignored. Setup requires network; cached test runs do not.
@@ -76,7 +79,9 @@ process-name match; wait for its exit/ports to close before reusing them. Nothin
 
 The readiness object includes `pid`, `projectId`, `functionBaseUrl` (ends in `/v1/`),
 `authEmulatorHost`, `firestoreHost`, `databaseId`, `fakeFcmUrl` and `captureFile`. CLI/build logs go to stderr; readiness is one
-stdout JSON line. Each stack has its own generated config, function snapshot, fake-FCM `.env.local`, HOME and
+stdout JSON line. A previous run's `ready.json` is discarded before startup and removed on handled shutdown. Wait for
+this run's **new** readiness line; after an abrupt kill, verify process ownership rather than blindly trusting an old PID
+file (PIDs can be reused). Each stack has its own generated config, function snapshot, fake-FCM `.env.local`, HOME and
 capture file under ignored `.emulator/stack-<functions-port>/`. Distinct complete port sets can coexist even in
 the same checkout; only the downloaded jar cache is linked/shared. Rebuild/restart a demo to pick up source changes.
 
@@ -127,7 +132,7 @@ to its platform log; application logging is restricted to `app_check valid|inval
 - `src/documents.ts`: an interface and runtime-checked Firestore converter per collection. Invalid stored types fail
   closed. Handlers have no `any` rows. Each transaction documents its atomic guarantee.
 - `src/validation.ts`: strict schemas, canonical base64url, IDs, envelope byte budget, domain-separated bearer hashing.
-  Deliberately independent of `packages/`; later cross-check against shared protocol vectors.
+  Deliberately independent of `packages/`; checks read the shared vectors as data without production imports.
 - `src/index.ts`: one v2 `onRequest` export `relay`, Node 22 declaration, ADC production wiring, 30-second timeout,
   min instances 0/max 2, ten-second FCM deadline. No credential file.
 - `src/startup.ts`: production rejects emulator/test configuration; emulator requires a demo project and loopback
@@ -147,7 +152,8 @@ to its platform log; application logging is restricted to `app_check valid|inval
 - `tools/emulators.ts`, `checks/network-guard.ts`: scrubbed launcher and network guard. `checks/emulator.cases.ts`
   imports concern-specific `.cases.ts` modules; `checks/support.ts` alone owns fixtures and emulator lifecycle.
 - `.prettierrc.json`: tabs, double quotes, 120-column target. `bun run format:check` enforces formatting.
-  `bun run typecheck` covers production source, tests and tools; only production source is built into `dist/`.
+  `bun run typecheck` covers production source with pinned relay TypeScript 5.9, then checks/tests/tools and imported
+  integration helpers with the root compiler. Only production source is built into `dist/`; runtime stays self-contained.
 
 Pinned direct dependencies: `firebase-admin` 13.6.0, `firebase-functions` 6.6.0;
 dev: `firebase-tools` 14.22.0, TypeScript 5.9.3, `@types/bun` 1.3.10, Prettier 3.6.2.
@@ -369,22 +375,18 @@ Checked docs/push-relay-backend-v1.md and packages/server/src/push-relay/transpo
 | --- | --- |
 | POST octet-stream JSON, no-store, no redirects | Matches; canonical string envelope is now accepted |
 | 200 accepted removes the send; 200 pending retries | Matches; pending includes Retry-After |
-| 429/503/other 5xx/timeouts transient | Matches; unknown quota scopes still retry and Retry-After seconds are honored |
+| 429/503/other 5xx/timeouts transient | Matches; known quota/operator/FCM codes survive, unknowns are sanitized; Retry-After honored |
 | Terminal 200 failed/token_invalid | Matches: top-level code is recognized |
-| 404/410/409 and unknown 4xx | Terminal-message classification matches; named error handling mismatch below |
+| 403/404/410/409 and unknown 4xx | Matches after the T99 server parser fix: named pause/terminal reasons survive |
 | Delete 204 erases outbox secret, all other statuses retry including 404 | Matches D52 absent/wrong-secret behaviour |
 | First-reservation TTL and duplicate ambiguity | Matches; server's 10s deadline may time out around FCM acceptance, handled by persisted IDs/60s lease |
 
-Two findings remain outside the relay side of D52/D53:
-
-1. Relay fixed errors are `{error:"account_disabled"}` etc. The server parser currently reads top-level code or
-   error.code, **not a string error**. Thus 403 account_disabled becomes rejected and does not pause the route as the
-   backend document promises; 410 token_invalid/account_deleted/route_inactive collapse to route_expired (still
-   terminal, but diagnosis is lost). 409 message_conflict falls back correctly. 429/5xx retry and Retry-After remain
-   correct, but quota scope is generic rate_limited. Relay error shapes were not changed to hide this backend gap.
-2. The backend document says the relay has physically purged a route at absolute expiry +24h. Relay authorization
-   does expire in code, but TTL/hourly repair are eventual. The safe local cleanup_expired deadline/diagnosis is
-   compatible with expired authority; the physical-purge claim needs softer wording, not a relay authorization change.
+The D53 audit found a server parser that ignored string `{error:"code"}` and backend wording that overstated physical
+purge at the cleanup horizon. Both are resolved in the incoming T99 server change `wmqnkmvw`, not by changing relay
+errors or authorization semantics. The server now consumes named account/token/route/quota/FCM reasons; local
+cleanup_expired erases its own delete authority, not proof that eventual Firestore TTL has physically removed every row.
+The end-to-end cases exercise real flat relay errors and persisted retry/deletion against isolated Aiki backends.
+See [the acceptance record](../docs/push-relay-acceptance.md) for exact scope and remaining real-project gates.
 
 ## HTTP API
 

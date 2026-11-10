@@ -111,7 +111,8 @@ its commands are for you after agreement, never for the agent. Do not adapt the 
   dollar amounts. Check the cap's service/project scope and its effect on every other function before enabling it.
   Result: warnings plus a Functions stop mechanism. Enforcement may lag and overshoot; Auth, Firestore, builds,
   artifact storage and other services are outside it. Use a supported configuration/test notification to verify;
-  do not spend $10 to test. If the cap would harm another workload, stop and report that conflict before staging.
+  do not spend $10 to test. Verify a supported stop mechanism actually exists for this project's 2nd-gen services;
+  a budget/alert alone is not a cap. If unavailable or harmful to another workload, stop and report the gap before staging.
 - [ ] **Enable required APIs.** Confirm Cloud Functions, Cloud Run, Cloud Build, Artifact Registry, Firestore,
   Firebase Cloud Messaging and Firebase Authentication/Identity Toolkit service access. The built hourly export also
   needs Cloud Scheduler and its supported Pub/Sub/Eventarc delivery dependencies as required by the reviewed deploy.

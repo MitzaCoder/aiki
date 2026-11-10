@@ -21,6 +21,9 @@ async function within<T>(promise: Promise<T>, milliseconds: number): Promise<T> 
 test("standalone demo: alternate ports, HTTP enrollment, capture cursor/modes and SIGTERM cleanup", async () => {
 	mkdirSync(resolve(root, ".emulator"), { recursive: true });
 	const ports = [19671, 19672, 19673, 19674, 19675, 19676, 19677];
+	const readyFile = resolve(root, ".emulator/stack-19673/ready.json");
+	mkdirSync(resolve(root, ".emulator/stack-19673"), { recursive: true });
+	await Bun.write(readyFile, JSON.stringify({ pid: 2147483647, stale: true }));
 	const environment: Record<string, string | undefined> = {
 		...process.env,
 		GCLOUD_PROJECT: "synthetic-forbidden-project",
@@ -38,6 +41,13 @@ test("standalone demo: alternate ports, HTTP enrollment, capture cursor/modes an
 		stdin: "ignore",
 	});
 	try {
+		await within(
+			(async () => {
+				while (await Bun.file(readyFile).exists()) await Bun.sleep(25);
+			})(),
+			5000,
+		);
+		expect(await Bun.file(readyFile).exists()).toBe(false);
 		const reader = child.stdout.getReader();
 		const line = await within(
 			(async () => {
@@ -170,6 +180,7 @@ test("standalone demo: alternate ports, HTTP enrollment, capture cursor/modes an
 		expect((await fetch(ready.fakeFcmUrl + "/captured?after=-1")).status).toBe(400);
 		process.kill(ready.pid, "SIGTERM");
 		expect(await within(child.exited, 20_000)).toBe(0);
+		expect(await Bun.file(readyFile).exists()).toBe(false);
 	} finally {
 		if (child.exitCode === null) {
 			child.kill("SIGTERM");

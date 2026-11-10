@@ -3113,8 +3113,11 @@ D53 aligns credential digests with frozen T92: SHA-256 of UTF-8 compact JSON
 JSON string, with 256-byte padded ciphertext plus its 16-byte tag (272–2,064 bytes). Relay checks read the shared
 vectors only as test data: all 22 positive envelopes, both bearer/hash vectors and 21 applicable negatives agree.
 They explicitly classify 39 key-dependent or non-relay cases; production imports no package code or fixtures.
-README records the remaining backend audit findings: flat relay error strings are not consumed by the current server
-parser, and the backend's physical-purge-at-horizon wording is stronger than eventual TTL/reconciliation guarantees.
+The incoming T99 server change resolves D53's flat-error parser and overstrong physical-purge wording findings.
+Integration cases use real Functions HTTP and isolated createSetup backends; explicit enabled control seeding, prefixed
+storage and missing-control pause/deletion remain covered after T101. The [acceptance record](push-relay-acceptance.md)
+now counts 76 locally proven / 27 needs-real-project / zero not-covered items. Auth sign-up/MAU/email-volume alerts and
+provider shutdown are operator configuration/drills in DEPLOY.md/checklist, never relabeled as local provider proof.
 
 ### Existing notification transports
 

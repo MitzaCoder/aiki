@@ -1,5 +1,17 @@
 import { expect, test } from "bun:test";
-import { fixture, db, projectId, firestoreHost, random, call, assertStatus, enroll, route, payload } from "./support";
+import {
+	fixture,
+	db,
+	projectId,
+	firestoreHost,
+	databaseId,
+	random,
+	call,
+	assertStatus,
+	enroll,
+	route,
+	payload,
+} from "./support";
 test("cross-account management denied; two phones are separately scoped and list exposes no token", async () => {
 	const first = await enroll();
 	const second = await enroll();
@@ -33,8 +45,8 @@ test("cross-account management denied; two phones are separately scoped and list
 });
 test("direct client Firestore reads and writes denied", async () => {
 	await enroll();
-	const base = `http://${firestoreHost}/v1/projects/${projectId}/databases/(default)/documents`;
-	const url = base + "/accounts/" + fixture.primary.localId;
+	const base = `http://${firestoreHost}/v1/projects/${projectId}/databases/${databaseId}/documents`;
+	const url = base + "/relayAccounts/" + fixture.primary.localId;
 	expect((await fetch(url)).status).toBe(403);
 	expect((await fetch(url, { headers: { Authorization: "Bearer " + fixture.primary.idToken } })).status).toBe(403);
 	expect(

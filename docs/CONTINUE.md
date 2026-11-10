@@ -11,7 +11,7 @@ one. Parameter database resolution is deferred to invocation; the scheduler wrap
 `relay/tools/operator.ts` is one implementation: explicit emulator (scrubbed env/home, demo project, loopback) or
 operator-only real project + confirmation using their ADC. Every operation/read needs --yes; dry run has no SDK/ADC/
 network. Built commands: status, seed-control paused once, pause/resume, enrollment open/close, limits set, account
- disable/enable/delete, phone disable, reconcile. IDs/provider errors are not echoed. Lost/disabled account deletion
+disable/enable/delete, phone disable, reconcile. IDs/provider errors are not echoed. Lost/disabled account deletion
 shares the durable relay-before-Auth cascade. admin.ts is an alias; old settings-JSON syntax is removed.
 
 `relay/DEPLOY.md`, placeholder-only `.env.example`, local deploy-config generator and exact shared-rules fragment
@@ -22,9 +22,24 @@ owner merges rules, including exclusions from every overlapping allow. False den
 Neither named-database IAM/rule association, provider quotas/alerts, runtime/build IAM nor real ingress is proven here.
 No real project/login/credential access/deploy/main move/push; these remain operator-only live acceptance gates.
 
-Initial T101 offline relay gate: 99 pass / 1,655 assertions / 87.15s test time, including every operator command through
-its real CLI entry, shared compiled rules, named Admin/HTTP isolation, namespace sentinels and standalone SIGTERM smoke.
-Typecheck/build pass; final root/e2e/public checks follow after rebasing onto the coordinator's completed e2e stack.
+Demo change qknmqnmu / ed2e605a is committed separately. T101 ksquzwql / 5401beb2 is rebased onto coordinator tip
+zxzsloqx / db08d018, retaining test:e2e, root test compiler/helpers, propagated ports and metadata detection suppression.
+The incoming server fix wmqnkmvw resolves both D53 audit findings below (flat error parsing and physical-purge wording);
+no packages/ changes were made by this work. E2E already seeds both switches explicitly; added namespace/default-pause
+assertions and updated the direct Firestore client probe to relayAccounts/selected database.
+
+Final offline relay: 99 pass / 1,657 assertions / 89.94s tests, 113s command; includes every CLI command, shared rules,
+named Admin/HTTP isolation, namespace sentinels and standalone SIGTERM/stale-readiness-PID smoke. E2E: 19 pass / 270 assertions online
+16.95s (30s command), offline 18.22s (42s command). Root install --frozen-lockfile --offline changed nothing. Root tests:
+2,136 pass / 24,456 assertions / 176 files / 199.93s (200s command), no relay discovery. Root checks also ran with scrubbed
+HOME/env and loopback-only namespace. An initial root invocation omitted USER and failed three watch fixtures; supplying
+a synthetic USER/LOGNAME fixed the invocation, without changing root/deploy source. No flaky-source retry or live deploy.
+Relay typecheck 2.574s, build 1.646s, root typecheck 1.303s; format/public/Gitleaks pass. All owned processes/listeners stop.
+
+Acceptance summary: 76 locally proven, 27 need the real project, 0 not covered (103 items). The three former mock alarm/
+shutdown gaps are operator configuration/drills, not code. Actual metrics/quotas, supported spend-stop mechanism, ADC
+quota project, database IAM/rules/TTL, build/runtime/Scheduler IAM, ingress and release-device/provider acceptance still
+require the operator's real project. Nothing has been deployed or opened for sign-up.
 
 ## Standalone relay demo stack
 

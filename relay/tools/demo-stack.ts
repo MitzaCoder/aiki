@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
 	DEMO_PROJECT,
@@ -18,6 +18,9 @@ const ports = emulatorPorts();
 requireFreePorts(ports);
 const state = resolve(relayRoot, `.emulator/stack-${ports.functions}`);
 mkdirSync(state, { recursive: true, mode: 0o700 });
+const readyFile = resolve(state, "ready.json");
+// A previous PID can be reused: never advertise an exited process as this stack's readiness.
+rmSync(readyFile, { force: true });
 const captureFile = resolve(state, `captured-${Date.now()}-${process.pid}.jsonl`);
 const stop = new AbortController();
 for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"] as const) process.once(signal, () => stop.abort());
@@ -90,7 +93,7 @@ try {
 		fakeFcmUrl: `http://127.0.0.1:${ports.fcm}`,
 		captureFile,
 	};
-	writeFileSync(resolve(state, "ready.json"), JSON.stringify(ready) + "\n", { mode: 0o600 });
+	writeFileSync(readyFile, JSON.stringify(ready) + "\n", { mode: 0o600 });
 	console.log(JSON.stringify(ready));
 	await Promise.race([
 		new Promise<void>((resolve) => stop.signal.addEventListener("abort", () => resolve(), { once: true })),
@@ -105,6 +108,13 @@ try {
 	}
 } finally {
 	clearTimeout(timer);
+	// Withdraw readiness before releasing any port. Metadata failure must not bypass process cleanup.
+	try {
+		rmSync(readyFile, { force: true });
+	} catch {
+		console.error("Demo readiness cleanup failed");
+		process.exitCode = 1;
+	}
 	if (seed && seed.exitCode === null) {
 		seed.kill("SIGTERM");
 		await seed.exited;

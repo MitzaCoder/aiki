@@ -35,7 +35,8 @@ Operator prerequisites: Bun, supported Node 22 runtime, the pinned local Firebas
 from `relay/`), and the Google Cloud CLI. Tests additionally need Java and `ss`; production deployment does not run emulators.
 Authenticate the Firebase CLI and Application Default Credentials **yourself**, outside agent tools. CLI login and ADC
 are separate: a Firebase CLI login alone does not authorize `operator.ts`. ADC may be your user ADC or approved
-keyless workload identity. Do not download a JSON admin key or put credentials in an env file.
+keyless workload identity. Verify its quota/billing project too: `--project` selects API resources, not a rewrite of
+ADC's quota-project setting; user ADC may also need `serviceusage.services.use` on that reviewed quota project. Do not download a JSON admin key or put credentials in an env file.
 
 All subsequent Firebase commands use the local CLI and an explicit `--project`. Do not rely on a global active project,
 `.firebaserc`, an inherited emulator variable or a pasted client config. Before real operator commands, unset every
@@ -125,7 +126,7 @@ policies before adding roles. No recipe here warrants granting all of them perma
 
 | Principal / action | Narrow starting role or permission set; verify on the real project |
 | --- | --- |
-| Functions deployer | `roles/cloudfunctions.developer` for the approved functions/project plus `roles/iam.serviceAccountUser` on the dedicated runtime SA (`actAs`, also needed for the Scheduler OIDC identity). Creating functions may require project-level scope; review conditions and the two IDs. |
+| Functions deployer | `roles/cloudfunctions.developer` for the approved functions/project plus `roles/iam.serviceAccountUser` on the dedicated runtime SA (`actAs`, also needed for Scheduler OIDC). Review CLI metadata reads such as `firebase.projects.get`, Service Usage get/list and ADC quota-project `serviceusage.services.use`; add narrowly if not already included. Creation may require project scope; review conditions and the two IDs. |
 | Public HTTPS / private scheduler IAM setup | Additional `run.services.get`, `run.services.getIamPolicy`, `run.services.setIamPolicy` only for the two generated Cloud Run services. The first deploy may need a bootstrap grant before those resources exist. Do not solve this by making all Cloud Run services public or granting project Run Admin. |
 | Scheduler job creation/update/rollback | `roles/cloudscheduler.admin`, restricted to the agreed job where supported, or a custom job get/create/update/delete permission set. Manual smoke execution also needs `cloudscheduler.jobs.run`; pausing uses `cloudscheduler.jobs.pause`. Review job listing/read requirements for the pinned CLI. |
 | Rules owner (only when deploying rules) | `roles/firebaserules.admin`, or reviewed ruleset create/get/test and release get/create/update permissions for the selected Firestore release. Shared rules stay with their existing owner/pipeline. |
@@ -160,6 +161,8 @@ Fill this ignored file privately, replacing **all** placeholders. It contains on
 | `RELAY_DATABASE_ID` | Database ID; default `(default)`. Must match deploy config/operator `--database`. |
 | `RELAY_MAX_INSTANCES` | Positive HTTPS ceiling; default 2. Keep 2 for the pilot unless separately reviewed. |
 
+Verify the actual managed Node 22 builder's package-manager/lockfile handling and build identity; local Bun success
+is not proof of managed-build reproducibility. No manual npm/system-install workaround is part of this procedure.
 The SDK exports parameter expressions during discovery; Firestore database resolution is deferred to invocation.
 HTTPS remains Node 22, zero minimum instances, 30 seconds, 256 MiB, ten-second FCM deadline. Reconciliation is hourly,
 540 seconds, one maximum instance, same region/identity/database. No emulator/test/bypass variable may be deployed.
@@ -304,7 +307,7 @@ explicit modes/syntax/confirmation, not the old unrestricted settings-JSON inter
 
 | Command suffix | Action |
 | --- | --- |
-| `status` | Effective switches/limits, UTC day, aggregate global send-attempt/challenge/new-account counters, reserved account/phone slots; no email, UID, token, IP/quota key or route data. These are relay counters, not direct Auth signup/mail/MAU metrics. |
+| `status` | Effective switches/limits, UTC day, charged global send-attempt/challenge/new-account reservations and reserved account/phone slots; no email, UID, token, IP/quota key or route data. A charged reservation is not proof of FCM delivery. These are not direct Auth signup/mail/MAU metrics. |
 | `seed-control` | Create paused/closed settings once, never overwrite an existing document. |
 | `pause` / `resume` | Kill switch only; resume does not open enrollment or reset counters. |
 | `enrollment open` / `enrollment close` | New relay accounts/phones; does not stop direct Auth signup/email or existing token repair when the relay is enabled. |
@@ -323,7 +326,9 @@ provider output, ADC/config or captures into public reports. Firebase Auth delet
 ## 8. Alerts, provider shutdown and logging — needs the real project
 
 Before any public enrollment, configure **three independent Auth-volume alerts**, in addition to the agreed $5/$10
-billing alerts and $10 Functions service cap. Relay counters/switches do not bound direct Auth traffic or charges.
+billing alerts and the agreed $10 Functions service stop mechanism. Verify that mechanism is actually supported for
+this project's 2nd-gen services; a budget/alert alone is **not** a spend cap. If a supported stop mechanism is unavailable,
+stop and record the gap rather than promise a hard ceiling. Relay counters/switches do not bound direct Auth traffic or charges.
 For this project's actual Standard Auth/Identity Platform status, identify the supported metric/quota report or aggregate
 export, measure the other apps' baseline and configure warning/critical notifications for:
 
@@ -369,7 +374,8 @@ charges; do not delete artifacts used by another app/current rollback. Exact fil
 ## 9. Rollback: pause, finish cleanup, then remove only relay
 
 1. `pause --yes`, `enrollment close --yes`; close providers/sign-up separately if the incident concerns direct Auth abuse.
-   Alerts are not a stop button, and the Functions cap excludes Auth/Firestore/build/artifact charges and can overshoot.
+   Alerts are not a stop button. Any verified Functions-only stop mechanism excludes Auth/Firestore/build/artifact
+   charges and can lag/overshoot; no project-wide $10 ceiling is promised.
 2. Use the approved app/backend rollback, not an implicit direct-FCM fallback. Preserve device auth and held event IDs;
    do not replay history. Drain queued route/account deletion with the still-reachable delete endpoint, operator tool
    and scheduler. Verify no pending cleanup/required delete outboxes before withdrawing their runtime access.

@@ -3,7 +3,7 @@ import { queueAccountCleanup, resumeAccountCleanup } from "../../src/cleanup.ts"
 import { enableAccount } from "../../src/operator.ts";
 import { newRelayId } from "../../../packages/protocol/src/index.ts";
 import { authClient, authSetup } from "../../../packages/server/test/device-auth-test-support.ts";
-import { registerEmulatorChecks, fixture, httpCaptures, store, checkDependencies } from "../support.ts";
+import { registerEmulatorChecks, fixture, httpCaptures, store, db, checkDependencies } from "../support.ts";
 
 registerEmulatorChecks();
 
@@ -22,6 +22,12 @@ test("test push and notification stay encrypted through the real relay and reach
 	expect((await target.setup.server.notifications.deliver(event)).deliveries[0]?.message).toBe("accepted");
 	const messages = notifications(account.token);
 	expect(messages).toHaveLength(2);
+	// HTTP writes and server attempts must share only the prefixed namespace.
+	const collections = (await db.listCollections()).map((collection) => collection.id);
+	for (const expected of ["relayAccounts", "relayInstallations", "relayRoutes", "relaySendAttempts"]) {
+		expect(collections).toContain(expected);
+	}
+	for (const name of collections) expect(name).toStartWith("relay");
 	expect((await phone.receive(messages[0]!)).payload.kind).toBe("test");
 	expect((await phone.receive(messages[1]!)).payload).toMatchObject({
 		title: event.title,
@@ -212,14 +218,17 @@ for (const scope of ["route", "account"] as const) {
 	});
 }
 
-test("kill switch preserves live queued work and still permits deletion", async () => {
+test("missing control and kill switch preserve live queued work and still permit deletion", async () => {
 	const account = await enrollPhone();
 	const target = await backend();
 	const phone = await connectPhone(account, target);
-	await store.control.doc("settings").set({ enabled: false }, { merge: true });
+	await store.control.doc("settings").delete();
 	expect((await target.setup.server.notifications.deliver(event)).deliveries[0]?.message).toBe("relay_disabled");
 	expect(notifications(account.token)).toHaveLength(0);
+	// Resume only enabled: absent enrollmentEnabled must remain closed, not inherit a permissive default.
 	await store.control.doc("settings").set({ enabled: true }, { merge: true });
+	const status = await phoneRequest("accounts/status", {}, account.identity);
+	expect(await status.json()).toMatchObject({ relayEnabled: true, enrollmentEnabled: false });
 	await target.tick(60000);
 	expect((await phone.receive(notifications(account.token)[0]!)).payload.title).toBe(event.title);
 	await store.control.doc("settings").set({ enabled: false }, { merge: true });

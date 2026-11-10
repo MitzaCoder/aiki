@@ -1,9 +1,11 @@
 # Push relay acceptance
 
 This is the section 12 gate, not permission to deploy or open a pilot. D51 keeps relay accounts and relay push
-optional. No real Firebase/Google Cloud project, phone, Android emulator or credentials were used for T99.
+optional. T99 and this T101 follow-up use no real Firebase/Google Cloud project, phone, Android emulator or credentials.
 
-Summary: **76 locally proven**, **24 need the real project**, **3 open** (103 single items).
+Summary: **76 locally proven**, **27 need the real project**, **0 not covered** (103 single items).
+T101 classifies provider shutdown/sign-up, mail-volume and MAU alarms as real-project operator configuration, not
+missing mock adapters; this does not turn those operational gates into local proof or authorize enrollment.
 “Proven” means the bounded assertion described below, not provider acceptance. Android JVM and web evidence is
 linked existing coverage, not an Android/browser run performed by this worker.
 
@@ -11,7 +13,7 @@ linked existing coverage, not an Android/browser run performed by this worker.
 
 - **E**: `relay/checks/e2e/integration.cases.ts`, real Functions HTTP + real isolated Aiki backends + TypeScript phone.
 - **R.name**: `relay/checks/name.cases.ts`, existing relay emulator checks. Many inject the core clock/failure seam;
-  only R.http and E exercise the Functions HTTP adapter. Do not describe every R test as a real function crash test.
+  R.http, R.demo-stack and E exercise the Functions HTTP adapter. Do not describe every R test as a real function crash test.
 - **S registration/transport/lifecycle/retention**: `packages/server/test/push-relay-<name>.test.ts`.
 - **P**: `packages/protocol/src/push-relay.test.ts`, frozen shared crypto/admission vectors and randomized crypto.
 - **A.Class.method**: existing `apps/android/app/src/test/kotlin/io/github/mitzacoder/aiki/notifications/Relay*Test.kt`.
@@ -53,7 +55,7 @@ linked existing coverage, not an Android/browser run performed by this worker.
 | Capability cannot choose token/project/topic/priority | Proven | R.routes: capability A cannot choose token/project/topic/priority |
 | Backend cannot renew or recreate deleted authority | Proven | E three backends; R.routes: renew only under seven days; R.delete |
 | Send and delete schemes are disjoint | Proven | R.routes: disjoint schemes; R.delete: delete scheme is rejected before any Firestore lookup |
-| Direct Firestore client reads and writes denied | Proven | R.installations: direct client Firestore reads and writes denied |
+| Direct Firestore client reads and writes denied | Proven | R.installations uses relayAccounts; R.deployment compiles sole/shared rules and denies all twelve relay collections while preserving unrelated guarded shared access. Actual named-database rules/IAM still need the real project. |
 | Corrupt/reserved/version envelopes rejected before FCM | Proven | R.send: corrupt, reserved keys, wrong version/route and noncanonical base64 |
 | Oversize envelopes rejected before FCM | Proven | R.send: serialized data cap and HTTP body cap |
 | Errors/logs contain no notification content or identity | Proven | R.send: full flow logs; R.http: octet-stream JSON-looking client bytes; R.lifecycle: operator settings and lifecycle logs |
@@ -84,9 +86,9 @@ linked existing coverage, not an Android/browser run performed by this worker.
 | Budgets survive route/phone churn | Proven | R.budgets: account sends persist across route rotation and phone removal; IP/NAT and global daily scopes |
 | UID churn cannot bypass global/new-account caps | Proven | R.budgets: new-account caps do not refund after deletion; global daily sends and new-account budgets |
 | Direct Auth signup bypasses the relay signup limiter | Proven | R.budgets: direct Auth signup bypasses relay signup caps |
-| Mocked provider shutdown | Not covered | No provider shutdown integration exists here; relay kill-switch tests are not a provider shutdown drill |
-| Mocked mail-quota alarms | Not covered | No mail-quota alarm adapter exists; emulator email links bypass real mail limits |
-| Mocked MAU alarms | Not covered | No MAU/billing alarm adapter exists; relay account caps cannot bound direct Auth use |
+| Mocked provider shutdown | Needs the real project | Operator provider/sign-up shutdown drill, not a code adapter; [operator checklist](push-relay-operator-checklist.md#4-steps-only-the-operator-can-do) and [DEPLOY.md](../relay/DEPLOY.md#8-alerts-provider-shutdown-and-logging--needs-the-real-project). Relay kill switches do not stop direct Auth. |
+| Mocked mail-quota alarms | Needs the real project | Operator configures sign-in-email volume/quota alerts against the effective allowance and tests notification routing; [checklist](push-relay-operator-checklist.md#4-steps-only-the-operator-can-do) / [DEPLOY.md](../relay/DEPLOY.md#8-alerts-provider-shutdown-and-logging--needs-the-real-project). Emulator OOB links prove no mail quota. |
+| Mocked MAU alarms | Needs the real project | Operator configures MAU and Auth-sign-up alerts using actual supported aggregate metrics/reports and shared usage; [checklist](push-relay-operator-checklist.md#4-steps-only-the-operator-can-do) / [DEPLOY.md](../relay/DEPLOY.md#8-alerts-provider-shutdown-and-logging--needs-the-real-project). Do not invent a metric or upgrade Identity Platform. |
 | Reserved rotation slots | Proven | R.routes: one bounded successor atomically replaces predecessor; R.budgets account sends persist across rotation |
 | Deletion succeeds with quotas exhausted | Proven | R.budgets: management request budgets are IP-scoped, while deletion is exempt |
 | Daily budget reset | Proven | R.budgets: IP/NAT and global daily scopes; management/NAT minute and daily windows |
@@ -119,7 +121,7 @@ linked existing coverage, not an Android/browser run performed by this worker.
 | Real outage/retry and three-backend independence | Needs the real project | E proves the local composition only, not TLS/Google transport/background behavior |
 | Production IAM, rules and retention | Needs the real project | Deny-all emulator rules pass; IAM, TTL lag and deployed reconciler must be verified separately |
 | Effective Auth/mail quotas | Needs the real project | Provider quotas are outside relay enforcement |
-| Production limits, kill-switch and spend cap | Needs the real project | Local switch/budgets pass; billing alerts cannot stop spend by themselves |
+| Production limits, kill-switch and spend cap | Needs the real project | E missing-control/kill-switch and R.deployment prove absent booleans pause locally; R.operator-cli seeds paused, controls limits/switches and erases lost accounts. Live ingress, alerts and billing cap still need the operator. |
 | Provider shutdown drill | Needs the real project | Requires authorized operator action; no live project action is permitted in this task |
 | App Check/Play Integrity for the sideloaded release | Needs the real project | Injected verification only; emulator cannot attest a device |
 | Production TLS, billing and scaling | Needs the real project | Functions emulator cannot establish provider operational acceptance |
@@ -142,6 +144,34 @@ No protocol/client source changed, so Android build/JVM suites were not rerun. E
 referenced, not newly executed. Initial existing-suite online attempts exposed the nested port/default issue and
 metadata-detection delay; the final online and offline suites pass after those fixes. No root flaky test needed a retry.
 No processes or listeners belonging to this task remain. No main move, push, deploy or live project action.
+
+## T101 follow-up
+
+Fresh control defaults are paused/closed; explicit enabled seeding in E.support is retained. E's missing-control case
+now deletes settings before a real backend send, verifies `relay_disabled`, resumes without opening enrollment and
+still completes deletion. The happy path asserts all HTTP-created data and server attempts use prefixed collections.
+Runtime database selection defaults to `(default)`; named Admin/Functions isolation and operator CLI are covered by
+R.operator-cli/R.demo-stack. A dedicated T101 gate checks every operator command through its actual entry point,
+shared rules/index preservation and both exports' parameterized identity/region. No production imports from packages/.
+
+The 103-item section-12 count is unchanged: these additional T101 cases strengthen existing local proofs, not new
+provider acceptance. Root install is needed for cross-package test helpers; root discovery still excludes relay cases.
+
+| T101 check | Result | Time |
+| --- | --- | --- |
+| Root install, frozen/offline | No dependency/lock changes | 1.17s |
+| Full relay emulator suite, outbound-denied namespace | 99 tests / 1,657 assertions, zero failures; includes standalone demo/operator/stale-readiness-PID gates | 89.94s tests / ~113s command |
+| End-to-end suite, ordinary loopback run | 19 tests / 270 assertions, zero failures | 16.95s tests / ~30s command |
+| End-to-end suite, outbound-denied namespace | 19 tests / 270 assertions, zero failures | 18.22s tests / ~42s command |
+| Root tests, isolated HOME/env, outbound-denied namespace | 2,136 tests / 24,456 assertions / 176 files, zero failures; no relay discovery | 199.93s tests / ~200s command |
+| Relay typecheck / build | Pass | 2.574s / 1.646s |
+| Root typecheck | Pass | 1.303s |
+| Format / public-source / Gitleaks | Pass | Separate final checks |
+
+An initial over-scrubbed root invocation omitted `USER`, causing three watcher fixtures to exit before catch-up.
+Adding a synthetic USER/LOGNAME fixed the invocation; no root/deploy source was changed. It was not a product/flaky-test
+fix. All backend servers came from createSetup; emulator/e2e children had no inherited AIKI settings. All owned emulator,
+fake-FCM, helper and backend listeners stop. No main move, push, deployment, login or real-project action.
 
 ## Running the end-to-end gate
 
@@ -180,6 +210,8 @@ This is deliberate non-enumeration, not proof that the backend can distinguish d
 - Cross-package integration checks need DOM/Bun types and the root TypeScript compiler (the server uses TypeScript 7
   inference); relay build still uses its pinned TypeScript 5.9 compiler and unchanged runtime dependency tree.
 
-The three open items are mocked provider shutdown/mail-quota/MAU alarm adapters. They are not implemented provider
-integrations and cannot honestly be replaced by tests of our relay kill switch. The operator must choose and authorize
-that operational work before the complete pre-project gate can be called closed. No frozen format or HTTP contract changed.
+T101 resolves the three former "Not covered" classifications as **needs the real project**, not new code/mocks.
+The operator checklist and DEPLOY.md now require concrete Auth-sign-up, MAU and sign-in-email alerts, notification tests,
+and an attended provider/sign-up shutdown/recovery drill next to the relay kill switch. Supported metrics, quotas,
+console controls and safe shared-project impact cannot be prepared or attested without the actual project.
+No frozen format or HTTP contract changed. All 27 real-project gates remain required before public enrollment.
