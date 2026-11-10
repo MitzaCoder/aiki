@@ -38,6 +38,7 @@ class NotificationCenter(
     private val tokens: PushTokens,
     private val label: String,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val relay: () -> io.github.mitzacoder.aiki.features.notifications.relay.RelayNotifications? = { null },
 ) {
     /** Throttled: the first interaction goes out at once, a burst becomes one trailing message every 5 s. */
     private val interactions = InteractionReporter(
@@ -97,7 +98,13 @@ class NotificationCenter(
         }
     }
 
-    fun setVisible(visible: Boolean) = mutablePresence.update { it.copy(visible = visible) }
+    fun setVisible(visible: Boolean) {
+        mutablePresence.update { it.copy(visible = visible) }
+        if (visible) scope.launch {
+            repository.loaded.first { it }
+            if (repository.settings.value.notifications.relayEnabled) runCatching { relay()?.foreground() }
+        }
+    }
     fun setScreen(backendKey: String?, projectId: String?) = mutablePresence.update { it.copy(backendKey = backendKey, projectId = projectId) }
 
     /** Turn push on: make sure there is a token; each backend then registers it. Returns why it could not, if so. */
@@ -108,7 +115,8 @@ class NotificationCenter(
 
     /** Turn push off: every backend forgets this device, now or on its next connect, and the token is deleted. */
     suspend fun disable() {
-        repository.setNotifications { it.copy(enabled = false, fcmToken = null) }
+        if (repository.settings.value.notifications.relayEnabled) relay()?.routes?.signOut()
+        repository.setNotifications { it.copy(enabled = false, fcmToken = null, relayEnabled = false) }
         runCatching { tokens.delete() }
     }
 
@@ -116,7 +124,11 @@ class NotificationCenter(
 
     /** Firebase rotated the token ([com.google.firebase.messaging.FirebaseMessagingService.onNewToken]). */
     fun tokenChanged(token: String) {
-        scope.launch { repository.loaded.first { it }; repository.setNotifications { it.copy(fcmToken = token) } }
+        scope.launch {
+            repository.loaded.first { it }
+            repository.setNotifications { it.copy(fcmToken = token) }
+            if (repository.settings.value.notifications.relayEnabled) runCatching { relay()?.tokenChanged(token) }
+        }
     }
 
     /** Push a test to this device from one backend and say what FCM answered (web `testNotificationText`). */
@@ -138,6 +150,7 @@ class NotificationCenter(
     private suspend fun refreshToken(): String? = try {
         val token = tokens.token()
         if (repository.settings.value.notifications.fcmToken != token) repository.setNotifications { it.copy(fcmToken = token) }
+        if (repository.settings.value.notifications.relayEnabled) relay()?.tokenChanged(token)
         null
     } catch (error: CancellationException) { throw error }
     catch (error: Exception) { error.message ?: "Firebase gave no token." }
@@ -178,7 +191,8 @@ class NotificationCenter(
             val config = client.request(NotificationsConfigRequest())
             setState(key) { it.copy(configRead = true, fcmProjectId = config.fcm?.projectId) }
             val token = settings.fcmToken
-            val device = if (settings.enabled && token != null && client.state.value.supports("fcm-push")) {
+            val relaySelected = settings.relayEnabled && relay()?.selected(key) == true
+            val device = if (!relaySelected && settings.enabled && token != null && client.state.value.supports("fcm-push")) {
                 client.request(NotificationsRegisterFcmRequest(deviceId = deviceId, label = label, backendKey = key, token = token, preferences = settings.preferencesFor(key))).device
             } else {
                 val existing = client.request(NotificationsDeviceRequest(deviceId = deviceId)).device

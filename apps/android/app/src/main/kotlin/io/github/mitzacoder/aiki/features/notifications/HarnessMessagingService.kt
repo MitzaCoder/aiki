@@ -21,8 +21,8 @@ class HarnessMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
-        val payload = parseNotificationPayload(message.data["payload"]) ?: return
-        // The backend held it while the app was open and dropped it on interaction; what arrives is drawn.
-        showPushNotification(this, payload)
+        kotlinx.coroutines.runBlocking {
+            (application as HarnessApplication).relayNotifications.receive(message.data)
+        }
     }
 }

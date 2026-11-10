@@ -93,6 +93,22 @@ tasks.withType<Test>().configureEach {
         .withPropertyName("pushRelayVectors")
 }
 
+/** Asserts the shell-only delivery component can never be exported by a release APK. */
+tasks.register("checkReleaseRelaySeam") {
+    dependsOn("processReleaseManifest")
+    val directory = layout.buildDirectory.dir("intermediates/merged_manifests/release").get().asFile
+    doLast {
+        val manifests = directory.walkTopDown().filter { it.isFile && it.name == "AndroidManifest.xml" }.toList()
+        check(manifests.isNotEmpty()) { "Release manifest was not generated" }
+        for (manifest in manifests) {
+            val text = manifest.readText()
+            check(!text.contains("DebugRelayReceiver") && !text.contains("DEBUG_RELAY")) {
+                "Debug relay delivery must not be present in release"
+            }
+        }
+    }
+}
+
 dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("io.github.rosemoe:language-textmate:0.24.6")
