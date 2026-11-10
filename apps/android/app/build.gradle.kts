@@ -25,6 +25,7 @@ require(appUri.scheme == "https" && appUri.host != null && appUri.rawUserInfo ==
     appUri.port == -1 && appUri.rawPath.orEmpty() in listOf("", "/") && appUri.rawQuery == null && appUri.rawFragment == null) {
     "harness.appOrigin must be a plain HTTPS origin"
 }
+val pushRelayUrl = privateBuildProperty("harness.pushRelayUrl", "HARNESS_PUSH_RELAY_URL").trim()
 val publishedBackendsUrl = privateBuildProperty("harness.publishedBackendsUrl", "HARNESS_PUBLISHED_BACKENDS_URL")
 fun buildString(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\""
 
@@ -74,6 +75,7 @@ android {
         buildConfigField("String", "APP_ORIGIN", buildString(appOrigin.trimEnd('/')))
         buildConfigField("String", "APP_LINK_HOST", buildString(appUri.host))
         buildConfigField("String", "PUBLISHED_BACKENDS_URL", buildString(publishedBackendsUrl))
+        buildConfigField("String", "PUSH_RELAY_URL", buildString(pushRelayUrl))
         for (name in listOf("FIREBASE_APP_ID", "FIREBASE_API_KEY", "FIREBASE_PROJECT_ID", "FIREBASE_SENDER_ID")) {
             buildConfigField("String", name, "\"${firebaseConfig[name].orEmpty()}\"")
         }

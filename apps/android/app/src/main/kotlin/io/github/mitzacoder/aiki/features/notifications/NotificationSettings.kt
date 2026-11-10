@@ -16,6 +16,8 @@ data class QuietHours(val start: String, val end: String, val timezone: String, 
 data class NotificationSettings(
     /** The user turned push on for this device; until then nothing registers and no token is made. */
     val enabled: Boolean = false,
+    /** Optional relay transport; upgrades and fresh installs keep direct FCM until explicit opt-in. */
+    val relayEnabled: Boolean = false,
     val kinds: List<String> = DEFAULT_NOTIFICATION_KINDS,
     val defaultsVersion: Int = NOTIFICATION_DEFAULTS_VERSION,
     val quietHours: QuietHours? = null,

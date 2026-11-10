@@ -2925,6 +2925,24 @@ apps/<native>/      later; technology not chosen
 
 ## Notifications
 
+### Android relay plumbing (T96)
+
+D51: relay accounts and relay notifications are optional. The persisted Android relay switch defaults off,
+including upgraded installs. Off keeps direct FCM registration and plaintext reception unchanged, without opening
+relay storage, making relay requests or asking for an account. This task adds no UI or Firebase Auth dependency.
+The APK pins `harness.pushRelayUrl` / `HARNESS_PUSH_RELAY_URL`; empty means unavailable. Only HTTPS is accepted,
+except debug loopback/emulator-host HTTP. Messages and backends cannot choose a relay endpoint.
+
+Relay state uses its own backup/transfer-excluded Keystore AES-256-GCM DataStore. Enrollment operations, staged
+route secrets and ECDH keys, key confirmation, deletion retries, monotonic backend clock anchors, replay windows,
+event dedupe and diagnostic counters survive process death. Key loss discards relay authority and requires explicit
+opt-in again, never plaintext fallback. Retiring keys expire within thirteen hours. Route registration uses a small
+backend port until the signed-in RPC integration lands; account tokens use `RelayAccount`, with no sign-in here.
+The pure receive router authenticates and admits durably before the existing parser/presenter; local route mapping
+supplies the backend routing key. Relay-selected sessions reject plaintext downgrade. Local off/sign-out removes
+receive authority immediately and queues remote cleanup. Debug-only shell delivery uses the same router.
+
+
 ### Backend encrypted relay transport (T95)
 
 Exact RPC/storage shapes and Android ordering: [backend relay v1 contract](push-relay-backend-v1.md).
