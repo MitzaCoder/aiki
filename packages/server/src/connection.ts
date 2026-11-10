@@ -97,13 +97,13 @@ export type ClientConnectionOptions = {
 	log?: (message: string) => void;
 };
 
-function watchEndReason(reason: WatchEnd["reason"]): WatchEndReason {
-	switch (reason) {
-		case "cancelled":
+function watchEndReason(kind: WatchEnd["kind"]): WatchEndReason {
+	switch (kind) {
+		case "aborted":
 			return "cancelled";
-		case "session_closed":
+		case "ended":
 			return "session_closed";
-		case "session_failed":
+		case "failed":
 			return "session_failed";
 		case "listener_error":
 			return "listener_error";
@@ -1060,7 +1060,9 @@ export class ClientConnection {
 		// The response carries the initial value; from here on the client only applies ops to it.
 		this.#respond({ type: "conversation.watch", id: request.id, watchId, conversationId: conversation.id, view });
 
-		handle.start(async (value) => {
+		handle.start(async (call) => {
+			if (call.kind === "failed") throw call.error;
+			const value = call.value;
 			if (this.#closed || state.explicitStop) return;
 			const update = tracker.update(value, await queue?.decorate(value), warm());
 			if (update.ops.length === 0) return;
@@ -1101,7 +1103,7 @@ export class ClientConnection {
 			this.#respond({
 				type: "conversation.watchEnded",
 				watchId,
-				reason: watchEndReason(end.reason),
+				reason: watchEndReason(end.kind),
 				...(message === undefined ? {} : { message }),
 			});
 		});

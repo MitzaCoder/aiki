@@ -1006,7 +1006,9 @@ export class ProjectManager {
 			if (timer !== undefined) clearTimeout(timer);
 			timer = undefined;
 		});
-		handle.start(async (value) => {
+		handle.start(async (call) => {
+			if (call.kind === "failed") throw call.error;
+			const value = call.value;
 			// Streamed output commits many times per answer; only a finished entry or an agent-settings change can matter.
 			const next = contextSignal(value);
 			if (next === signal) return;
@@ -1136,9 +1138,9 @@ export class ProjectManager {
 					...(this.#now === undefined ? {} : { now: this.#now }),
 					...(this.#setTimer === undefined ? {} : { setTimer: this.#setTimer }),
 					env: ({ cwd }) => new NodeExecutionEnv({ cwd: cwd ?? project.path }),
-					onReport: (error, info) => {
-						const detail = info.type === "session_failed" ? `: ${errorMessage(error)}` : "";
-						this.#log(`project ${project.id}: ${info.type}${detail}`);
+					onReport: (report) => {
+						const detail = report.kind === "storage_failed" ? `: ${errorMessage(report.error)}` : "";
+						this.#log(`project ${project.id}: ${report.kind}${detail}`);
 					},
 				},
 				BACKGROUND_CONTEXT,
@@ -1575,8 +1577,8 @@ export class ProjectManager {
 			const current = this.#runtimes.get(project.id);
 			if (current?.runtime !== runtime) return;
 			current.runtime = undefined;
-			current.state = end.reason === "failed" ? "failed" : "closed";
-			current.failure = end.reason === "failed" ? errorMessage(end.error) : undefined;
+			current.state = end.kind === "failed" ? "failed" : "closed";
+			current.failure = end.kind === "failed" ? errorMessage(end.error) : undefined;
 			void (async () => {
 				await activity.stop().catch(() => undefined);
 				const closed = idleActivity(this.#activities.get(project.id) ?? DEFAULT_ACTIVITY);

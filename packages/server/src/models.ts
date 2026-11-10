@@ -3,6 +3,7 @@
  * client. No model defaults live here or anywhere else: the client picks every model.
  */
 import {
+	type Api,
 	type AuthCheck,
 	type CredentialStore,
 	createModels,
@@ -33,7 +34,16 @@ export function createHarnessModels(options: { credentials: CredentialStore }): 
 	const models = createModels({ credentials: options.credentials });
 	// Side-effect free factories: their API SDKs load lazily on the first request.
 	models.setProvider(opencodeGoProvider());
-	models.setProvider(withModelCatalogExtensions(anthropicProvider()));
+	const anthropic = withModelCatalogExtensions(anthropicProvider());
+	// Provider-side model switches require an explicit product choice, not a catalog upgrade.
+	const withoutFallbacks = <T extends Model<Api>>(model: T): T => model.compat && "allowedFallbackModels" in model.compat && model.compat.allowedFallbackModels?.length
+		? { ...model, compat: { ...model.compat, allowedFallbackModels: [] } } : model;
+	models.setProvider({
+		...anthropic,
+		getModels: () => anthropic.getModels().map(withoutFallbacks),
+		getAllModels: () => (anthropic.getAllModels?.() ?? anthropic.getModels()).map(model =>
+			model.type === undefined || model.type === "chat" ? withoutFallbacks(model) : model),
+	});
 	models.setProvider(openaiProvider());
 	models.setProvider(openaiCodexProvider());
 	return models;

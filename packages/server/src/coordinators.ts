@@ -8,7 +8,7 @@
  * before the registry knows it, and registers every existing thread on open before anything resumes.
  */
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import type { Context } from "@earendil-works/chord";
+import type { Context } from "@earendil-works/chord/context";
 import type { Conversation, ConversationId, Harness } from "@earendil-works/pi-durable";
 import { MAIN_THREAD_ID } from "@mihai-harness/protocol";
 

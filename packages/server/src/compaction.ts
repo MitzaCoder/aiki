@@ -16,7 +16,7 @@
  * that are actually in effect rather than a copy that could drift.
  */
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import type { Context } from "@earendil-works/chord";
+import type { Context } from "@earendil-works/chord/context";
 import { contentText } from "@earendil-works/pi-ai";
 import type { AssistantMessage, Message, Model, Models } from "@earendil-works/pi-ai";
 import { estimateContextTokens, estimateTextTokens } from "@earendil-works/pi-ai/utils/estimate";

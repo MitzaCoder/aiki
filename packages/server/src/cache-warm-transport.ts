@@ -21,7 +21,8 @@ export function zeroOutputPayload(payload: CacheWarmPayload): CacheWarmPayload |
 	const choice = payload.tool_choice as { type?: string } | undefined;
 	if (thinking?.type === "enabled" || choice?.type === "any" || choice?.type === "tool" ||
 		(payload.output_config as { format?: unknown } | undefined)?.format !== undefined) return undefined;
-	return { ...structuredClone(payload), max_tokens: 0, stream: false };
+	const { thread: _thread, ...fullPayload } = structuredClone(payload);
+	return { ...fullPayload, max_tokens: 0, stream: false };
 }
 
 export async function refreshAnthropicCache(options: {
@@ -58,7 +59,7 @@ export async function refreshAnthropicCache(options: {
 	// Do not retain caller closures, a turn's signal, or its onPayload callback.
 	const { onPayload: _payload, onResponse: _response, fetch: _fetch, signal: _signal, ...requestOptions } = options.requestOptions;
 	return options.models.streamSimple(options.model, options.context, {
-		...requestOptions, signal: options.signal, maxRetries: 0, timeoutMs: 30_000,
+		...requestOptions, signal: options.signal, maxRetries: 0, timeoutMs: 30_000, disableContinuation: true,
 		onPayload: () => structuredClone(options.payload), fetch: adaptedFetch,
 	}).result();
 }

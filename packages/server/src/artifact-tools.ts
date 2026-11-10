@@ -9,7 +9,7 @@
  * Replay: the artifact ID is memoized before the copy, so a rerun after a restart finds the row the first run saved
  * instead of saving the file twice.
  */
-import type { Context } from "@earendil-works/chord";
+import type { Context } from "@earendil-works/chord/context";
 import { type Extension, type ToolRegistration, defineExtension, defineTool } from "@earendil-works/pi-durable";
 import { MAIN_THREAD_ID } from "@mihai-harness/protocol";
 import { constants } from "node:fs";

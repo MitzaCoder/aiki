@@ -13,7 +13,7 @@
  * Workers get none of this: the project's worker conversations remove this extension, so they have neither the tools nor
  * the section, and reuse the coordinator-only guard pattern of `workers.ts` as a second line of defense.
  */
-import type { Context } from "@earendil-works/chord";
+import type { Context } from "@earendil-works/chord/context";
 import {
 	type Conversation,
 	defineExtension,

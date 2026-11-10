@@ -155,7 +155,10 @@ export class CoordinatorCacheWarm {
 				schedule.resume();
 			}
 		};
-		watch.start(async next => { view = next; update(); });
+		watch.start(async call => {
+			if (call.kind === "failed") { schedule.stop("Conversation watch failed"); throw call.error; }
+			view = call.value; update();
+		});
 		void watch.closed.then(() => { schedule.stop("Conversation closed"); if (this.#armed.get(key)?.schedule === schedule) this.#armed.delete(key); });
 		try { persist(); update(); } catch { this.invalidate(row.projectId, "Request log unavailable", row.conversationId); }
 	}

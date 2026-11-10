@@ -20,7 +20,7 @@
  * from the tool call or the failing entry, so a rerun after a crash posts nothing twice.
  */
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import type { Context } from "@earendil-works/chord";
+import type { Context } from "@earendil-works/chord/context";
 import type { Models } from "@earendil-works/pi-ai";
 import {
 	type Conversation,

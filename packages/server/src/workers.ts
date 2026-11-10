@@ -18,7 +18,7 @@
  * means the thread's own workspace, and `workspace` a jj workspace under the thread's directory.
  */
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import type { Context } from "@earendil-works/chord";
+import type { Context } from "@earendil-works/chord/context";
 import type { AssistantMessage, Models } from "@earendil-works/pi-ai";import {
 	AssistantEntry,
 	type Conversation,
@@ -1229,7 +1229,9 @@ export class WorkerService {
 				publish();
 			};
 			take(watch.value);
-			watch.start(async (value) => {
+			watch.start(async (call) => {
+				if (call.kind === "failed") throw call.error;
+				const value = call.value;
 				take(value);
 			});
 		};

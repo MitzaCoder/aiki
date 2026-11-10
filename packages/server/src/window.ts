@@ -6,7 +6,7 @@
  * `before`, `from` for resuming after a reconnect, and Chord ops computed by diffing successive windowed values.
  * The server can switch to pi-durable's own windowing when a release provides it.
  */
-import type { JsonValue } from "@earendil-works/chord";
+import type { JsonValue } from "@earendil-works/chord/json";
 import { diffRevisions } from "@earendil-works/chord/delta";
 import type { ConversationView as DurableConversationView, EntryRecord as DurableEntry } from "@earendil-works/pi-durable";
 import type { CacheWarmStretch, ChordOp, ConversationView } from "@mihai-harness/protocol";

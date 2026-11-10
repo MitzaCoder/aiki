@@ -17,7 +17,7 @@
  * clock and every write or `get` persists it, so nothing depends on a timer.
  */
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import type { Context } from "@earendil-works/chord";
+import type { Context } from "@earendil-works/chord/context";
 import type { Conversation, ConversationId, Extension, Harness, JsonObject, ToolRegistration, Tx } from "@earendil-works/pi-durable";
 import { defineDoc, defineDocFamily, defineExtension, defineTool } from "@earendil-works/pi-durable";
 import {
@@ -2094,7 +2094,9 @@ export class BoardService {
 			this.#armWaiting(state);
 		};
 		publish(watch.value);
-		watch.start(async (value) => {
+		watch.start(async (call) => {
+			if (call.kind === "failed") throw call.error;
+			const value = call.value;
 			publish(value);
 		});
 		return async () => {

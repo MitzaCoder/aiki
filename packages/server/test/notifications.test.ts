@@ -1125,8 +1125,8 @@ describe("the activity watch", () => {
 		const stub = {
 			watch: async () => ({
 				value: initial,
-				start: (fn: (value: ConversationView) => void | Promise<void>) => {
-					push = fn as (value: ConversationView) => void;
+				start: (fn: (call: { kind: "value"; value: ConversationView; ops: []; retired: false }) => Promise<void>) => {
+					push = value => { void fn({ kind: "value", value, ops: [], retired: false }); };
 				},
 				stop: async () => undefined,
 				closed: new Promise(() => undefined),
@@ -1145,7 +1145,7 @@ describe("the activity watch", () => {
 		await service.start();
 
 		const failed = (taskId: number) =>
-			({ entries: [], docs: { "pi.live": { n: { taskId, reason: "threshold", error: "the model failed" } } } }) as unknown as ConversationView;
+			({ entries: [], docs: { "pi.live": { compactionFailure: { taskId, trigger: "threshold", error: "the model failed" } } } }) as unknown as ConversationView;
 		push?.(failed(3));
 		push?.(failed(3));
 		push?.(failed(4));

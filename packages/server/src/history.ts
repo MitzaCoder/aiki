@@ -9,7 +9,7 @@
  * tool results, so a search never re-renders the prompt the way a section would.
  */
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import type { Context } from "@earendil-works/chord";
+import type { Context } from "@earendil-works/chord/context";
 import { contentText } from "@earendil-works/pi-ai";
 import type { Message } from "@earendil-works/pi-ai";
 import {

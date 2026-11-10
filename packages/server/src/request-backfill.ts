@@ -63,6 +63,11 @@ class ReadOnlySqlite implements SqliteDatabase {
 		this.#statement(sql).run(...params);
 	}
 
+	async runCounted(sql: string, ...params: SqliteValue[]): Promise<number> {
+		if (MIGRATION_NO_OPS.some((pattern) => pattern.test(sql))) return 0;
+		return Number(this.#statement(sql).run(...params).changes);
+	}
+
 	async get<T extends object>(sql: string, ...params: SqliteValue[]): Promise<T | undefined> {
 		return this.#statement(sql).get(...params) as T | undefined;
 	}

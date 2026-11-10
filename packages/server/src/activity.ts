@@ -15,7 +15,7 @@
  * the last run and survives.
  */
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import type { Context } from "@earendil-works/chord";
+import type { Context } from "@earendil-works/chord/context";
 import type { Conversation, ConversationView, EntryRecord } from "@earendil-works/pi-durable";
 import type { ProjectActivity, ProjectRunningTool } from "@mihai-harness/protocol";
 
@@ -341,7 +341,9 @@ export class ProjectActivityService {
 		// A compaction failure changes nothing the activity reports, so it is read from the same view on every update.
 		this.#watchCompaction(watch.value);
 		this.#publish();
-		watch.start(async (value) => {
+		watch.start(async (call) => {
+			if (call.kind === "failed") throw call.error;
+			const value = call.value;
 			if (this.#stopped) return;
 			this.#watchCompaction(value);
 			const signal = activitySignal(value);
@@ -460,17 +462,17 @@ export class ProjectActivityService {
 		return this.#view?.entries.find((entry) => entry.id === entryId);
 	}
 
-	/** Read `pi.live.n` and report a failed compaction once, however often the view is replayed. */
+	/** Report a failed compaction once, however often the view is replayed. */
 	#watchCompaction(view: ConversationView): void {
-		const live = view.docs["pi.live"] as { n?: { taskId?: unknown; reason?: unknown; error?: unknown } } | undefined;
-		const failure = live?.n;
+		const live = view.docs["pi.live"] as { compactionFailure?: { taskId?: unknown; trigger?: unknown; error?: unknown } } | undefined;
+		const failure = live?.compactionFailure;
 		if (failure === undefined || typeof failure.taskId !== "number") return;
 		if (failure.taskId === this.#compactionTaskId) return;
 		this.#compactionTaskId = failure.taskId;
 		try {
 			this.#onCompactionFailure?.({
 				taskId: failure.taskId,
-				...(typeof failure.reason === "string" ? { reason: failure.reason } : {}),
+				...(typeof failure.trigger === "string" ? { reason: failure.trigger } : {}),
 				error: typeof failure.error === "string" ? failure.error : "",
 			});
 		} catch (error) {

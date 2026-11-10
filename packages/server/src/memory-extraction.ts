@@ -14,7 +14,7 @@
  * or anything else.
  */
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import type { Context } from "@earendil-works/chord";
+import type { Context } from "@earendil-works/chord/context";
 import { contentText } from "@earendil-works/pi-ai";
 import type { Models } from "@earendil-works/pi-ai";
 import type {
@@ -227,7 +227,9 @@ export class MemoryExtractionService {
 		this.#stopped = false;
 		try {
 			const handle = await this.#options.conversation.watch(BACKGROUND_CONTEXT);
-			handle.start(async (view) => {
+			handle.start(async (call) => {
+				if (call.kind === "failed") throw call.error;
+				const view = call.value;
 				if (this.#stopped) return;
 				// Only a new `pi.compaction` entry is worth a look; the durable scan below decides what is new.
 				if (view.entries.some((entry) => entry.kind === COMPACTION_ENTRY)) this.wake();

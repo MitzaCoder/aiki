@@ -87,7 +87,7 @@ it("the coordinator watch stops real scheduling on turn, compaction, reset, mode
         const store = RequestLogStore.open(":memory:");
         const warming = new CoordinatorCacheWarm(store, clock);
         let enabled = true;
-        let callback: (view: DurableView) => Promise<void> = async () => {};
+        let callback: (call: { kind: "value"; value: DurableView; ops: []; retired: false }) => Promise<void> = async () => {};
         const view = { conversation: { id: 1 }, entries: [{ id: 2, conversationId: 1, kind: "pi.assistant" }], docs: { "pi.agent": { model: "claude" }, "pi.live": {} } } as unknown as DurableView;
         let close: () => void = () => {};
         const closed = new Promise<void>(resolve => { close = resolve; });
@@ -113,7 +113,7 @@ it("the coordinator watch stops real scheduling on turn, compaction, reset, mode
         if (change === "turn") (view.docs as Record<string,unknown>)["pi.live"] = { run: 1 };
         if (change === "model") (view.docs as Record<string,unknown>)["pi.agent"] = { model: "codex" };
         if (["compaction", "reset", "system"].includes(change)) (view.entries as unknown as unknown[]).push({ id: 3, kind: `pi.${change}` });
-        await callback(view);
+        await callback({ kind: "value", value: view, ops: [], retired: false });
         await clock.advance(8 * 3_600_000);
         expect(sent).toBe(1);
         if (["turn", "disable", "model", "cold"].includes(change)) expect(JSON.stringify(view.entries)).toBe(before);
@@ -163,6 +163,7 @@ it("adapts the real pi-ai Anthropic auth/build/parser stack with fake HTTP only"
         fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
             const request = new Request(input, init); original = JSON.parse(await request.text()); fingerprint = cacheWarmAuthFingerprint(request.headers); cacheHeaders = cacheWarmHeaders(request.headers);
             expect(request.headers.get("x-api-key")).toBe("fake-test-only");
+            expect(request.headers.get("anthropic-beta")).toContain("message-threads-2026-08-12");
             return new Response(event("message_start", { type: "message_start", message: { id: "fake-real", model: model.id, role: "assistant", content: [],
                 usage: { input_tokens: 2, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 100, cache_creation: { ephemeral_1h_input_tokens: 100 } } } }) +
                 event("message_delta", { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 0 } }) + event("message_stop", { type: "message_stop" }), { headers: { "content-type": "text/event-stream" } });
@@ -171,11 +172,24 @@ it("adapts the real pi-ai Anthropic auth/build/parser stack with fake HTTP only"
     const response = await refreshAnthropicCache({ models, model, context, requestOptions: { ...requestOptions,
         fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
             const request = new Request(input, init); const body = JSON.parse(await request.text());
-            expect(body).toEqual({ ...original, stream: false, max_tokens: 0 });
+            const { thread: _thread, ...fullOriginal } = original;
+            expect(original.thread).toEqual({ type: "create" });
+            expect(body).toEqual({ ...fullOriginal, stream: false, max_tokens: 0 });
+            expect(body.thread).toBeUndefined();
             expect(cacheWarmAuthFingerprint(request.headers)).toBe(fingerprint);
             return Response.json({ id: "fake-maintenance", model: model.id, role: "assistant", type: "message", content: [], stop_reason: "max_tokens",
                 usage: { input_tokens: 2, output_tokens: 0, cache_read_input_tokens: 100, cache_creation_input_tokens: 0 } });
         }) as typeof fetch }, payload: original, authFingerprint: fingerprint, cacheHeaders, signal: new AbortController().signal, admit: () => true });
     expect(response.errorMessage).toBeUndefined(); expect(response.stopReason).toBe("length"); expect(response.content).toEqual([]); expect(response.usage.cacheRead).toBe(100); expect(response.usage.cacheWrite).toBe(0); expect(response.usage.output).toBe(0);
     expect(response.usage.cost.cacheRead).toBeGreaterThan(0);
+    let continued: unknown;
+    await models.streamSimple(model, { messages: [...context.messages, first, { role: "user", content: "Next input", timestamp: 2 }] }, {
+        ...requestOptions,
+        fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
+            continued = JSON.parse(await new Request(input, init).text()).thread;
+            throw new Error("Captured locally; never send");
+        }) as unknown as typeof fetch,
+        maxRetries: 0,
+    }).result();
+    expect(continued).toEqual({ type: "continue", previous_message_id: "fake-real" });
 });

@@ -1827,16 +1827,18 @@ one quiet line; a failed one keeps the existing notice. The Info tab's usage blo
   `models.ts`. `model-catalog-extensions.ts` holds a small temporary extra-model table for
   releases pi-ai has not shipped yet. Its provider wrapper extends both chat/all-model lists,
   so runtime lookup, `models.list`, web/Android pickers, usage costs and cache stats agree.
-  A native entry with the same ID always wins unchanged; remove obsolete table rows later.
+  A native entry with the same ID always wins; the temporary table is empty with pi-ai 1.5.1.
 
-  | Provider | Extra ID | Native base | USD/MTok input/output/read/5m write | Context/output |
-  | --- | --- | --- | --- | --- |
-  | anthropic | `claude-fable-5-2` | `claude-fable-5-1` | 8 / 40 / 0.20 / 10 (1h write 16) | 1M / 128K |
-
-  Fable 5.2 keeps native mid-conversation system/tool/effort messages and always-on adaptive
-  thinking (no Off; effort defaults to high), and disables temperature. pi-ai already sends
-  the thinking-binding beta with `drop_block` for prefix edits; dropped thinking can raise
-  costs. Classifier fallback is not enabled. See [release facts and compatibility](research/fable-5-2.md)
+  Native Fable 5.2 supplies $8/$40 input/output, $0.20 cache reads, $10 short writes ($16 long writes),
+  1M context and 128K output. Managed effort suppresses temperature without a local compat override.
+  Thinking stays adaptive (no Off); per-message effort defaults to high, but the fixed top-level effort
+  is now low to respect organization caps. The provider policy clears Anthropic's native fallback lists:
+  pi-ai otherwise enables Fable 5.2 → Opus 5 server-side fallback automatically. No silent model switches.
+  Anthropic message threads are enabled by pi-ai on its native endpoint; cache maintenance strips `thread`
+  and sets `disableContinuation`, keeping the full cached prefix without replacing a real reply's thread.
+  pi-durable migrates old live documents and task checkpoints; the SQLite schema remains version 2.
+  The thinking-binding beta still uses `drop_block` for prefix edits; dropped thinking can raise
+  costs. See [release facts and compatibility](research/fable-5-2.md)
   for the prefix-binding migration, 30-day retention and subscription quota caveats.
 - Providers: opencode-go, anthropic, openai (all exist in pi-ai).
 - Also openai-codex (the Codex CLI's ChatGPT login, legacy in pi-ai): a

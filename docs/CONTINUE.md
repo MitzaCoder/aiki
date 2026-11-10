@@ -1,5 +1,26 @@
 # Continue
 
+## Pi 1.5.1 upgrade (T73)
+
+All six direct pi dependency pins moved from 1.4.0 to npm's latest 1.5.x, 1.5.1; telemetry and schema
+transitives match. Fable 5.2 now uses the native catalog; the empty extension mechanism retains synthetic
+coverage. Native pricing, limits and thinking match the old row. Temperature stays omitted through managed
+effort, without a local flag. Native Fable now enables Opus 5 fallback by default; the Anthropic provider
+policy clears fallback lists to preserve the no-silent-switch decision. Top-level effort is now low,
+with the chosen effort still sent per message. New native Anthropic threads are isolated from cache warming
+by stripping `thread` and setting `disableContinuation`; fake HTTP verifies headers, betas, zero-output
+stream override and continuation of the real reply afterward.
+
+Compatibility edits use Chord's context/json subpaths and tagged watch calls/ends, the single-argument
+report callback, tagged Session ends and SQLite `runCounted`. Compaction notices read the current
+`compactionFailure.trigger`. SQLite migrations are unchanged (schema 2); a synthetic database actually
+written by 1.4.0 reopened with 1.5.1 and preserved its transcript while migrating pi.live v1 to v3.
+Upstream also migrates generation v1 to v2 and tool v1/v2 to v3; downgrading active upgraded tasks is not safe.
+Codemode adds local-reference search/declaration fixes and preserves non-finite console numbers; TypeBox
+tools remain accepted after the pi-schema transition. Root: 1,686 tests pass; web: 801 tests, zero check
+errors/warnings and build pass. Protocol check: exit 0, 299 DTOs / 78 overloads, unchanged; Android build
+tests were not needed. Public guard and Gitleaks pass. No real provider requests, deployment or push.
+
 ## Compact task header (T62)
 
 Web and Android remove the task summary and its divider. Waiting note/since/return date and subtask done/total now wrap
