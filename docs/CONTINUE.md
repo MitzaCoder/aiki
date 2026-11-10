@@ -1,15 +1,19 @@
 # Continue
 
-## Compact Android task rows (T87)
+## Compact task rows (T87)
 
-Subtask progress is the disclosure; parents and plain rows keep identical leading columns. The 14dp child guide
-remains, but the reserved 48dp disclosure column is gone. Gist, parent link, grouped relation/count menus and progress
-flow inline. Foundation clickable provides invisible minimum touch bounds; tooltip/TalkBack target details and
-expanded state remain. Shared waiting summaries no longer repeat a case-insensitive existing prefix.
-Android: 632 tests, two existing skips, zero failures/errors; assembly/lint pass (36 warnings, zero errors).
-T87 has synthetic before/after light/dark captures, folding and blocker-menu proof. Sample parent 104→82dp,
-blocker/found-while 116→82dp, ordinary rows 62→62dp; the same phone shows 6→7 complete rows. Web companion follows.
-No protocol/backend changes, main move, push or deployment.
+Android and web at every width now use subtask progress as the disclosure; parent/plain content keeps identical
+columns. Children retain only the 14dp/px guide. Gist, parent link, grouped relation/count menus and progress flow
+inline. Minimum touch hit areas grow invisibly; full target tooltips, TalkBack/keyboard access, expansion persistence,
+attention visibility and reduced motion remain. Shared waiting summaries avoid case-insensitive duplicate prefixes.
+Both commits are rebased onto installer stack `twqrurtr`; every earlier continuation section is retained below.
+Task-list source and the task-family DESIGN contract are unchanged from the accepted captures; no new media is needed.
+Android: 632 tests, two existing skips, assembly/lint pass (36 warnings, zero errors). Web: 878 tests, zero check
+diagnostics and build pass. Root: 1,912 tests / 23,125 assertions and typecheck pass; the rebased run passed first try
+in 203 seconds with no flaky-test rerun. Public guard and Gitleaks pass.
+T87 has 12 synthetic before/after captures, two playable folding recordings and blocker-menu proof. Android parent
+104→82dp, blocker/found-while 116→82dp, normal 62→62dp; same phone/scroll shows 6→7 complete rows. Web phone parent
+100→82px, no leading shift even in the narrow desktop sidebar. No protocol/backend changes, main move, push or deploy.
 
 ## Local installer and Welcome (T71)
 

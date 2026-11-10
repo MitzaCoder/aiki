@@ -194,11 +194,6 @@
 					<span class="task-status-dot" class:task-row-pulse={row.task.status === 'in_progress'}></span>
 				{/if}
 			</span>
-			{#if family.canToggle}
-				<button type="button" class="family-toggle" aria-label="{family.expanded ? 'Collapse' : 'Expand'} subtasks of {row.task.id}" aria-expanded={family.expanded} title={family.expanded ? 'Collapse subtasks' : `Expand subtasks (${family.foldedCount} folded)`} onclick={() => toggleFamily(row.task.id)}>
-					<ChevronRightIcon class="size-3.5 {family.expanded ? 'rotate-90' : ''}" />
-				</button>
-			{/if}
 			<span class="flex min-w-0 flex-1 flex-col gap-0.5">
 				<a
 					href={taskHref(row.task.id)}
@@ -208,11 +203,9 @@
 						: 'text-(--chat-fg)'}"
 					aria-label="Open {row.task.id}: {row.task.title}">{row.task.title}</a
 				>
-				{#if row.task.waiting}<span class="text-xs text-(--chat-fg-subtle)">{waitingSummary(row.task)}</span>{/if}
-				{#if gist.length > 0 && row.task.status !== 'waiting'}
-					<span class="truncate text-task-sm text-(--chat-fg-muted)">{gist}</span>
-				{/if}
-				<TaskFamilyMeta task={row.task} {tasks} archivedLinks={board?.archivedLinks} nested={depth > 0} {taskHref} onopen={onopentask} />
+				<TaskFamilyMeta task={row.task} {tasks} archivedLinks={board?.archivedLinks} nested={depth > 0} {taskHref} onopen={onopentask}
+					summary={row.task.status === 'waiting' ? waitingSummary(row.task) : gist}
+					canToggle={family.canToggle} expanded={family.expanded} foldedCount={family.foldedCount} ontoggle={() => toggleFamily(row.task.id)} />
 				{#if needsYou || refs.length > 0}
 					<span class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-[0.6875rem] leading-4 text-(--chat-fg-subtle)">
 						{#if needsYou}
@@ -439,19 +432,6 @@
 </div>
 
 <style>
-	.family-toggle {
-		position: relative;
-		z-index: 1;
-		display: grid;
-		place-items: center;
-		min-width: 28px;
-		min-height: 28px;
-		margin: -4px -4px 0 -8px;
-		border-radius: 4px;
-		color: var(--chat-fg-subtle);
-	}
-	.family-toggle:hover { background: var(--chat-surface-2); }
-	.family-toggle:focus-visible { outline: 2px solid var(--accent-2); }
 	.family-children { margin-left: 14px; border-left: 1px solid var(--chat-border); }
 	.family-depth-limit { margin-left: 0; }
 	/* A section's rows as one inset-grouped card, split by hairlines that start where the text does. */

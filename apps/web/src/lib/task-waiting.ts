@@ -5,7 +5,8 @@ import { compactRelativeTime } from './relative-time.ts';
 export function waitingSummary(task: Pick<BoardTask, 'waiting'>, now = Date.now()): string {
  const wait = task.waiting;
  if (!wait) return '';
- return `Waiting for ${wait.note} · since ${compactRelativeTime(wait.since, now)}${wait.until ? ` · back on ${formatWaitingTime(wait.until)}` : ''}`;
+ const note = /^\s*waiting for/i.test(wait.note) ? wait.note : `Waiting for ${wait.note}`;
+ return `${note} · since ${compactRelativeTime(wait.since, now)}${wait.until ? ` · back on ${formatWaitingTime(wait.until)}` : ''}`;
 }
 
 /** Local calendar dates, so quick picks and the native date input agree across time zones. */
