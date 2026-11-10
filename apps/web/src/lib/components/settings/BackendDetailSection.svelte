@@ -15,6 +15,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import AutoInput from '#lib/components/settings/AutoInput.svelte';
 	import CopyButton from '#lib/components/CopyButton.svelte';
+	import { notifications } from '#lib/notifications.svelte.ts';
 	import { harness, type BackendConnection } from '#lib/harness.svelte.js';
 	import { backendSettingsHref, generalSettingsHref } from '#lib/settings.js';
 
@@ -28,6 +29,7 @@
 	const ready = $derived(backend.providers.filter((provider) => provider.configured).length);
 
 	async function remove(): Promise<void> {
+		await notifications.disableBackend(backend);
 		harness.removeBackend(backend.id);
 		await goto(generalSettingsHref('backends'), { replaceState: true });
 	}

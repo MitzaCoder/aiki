@@ -104,7 +104,7 @@ describe("web manifests", () => {
 
 describe("the service worker", () => {
 	test("handles push, a notification click and a replaced subscription", () => {
-		const source = read("/src/service-worker/index.ts");
+		const source = read("/src/service-worker/index.ts") + read("/src/service-worker/push-events.ts");
 		for (const handler of [
 			'"push"',
 			'"notificationclick"',

@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+import { pushWorker } from './vite-plugin-push-worker.ts';
 import { publishedBackends } from './vite-plugin-published-backends.ts';
 import { legacyStoragePrefix } from './vite-legacy-storage.ts';
 
@@ -13,6 +14,7 @@ export default defineConfig(() => {
 		define: { __AIKI_LEGACY_STORAGE_PREFIX__: JSON.stringify(legacyStoragePrefix()) },
 		plugins: [
 			tailwindcss(),
+			pushWorker(),
 			// Untracked `deploy/local/backends.json` becomes `/backends.json` beside the app (see the plugin).
 			publishedBackends(),
 			sveltekit({

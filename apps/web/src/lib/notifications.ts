@@ -32,11 +32,26 @@ export type NotificationKindInfo = {
 export const NOTIFICATION_KIND_INFO: readonly NotificationKindInfo[] = NOTIFICATION_KINDS.map((kind) => {
 	switch (kind) {
 		case "reply":
-			return { kind, label: "Coordinator replies", description: "An answer finished while you were away.", failure: false };
+			return {
+				kind,
+				label: "Coordinator replies",
+				description: "An answer finished while you were away.",
+				failure: false,
+			};
 		case "worker_report":
-			return { kind, label: "Worker reports", description: "A worker finished its task and reported. Off by default: Work finished covers a long run.", failure: false };
+			return {
+				kind,
+				label: "Worker reports",
+				description: "A worker finished its task and reported. Off by default: Work finished covers a long run.",
+				failure: false,
+			};
 		case "worker_failed":
-			return { kind, label: "Worker failures", description: "A worker failed or stopped without reporting.", failure: true };
+			return {
+				kind,
+				label: "Worker failures",
+				description: "A worker failed or stopped without reporting.",
+				failure: true,
+			};
 		case "schedule_done":
 			return { kind, label: "Scheduled runs", description: "A scheduled task started or finished.", failure: false };
 		case "schedule_problem":
@@ -141,7 +156,8 @@ export function pushSubscriptionError(error: unknown): { message: string; detail
 	const message = error instanceof Error ? error.message : String(error);
 	if (error instanceof Error && error.name === "AbortError" && message === "Registration failed - push service error") {
 		return {
-			message: "The browser's push service refused. In Brave, turn on Use Google services for push messaging under Settings → Privacy and security, restart the browser, then try again.",
+			message:
+				"The browser's push service refused. In Brave, turn on Use Google services for push messaging under Settings → Privacy and security, restart the browser, then try again.",
 			detail: message,
 		};
 	}
@@ -159,16 +175,21 @@ export type BackendNotificationFacts = {
 	device: NotificationDevice | null;
 	/** Whether the backend signs with a different key than the subscription was made with. */
 	keyMismatch: boolean;
+	legacy?: boolean;
+	syncNeeded?: boolean;
+	unavailableReason?: string;
 	/** The last failure, which explains a status the other facts cannot. */
 	error?: string;
 };
 
 export type BackendNotificationStatus =
 	| "checking"
+	| "unavailable"
 	| "no-feature"
 	| "unsupported"
 	| "denied"
 	| "key-mismatch"
+	| "sync-needed"
 	| "off"
 	| "not-registered"
 	| "registered"
@@ -184,10 +205,12 @@ export type BackendNotificationView = {
 
 /** What one backend's card says, from the facts the page has. */
 export function backendNotificationView(facts: BackendNotificationFacts): BackendNotificationView {
+	if (facts.unavailableReason && !facts.syncNeeded)
+		return { status: "unavailable", label: "Unavailable", detail: facts.unavailableReason, tone: "muted" };
 	if (!facts.supportsFeature) {
 		return {
 			status: "no-feature",
-			label: "No notifications",
+			label: "Unavailable",
 			detail: "This backend runs a release without notifications.",
 			tone: "muted",
 		};
@@ -195,8 +218,8 @@ export function backendNotificationView(facts: BackendNotificationFacts): Backen
 	if (facts.permission === "unsupported") {
 		return {
 			status: "unsupported",
-			label: "Unsupported browser",
-			detail: "This browser has no Push API; on iOS, add the app to the Home Screen first.",
+			label: "Unavailable",
+			detail: "This browser cannot receive push notifications. On iOS, add the app to the Home Screen first.",
 			tone: "muted",
 		};
 	}
@@ -211,13 +234,21 @@ export function backendNotificationView(facts: BackendNotificationFacts): Backen
 	if (facts.keyMismatch) {
 		return {
 			status: "key-mismatch",
-			label: "Key mismatch",
-			detail: "This backend signs with a different key than the others. Every backend must use the same pair.",
+			label: "Needs re-subscribe",
+			detail: "This backend's push key changed.",
 			tone: "err",
 		};
 	}
+	if (facts.syncNeeded) {
+		return {
+			status: "sync-needed",
+			label: "Needs sync",
+			detail: "Reopen the app while signed in.",
+			tone: "warn",
+		};
+	}
 	if (facts.error !== undefined) {
-		return { status: "failed", label: "Failed", detail: facts.error, tone: "err" };
+		return { status: "failed", label: "Unavailable", detail: facts.error, tone: "err" };
 	}
 	if (!facts.subscribed) {
 		return {
@@ -237,7 +268,7 @@ export function backendNotificationView(facts: BackendNotificationFacts): Backen
 	}
 	return {
 		status: "registered",
-		label: "Registered",
+		label: facts.legacy ? "On (shared subscription)" : "On (own subscription)",
 		detail: lastDeliveryText(facts.device),
 		tone: "ok",
 	};
@@ -250,9 +281,7 @@ export function lastDeliveryText(device: Pick<NotificationDevice, "lastDelivery"
 	const when = new Date(delivery.at);
 	const at = Number.isNaN(when.getTime()) ? delivery.at : when.toLocaleString();
 	if (delivery.ok) {
-		return delivery.status === null
-			? `Last push accepted ${at}.`
-			: `Last push accepted ${at} (${delivery.status}).`;
+		return delivery.status === null ? `Last push accepted ${at}.` : `Last push accepted ${at} (${delivery.status}).`;
 	}
 	const answer = delivery.status === null ? "" : ` (${delivery.status})`;
 	const reason = delivery.message === null ? "" : `: ${delivery.message}`;
@@ -261,18 +290,13 @@ export function lastDeliveryText(device: Pick<NotificationDevice, "lastDelivery"
 
 /** The push service's answer to "Send test notification", in words. */
 export function testNotificationText(result: { ok: boolean; status: number | null; message: string | null }): string {
-	const status = result.status === null ? "" : ` (${result.status}${result.message === null ? "" : ` ${result.message}`})`;
+	const status =
+		result.status === null ? "" : ` (${result.status}${result.message === null ? "" : ` ${result.message}`})`;
 	if (result.ok) return `The push service accepted it${status}.`;
 	if (result.status === 404 || result.status === 410) {
 		return `The push service no longer knows this subscription${status}. Disable and enable notifications to subscribe again.`;
 	}
 	return `The push service refused it${status}.`;
-}
-
-/** Whether every backend that signs pushes agrees on the key; two lifetimes would strand one browser's subscription. */
-export function publicKeyMismatch(keys: readonly string[]): boolean {
-	const distinct = new Set(keys.map((key) => key.trim().replace(/=+$/, "")).filter((key) => key.length > 0));
-	return distinct.size > 1;
 }
 
 /** The project a route shows, for presence: a worker's transcript and the settings page are that project too. */
@@ -286,7 +310,10 @@ export function presenceFor(pathname: string, visible: boolean): { projectId: st
 }
 
 /** A quiet-hours draft from a device's settings: the stored window, or the default a toggle starts from. */
-export function quietHoursDraft(settings: Pick<DeviceNotificationSettings, "quietHours">, timezone: string): QuietHours {
+export function quietHoursDraft(
+	settings: Pick<DeviceNotificationSettings, "quietHours">,
+	timezone: string,
+): QuietHours {
 	return (
 		settings.quietHours ?? {
 			start: "22:00",

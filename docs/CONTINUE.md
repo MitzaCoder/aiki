@@ -1,5 +1,63 @@
 # Continue
 
+## Plain notification wording (T98 follow-up)
+
+Notifications now say **On (shared subscription)** and **On (own subscription)**, with **Needs re-subscribe**
+("This backend's push key changed."), **Needs sync** ("Reopen the app while signed in."), **Off** and
+**Unavailable** with its reason. The backend hint is "Each backend pushes on its own. If a subscription changes,
+reopen the app while signed in." Implementation terms stay in code/docs, not settings labels, hints or authored
+errors. Worker-start and registration-limit errors use ordinary notification/backend wording too. No subscription,
+key, worker, backend or deploy behavior changed.
+
+Updated unit/browser copy assertions, including a rendered-page check against implementation jargon.
+Web: 918 tests / 13,722 assertions; check has zero errors/warnings; build and root typecheck pass.
+No full root test run for this copy-only change; server files are untouched. Public-source checks pass.
+Real Chromium mixed-key and operator legacy regression assertions pass, including zero subscribe/unsubscribe
+calls for the three shared-key backends. Four refreshed after screenshots (desktop/phone, light/dark) and the
+refreshed after interaction recording are saved on T98 with the existing tags. All fixture servers and Chromium
+were stopped by PID. No main move, push, deployment, phone or emulator operation.
+
+## Independent web push keys and subscriptions (T98)
+
+Each independent backend now uses an opaque `/push/<sha256>/` registration served by `/push-worker.js`, separate
+from the root app shell. Push-only workers have no fetch/resource cache/claim behavior. Same-key legacy backends keep
+their existing root subscription and endpoint: no migration, rotation, re-subscribe or operator deploy change on load.
+Fresh explicit enablement may also share root for a same-key group; a fresh pair of independent keys gets two scoped
+workers. The persisted backend/origin/scope/key map contains no credentials; browser subscription objects come from
+their registrations. Removal prunes its scope; root is released only after its last known user, conservatively retaining
+it while an undiscovered offline backend might still use it. New scoped registrations are capped at 24 and dormant
+unmapped registrations are removed. This is an application cap, not a measured portable browser limit.
+
+Both workers now only mark a changed scope in IndexedDB and notify open pages. A ready signed-in page repairs that
+scope's backend rows, not every configured backend. Repair generations prevent clearing a newer concurrent change.
+No anonymous worker sockets or bearer material in Cache Storage. A browser that cannot expose its existing root key
+keeps that subscription untouched and requires explicit enablement rather than guessing a key or migrating scopes. Settings show own-key/legacy, explicit per-backend
+re-subscribe on key change, sync-needed, off and unavailable states; Brave guidance remains. Web push needs no relay
+account (D51: an account is optional and only for Android relay notifications). Offline shared-root removal cannot
+revoke an unreachable backend’s remote row without also disrupting other users of that root: remove while reachable
+or revoke that backend’s device session. No hidden remote cleanup/auth bypass was introduced.
+
+Server tests pin default VAPID path, 0600 creation/narrowing, restart persistence, malformed-file refusal and both
+operator overrides. Static-serving tests pin JavaScript MIME/no-store behavior; root script location already permits
+narrower scopes, so no `Service-Worker-Allowed` override is needed. `deploy/vapid-key.sh` is unchanged.
+No protocol or Android changes.
+
+Final checks: root 1,961 tests / 23,324 assertions, no failures or retries; root typecheck passes.
+Web 917 tests / 13,709 assertions; check has zero errors/warnings; production build passes.
+Chromium integration phases in `apps/web/scripts/push-browser.md` passed with six required-auth `createSetup` backends:
+mixed independent/shared keys, each authenticated row and signed loopback send, an existing untouched legacy root,
+separate independent scopes, disable/re-enable/removal, explicit key-change repair, marked-scope repair and the operator's
+three-shared-backend regression (zero subscribe/unsubscribe calls, root only, no errors). Key-change proof seeds the
+previous saved key; marker proof simulates expiry. Unit tests exercise actual worker events and signed-out deferral.
+The separate server-test parent also passed all checks: root 1,941 tests / 23,251 assertions, web 897 / 13,636.
+Only PushManager/permission use stubs; real push-service acceptance and non-Chromium browser limits need consented
+follow-up. Style pass uses typed page/CDP helpers and one statement per line. No new runtime dependencies.
+
+T98 artifacts include desktop/phone light/dark affected-row before/after screenshots and before/after Chromium
+recordings. Initial top-of-page baseline screenshots are also retained, but the later affected-row pairs are the useful
+comparison. All isolated servers and Chromium were stopped by PID. No live backend data or credentials were used,
+no phone/emulator was touched, and no main move, push or deployment was performed.
+
 ## Push relay D52 rework (T93)
 
 Reworked the emulator-only `relay/` package on top of `xlqlowlw`. D52 is implemented: clients send UTF-8 JSON bytes

@@ -3001,12 +3001,23 @@ setting, restart and retry steps; the raw error remains a small secondary detail
   `fcm: null` so the app can say why nothing arrives. Messages are data-only and high priority: the app draws the
   notification itself (channel per kind, tap opens the payload's route).
 
-- **One VAPID key pair for every backend.** A browser holds one push subscription, and the push service rejects a
-  message signed with another key, so the key cannot be per backend. One backend (the host's) generates it on first
-  start and keeps it in the data directory, mode 0600; the deploy copies it to the other backends. It is never
-  committed, and it is not a secret shared with the app: the public half is what `notifications.config` answers.
-  The VAPID `sub` is the app's URL, taken from the allowed-origins configuration, because it names who is pushing and
-  the app is the one address every backend shares.
+- **Independent VAPID keys and subscriptions per backend.** Web push needs no relay account. Per D51, a relay
+  account is optional and only used for Android relay notifications. Each backend generates and persists its own pair at
+  `<data>/notifications/vapid.json` (0600); malformed existing files fail rather than rotate. `AIKI_VAPID_KEY_FILE`
+  and `AIKI_VAPID_SUBJECT` remain operator overrides. Only the public key reaches the authenticated app. A browser
+  holds one subscription per service-worker registration: independent backends use push-only workers at
+  `/push/<opaque-id>/`, served by `/push-worker.js`, separate from the root app-shell worker. They do not fetch,
+  cache app resources or claim pages. Permission remains origin-wide and is requested from a user gesture.
+  **Legacy exception:** backends matching an existing root subscription keep using it without re-subscribing or
+  moving scopes. The operator's shared-key deploy is unchanged. Root is unsubscribed only after its last user is
+  removed or explicitly disabled; no upgrade rotates keys. A changed backend key requires an explicit per-backend
+  re-subscribe, never touching another backend's subscription. Backend removal removes its scoped registration;
+  stale registrations are pruned and new scoped registrations are capped at 24. Browser-specific limits may be lower.
+  On an explicit fresh enable, a same-key group may share a new root subscription too; distinct keys use their own scopes.
+  Removing an unreachable legacy backend cannot remove its remote row while another backend still uses root: remove
+  it while reachable, or revoke its device session there, to stop that backend’s remaining pushes.
+  Both workers mark subscription changes as sync-needed, without opening anonymous sockets or storing auth tokens.
+  A signed-in page repairs only the affected scope and backend rows; settings explain that reopening may be needed.
 - **The backend decides, the device only stores.** Each backend keeps the devices registered with it (subscription,
   label, what the device calls that backend, preferences) and pushes its own events; nothing is synced between
   backends. A payload carries the device's name for that backend, so a deep link lands on the right one.

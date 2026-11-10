@@ -53,7 +53,7 @@
 			.map((backend) => `${backend.id}:${backend.authSessionId ?? "anonymous"}:${backend.connection.status}:${(backend.features ?? []).length}`)
 			.join('|');
 		void signature;
-		if (backends.some((backend) => backend.ready)) void notifications.sync(backends);
+		void notifications.sync(backends);
 	});
 
 	/**

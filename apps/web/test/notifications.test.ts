@@ -3,11 +3,7 @@
  * which project a route is looking at. The page and the service worker follow these, so they are pinned here.
  */
 import { describe, expect, test } from "bun:test";
-import {
-	DEFAULT_NOTIFICATION_KINDS,
-	NOTIFICATION_FAILURE_KINDS,
-	type NotificationDevice,
-} from "@aiki/protocol";
+import { DEFAULT_NOTIFICATION_KINDS, NOTIFICATION_FAILURE_KINDS, type NotificationDevice } from "@aiki/protocol";
 import { NOTIFICATION_KINDS } from "@aiki/client";
 import {
 	DEFAULT_KIND_INFO,
@@ -18,7 +14,6 @@ import {
 	lastDeliveryText,
 	presenceFor,
 	presenceProjectId,
-	publicKeyMismatch,
 	pushSubscriptionError,
 	quietHoursDraft,
 	quietHoursProblem,
@@ -53,24 +48,28 @@ describe("push subscription errors", () => {
 	test("explains the Brave setting for a push-service AbortError and keeps the raw detail", () => {
 		const error = new DOMException("Registration failed - push service error", "AbortError");
 		expect(pushSubscriptionError(error)).toEqual({
-			message: "The browser's push service refused. In Brave, turn on Use Google services for push messaging under Settings → Privacy and security, restart the browser, then try again.",
+			message:
+				"The browser's push service refused. In Brave, turn on Use Google services for push messaging under Settings → Privacy and security, restart the browser, then try again.",
 			detail: error.message,
 		});
 	});
 
 	test("leaves an AbortError with other text unchanged", () => {
-		expect(pushSubscriptionError(new DOMException("Registration failed - no active Service Worker", "AbortError")))
-			.toEqual({ message: "Registration failed - no active Service Worker" });
+		expect(
+			pushSubscriptionError(new DOMException("Registration failed - no active Service Worker", "AbortError")),
+		).toEqual({ message: "Registration failed - no active Service Worker" });
 	});
 
 	test("leaves permission denied unchanged", () => {
-		expect(pushSubscriptionError(new DOMException("Permission denied", "NotAllowedError")))
-			.toEqual({ message: "Permission denied" });
+		expect(pushSubscriptionError(new DOMException("Permission denied", "NotAllowedError"))).toEqual({
+			message: "Permission denied",
+		});
 	});
 
 	test("leaves an unrelated error unchanged, even with the same message", () => {
-		expect(pushSubscriptionError(new Error("Registration failed - push service error")))
-			.toEqual({ message: "Registration failed - push service error" });
+		expect(pushSubscriptionError(new Error("Registration failed - push service error"))).toEqual({
+			message: "Registration failed - push service error",
+		});
 		expect(pushSubscriptionError(new Error("Network unavailable"))).toEqual({ message: "Network unavailable" });
 	});
 });
@@ -115,9 +114,35 @@ describe("one backend's status", () => {
 		expect(backendNotificationView(facts({ permission: "denied" })).status).toBe("denied");
 		expect(backendNotificationView(facts({ permission: "unsupported" })).status).toBe("unsupported");
 		expect(backendNotificationView(facts({ keyMismatch: true })).status).toBe("key-mismatch");
+		expect(backendNotificationView(facts({ legacy: true })).label).toBe("On (shared subscription)");
+		expect(backendNotificationView(facts({ syncNeeded: true })).status).toBe("sync-needed");
+		expect(backendNotificationView(facts({ unavailableReason: "Sign in first." })).detail).toBe("Sign in first.");
 		const failed = backendNotificationView(facts({ error: "Request failed" }));
 		expect(failed.status).toBe("failed");
 		expect(failed.detail).toBe("Request failed");
+	});
+
+	test("uses plain labels and short repair reasons", () => {
+		expect(backendNotificationView(facts()).label).toBe("On (own subscription)");
+		const changedKey = backendNotificationView(facts({ keyMismatch: true }));
+		expect(changedKey.label).toBe("Needs re-subscribe");
+		expect(changedKey.detail).toBe("This backend's push key changed.");
+		const changedSubscription = backendNotificationView(facts({ syncNeeded: true }));
+		expect(changedSubscription.label).toBe("Needs sync");
+		expect(changedSubscription.detail).toBe("Reopen the app while signed in.");
+		for (const overrides of [
+			{},
+			{ legacy: true },
+			{ keyMismatch: true },
+			{ syncNeeded: true },
+			{ supportsFeature: false },
+			{ permission: "unsupported" as const },
+			{ error: "Connection failed." },
+		]) {
+			const view = backendNotificationView(facts(overrides));
+			expect(`${view.label} ${view.detail}`).not.toMatch(/\blegacy\b|\bVAPID\b|\bscope\b/i);
+		}
+		expect(backendNotificationView(facts({ error: "Connection failed." })).label).toBe("Unavailable");
 	});
 
 	test("off and not registered are different states", () => {
@@ -151,15 +176,6 @@ describe("the push service's answer", () => {
 		expect(testNotificationText({ ok: false, status: 410, message: "Gone" })).toContain("no longer knows");
 		expect(testNotificationText({ ok: false, status: 500, message: "Server error" })).toContain("refused");
 		expect(testNotificationText({ ok: false, status: null, message: null })).toContain("refused");
-	});
-});
-
-describe("the push key", () => {
-	test("notices backends that disagree, ignoring padding", () => {
-		expect(publicKeyMismatch(["abc", "abc="])).toBe(false);
-		expect(publicKeyMismatch(["abc", "abd"])).toBe(true);
-		expect(publicKeyMismatch(["abc", "", "  "])).toBe(false);
-		expect(publicKeyMismatch([])).toBe(false);
 	});
 });
 

@@ -1,11 +1,11 @@
 /**
- * This browser's notifications: one push subscription, one device identity, and a registration on every backend that
+ * This browser's notifications: independent push subscriptions, one device identity, and a registration on every backend that
  * offers them. Svelte runes live here; the wording and the decision rules are in `notifications.ts`, and the wire
  * helpers in `@aiki/client`.
  *
- * The service worker (`src/service-worker.ts`) shows what arrives and opens the app on a click. This store keeps it fed:
- * the registrations it needs to re-register after `pushsubscriptionchange`, and this device's presence on every backend
- * so the backend holds a push while the app is open (interaction is `interaction.ts`).
+ * The root app-shell worker preserves legacy push; separate scoped workers handle independent keys. Workers only
+ * mark subscription changes for signed-in page repair. Presence still holds pushes while the app is open
+ * (interaction is `interaction.ts`).
  */
 import {
 	applicationServerKey,
@@ -31,7 +31,6 @@ import type { BackendConnection } from "./harness.svelte.ts";
 import {
 	backendNotificationView,
 	presenceFor,
-	publicKeyMismatch,
 	pushSubscriptionError,
 	testNotificationText,
 	type BackendNotificationView,
@@ -53,22 +52,23 @@ export type BackendNotification = {
 	testing: boolean;
 };
 
-/** What the service worker keeps, so it can register a new subscription with no app open. */
-type WorkerRegistration = {
-	origin: string;
-	backendKey: string;
-	deviceId: string;
-	label: string;
-	publicKey: string;
-	preferences: ReturnType<typeof preferencesForBackend>;
-};
-
-/** What the service worker needs to re-register after `pushsubscriptionchange`. */
-export const WORKER_REGISTRATIONS_MESSAGE = "notifications-registrations";
-
-/** What the service worker says after it registered a new subscription. */
-export const SUBSCRIPTION_CHANGED_MESSAGE = "notifications-changed";
-
+import {
+	backendPushScope,
+	equalPushKey,
+	loadPushSubscriptions,
+	MAX_PUSH_SCOPES,
+	PUSH_SUBSCRIPTIONS_STORAGE,
+	pushSubscriptionDecision,
+	removedPushBackendIds,
+	type BackendPushSubscription,
+} from "./push-subscriptions.ts";
+import {
+	clearPushSyncMarker,
+	PUSH_CHANGED_MESSAGE,
+	pushSyncMarkers,
+	pushSyncScopes,
+	setPushSyncNeeded,
+} from "./push-sync.ts";
 function messageOf(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
 }
@@ -99,15 +99,19 @@ export class NotificationCenter {
 	subscription = $state<PushSubscription | null>(null);
 	/** One entry per backend this app has asked, keyed by the app's id for it. */
 	backends = $state<Record<string, BackendNotification>>({});
-	/** Every backend signs with the same key; a mismatch means one of them is wrong. */
-	keyMismatch = $state(false);
+	/** Persisted per-backend scope, key and enablement; no auth material. */
+	push = $state<Record<string, BackendPushSubscription>>({});
+	#registrations = new Map<string, ServiceWorkerRegistration>();
+	#subscriptions = new Map<string, PushSubscription | null>();
+	#startPromise: Promise<void> | undefined;
+	#syncTail: Promise<void> = Promise.resolve();
 	/** A request is running: enabling, disabling or saving preferences. */
 	busy = $state(false);
 	error = $state<string | undefined>(undefined);
 	errorDetail = $state<string | undefined>(undefined);
 
 	#loaded = false;
-	#started = false;
+	#storageReadable = true;
 	/** The connection signature last synced, so a reconnect (not every render) asks again. */
 	#synced = new Map<string, string>();
 	/** The presence last sent per backend, so a route change sends once. */
@@ -130,52 +134,62 @@ export class NotificationCenter {
 			saveDeviceSettings(this.settings);
 		}
 		this.permission = permissionNow();
+		if (typeof localStorage !== "undefined") {
+			try {
+				this.push = loadPushSubscriptions(localStorage);
+			} catch {
+				this.#storageReadable = false;
+				this.error =
+					"Saved push settings are unreadable. Existing subscriptions were left untouched; restore browser storage before retrying.";
+			}
+		}
 	}
 
-	/** Register the service worker and read the subscription. Idempotent; called at startup. */
-	async start(): Promise<void> {
+	/** Keep app-shell registration and legacy root subscription untouched. */
+	start(): Promise<void> {
+		return (this.#startPromise ??= this.#start());
+	}
+	async #start(): Promise<void> {
 		this.load();
-		if (this.#started) return;
-		this.#started = true;
 		if (this.permission === "unsupported") return;
 		try {
-			// A module worker: SvelteKit builds the service worker as an ES module and registers it that way itself.
 			this.registration = await navigator.serviceWorker.register("/service-worker.js", {
 				scope: "/",
 				type: "module",
-				// A stale worker is a stale app; the browser must check the script, not its HTTP cache.
 				updateViaCache: "none",
 			});
 			this.subscription = await this.registration.pushManager.getSubscription();
-			await this.postWorkerRegistrations();
+			this.#registrations.set("/", this.registration);
+			this.#subscriptions.set("/", this.subscription);
 			navigator.serviceWorker.addEventListener("message", (event) => {
-				const data = event.data as { type?: unknown } | null;
-				if (typeof data === "object" && data !== null && data.type === SUBSCRIPTION_CHANGED_MESSAGE) {
-					void this.refreshSubscription();
-				}
+				if (event.data?.type === PUSH_CHANGED_MESSAGE) void this.refreshSubscription();
 			});
 		} catch (error) {
 			this.error = messageOf(error);
-			this.errorDetail = undefined;
 		}
 	}
-
-	/** Re-read the browser's subscription, after the service worker replaced it. */
+	/** Repair only worker-marked scopes, using the page's existing signed-in clients. */
 	async refreshSubscription(): Promise<void> {
-		if (this.registration === undefined) return;
-		try {
-			this.subscription = await this.registration.pushManager.getSubscription();
-			await this.postWorkerRegistrations();
-		} catch (error) {
-			this.error = messageOf(error);
-			this.errorDetail = undefined;
-		}
+		const scopes = await pushSyncScopes();
+		await this.sync(this.#backends, { force: true, scopes });
 	}
-
 	get enabled(): boolean {
-		return this.subscription !== null && this.permission === "granted";
+		return (
+			this.permission === "granted" &&
+			(this.subscription !== null || Object.values(this.push).some((record) => record.enabled))
+		);
 	}
-
+	#persist(): void {
+		localStorage.setItem(PUSH_SUBSCRIPTIONS_STORAGE, JSON.stringify(this.push));
+	}
+	#setPush(id: string, record: BackendPushSubscription): void {
+		this.push = { ...this.push, [id]: record };
+		this.#persist();
+	}
+	#subscriptionFor(id: string): PushSubscription | null {
+		const record = this.push[id];
+		return record?.enabled ? (this.#subscriptions.get(record.scope) ?? null) : null;
+	}
 	/** The device ID, made up the first time it is needed. */
 	get deviceId(): string {
 		if (this.settings.deviceId.length > 0) return this.settings.deviceId;
@@ -194,154 +208,205 @@ export class NotificationCenter {
 		return deviceTimezone();
 	}
 
-	/** One backend's card, from what this store knows and the page's current facts. */
+	/** One backend's card, including explicit repair and legacy state. */
 	viewFor(backend: BackendConnection): BackendNotificationView {
 		const entry = this.backends[backend.id];
+		const record = this.push[backend.id];
 		return backendNotificationView({
 			supportsFeature: entry?.supported ?? backend.supports("notifications"),
 			permission: this.permission,
-			subscribed: this.subscription !== null,
+			subscribed: this.#subscriptionFor(backend.id) !== null,
 			device: entry?.device ?? null,
-			keyMismatch: entry !== undefined && this.keyMismatchFor(entry),
+			keyMismatch: this.keyMismatchFor(entry),
+			syncNeeded: record?.syncNeeded ?? false,
+			legacy: record?.scope === "/",
+			unavailableReason: backend.ready
+				? undefined
+				: (backend.connection.error ?? "Connect and sign in to this backend to enable or sync push."),
 			...(entry?.error === undefined ? {} : { error: entry.error }),
 		});
 	}
-
-	keyMismatchFor(entry: BackendNotification): boolean {
-		if (!this.keyMismatch || entry.publicKey === undefined) return false;
-		const keys = Object.values(this.backends)
-			.map((value) => value.publicKey)
-			.filter((key): key is string => key !== undefined);
-		const own = this.subscriptionKey();
-		return publicKeyMismatch(keys) || (own !== undefined && !samePublicKey(own, entry.publicKey));
+	/** Detect only this backend's key change, never disagreement with unrelated backends. */
+	keyMismatchFor(entry: BackendNotification | undefined): boolean {
+		const record = entry && this.push[entry.backendId];
+		const actual = entry && this.#subscriptionFor(entry.backendId);
+		const actualKey = actual ? subscriptionServerKey(actual) : undefined;
+		return (
+			record !== undefined &&
+			entry?.publicKey !== undefined &&
+			(!equalPushKey(record.publicKey, entry.publicKey) ||
+				(actualKey !== undefined && !equalPushKey(actualKey, entry.publicKey)))
+		);
 	}
-
-	/** The key this browser's subscription was made with, when it has one. */
+	/** Read the legacy root subscription key without changing its registration or subscription. */
 	subscriptionKey(): string | undefined {
 		return this.subscription === null ? undefined : subscriptionServerKey(this.subscription);
 	}
-
-	/**
-	 * Ask every reachable backend what it offers, and register this device wherever it is missing. Runs on connect, on
-	 * a reconnect and when the Notifications page opens, so a backend added later is registered without a click.
-	 */
-	async sync(backends: readonly BackendConnection[], options: { force?: boolean } = {}): Promise<void> {
-		this.load();
-		this.#backends = backends;
-		for (const backend of backends) {
-			const signature = `${backend.authSessionId ?? "anonymous"}|${backend.ready ? "ready" : backend.connection.status}|${(backend.features ?? []).join(",")}`;
-			if (!options.force && this.#synced.get(backend.id) === signature) continue;
-			this.#synced.set(backend.id, signature);
-			if (!backend.ready) continue;
-			await this.#syncOne(backend);
-		}
-		this.#checkKeys();
+	/** Serialize startup/reconnect discovery and worker-change repair. */
+	sync(
+		backends: readonly BackendConnection[],
+		options: { force?: boolean; scopes?: readonly string[] } = {},
+	): Promise<void> {
+		const task = this.#syncTail
+			.then(() => this.#sync(backends, options))
+			.catch((error) => {
+				this.error = messageOf(error);
+			});
+		this.#syncTail = task;
+		return task;
 	}
-
+	async #sync(
+		backends: readonly BackendConnection[],
+		options: { force?: boolean; scopes?: readonly string[] },
+	): Promise<void> {
+		await this.start();
+		this.#backends = backends;
+		if (this.permission === "unsupported" || !this.#storageReadable) return;
+		await this.#removeMissing(backends);
+		const markers = await pushSyncMarkers();
+		const changed = Object.keys(markers);
+		for (const [id, record] of Object.entries(this.push)) {
+			if (record.enabled && changed.includes(record.scope)) this.#setPush(id, { ...record, syncNeeded: true });
+		}
+		for (const backend of backends) {
+			if (options.scopes && !options.scopes.includes(this.push[backend.id]?.scope ?? "")) continue;
+			const signature = `${backend.authSessionId ?? "anonymous"}|${backend.ready}|${(backend.features ?? []).join(",")}`;
+			if (!options.force && !this.push[backend.id]?.syncNeeded && this.#synced.get(backend.id) === signature) continue;
+			this.#synced.set(backend.id, signature);
+			if (backend.ready) await this.#syncOne(backend);
+		}
+		for (const scope of changed) {
+			if (!Object.values(this.push).some((record) => record.enabled && record.scope === scope && record.syncNeeded))
+				await clearPushSyncMarker(scope, markers[scope]!);
+		}
+	}
 	async #syncOne(backend: BackendConnection): Promise<void> {
 		const current = this.backends[backend.id];
-		const next: BackendNotification = {
+		this.#set(backend.id, {
 			backendId: backend.id,
 			device: current?.device ?? null,
 			supported: backend.supports("notifications"),
-			testing: current?.testing ?? false,
-		};
-		this.#set(backend.id, next);
-		if (!next.supported) return;
-		let publicKey: string;
+			testing: false,
+		});
+		if (!backend.supports("notifications")) return;
 		try {
-			publicKey = await backend.client.readNotificationsConfig();
-		} catch (error) {
-			if (error instanceof ClientError && error.code === "unknown_request") {
-				this.#set(backend.id, { ...next, supported: false, device: null });
-				return;
+			const publicKey = await backend.client.readNotificationsConfig();
+			this.#set(backend.id, { ...this.#entry(backend.id), publicKey });
+			let record = this.push[backend.id];
+			if (!record && this.subscription !== null && this.subscriptionKey() === undefined) {
+				throw new Error(
+					"This browser cannot read the existing push key. Its existing subscription was kept unchanged. " +
+						"Enable this backend explicitly to use a separate subscription.",
+				);
 			}
-			this.#set(backend.id, { ...next, error: messageOf(error) });
-			return;
-		}
-		this.#set(backend.id, { ...next, publicKey });
-		const keyMatches =
-			this.subscription === null ||
-			samePublicKey(subscriptionServerKey(this.subscription) ?? publicKey, publicKey);
-		// Upsert before reading: after migration the old anonymous row is not readable by the new session yet.
-		// Registration binds it to that session and returns the device, including its previous delivery status.
-		if (this.subscription !== null && keyMatches) {
-			await this.#register(backend);
-		} else {
-			try {
+			const decision = pushSubscriptionDecision({ publicKey, rootKey: this.subscriptionKey(), stored: record });
+			if (!record && decision === "root") {
+				record = { origin: backend.url, scope: "/", publicKey, enabled: true };
+				this.#setPush(backend.id, record);
+			} else if (!record && this.enabled) {
+				record = {
+					origin: backend.url,
+					scope: await backendPushScope(backend.id, backend.url),
+					publicKey,
+					enabled: true,
+				};
+				this.#setPush(backend.id, record);
+			}
+			// A different advertised key never rotates a subscription implicitly.
+			if (record?.enabled && !this.keyMismatchFor(this.backends[backend.id])) {
+				await this.#ensureSubscription(record);
+				await this.#register(backend);
+			} else if (record && !record.enabled) {
+				// An explicit off made while offline retries its authenticated row removal on reconnect.
+				await backend.client.unregisterNotifications(this.deviceId);
+				this.#set(backend.id, { ...this.#entry(backend.id), device: null });
+			} else {
 				const device = await backend.client.readNotificationDevice(this.deviceId);
 				this.#set(backend.id, { ...this.#entry(backend.id), device });
-			} catch (error) {
-				this.#set(backend.id, { ...this.#entry(backend.id), error: messageOf(error) });
-				return;
 			}
+		} catch (error) {
+			if (error instanceof ClientError && error.code === "unknown_request")
+				this.#set(backend.id, { ...this.#entry(backend.id), supported: false, device: null });
+			else this.#set(backend.id, { ...this.#entry(backend.id), error: pushSubscriptionError(error).message });
 		}
-		await this.postWorkerRegistrations();
 	}
-
-	/**
-	 * Turn notifications on for this device: ask for permission (from the click that called this), subscribe once, and
-	 * register with every backend that offers them. A browser with a subscription made with another key is left as is:
-	 * the mismatch is the backend's problem to explain, not something to silently re-subscribe around.
-	 */
+	async #ensureSubscription(record: BackendPushSubscription): Promise<void> {
+		if (this.permission !== "granted") return;
+		let registration = this.#registrations.get(record.scope);
+		if (!registration) {
+			if (record.scope === "/" && !this.registration)
+				throw new Error("Notifications could not start. Reopen the app to retry.");
+			const existing = await navigator.serviceWorker.getRegistration(record.scope);
+			if (existing && new URL(existing.scope).pathname === record.scope) registration = existing;
+			else {
+				const scoped = (await navigator.serviceWorker.getRegistrations()).filter((value) =>
+					new URL(value.scope).pathname.startsWith("/push/"),
+				);
+				if (scoped.length >= MAX_PUSH_SCOPES)
+					throw new Error(
+						`Push is already on for ${MAX_PUSH_SCOPES} backends in this browser. Disable one before enabling another.`,
+					);
+				registration = await navigator.serviceWorker.register("/push-worker.js", {
+					scope: record.scope,
+					updateViaCache: "none",
+				});
+			}
+			this.#registrations.set(record.scope, registration);
+		}
+		// subscribe requires an active worker; registration.ready refers only to the root document's controller.
+		if (!registration.active)
+			await new Promise<void>((resolve, reject) => {
+				const worker = registration!.installing ?? registration!.waiting;
+				if (!worker) {
+					reject(new Error("Notifications are not ready. Reopen the app to retry."));
+					return;
+				}
+				const timer = setTimeout(
+					() => reject(new Error("Notifications took too long to start. Reopen the app to retry.")),
+					10_000,
+				);
+				worker.addEventListener("statechange", () => {
+					if (worker.state === "activated") {
+						clearTimeout(timer);
+						resolve();
+					}
+					if (worker.state === "redundant") {
+						clearTimeout(timer);
+						reject(new Error("Notifications could not start. Reopen the app to retry."));
+					}
+				});
+			});
+		let subscription = await registration.pushManager.getSubscription();
+		this.#subscriptions.set(record.scope, subscription);
+		if (subscription && !samePublicKey(subscriptionServerKey(subscription) ?? "", record.publicKey))
+			throw new Error("The saved subscription has a different key. Re-subscribe this backend.");
+		if (!subscription)
+			subscription = await registration.pushManager.subscribe({
+				userVisibleOnly: true,
+				applicationServerKey: applicationServerKey(record.publicKey),
+			});
+		this.#subscriptions.set(record.scope, subscription);
+		if (record.scope === "/") this.subscription = subscription;
+	}
+	/** Origin-wide permission remains the first await in the user's enable gesture. */
 	async enable(backends: readonly BackendConnection[]): Promise<void> {
 		this.busy = true;
 		this.error = undefined;
 		this.errorDetail = undefined;
 		try {
 			this.load();
-			if (this.permission === "unsupported") {
-				this.error = "This browser cannot receive push notifications.";
-				return;
-			}
-			// First, and before any other await: Chrome only shows the prompt while the click's user activation lasts.
-			const permission = await Notification.requestPermission();
-			this.permission = permission;
-			if (permission !== "granted") {
-				this.error =
-					permission === "denied"
-						? "The browser blocked notifications for this site. Allow them in its site settings, then try again."
-						: "Notifications were not allowed.";
-				return;
-			}
-			await this.start();
+			if (!this.#storageReadable)
+				throw new Error("Saved push settings are unreadable. Existing subscriptions were left untouched.");
+			if (this.permission === "unsupported") throw new Error("This browser cannot receive push notifications.");
+			this.permission = await Notification.requestPermission();
+			if (this.permission !== "granted")
+				throw new Error("Notifications were not allowed. Check this site's browser permissions.");
 			await this.sync(backends, { force: true });
-			const support = backends.find(
-				(backend) =>
-					backend.ready &&
-					this.backends[backend.id]?.supported === true &&
-					this.backends[backend.id]?.publicKey !== undefined,
+			const available = backends.filter(
+				(backend) => backend.ready && this.backends[backend.id]?.publicKey !== undefined,
 			);
-			const key = support === undefined ? undefined : this.backends[support.id]?.publicKey;
-			if (key === undefined) {
-				this.error = "No backend offers notifications yet. Add a backend running a release with them.";
-				return;
-			}
-			const registration =
-				this.registration ??
-				(await navigator.serviceWorker.register("/service-worker.js", {
-					scope: "/",
-					type: "module",
-					updateViaCache: "none",
-				}));
-			this.registration = registration;
-			let subscription = await registration.pushManager.getSubscription();
-			if (subscription === null) {
-				subscription = await registration.pushManager.subscribe({
-					userVisibleOnly: true,
-					applicationServerKey: applicationServerKey(key),
-				});
-			} else {
-				const made = subscriptionServerKey(subscription);
-				if (made !== undefined && !samePublicKey(made, key)) {
-					this.keyMismatch = true;
-					this.error =
-						"This browser subscribed with a different backend key. Every backend must share one VAPID pair; fix that before enabling.";
-				}
-			}
-			this.subscription = subscription;
-			this.#checkKeys();
-			await this.registerAll(backends);
+			if (!available.length) throw new Error("No backend offers notifications yet.");
+			for (const backend of available) await this.#enableOne(backend, false);
 		} catch (error) {
 			const failure = pushSubscriptionError(error);
 			this.error = failure.message;
@@ -350,11 +415,110 @@ export class NotificationCenter {
 			this.busy = false;
 		}
 	}
-
+	/** Explicitly enable or replace one backend's subscription without releasing another backend's scope. */
+	async enableBackend(backend: BackendConnection, replace = false): Promise<void> {
+		this.busy = true;
+		try {
+			if (!this.#storageReadable)
+				throw new Error("Saved push settings are unreadable. Existing subscriptions were left untouched.");
+			this.permission = await Notification.requestPermission();
+			if (this.permission !== "granted") return;
+			await this.sync(this.#backends, { force: true });
+			await this.#enableOne(backend, replace);
+		} catch (error) {
+			const failure = pushSubscriptionError(error);
+			this.error = failure.message;
+			this.errorDetail = failure.detail;
+		} finally {
+			this.busy = false;
+		}
+	}
+	async #enableOne(backend: BackendConnection, replace: boolean): Promise<void> {
+		const publicKey = this.backends[backend.id]?.publicKey;
+		if (!backend.ready || !publicKey) return;
+		const old = this.push[backend.id];
+		if (old && this.keyMismatchFor(this.backends[backend.id]) && !replace) return;
+		if (replace && old) await this.#releaseScope(old.scope, backend.id);
+		// Keep first-time shared-key enablement compatible. Never move an existing legacy row on load.
+		const sharedKeyGroup =
+			this.#backends.filter((other) => equalPushKey(this.backends[other.id]?.publicKey ?? "", publicKey)).length > 1;
+		const scope = replace
+			? await backendPushScope(backend.id, backend.url)
+			: (old?.scope ??
+				((this.subscription === null && sharedKeyGroup) || equalPushKey(this.subscriptionKey() ?? "", publicKey)
+					? "/"
+					: await backendPushScope(backend.id, backend.url)));
+		const record = { origin: backend.url, scope, publicKey, enabled: true };
+		this.#setPush(backend.id, record);
+		await this.#ensureSubscription(record);
+		await this.#register(backend);
+	}
+	async #releaseScope(scope: string, exceptId: string): Promise<void> {
+		if (Object.entries(this.push).some(([id, record]) => id !== exceptId && record.enabled && record.scope === scope))
+			return;
+		// An offline backend from before this upgrade may still use root. Discovery must finish before retiring it.
+		if (
+			scope === "/" &&
+			this.#backends.some((backend) => backend.id !== exceptId && this.push[backend.id] === undefined)
+		)
+			return;
+		const registration = this.#registrations.get(scope) ?? (await navigator.serviceWorker.getRegistration(scope));
+		if (registration && new URL(registration.scope).pathname === scope) {
+			await (await registration.pushManager.getSubscription())?.unsubscribe();
+			if (scope !== "/") await registration.unregister();
+		}
+		this.#subscriptions.delete(scope);
+		this.#registrations.delete(scope);
+		if (scope === "/") {
+			this.subscription = null;
+			if (this.registration) this.#registrations.set("/", this.registration);
+		}
+		await setPushSyncNeeded(scope, false);
+	}
+	/** Stop one backend locally and remove its row when reachable; release root only after its last user. */
+	async disableBackend(backend: BackendConnection): Promise<void> {
+		const record = this.push[backend.id];
+		if (!record) return;
+		if (backend.ready) {
+			try {
+				await backend.client.unregisterNotifications(this.deviceId);
+			} catch (error) {
+				this.error = `Push is off in this browser, but this backend could not be updated: ${messageOf(error)}`;
+			}
+		}
+		this.#setPush(backend.id, { ...record, enabled: false, syncNeeded: false });
+		await this.#releaseScope(record.scope, backend.id);
+		this.#set(backend.id, { ...this.#entry(backend.id), device: null, test: undefined });
+	}
+	async #removeMissing(backends: readonly BackendConnection[]): Promise<void> {
+		for (const id of removedPushBackendIds(this.push, backends)) {
+			const record = this.push[id]!;
+			await this.#releaseScope(record.scope, id);
+			const { [id]: _record, ...push } = this.push;
+			this.push = push;
+			const { [id]: _entry, ...entries } = this.backends;
+			this.backends = entries;
+			this.#synced.delete(id);
+			this.#persist();
+		}
+		// Dormant registrations are bounded by the configured, enabled map, not elapsed time.
+		const scopes = new Set(
+			Object.values(this.push)
+				.filter((record) => record.enabled)
+				.map((record) => record.scope),
+		);
+		for (const registration of await navigator.serviceWorker.getRegistrations()) {
+			const scope = new URL(registration.scope).pathname;
+			if (!scope.startsWith("/push/") || scopes.has(scope)) continue;
+			await (await registration.pushManager.getSubscription())?.unsubscribe();
+			await registration.unregister();
+			await setPushSyncNeeded(scope, false);
+		}
+	}
 	/** Register (or update) this device on one backend. */
 	async #register(backend: BackendConnection): Promise<void> {
-		const subscription = this.subscription;
-		if (subscription === null) return;
+		const subscription = this.#subscriptionFor(backend.id);
+		if (subscription === null || this.keyMismatchFor(this.backends[backend.id])) return;
 		try {
 			const device = await backend.client.registerNotifications({
 				deviceId: this.deviceId,
@@ -368,6 +532,8 @@ export class NotificationCenter {
 				preferences: preferencesForBackend(this.settings, backend.id),
 			});
 			this.#set(backend.id, { ...this.#entry(backend.id), device, error: undefined, supported: true });
+			const record = this.push[backend.id];
+			if (record) this.#setPush(backend.id, { ...record, syncNeeded: false });
 		} catch (error) {
 			this.#set(backend.id, { ...this.#entry(backend.id), error: messageOf(error) });
 		}
@@ -379,39 +545,21 @@ export class NotificationCenter {
 			if (!backend.ready || entry?.supported !== true || entry.publicKey === undefined) continue;
 			await this.#register(backend);
 		}
-		await this.postWorkerRegistrations();
 	}
 
-	/** Stop notifications on this device: unsubscribe, and forget the device on every backend. */
+	/** Explicit device-wide off, preserving other browsers and the root app shell. */
 	async disable(backends: readonly BackendConnection[]): Promise<void> {
 		this.busy = true;
 		this.error = undefined;
 		this.errorDetail = undefined;
 		try {
-			for (const backend of backends) {
-				if (!backend.ready || this.backends[backend.id]?.supported === false) continue;
-				try {
-					await backend.client.unregisterNotifications(this.deviceId);
-					this.#set(backend.id, { ...this.#entry(backend.id), device: null, error: undefined, test: undefined });
-				} catch (error) {
-					this.#set(backend.id, { ...this.#entry(backend.id), error: messageOf(error) });
-				}
-			}
-			const subscription = this.subscription;
-			if (subscription !== null) {
-				try {
-					await subscription.unsubscribe();
-				} catch {
-					// The push service may already have dropped it.
-				}
-			}
-			this.subscription = null;
-			await this.postWorkerRegistrations();
+			for (const backend of backends) await this.disableBackend(backend);
+		} catch (error) {
+			this.error = messageOf(error);
 		} finally {
 			this.busy = false;
 		}
 	}
-
 	/** Turn one kind on or off, and tell every backend. */
 	async setKind(backends: readonly BackendConnection[], kind: NotificationKind, on: boolean): Promise<void> {
 		await this.#save({ kinds: withKind(this.settings.kinds, kind, on) }, backends);
@@ -437,10 +585,9 @@ export class NotificationCenter {
 		this.settings = withMutedProject(this.settings, backendId, projectId, muted);
 		saveDeviceSettings(this.settings);
 		const backend = backends.find((entry) => entry.id === backendId);
-		if (backend !== undefined && backend.ready && this.subscription !== null) {
+		if (backend !== undefined && backend.ready && this.#subscriptionFor(backend.id) !== null) {
 			await this.#register(backend);
 		}
-		await this.postWorkerRegistrations();
 	}
 
 	isMuted(backendId: string, projectId: string): boolean {
@@ -511,37 +658,6 @@ export class NotificationCenter {
 	forgetPresence(backendId?: string): void {
 		if (backendId === undefined) this.#presence.clear();
 		else this.#presence.delete(backendId);
-	}
-
-	/** Send the service worker what it needs to re-register a subscription with no app open. */
-	async postWorkerRegistrations(): Promise<void> {
-		if (this.registration === undefined) return;
-		const deviceId = this.settings.deviceId;
-		const registrations: WorkerRegistration[] = [];
-		if (deviceId.length > 0 && this.subscription !== null) {
-			for (const backend of this.#backends) {
-				const entry = this.backends[backend.id];
-				if (entry === undefined || entry.device === null || entry.publicKey === undefined) continue;
-				registrations.push({
-					origin: backend.url,
-					backendKey: backend.id,
-					deviceId,
-					label: this.label,
-					publicKey: entry.publicKey,
-					preferences: preferencesForBackend(this.settings, backend.id),
-				});
-			}
-		}
-		const worker = navigator.serviceWorker.controller ?? this.registration.active;
-		worker?.postMessage({ type: WORKER_REGISTRATIONS_MESSAGE, registrations });
-	}
-
-	#checkKeys(): void {
-		const keys = Object.values(this.backends)
-			.map((entry) => entry.publicKey)
-			.filter((key): key is string => key !== undefined);
-		const own = this.subscriptionKey();
-		this.keyMismatch = publicKeyMismatch(keys) || (own !== undefined && keys.some((key) => !samePublicKey(own, key)));
 	}
 
 	#entry(backendId: string): BackendNotification {

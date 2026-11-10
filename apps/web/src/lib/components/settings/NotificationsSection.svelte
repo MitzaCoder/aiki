@@ -98,13 +98,16 @@
 			return 'The browser blocks notifications for this site. Allow them in the browser\'s site settings, then turn them on again.';
 		}
 		if (notifications.permission === 'unsupported') {
-			return 'This browser has no Push API. On an iPhone, add the app to the Home Screen first; on Android, Chrome supports it.';
+			return (
+				'This browser cannot receive push notifications. ' +
+				'On an iPhone, add the app to the Home Screen first; on Android, Chrome supports it.'
+			);
 		}
 		if (backends.length === 0) return 'Add a backend first.';
 		return undefined;
 	});
 	const deviceHint = $derived(
-		notifications.enabled ? 'This browser is subscribed on every backend.' : 'Asks the browser for permission once.'
+		notifications.enabled ? 'Push is on. See each backend’s state below.' : 'Asks the browser for permission once.'
 	);
 
 	function toneOf(view: BackendNotificationView): 'ok' | 'warn' | 'err' | 'muted' {
@@ -140,8 +143,9 @@
 			status={deviceSave}
 		>
 			{#snippet learn()}
-				Turning them on subscribes this browser once; every backend then receives the subscription and pushes its own
-				events. Device {notifications.settings.deviceId.slice(0, 8)} · {kindsSummary(settings)}.
+				Each backend pushes on its own, using its own subscription or sharing one with other backends.
+				If a subscription changes, reopen the app while signed in.
+				Device {notifications.settings.deviceId.slice(0, 8)} · {kindsSummary(settings)}.
 			{/snippet}
 			<div class="flex items-center gap-2">
 				<StatusChip tone={notifications.enabled ? 'ok' : 'muted'}>{notifications.enabled ? 'On' : 'Off'}</StatusChip>
@@ -235,7 +239,10 @@
 	</SettingsGroup>
 
 	{#if backends.length > 0}
-		<SettingsGroup title="Backends" description="Where this device is registered.">
+		<SettingsGroup
+			title="Backends"
+			description="Each backend pushes on its own. If a subscription changes, reopen the app while signed in."
+		>
 			{#each backends as backend (backend.id)}
 				{@const entry = notifications.backends[backend.id]}
 				{@const view = notifications.viewFor(backend)}
@@ -249,12 +256,50 @@
 						{:else}
 							This device is not registered here yet.
 						{/if}
-						{#if notifications.keyMismatch && entry?.publicKey}
+						{#if notifications.keyMismatchFor(entry) && entry?.publicKey}
 							This backend's key: <code class="font-mono break-all">{entry.publicKey.slice(0, 16)}…</code>
 						{/if}
 					{/snippet}
 					<div class="flex flex-wrap items-center gap-2 sm:justify-end">
 						<StatusChip tone={toneOf(view)}>{view.label}</StatusChip>
+						{#if view.status === 'key-mismatch'}
+							<Button
+								variant="outline"
+								class="max-sm:h-11"
+								disabled={!backend.ready || notifications.busy}
+								onclick={() => void notifications.enableBackend(backend, true)}
+							>
+								Re-subscribe
+							</Button>
+						{:else if view.status === 'off' || view.status === 'failed'}
+							<Button
+								variant="outline"
+								class="max-sm:h-11"
+								disabled={!backend.ready || notifications.busy || notifications.permission === 'unsupported'}
+								onclick={() => void notifications.enableBackend(backend)}
+							>
+								Enable push
+							</Button>
+						{:else if view.status === 'sync-needed'}
+							<Button
+								variant="outline"
+								class="max-sm:h-11"
+								disabled={!backend.ready || notifications.busy}
+								onclick={() => void notifications.sync(harness.backends, { force: true })}
+							>
+								Sync
+							</Button>
+						{/if}
+						{#if notifications.push[backend.id]?.enabled}
+							<Button
+								variant="ghost"
+								class="max-sm:h-11"
+								disabled={!backend.ready || notifications.busy}
+								onclick={() => void notifications.disableBackend(backend)}
+							>
+								Disable push
+							</Button>
+						{/if}
 						<Button
 							variant="outline"
 							class="max-sm:h-11"

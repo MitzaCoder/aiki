@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
+import { installPushBrowser } from './push-browser-mock.ts';
 import { IDBFactory } from 'fake-indexeddb';
 import { HarnessClient } from '@aiki/client';
 import { artifactUrlRefreshIn } from '@aiki/client';
@@ -482,17 +483,18 @@ test('web push sync rebinds an unreadable legacy row after migration', async () 
 	// Bun executes the class's ordinary TS directly. These state initializers need no DOM/reactivity for sync.
 	const globals = globalThis as unknown as { $state?: (value: unknown) => unknown };
 	const previous = globals.$state;
-	globals.$state = (value) => value;
+	const { applicationServerKey } = await import('@aiki/client');
+	const browserSubscription = {
+		options: { applicationServerKey: applicationServerKey(await client.readNotificationsConfig()).buffer },
+		toJSON: () => subscription,
+	} as unknown as PushSubscription;
+	const restoreBrowser = installPushBrowser(browserSubscription);
 	try {
 		const { NotificationCenter } = await import('../src/lib/notifications.svelte.ts');
 		const center = new NotificationCenter();
 		center.load();
 		center.settings = { ...center.settings, deviceId };
-		const { applicationServerKey } = await import('@aiki/client');
-		center.subscription = {
-			options: { applicationServerKey: applicationServerKey(await client.readNotificationsConfig()).buffer },
-			toJSON: () => subscription,
-		} as unknown as PushSubscription;
+
 		const backend = {
 			id: 'fixture', url: s.server.url, ready: true, authSessionId: sessionId,
 			features: ['notifications'], supports: (feature: string) => feature === 'notifications', client,
@@ -503,6 +505,7 @@ test('web push sync rebinds an unreadable legacy row after migration', async () 
 		expect((await client.readNotificationDevice(deviceId))?.deviceId).toBe(deviceId);
 		expect((await Bun.file(s.dataDir + '/notifications/devices.json').json()).devices[0].sessionId).toBe(sessionId);
 	} finally {
+		restoreBrowser();
 		if (previous === undefined) delete globals.$state;
 		else globals.$state = previous;
 	}
