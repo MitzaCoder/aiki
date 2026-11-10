@@ -310,6 +310,23 @@ release with this tooling while still optional before cutting over. Keep the cur
 not invoke old rollback scripts, manually repoint releases, change auth mode during a deploy, or delete auth state to
 force a downgrade. No script can protect a manual bypass by the host owner.
 
+### Cutting an existing installation over to required
+
+The order an operator follows on each backend, all through the owner CLI (`auth …`) or private deploy config:
+
+1. Deploy auth-capable releases while existing data starts `optional`; update every client in place.
+2. Let updated clients register migration claims; `auth migration list --json` is the inventory. The owner checks each
+   device's code (web: Settings → backend → Devices; Android: the same screen) and approves exactly those claim IDs with
+   `auth migration approve --batch <id> <claimId…>`. `auth devices list` then shows each one connected.
+3. Allow every address clients use: `auth hosts list` shows hosts seen while optional; `auth hosts allow <origin>` for
+   each real one (the scheme clients see, e.g. `https://` behind a TLS proxy). Set `AIKI_TRUSTED_PROXIES` in the private
+   server env file to the reverse proxy's source address (loopback for a local proxy, its tailnet address for a remote
+   one), so forwarded Host/Proto count only from it. Deploy once more so the env file is installed and a release with
+   `supportsDeviceAuth` exists as a rollback target.
+4. Confirm no unknown hosts appear in `auth hosts list` and every inventory device still connects; then
+   `auth mode required`. Anonymous sockets close, migration enrollment closes, and new devices use pairing links.
+5. Rollback to optional is `auth mode optional` (never deleting auth state); deploy rollbacks refuse pre-auth releases.
+
 ### Android device sign-in
 
 Android keeps each origin's retained token, staged rotation successor, auth-advertisement pin and pending claim proof in

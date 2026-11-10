@@ -1,5 +1,14 @@
 # Continue
 
+## Device sign-in rollout status (T57/T69)
+
+The operator's backends run auth-capable releases in `optional` mode. All known clients (three backends; web browsers and
+the Android app) registered stable migration claims, were approved once by exact claim ID, and now connect with their own
+sessions. Backend origins are allowed through the owner CLI; trusted reverse-proxy addresses go into the private server
+env files. Remaining: deploy that config, check `auth hosts list` shows no unknown host while every device stays
+connected, then switch each backend with `auth mode required` (DESIGN "Cutting an existing installation over to required").
+From agent shells, call the owner CLI with an explicit `AIKI_ENV_FILE` or `AIKI_DATA_DIR` (T82 isolation).
+
 ## Agent command environment isolation (T82)
 
 Rebased onto task families/graph and board messages (`e9c693ff`), retaining T80/T81. The entry point captures settings
