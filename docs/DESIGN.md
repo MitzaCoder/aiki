@@ -3047,6 +3047,9 @@ counter can repeat a sequence. A persistence failure must not display a notifica
 
 ### Firebase relay emulator package (T93–T94)
 
+Before any real-project use, follow the [operator checklist](push-relay-operator-checklist.md):
+private facts, operator-only setup, live acceptance and three-backend rollout/rollback. Nothing there authorizes deployment.
+
 `relay/` is an isolated TypeScript/Bun package outside the root workspaces, with its own dependencies/lockfile,
 Node 22 v2 HTTPS function, Firestore deny-all client rules, TTL/index configuration and strict local validators.
 It implements verified-account phone enrollment/FCM possession challenges, generation-safe token replacement,

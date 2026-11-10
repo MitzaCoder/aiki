@@ -1,5 +1,15 @@
 # Continue
 
+## Real-project push relay operator checklist (T100)
+
+[Operator checklist](push-relay-operator-checklist.md) collects settled choices, twelve private fact questions,
+operator-only setup, release-APK acceptance and the three-backend rollout/rollback. Linked from DESIGN's relay section.
+Docs only: no real Firebase/Google access or configuration/credential inspection, emulator, server, tests or deployment.
+The CLI is demo-only and has no delete action; production deploy/admin procedures and Android account/build seams
+remain unbuilt. Auth runtime permissions, safe attended staging enrollment and shared Firestore rules need explicit
+review; missing switches default enabled. The documented credential-digest mismatch must be resolved before integration.
+Public-source denylist and Gitleaks checks pass. No main movement or push.
+
 ## Android relay plumbing, optional and off by default (T96)
 
 Built without UI, Firebase Auth, credentials, devices, emulators, servers or deployment. Rebased the Android stack onto
