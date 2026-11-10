@@ -105,6 +105,30 @@ $D adb shell am broadcast -a io.github.mitzacoder.aiki.DEBUG_PUSH -p io.github.m
 $D adb shell am broadcast -a io.github.mitzacoder.aiki.DEBUG_PUSH -p io.github.mitzacoder.aiki --es payload "'<NotificationPayload JSON>'"
 ```
 
+## Optional relay plumbing (no account UI yet)
+
+`NotificationSettings.relayEnabled` defaults off, including upgrades. Ordinary app use, pairing and direct FCM do not
+need a relay account; off does not open the relay store or client. The private build value `harness.pushRelayUrl` /
+`HARNESS_PUSH_RELAY_URL` pins a v1 base URL. Empty means unavailable. HTTPS is required; debug alone permits literal
+loopback/localhost and emulator-host HTTP. There is no backend/message endpoint override.
+
+The `features/notifications/relay` package contains encrypted backup-excluded storage, typed management HTTP,
+persisted enrollment/token replacement, signed-in backend registration, account deletion and the pure receive router.
+See [DESIGN](../../docs/DESIGN.md#android-relay-plumbing-t96) and the
+[backend contract](../../docs/push-relay-backend-v1.md). Firebase Auth is deliberately absent: `RelayAccount` still
+returns not-signed-in in Android composition. The next task supplies account UI and the real token provider.
+
+Debug builds have one additional shell-only (DUMP-permission) receive seam. On a separately authorized test emulator,
+deliver captured challenge or envelope JSON through the real router; no seam turns relay on or enrolls the device:
+
+```sh
+adb shell am broadcast -a io.github.mitzacoder.aiki.DEBUG_RELAY -p io.github.mitzacoder.aiki --es aiki '<captured JSON>'
+```
+
+Use the installed package's name if privately configured differently. `:app:checkReleaseRelaySeam` builds the merged
+release manifest and fails if this component/action is present. The seam has no release source or main-manifest entry.
+No emulator/device was used to implement this plumbing; all new verification is JVM/fake HTTP.
+
 ## Verification: actual behavior versus appearance
 
 See [verification/README.md](verification/README.md). Round-two evidence is staged

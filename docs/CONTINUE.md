@@ -1,5 +1,57 @@
 # Continue
 
+## Android relay plumbing, optional and off by default (T96)
+
+Built without UI, Firebase Auth, credentials, devices, emulators, servers or deployment. Rebased the Android stack onto
+`ynzrrnts` (server relay plus limits/account deletion) and reran Bun install. D51 remains strict: upgraded and fresh
+settings default `relayEnabled=false`; receive and token/foreground hooks do not evaluate relay storage/client/account
+factories while off. The pure registration sync still sends today's exact registerFcm request. Unsupported backends
+stay direct; eligible signed-in backends select relay exclusively. Relay-selected sessions reject plaintext even after
+local route deletion. No operator-phone behavior changes and no notification screen edits.
+
+Private build property: `harness.pushRelayUrl` / `HARNESS_PUSH_RELAY_URL` → `BuildConfig.PUSH_RELAY_URL`, empty by default.
+HTTPS only outside debug; debug accepts literal loopback/localhost and emulator-host HTTP. The encrypted store is
+`datastore/aiki-push-relay.preferences_pb`, separately excluded from cloud backup/device transfer, AES-256-GCM with a
+separate Keystore alias and injectable cipher. It contains installation/enrollment/token operation state, route
+capabilities and staged PKCS8 keys, derived notification keys, backend/session/local routing identities, leases,
+predecessors, monotonic backend clocks/uncertainty, admission windows/event dedupe, delete-only/backend unregister
+queues, account/quota/deletion state and fixed diagnostic counters. Records and generated relay requests redact their
+string representations. Admission commits before presentation. Retiring keys/windows prune together at thirteen hours;
+reboot/uncertain clocks fail closed. Key loss discards relay state and sets `relayRecoveryRequired`, blocking receive
+and direct registration until an explicit transport choice; the next UI must not clear that marker prematurely.
+
+`RelayAccount` is the token/not-signed-in port; Android composition intentionally returns not-signed-in until the next
+account/UI task replaces it. `RelayBackendRpc`/`HarnessRelayBackendRpc` and `RelayBackendAdapter` now use the actual
+generated registerRelay/confirmRelay/syncRelay protocol on existing sockets. Order: staged create → register → verify
+identity/HMAC and persist keys → relay activate → backend confirm. Retries keep one operation and original registration
+preferences. Wrong identity/HMAC/unknown_request queues deletion with no downgrade. Fresh sync clocks avoid old receipt
+timestamps; midpoint RTT uncertainty is included conservatively inside the five-minute skew. Renewals, preferences and
+confirmed token-generation repairs sync back to the backend. Local removal/session sign-out/off is durable before
+best-effort remote unregister; explicit off/on reuses the enrolled installation rather than consuming phone slots.
+`RelayNotifications` is the lazy integration boundary for service, token callbacks and foreground maintenance.
+
+D53: create hashes already use lowercase hex from RelayCrypto.credentialHash (the frozen JSON-framed digest); no raw
+bearer hash workaround was added. `RelayAccounts` exposes typed status/quota snapshots and durable account deletion.
+Deletion clears receive authority before HTTP, retains operation/Retry-After across 202 and reauthentication, and treats
+200 deleted or subsequent account_deleted as complete. Any account_deleted management failure erases keys/routes/replay;
+account_disabled retains sign-in but blocks relay mutation/reception. Real sign-in, privacy/consent, explicit account
+switch/reset handling and account controls remain the next task, not an implicit pairing/first-run requirement.
+
+Debug-only `DebugRelayReceiver` requires shell DUMP permission and invokes the same router. Delivery recipe (only on an
+authorized test emulator): `adb shell am broadcast -a io.github.mitzacoder.aiki.DEBUG_RELAY -p io.github.mitzacoder.aiki
+--es aiki '<captured JSON>'` on one line. It never enables/enrolls relay. `:app:checkReleaseRelaySeam` generates the merged
+release manifest and rejects the component/action. See apps/android/README.md for the same recipe.
+
+Final gates after the limits rebase: **784 JVM tests / 102 suites, 2 skipped, 0 failures/errors**, including 43 new T96
+tests; debug assemble and lint pass (**0 errors, 36 warnings, 1 hint**); merged release-seam check passes. Protocol
+check: 337 DTOs / 91 request overloads. Root typecheck and public/Gitleaks guards pass. No verification TypeScript was
+changed; full root tests were not required (only Android/docs changes). D51 regression uses factories that fail if any
+relay storage/account/client/backend is touched, asserts no relay file exists, and compares the old plaintext parser's
+output; actual notification registration tests assert the unchanged direct token/device/preferences request and
+exclusive relay choice. MockWebServer covers every management endpoint, typed fixed/unknown errors, Retry-After,
+redirect refusal and response caps. No rendered proof is needed: this task exposes no new UI.
+
+
 ## Relay budgets and durable account cleanup (T94)
 
 Updated the stale workspace and based this task on squashed T93 `xlqlowlw` / `56c592f5`, which includes T92.

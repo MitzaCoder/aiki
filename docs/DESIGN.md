@@ -2936,11 +2936,34 @@ except debug loopback/emulator-host HTTP. Messages and backends cannot choose a 
 Relay state uses its own backup/transfer-excluded Keystore AES-256-GCM DataStore. Enrollment operations, staged
 route secrets and ECDH keys, key confirmation, deletion retries, monotonic backend clock anchors, replay windows,
 event dedupe and diagnostic counters survive process death. Key loss discards relay authority and requires explicit
-opt-in again, never plaintext fallback. Retiring keys expire within thirteen hours. Route registration uses a small
-backend port until the signed-in RPC integration lands; account tokens use `RelayAccount`, with no sign-in here.
+opt-in again, never plaintext fallback. `relayRecoveryRequired` blocks reception and direct registration after key
+loss until a deliberate transport choice; ordinary off/default installs do not have that marker. Retiring keys and
+their replay windows expire together within thirteen hours, including monotonic retirement across wall-clock changes;
+a reboot makes retiring keys and old clock anchors unusable.
+
+`RelayBackendAdapter` reuses the existing backend socket only when both `fcm-relay-v1` and `device-auth-v1` are present
+and the hello contains an actual signed-in session. The durable order is relay create, `registerRelay`, identity/HMAC
+verification and key storage, relay activate, then `confirmRelay`. Registration retries keep their original preferences,
+capabilities and operation ID. Wrong identity/HMAC or `unknown_request` aborts and queues deletion, never direct fallback.
+Every agreement uses fresh `syncRelay.serverTime`, not a potentially old registration receipt. Midpoint anchors retain
+round-trip uncertainty; over-twenty-second round trips are untrusted, and admission conservatively includes uncertainty
+inside the five-minute skew boundary. Lease/preference changes and repaired token generations use `syncRelay`; backend
+removal/session sign-out and push off queue unregister without waiting for network. Explicit off/on reuses the same
+enrolled installation instead of consuming extra phone slots. Direct-mode backends keep today's FCM registration.
+
 The pure receive router authenticates and admits durably before the existing parser/presenter; local route mapping
-supplies the backend routing key. Relay-selected sessions reject plaintext downgrade. Local off/sign-out removes
-receive authority immediately and queues remote cleanup. Debug-only shell delivery uses the same router.
+supplies the backend routing key. Relay-selected sessions reject plaintext downgrade, including after local route
+removal. Off/sign-out removes receive authority immediately and queues remote cleanup. Debug-only shell delivery uses
+the same router; `checkReleaseRelaySeam` verifies that its component/action is absent from the merged release manifest.
+`RelayAccount` supplies only a current ID token or not-signed-in; Android composition deliberately supplies the latter
+until the next task adds Firebase Auth. No authentication dependency, account prompt or notification screen is added.
+
+D53 credential hashes use the frozen library digest (lowercase hex), not raw-bearer SHA-256. Account/quota DTOs preserve
+safe scopes, budget names, reset times, switch flags and pending deletion state. All fixed rate/disabled/recent-auth
+errors are typed; unknown text is discarded. `RelayAccounts.delete` persists one operation and erases local receive
+keys/routes/replay state before HTTP. A 202 retains Retry-After; 200 deleted or subsequent 410 account_deleted completes
+local deletion per D53. Ordinary account_deleted failures also erase receive authority. Account-disabled stops new
+relay mutations and reception while retaining sign-in and a typed state for the later UI. Nothing silently selects FCM.
 
 
 ### Backend encrypted relay transport (T95)
