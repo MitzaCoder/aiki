@@ -572,12 +572,35 @@ export class ArtifactUrlSigner {
 	}
 }
 
+/**
+ * Legacy optional/off origin derivation, for migration compatibility only: `AIKI_PUBLIC_URL` when set,
+ * else the proxy's `X-Forwarded-Proto`/`X-Forwarded-Host` (Caddy sets both), else the request's own.
+ */
+export function requestOrigin(
+	request: Request,
+	env: Readonly<Record<string, string | undefined>> = process.env,
+): string {
+	const configured = env.AIKI_PUBLIC_URL?.trim();
+	if (configured !== undefined && configured.length > 0) {
+		const origin = normalizeOrigin(configured);
+		if (origin !== undefined) return origin;
+	}
+	const url = new URL(request.url);
+	const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+	const host =
+		request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ?? request.headers.get("host") ?? url.host;
+	return (
+		normalizeOrigin(`${proto === "https" || proto === "http" ? proto : url.protocol.slice(0, -1)}://${host}`) ??
+		url.origin
+	);
+}
+
 // --- HTTP ----------------------------------------------------------------------------------------------------------
 
 export const ARTIFACT_PATH_PREFIX = "/artifacts/";
 
 /** CORS headers for an allowed browser origin; none for a request without one or from another origin. */
-function corsHeaders(request: Request, allowedOrigins: readonly string[]): Record<string, string> {
+function corsHeaders(request: Request, allowedOrigins: readonly string[], exactOrigins = true): Record<string, string> {
 	const origin = request.headers.get("origin");
 	const headers: Record<string, string> = {
 		vary: "Origin",
@@ -585,7 +608,7 @@ function corsHeaders(request: Request, allowedOrigins: readonly string[]): Recor
 		"referrer-policy": "no-referrer",
 		"x-content-type-options": "nosniff",
 	};
-	if (origin === null || !isOriginAllowed(origin, allowedOrigins)) return headers;
+	if (origin === null || !isOriginAllowed(origin, allowedOrigins, exactOrigins)) return headers;
 	return {
 		...headers,
 		"access-control-allow-origin": normalizeOrigin(origin) as string,
@@ -624,11 +647,16 @@ export function parseRange(header: string | null, size: number): { start: number
  */
 export async function serveArtifact(
 	request: Request,
-	options: { store: ArtifactStore; signer: ArtifactUrlSigner; allowedOrigins: readonly string[] },
+	options: {
+		store: ArtifactStore;
+		signer: ArtifactUrlSigner;
+		allowedOrigins: readonly string[];
+		exactOrigins?: boolean;
+	},
 ): Promise<Response | undefined> {
 	const url = new URL(request.url);
 	if (!url.pathname.startsWith(ARTIFACT_PATH_PREFIX)) return undefined;
-	const cors = corsHeaders(request, options.allowedOrigins);
+	const cors = corsHeaders(request, options.allowedOrigins, options.exactOrigins);
 	const text = (status: number, body: string, extra: Record<string, string> = {}): Response =>
 		new Response(body, { status, headers: { ...cors, "content-type": "text/plain; charset=utf-8", ...extra } });
 

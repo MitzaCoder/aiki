@@ -47,7 +47,7 @@ export function bearer(request: Request): string {
 function claimProof(body: Record<string, unknown>) {
 	const claimId = string(body, "claimId", 80),
 		claimSecret = string(body, "claimSecret", 60);
-	if (!/^[A-Za-z0-9_-]{1,80}$/.test(claimId) || !/^mh_c1\.[A-Za-z0-9_-]{43}$/.test(claimSecret))
+	if (!/^[A-Za-z0-9_-]{1,80}$/.test(claimId) || !/^aiki_c1\.[A-Za-z0-9_-]{43}$/.test(claimSecret))
 		throw new DeviceAuthError("bad_request", 400);
 	return { claimId, claimSecret };
 }

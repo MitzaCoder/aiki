@@ -18,6 +18,7 @@ import {
 	ArtifactUrlSigner,
 	loadOrCreateArtifactSecret,
 	serveArtifact,
+	requestOrigin,
 } from "./artifacts.ts";
 import { DraftStore } from "./drafts.ts";
 import { PromptCacheRetention } from "./cache-retention.ts";
@@ -615,6 +616,15 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	// One-time compact summary upgrade before any socket can open the same project storage.
 	await manager.prepareAttention();
 	const activate = (ws: ServerWebSocket<SocketData>): void => {
+		clearTimeout(ws.data.timer);
+		if (ws.data.preAuth) {
+			pendingHandshakes--;
+			ws.data.preAuth = false;
+		}
+		if (ws.data.identity) {
+			const sid = ws.data.identity.sessionId;
+			auth.connected.set(sid, (auth.connected.get(sid) ?? 0) + 1);
+		}
 		const connection = new ClientConnection({
 			deviceAuth: { store: auth, identity: ws.data.identity },
 			manager,
@@ -681,10 +691,23 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					log("auth: observed unapproved backend host (see owner CLI)");
 			}
 			const origin = request.headers.get("origin");
-			if (!isOriginAllowed(origin, allowedOrigins)) return authJson({ error: { code: "forbidden_origin" } }, 403);
+			const required = auth.mode === "required";
+			const originAllowed = isOriginAllowed(origin, allowedOrigins, required || url.pathname.startsWith("/auth/"));
+			if (!originAllowed && (required || url.pathname.startsWith("/auth/")))
+				return authJson({ error: { code: "forbidden_origin" } }, 403);
+			// Optional/off signed artifacts retain the pre-auth HTTP/CORS behaviour, including disallowed Origins.
+			if (!required && url.pathname.startsWith("/artifacts/"))
+				return (
+					(await serveArtifact(request, {
+						store: artifacts,
+						signer: artifactSigner,
+						allowedOrigins,
+						exactOrigins: false,
+					})) ?? new Response("Not found", { status: 404 })
+				);
 			const cors: Record<string, string> = { "cache-control": "no-store", vary: "Origin" };
-			if (origin !== null) cors["access-control-allow-origin"] = origin;
-			if (request.method === "OPTIONS")
+			if (origin !== null && originAllowed) cors["access-control-allow-origin"] = origin;
+			if (request.method === "OPTIONS" && (required || url.pathname.startsWith("/auth/")))
 				return new Response(null, {
 					status: 204,
 					headers: {
@@ -714,21 +737,23 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			}
 			if (url.pathname === "/ws") {
 				const origin = request.headers.get("origin");
-				if (!isOriginAllowed(origin, allowedOrigins)) {
+				if (!originAllowed) {
 					return new Response("Forbidden origin", {
 						status: 403,
 						headers: { "content-type": "text/plain; charset=utf-8" },
 					});
 				}
 				try {
-					auth.limit(`handshake:${source}`, 30);
-					auth.limit("handshake-global", 120);
-					if (pendingHandshakes >= 100) throw new DeviceAuthError("rate_limited", 429, 5);
+					if (required) {
+						auth.limit(`handshake:${source}`, 30);
+						auth.limit("handshake-global", 120);
+						if (pendingHandshakes >= 100) throw new DeviceAuthError("rate_limited", 429, 5);
+					}
 				} catch (error) {
 					return authFailure(error);
 				}
 				const data: SocketData = {
-					origin: hostAllowed ? backendOrigin : (auth.hosts[0] ?? loopback[0]!),
+					origin: required ? backendOrigin : requestOrigin(request),
 					source: peer,
 					preAuth: true,
 				};
@@ -761,46 +786,39 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		websocket: {
 			open(ws) {
 				sockets.add(ws);
-				ws.data.timer = setTimeout(() => {
-					if (!ws.data.connection) ws.close(4401, "auth_required");
-				}, 5000);
+				if (auth.mode === "required")
+					ws.data.timer = setTimeout(() => {
+						if (!ws.data.connection) ws.close(4401, "auth_required");
+					}, 5000);
 			},
 			message(ws, message) {
 				let connection = ws.data.connection;
 				if (!connection) {
 					let request: { type?: string; id?: string; auth?: { accessToken?: string } } = {};
 					try {
-						if (typeof message !== "string" || Buffer.byteLength(message) > 8192)
+						const required = auth.mode === "required";
+						if (required && (typeof message !== "string" || Buffer.byteLength(message) > 8192))
 							throw new DeviceAuthError("auth_required");
-						request = JSON.parse(message);
+						try {
+							request = JSON.parse(typeof message === "string" ? message : new TextDecoder().decode(message));
+						} catch {
+							if (required) throw new DeviceAuthError("auth_invalid");
+							activate(ws);
+							void ws.data.connection?.handle(message);
+							return;
+						}
 						if (request === null || request.type !== "hello") {
-							if (auth.mode !== "required") {
-								ws.send(
-									JSON.stringify({
-										type: "error",
-										id: request?.id,
-										error: { code: "not_ready", message: "Send hello before any other request" },
-									}),
-								);
-								return;
-							}
-							throw new DeviceAuthError("auth_required");
+							if (required) throw new DeviceAuthError("auth_required");
+							activate(ws);
+							void ws.data.connection?.handle(message);
+							return;
 						}
 						if (request.auth !== undefined) {
 							if (typeof request.auth?.accessToken !== "string") throw new DeviceAuthError("auth_invalid");
 							const identity = auth.authenticate(request.auth.accessToken);
-							auth.limit(`handshake-session:${identity.sessionId}`, 60);
+							if (required) auth.limit(`handshake-session:${identity.sessionId}`, 60);
 							ws.data.identity = identity;
 						} else if (auth.mode === "required") throw new DeviceAuthError("auth_required");
-						clearTimeout(ws.data.timer);
-						if (ws.data.preAuth) {
-							pendingHandshakes--;
-							ws.data.preAuth = false;
-						}
-						if (ws.data.identity) {
-							const sid = ws.data.identity.sessionId;
-							auth.connected.set(sid, (auth.connected.get(sid) ?? 0) + 1);
-						}
 						activate(ws);
 						connection = ws.data.connection;
 					} catch (error) {
@@ -810,8 +828,11 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 								type: "error",
 								...(typeof request?.id === "string" ? { id: request.id } : {}),
 								error: {
-									code, message: code,
-									...(error instanceof DeviceAuthError && error.retryAfter ? { data: { retryAfter: error.retryAfter } } : {}),
+									code,
+									message: code,
+									...(error instanceof DeviceAuthError && error.retryAfter
+										? { data: { retryAfter: error.retryAfter } }
+										: {}),
 								},
 							}),
 						);
@@ -859,9 +880,16 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	auth.onMode = (mode) => {
 		if (mode === "required")
 			for (const ws of sockets)
-				if (!ws.data.identity) {
+				if (
+					!ws.data.identity ||
+					!auth.hostAllowed(ws.data.origin, [
+						`http://127.0.0.1:${server.port}`,
+						`http://localhost:${server.port}`,
+						`http://[::1]:${server.port}`,
+					])
+				) {
 					ws.data.connection?.close();
-					ws.close(4401, "auth_required");
+					ws.close(4401, ws.data.identity ? "auth_invalid" : "auth_required");
 				}
 	};
 	auth.onChange = () => {

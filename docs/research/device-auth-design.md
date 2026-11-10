@@ -88,8 +88,8 @@ New device -- claim secret/poll ---------> stores its own session; opens authent
 - Persist a random stable backend ID independently of address and upgrades. A device session belongs to
   that ID; use TLS + exact approved origin for routing. Never send a token to a different origin after a
   redirect, DNS route discovery or backend-list edit. A new route requires an authenticated confirmation.
-- Use opaque versioned tokens, not JWTs: `mh_s1.<public-session-id>.<32-random-bytes-base64url>` for
-  retained credentials; `mh_a1.<public-access-id>.<32-random-bytes-base64url>` for access credentials.
+- Use opaque versioned tokens, not JWTs: `aiki_s1.<public-session-id>.<32-random-bytes-base64url>` for
+  retained credentials; `aiki_a1.<public-access-id>.<32-random-bytes-base64url>` for access credentials.
   Separate bootstrap/pairing/claim prefixes and audiences. Server stores SHA-256 hashes of high-entropy
   secrets, checks in constant time, and looks up session state on every authorized request.
 - Durable rows: session ID, backend ID, label/platform, created/last-used, expiry, revokedAt and token

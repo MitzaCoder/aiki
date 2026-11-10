@@ -44,10 +44,11 @@ Mode is `off|optional|required`, persisted in `auth.sqlite`. A directory contain
 setting starts **optional**, an empty/new directory **required**. `off` is explicit development only. Owner CLI changes
 mode; `AIKI_AUTH_MODE` / `startServer({auth:{mode}})` override for development/tests. Optional retains all old
 ordinary RPCs and legacy signed URLs, but anonymous callers cannot manage devices or grants. Required authenticates
-before constructing the ordinary connection. Switching required closes all legacy connections and migration enrollment.
+before constructing the ordinary connection. Switching required closes all legacy connections, authenticated sockets whose legacy artifact origin is not approved,
+and migration enrollment.
 
-Tokens: retained `mh_s1.<32 lowercase hex session ID>.<43 unpadded base64url characters, 32 random bytes>`;
-access `mh_a1.<32 lowercase hex access ID>.<same random format>`. Retained idle expiry 180 days, absolute 365 days;
+Tokens: retained `aiki_s1.<32 lowercase hex session ID>.<43 unpadded base64url characters, 32 random bytes>`;
+access `aiki_a1.<32 lowercase hex access ID>.<same random format>`. Retained idle expiry 180 days, absolute 365 days;
 access 15 minutes. Only hashes are retained (constant-time secret comparisons), plus encrypted 60-second claim delivery
 copies. Storage directory 0700, files 0600. Access held only in client memory; retained web credentials belong in IndexedDB,
 Android in Keystore-encrypted separate storage, never address exports, backup, logs or localStorage backend lists.
@@ -62,16 +63,17 @@ Active sockets count as session use, last-used disk writes throttled to one/minu
 All bodies/replies JSON, `Cache-Control: no-store`, never cookies or redirects. Errors `{error:{code}}`, with HTTP 400
 malformed, 401 invalid/expired credential, 403 revoked/closed migration, 409 used grant or conflicting claim/batch, 429
 rate limit (`Retry-After` seconds; RPC errors use `error.data.retryAfter`). Host/Origin rejection uses
-`forbidden_host` / `forbidden_origin` with 403. Unknown resources expose no private content. Exact allowed Origin CORS on HTTP and WS;
+`forbidden_host` / `forbidden_origin` with 403 on required/new-auth routes. Unknown resources expose no private content.
+Exact allowed Origin CORS on new auth HTTP and required-mode routes;
 OPTIONS allows `Authorization, Content-Type` and `GET, POST, OPTIONS`. No wildcard credential CORS. Missing Origin does not
 supply authority. Public exchanges below carry their own proofs. Other private HTTP requires access bearer in required.
 Body cap 8 KiB. IDs/secrets/labels must be strings, labels <=120, platform <=40, claim IDs 1–80 ASCII alphanumeric/underscore/
-hyphen. A client generates random claim ID and `mh_c1.<32 random bytes base64url>` claim secret **before** redemption and
-persists them for lost-response recovery. Pair secrets are `mh_p1.<32 bytes base64url>`; local bootstrap `mh_b1.<32 bytes>`.
+hyphen. A client generates random claim ID and `aiki_c1.<32 random bytes base64url>` claim secret **before** redemption and
+persists them for lost-response recovery. Pair secrets are `aiki_p1.<32 bytes base64url>`; local bootstrap `aiki_b1.<32 bytes>`.
 
 - `GET /auth/status`: response above; no auth.
 - `POST /auth/bootstrap/redeem`: `{requestId,code,claimId,claimSecret,label,platform}` for headless; local URL uses
-  `{requestId:"local",code:<mh_b1 secret>,claimId,claimSecret,label,platform}`. Same claim delivery as pairing, no owner approval.
+  `{requestId:"local",code:<aiki_b1 secret>,claimId,claimSecret,label,platform}`. Same claim delivery as pairing, no owner approval.
   Local redemption requires an actual loopback peer, loopback Host, and no proxy forwarding. Ten-minute one-use grant,
   one active bootstrap; five wrong codes invalidate. Only owner CLI creates these (no network “empty server” race).
 - `POST /auth/pairings/redeem`: `{grantId,secret,claimId,claimSecret,label,platform}`. Atomic unused→claimed, bad secret
@@ -89,7 +91,10 @@ persists them for lost-response recovery. Pair secrets are `mh_p1.<32 bytes base
   same proof updates last-seen without creating a new claim; pending claims expire after ten minutes. No auto enrollment.
 
 Enrollment limits: 5/min/grant+source and 30/min/backend; 10 grants/hour/session, 5 pending/session; 500 global pending
-claims (migration additionally capped 100); handshake and refresh source/global/session limits. Use backoff on 429.
+claims (migration additionally capped 100); refresh source/global/session limits. Required-mode handshakes additionally
+limit source/backend/session attempts (30/120/60 per minute), 100 outstanding pre-auth sockets, five seconds and 8 KiB
+for hello. Optional/off legacy handshakes have none of these new quotas/timeouts/caps (the existing 32 MiB frame cap
+remains); a post-deploy reconnect storm must not lock out old tabs behind one proxy. Use backoff on 429.
 
 ### WebSocket contract
 
@@ -97,7 +102,8 @@ claims (migration additionally capped 100); handshake and refresh source/global/
 `auth:{mode,sessionId,accessExpiresAt}` (last two null for anonymous). Optional response fields allow older-server decode.
 Features `device-auth-v1`, `device-pairing-v1`, `device-management-v1` are explicit, not baseline fallback inference.
 Shared `LEGACY_HARNESS_FEATURES` excludes all three; transport and generated Android defaults use that list.
-Pre-auth first frame must be textual hello <=8 KiB within five seconds. No binary/ordinary activity before required auth.
+Required-mode pre-auth first frame must be textual hello <=8 KiB within five seconds. Optional/off retains old
+JSON/binary-JSON hello handling without the new timeout or hello-size cap. No binary/ordinary activity before required auth.
 Identity is immutable per socket. `auth.renew {accessToken}` → `{accessExpiresAt}`; same session only, 60-second renewal
 grace after access expiry (ordinary dispatch remains blocked after expiry). Error envelope `auth_required|auth_invalid|
 auth_expired` and close 4401; `auth_revoked` and 4403. Reasons contain only the code. Device expiry/sign-out stops reconnect.
@@ -128,7 +134,7 @@ Comparison input UTF-8 bytes of `aiki-device-claim-v1\n` + backendId + `\n` + gr
 **full prefixed claimSecret**, no trailing newline. SHA-256; take first five bytes; encode those 40 bits as eight RFC4648
 uppercase base32 characters (`ABCDEFGHIJKLMNOPQRSTUVWXYZ234567`, MSB first, no padding), display `XXXX-XXXX`.
 `deviceComparisonCode` shared async helper implements this. Fixture: backend `backend-example`, grant `grant-example`,
-claim `claim-example`, secret `mh_c1.` followed by 43 `A` characters produces `3KDW-XZOE`. Migration uses literal grantId `migration`. Never approve by
+claim `claim-example`, secret `aiki_c1.` followed by 43 `A` characters produces `VE2X-TWTS`. Migration uses literal grantId `migration`. Never approve by
 label, source address or code alone: owner approval names exact claim ID(s). Labels/platform/source are untrusted hints.
 
 ### Revocation, artifacts, notifications and routing
@@ -143,15 +149,31 @@ Validate session on GET/HEAD; required rejects unbound old URLs. Optional anonym
 format. Clients remint on expiry without reloading sessions. Responses private/no-store, nosniff, no-referrer, restrictive
 sandbox CSP; hostile HTML/SVG attachment. URLs narrow bearer grants, not public share links.
 Authenticated notification registration binds stored subscription/FCM token to session, not caller deviceId. Authenticated
-re-registration rebinds existing legacy subscription. Anonymous registrations remain optional/off only. No relay here.
+re-registration rebinds existing legacy subscription. Anonymous registrations remain optional/off only. Legacy notification RPCs retain their old full authority during
+that compatibility window, including updates/reads/test/unregister after another tab has bound the same notification
+ID. An unauthenticated legacy re-registration preserves an existing auth-session binding (it never removes it), so
+revocation still removes the subscription. Required mode and authenticated callers enforce session ownership. No relay here.
 
 Backend origins configured through CLI hosts or `AIKI_BACKEND_ORIGINS` comma-separated canonical origins /
 `auth.backendOrigins` (the existing explicit `AIKI_PUBLIC_URL` is also a fallback configured origin).
-Configure these before a remote migration: mismatched optional Hosts are observed, never used to mint URLs.
-Required rejects mismatched Host (including scheme/port); optional records and logs once per host,
-never auto-allows. Loopback exact host:listener-port accepted. Origin allowlist `AIKI_ALLOWED_ORIGINS` remains
-separate. Only X-Forwarded-Host/Proto/For headers are used, and only for peers configured in `AIKI_TRUSTED_PROXIES` / `auth.trustedProxies`.
-Artifact origin comes only from an allowed backend origin, never an untrusted forwarded authority.
+Stage 1 needs no new origin/proxy configuration: optional/off artifact minting deliberately retains the old
+`requestOrigin()` priority: `AIKI_PUBLIC_URL`, else X-Forwarded-Proto + X-Forwarded-Host (or Host), else the
+request origin. Forwarded headers are included even from unconfigured proxy peers in these compatibility modes.
+This is a temporary legacy exception, not an approved Host or proxy entry. Required rejects mismatched Host
+(including scheme/port); optional records/logs once per host without auto-allowing it. Required artifact URLs use only
+validated origins, never this legacy fallback. Configure approved backend origins/proxies before required cutover. Loopback exact host:listener-port accepted. Origin allowlist `AIKI_ALLOWED_ORIGINS` remains
+separate. For required routing and source/security decisions, only X-Forwarded-Host/Proto/For headers are used,
+and only for peers configured in `AIKI_TRUSTED_PROXIES` / `auth.trustedProxies`.
+Required artifact origins come only from allowed backend origins, never an untrusted forwarded authority.
+For legacy `/ws`, optional/off preserves normalized Origin matching: missing Origin is allowed, disallowed Origin
+returns the original plain-text 403. Legacy signed `/artifacts/` GET/HEAD/OPTIONS remains accessible with missing or
+disallowed Origin, merely omitting CORS headers; allowed preflight retains `Range`. Required mode rejects disallowed
+Origins before any artifact access. New auth HTTP always uses exact Origin matching.
+
+`deploy/health-check.ts` is unchanged and still uses anonymous hello/status/list/page/drain. It works in optional/off,
+including deep and saved-open-project checks. Required cutover needs the checker to refresh a retained deployment
+session and send its access token in hello (or use an owner-only control operation for equivalent private checks).
+`GET /auth/status` alone is discovery/liveness, not a replacement for release/commit/project integrity checks.
 
 ### Owner CLI and migration
 
@@ -163,7 +185,7 @@ Select directory with `AIKI_DATA_DIR`; never delete auth data to recover. Comman
 Remote `pair` is explicit network enable via `--backend` (must already be allowed); web app from `--web-app`,
 `AIKI_WEB_APP` or first allowed browser origin. Output `<webApp>/pair#bootstrap=v1.<base64url UTF8 compact JSON
 [backendId,backendOrigin,requestId]>` and a **separate** 12-character uppercase base32 code. Local prints
-`<loopbackOrigin>/pair#bootstrap=<mh_b1 secret>` (bundled UI not shipped; trusted hosted UI can use explicit route).
+`<loopbackOrigin>/pair#bootstrap=<aiki_b1 secret>` (bundled UI not shipped; trusted hosted UI can use explicit route).
 Only CLI displays secrets, never service journal. Local channel commands never expose hashes/session tokens.
 
 Updated legacy clients persist pending claim proofs, register via HTTP, display comparison codes and poll. Owner reviews
@@ -784,8 +806,8 @@ Status: backend done (`packages/server/src/artifacts.ts`, `artifact-tools.ts`); 
   legacy optional-mode format are specified under **Device sign-in**. HMAC-SHA256 with `<data>/artifacts-secret`,
   valid ten minutes, constant-time verification; 403 without a valid token/active issuing session. One byte range
   (206/416), inline or attachment (`download`), `private, no-store`, `nosniff`, no-referrer and sandbox CSP.
-  HTML/SVG force attachment. Exact Origin CORS. URLs use a validated configured backend origin (or loopback),
-  never arbitrary Host/Forwarded values. Revocation aborts the issuing session's tracked streams.
+  HTML/SVG force attachment. Required mode uses exact Origin CORS and validated backend origins (or loopback);
+  optional/off preserves legacy CORS and forwarded/Host origin derivation during migration, as specified above. Revocation aborts the issuing session's tracked streams.
 
 ### Artifact tags and the task media carousel
 

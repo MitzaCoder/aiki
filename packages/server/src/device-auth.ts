@@ -262,7 +262,7 @@ export class DeviceAuth {
 		}
 	}
 	authenticate(token: string, touch = true, grace = 0): Identity {
-		const parts = /^mh_a1\.([a-f0-9]{32})\.[A-Za-z0-9_-]{43}$/.exec(token);
+		const parts = /^aiki_a1\.([a-f0-9]{32})\.[A-Za-z0-9_-]{43}$/.exec(token);
 		if (!parts) return fail();
 		const access = this.#state.access[parts[1]!];
 		if (!access || !matches(token, access.hash)) return fail();
@@ -278,14 +278,14 @@ export class DeviceAuth {
 	}
 	#access(session: Session) {
 		const accessId = id(),
-			token = `mh_a1.${accessId}.${randomBytes(32).toString("base64url")}`,
+			token = `aiki_a1.${accessId}.${randomBytes(32).toString("base64url")}`,
 			expires = this.now() + ACCESS_TTL;
 		this.#state.access[accessId] = { sessionId: session.id, hash: hash(token), expires };
 		return { accessToken: token, accessExpiresAt: new Date(expires).toISOString() };
 	}
 	#credentials(label: string, platform: string): SessionCredentials {
 		const sessionId = id(),
-			token = `mh_s1.${sessionId}.${randomBytes(32).toString("base64url")}`;
+			token = `aiki_s1.${sessionId}.${randomBytes(32).toString("base64url")}`;
 		const session: Session = {
 			id: sessionId,
 			label,
@@ -308,7 +308,7 @@ export class DeviceAuth {
 		};
 	}
 	#retained(token: string, allowPrevious = false): Session {
-		const parts = /^mh_s1\.([a-f0-9]{32})\.[A-Za-z0-9_-]{43}$/.exec(token);
+		const parts = /^aiki_s1\.([a-f0-9]{32})\.[A-Za-z0-9_-]{43}$/.exec(token);
 		if (!parts) return fail();
 		const session = this.session(parts[1]!);
 		if (
@@ -341,7 +341,7 @@ export class DeviceAuth {
 	}
 	rotate(token: string, successor: string) {
 		const session = this.#retained(token, true);
-		if (!new RegExp(`^mh_s1\\.${session.id}\\.[A-Za-z0-9_-]{43}$`).test(successor) || token === successor)
+		if (!new RegExp(`^aiki_s1\\.${session.id}\\.[A-Za-z0-9_-]{43}$`).test(successor) || token === successor)
 			return fail("bad_request", 400);
 		if (matches(token, session.retainedHash)) {
 			session.previousHash = session.retainedHash;
@@ -417,7 +417,7 @@ export class DeviceAuth {
 			).length >= 5
 		)
 			return fail("pending_limit", 429);
-		const secret = authSecret("mh_p1"),
+		const secret = authSecret("aiki_p1"),
 			grant: Grant = {
 				id: id(),
 				owner,
@@ -436,7 +436,7 @@ export class DeviceAuth {
 	bootstrap(local = false) {
 		for (const g of this.#state.grants) if (g.bootstrap && g.state === "unused") g.state = "cancelled";
 		const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-		const secret = local ? authSecret("mh_b1") : Array.from(randomBytes(12), (b) => alphabet[b & 31]).join("");
+		const secret = local ? authSecret("aiki_b1") : Array.from(randomBytes(12), (b) => alphabet[b & 31]).join("");
 		const grant: Grant = {
 			id: id(),
 			owner: null,

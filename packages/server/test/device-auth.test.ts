@@ -20,7 +20,7 @@ afterEach(async () => {
 });
 const proof = () => ({
 	claimId: randomBytes(16).toString("hex"),
-	claimSecret: authSecret("mh_c1"),
+	claimSecret: authSecret("aiki_c1"),
 	label: "Synthetic phone",
 	platform: "android",
 });
@@ -107,7 +107,7 @@ describe("durable device sessions", () => {
 		const credentials = (
 			await auth.redeem({ grantId: grant.requestId, secret: grant.secret, ...proof() }, "good", true)
 		).credentials;
-		expect(credentials?.sessionToken).toStartWith("mh_s1.");
+		expect(credentials?.sessionToken).toStartWith("aiki_s1.");
 		await expect(
 			auth.redeem({ grantId: grant.requestId, secret: grant.secret, ...proof() }, "new", true),
 		).rejects.toThrow("grant_used");
@@ -240,7 +240,7 @@ describe("durable device sessions", () => {
 	test("rotation crash-retry survives restart, same successor only for sixty seconds", async () => {
 		const { auth, root, advance } = await store();
 		const c = await enroll(auth),
-			successor = `mh_s1.${c.sessionId}.${randomBytes(32).toString("base64url")}`;
+			successor = `aiki_s1.${c.sessionId}.${randomBytes(32).toString("base64url")}`;
 		auth.rotate(c.sessionToken, successor);
 		const replay = auth.rotate(c.sessionToken, successor);
 		auth.close();
@@ -248,7 +248,7 @@ describe("durable device sessions", () => {
 		expect(restarted.rotate(c.sessionToken, successor)).toEqual(replay);
 		expect(() => restarted.refresh(c.sessionToken, "loopback")).toThrow();
 		expect(() =>
-			restarted.rotate(c.sessionToken, `mh_s1.${c.sessionId}.${randomBytes(32).toString("base64url")}`),
+			restarted.rotate(c.sessionToken, `aiki_s1.${c.sessionId}.${randomBytes(32).toString("base64url")}`),
 		).toThrow();
 		expect(restarted.refresh(successor, "loopback").sessionId).toBe(c.sessionId);
 		advance(60001);
@@ -464,7 +464,7 @@ describe("device-auth network boundary", () => {
 		expect(() => s.server.auth.approveMigration("fixture-batch", ["different"])).toThrow("batch_mismatch");
 		const delivered = await post(s, "/auth/claims/poll", claim);
 		expect(((await delivered.json()) as { credentials: SessionCredentials }).credentials.sessionToken).toStartWith(
-			"mh_s1.",
+			"aiki_s1.",
 		);
 		await post(s, "/auth/claims/ack", claim);
 		s.server.auth.setMode("required");
@@ -567,15 +567,15 @@ describe("artifact session capabilities and pairing encoding", () => {
 			backendId: "backend-example",
 			backendOrigin: "https://backend.example.com",
 			grantId: "grant-example",
-			secret: `mh_p1.${"A".repeat(43)}`,
+			secret: `aiki_p1.${"A".repeat(43)}`,
 		};
 		const encoded = encodePairingFragment(pairing);
 		expect(decodePairingFragment(encoded)).toEqual(pairing);
 		expect(() => decodePairingFragment("#pair=v1.e30")).toThrow();
 		expect(() => encodePairingFragment({ ...pairing, backendOrigin: "http://backend.example.com" })).toThrow();
 		expect(
-			await deviceComparisonCode("backend-example", "grant-example", "claim-example", `mh_c1.${"A".repeat(43)}`),
-		).toBe("3KDW-XZOE");
+			await deviceComparisonCode("backend-example", "grant-example", "claim-example", `aiki_c1.${"A".repeat(43)}`),
+		).toBe("VE2X-TWTS");
 	});
 });
 
@@ -621,7 +621,7 @@ describe("revocation and boundary regressions", () => {
 		await c.closed();
 		expect(s.server.auth.pairings("untrusted")).toEqual([]);
 	});
-	test("authenticated re-registration rebinds legacy FCM but anonymous callers cannot alter bound rows", async () => {
+	test("authenticated re-registration binds FCM while optional legacy updates retain that binding", async () => {
 		const s = await setup("optional"),
 			legacy = await client(s),
 			registration = {
@@ -639,9 +639,8 @@ describe("revocation and boundary regressions", () => {
 		expect((await authenticated.c.request({ type: "notifications.registerFcm", ...registration })).type).toBe(
 			"notifications.registerFcm",
 		);
-		expect(await legacy.c.request({ type: "notifications.unregister", deviceId: registration.deviceId })).toMatchObject(
-			{ type: "error", error: { code: "permission_denied" } },
-		);
+		expect(await legacy.c.request({ type: "notifications.registerFcm", ...registration })).toMatchObject({type:"notifications.registerFcm"});
+  expect(await legacy.c.request({ type: "notifications.device", deviceId: registration.deviceId })).toMatchObject({type:"notifications.device"});
 		await s.server.auth.revoke(credentials.sessionId);
 		expect(s.server.notifications.device(registration.deviceId)).toBeNull();
 	});
@@ -693,7 +692,7 @@ describe("revocation and boundary regressions", () => {
 		const { auth, advance } = await store();
 		const c = await enroll(auth);
 		advance(179 * 86400_000);
-		const wrong = `mh_s1.${c.sessionId}.${"A".repeat(43)}`;
+		const wrong = `aiki_s1.${c.sessionId}.${"A".repeat(43)}`;
 		expect(() => auth.refresh(wrong, "loopback")).toThrow();
 		expect(() => auth.authenticate(c.accessToken)).toThrow();
 		advance(86400_000 + 1);

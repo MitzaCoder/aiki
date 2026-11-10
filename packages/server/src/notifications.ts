@@ -393,6 +393,7 @@ export class NotificationStore {
 		input: {
 			deviceId: string;
 			sessionId?: string;
+			allowLegacyRegistration?: boolean;
 			label: string;
 			backendKey: string;
 			preferences: NotificationPreferences;
@@ -400,7 +401,8 @@ export class NotificationStore {
 		} & DeviceAddress,
 	): Promise<StoredDevice> {
 		const existing = this.#devices.get(input.deviceId);
-		if (existing?.sessionId && !input.sessionId) throw new ServerError("auth_required", "auth_required");
+		if (existing?.sessionId && !input.sessionId && !input.allowLegacyRegistration)
+			throw new ServerError("auth_required", "auth_required");
 		if (input.sessionId)
 			for (const device of this.#devices.values())
 				if (
@@ -423,7 +425,7 @@ export class NotificationStore {
 					};
 		const device: StoredDevice = {
 			deviceId: input.deviceId,
-			...(input.sessionId ? { sessionId: input.sessionId } : {}),
+			...((input.sessionId ?? existing?.sessionId) ? { sessionId: input.sessionId ?? existing!.sessionId } : {}),
 			label: input.label,
 			backendKey: input.backendKey,
 			...address,
@@ -1175,6 +1177,7 @@ export class Notifier {
 		input: {
 			deviceId: string;
 			sessionId?: string;
+			allowLegacyRegistration?: boolean;
 			label: string;
 			backendKey: string;
 			preferences: NotificationPreferences;

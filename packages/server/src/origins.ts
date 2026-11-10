@@ -43,8 +43,8 @@ export function resolveAllowedOrigins(env: Environment = process.env): string[] 
 }
 
 /** Whether a WebSocket request may be upgraded. Requests without an Origin are not from a browser. */
-export function isOriginAllowed(origin: string | null, allowed: readonly string[]): boolean {
+export function isOriginAllowed(origin: string | null, allowed: readonly string[], exact = true): boolean {
 	if (origin === null) return true;
 	const normalized = normalizeOrigin(origin);
-	return normalized !== undefined && origin === normalized && allowed.includes(normalized);
+	return normalized !== undefined && (!exact || origin === normalized) && allowed.includes(normalized);
 }

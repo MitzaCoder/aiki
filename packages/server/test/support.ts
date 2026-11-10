@@ -54,7 +54,7 @@ export async function createSetup(options?: {
 	status?: StartServerOptions["status"];
 	/** Web Push: the fake push service a test points the transport at, and the VAPID subject. */
 	auth?: StartServerOptions["auth"];
- notifications?: StartServerOptions["notifications"];
+	notifications?: StartServerOptions["notifications"];
 	/** How long the coordinator's own bash/powershell calls may run; defaults to the server's own default. */
 	toolCallCapMs?: StartServerOptions["toolCallCapMs"];
 	/** Free disk space: a fake reader, the threshold and the poll interval. */
@@ -91,7 +91,7 @@ export async function createSetup(options?: {
 	const start = (): Promise<HarnessServer> =>
 		startServer({
 			dataDir,
-   auth: options?.auth ?? { mode: "off" },
+			auth: options?.auth ?? { mode: "off" },
 			port: 0,
 			models,
 			credentials,
@@ -185,12 +185,17 @@ export class TestClient {
 		});
 	}
 
-	static async open(server: HarnessServer, options: { origin?: string } = {}): Promise<TestClient> {
+	static async open(
+		server: HarnessServer,
+		options: { origin?: string; headers?: Record<string, string> } = {},
+	): Promise<TestClient> {
 		const url = `${server.url.replace(/^http/, "ws")}/ws`;
 		const socket =
-			options.origin === undefined
+			options.origin === undefined && options.headers === undefined
 				? new WebSocket(url)
-				: new WebSocket(url, { headers: { origin: options.origin } } as never);
+				: new WebSocket(url, {
+						headers: { ...options.headers, ...(options.origin === undefined ? {} : { origin: options.origin }) },
+					} as never);
 		await new Promise<void>((resolve, reject) => {
 			socket.addEventListener("open", () => resolve());
 			socket.addEventListener("error", () => reject(new Error(`could not connect to ${url}`)));
@@ -252,10 +257,7 @@ export class TestClient {
 	}
 
 	/** Wait for the first message matching `predicate`, including ones already received. */
-	async waitFor(
-		predicate: (message: ServerMessage) => boolean,
-		timeoutMs = 20_000,
-	): Promise<ServerMessage> {
+	async waitFor(predicate: (message: ServerMessage) => boolean, timeoutMs = 20_000): Promise<ServerMessage> {
 		const existing = this.#messages.find(predicate);
 		if (existing !== undefined) return existing;
 		return new Promise<ServerMessage>((resolve, reject) => {

@@ -92,7 +92,7 @@ export type ClientConnectionOptions = {
 	/** The request log `cache.stats` sums; without it the request fails. */
 	requestLog?: RequestLog;
 	/**
-	 * Signs `artifacts.url` answers on the validated, configured backend origin.
+	 * Signs `artifacts.url` answers: validated origin in required mode, legacy routing in optional/off.
 	 * Without it the `artifacts.url` request fails.
 	 */
 	artifactUrls?: { signer: ArtifactUrlSigner; origin: string };
@@ -308,7 +308,7 @@ export class ClientConnection {
 				"deviceId" in request &&
 				request.type !== "notifications.register" &&
 				request.type !== "notifications.registerFcm" &&
-				this.#deviceAuth
+				this.#deviceAuth?.identity
 			) {
 				this.#notifications.checkSessionDevice(request.deviceId, this.#deviceAuth.identity?.sessionId);
 			}
@@ -486,6 +486,7 @@ export class ClientConnection {
 						label: request.label,
 						backendKey: request.backendKey,
 						subscription: request.subscription,
+						allowLegacyRegistration: !this.#deviceAuth?.identity && this.#deviceAuth?.store.mode !== "required",
 						preferences: request.preferences,
 					});
 					this.#respond({ type: "notifications.register", id: request.id, device });
@@ -498,6 +499,7 @@ export class ClientConnection {
 						label: request.label,
 						backendKey: request.backendKey,
 						fcmToken: request.token,
+						allowLegacyRegistration: !this.#deviceAuth?.identity && this.#deviceAuth?.store.mode !== "required",
 						preferences: request.preferences,
 					});
 					this.#respond({ type: "notifications.registerFcm", id: request.id, device });

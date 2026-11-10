@@ -181,7 +181,7 @@ function validatePairing(pairing: PairingFragment): void {
 		) ||
 		!pairing.backendId ||
 		!pairing.grantId ||
-		!/^mh_p1\.[A-Za-z0-9_-]{43}$/.test(pairing.secret)
+		!/^aiki_p1\.[A-Za-z0-9_-]{43}$/.test(pairing.secret)
 	)
 		throw new Error("Invalid pairing fragment");
 }

@@ -1,12 +1,28 @@
 # Continue
 
+## Stage-1 auth compatibility and Aiki wire prefixes (T65 follow-up)
+
+Optional/off keeps the old artifact origin derivation (explicit public URL, otherwise forwarded proto/host or Host),
+without requiring newly configured backend origins/proxies. Required mode stays strict; cutover closes authenticated
+sockets carrying an unapproved legacy minting origin too. New handshake quotas, pending cap, hello size cap and timeout
+apply only in required mode. Legacy WS Origin rejection and signed-artifact CORS match pre-auth behaviour. Legacy
+notification RPCs remain usable even after another tab binds that notification ID; re-registration preserves its binding
+so revocation still cleans it up. Auth management remains private. Eleven new compatibility tests cover this, including
+unchanged deploy health-check hello, saved-open-project inventory and deep status/list/page checks in optional mode.
+Required deployment checks still need an authenticated session (or equivalent owner-only private checks), not merely
+`/auth/status`. New wire secrets now use `aiki_s1/aiki_a1/aiki_c1/aiki_p1/aiki_b1`; comparison fixture is `VE2X-TWTS`.
+Existing `AIKI_` environment names are unchanged. Checks: root 1,732 tests and typecheck; focused auth 46;
+web 801 tests, zero check errors/warnings and build; Android 584 tests (two existing skips), assembly and lint
+(zero errors, 35 warnings). Generator check (324 DTOs / 87 overloads) and public guard pass. See DESIGN for the
+updated contract. No deployment was run.
+
 ## Device sign-in server/protocol (T65)
 
 Server device authentication now has durable owner sessions, protected hello/renew, bootstrap/pairing claims, refresh/
 rotation, migration batch approval, revocation, session-bound ten-minute artifact URLs and session-bound push rows.
 New directories start required; pre-existing data defaults optional; tests explicitly use off unless testing auth.
 Owner commands run through `bun packages/server/src/main.ts auth ...` and the owner-only `<data>/auth.sock`, not network
-management endpoints. Configure/allow backend origins before remote migration (optional only observes unknown hosts).
+management endpoints. Configure/allow backend origins before required cutover; optional keeps legacy routing.
 The full client contract, link encoding and comparison fixture are at the top of DESIGN. Auth support is explicit:
 `LEGACY_HARNESS_FEATURES` excludes the three new auth flags, including generated Android defaults. Protocol generation:
 324 DTOs / 87 overloads. Added 35 server auth tests. Root suite: 1,721 tests; web: 801 tests, zero check errors/warnings

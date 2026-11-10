@@ -362,7 +362,7 @@ describe("serving and deleting", () => {
 		await beyond.arrayBuffer();
 
 		const other = await fetch(url, { headers: { origin: "https://evil.example" } });
-		expect(other.status).toBe(403);
+		expect(other.status).toBe(200);
 		expect(other.headers.get("access-control-allow-origin")).toBeNull();
 		await other.arrayBuffer();
 		const preflight = await fetch(url, { method: "OPTIONS", headers: { origin: APP_ORIGIN, "access-control-request-headers": "range" } });
