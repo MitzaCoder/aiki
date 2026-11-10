@@ -113,7 +113,14 @@
 </script>
 
 <SettingsSection title="Notifications" description="Push to this browser; each backend sends its own events." icon="bell">
-	{#if notifications.error}<Banner tone="error">{notifications.error}</Banner>{/if}
+	{#if notifications.error}
+		<Banner tone="error">
+			{notifications.error}
+			{#if notifications.errorDetail}
+				<p class="mt-1 text-xs text-muted-foreground">{notifications.errorDetail}</p>
+			{/if}
+		</Banner>
+	{/if}
 	{#if quietProblem}<Banner tone="warning">{quietProblem}</Banner>{/if}
 	{#if permissionNote}
 		<Banner tone={notifications.permission === 'denied' ? 'error' : 'info'}>

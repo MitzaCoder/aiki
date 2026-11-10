@@ -32,6 +32,7 @@ import {
 	backendNotificationView,
 	presenceFor,
 	publicKeyMismatch,
+	pushSubscriptionError,
 	testNotificationText,
 	type BackendNotificationView,
 	type PushPermission,
@@ -103,6 +104,7 @@ export class NotificationCenter {
 	/** A request is running: enabling, disabling or saving preferences. */
 	busy = $state(false);
 	error = $state<string | undefined>(undefined);
+	errorDetail = $state<string | undefined>(undefined);
 
 	#loaded = false;
 	#started = false;
@@ -154,6 +156,7 @@ export class NotificationCenter {
 			});
 		} catch (error) {
 			this.error = messageOf(error);
+			this.errorDetail = undefined;
 		}
 	}
 
@@ -165,6 +168,7 @@ export class NotificationCenter {
 			await this.postWorkerRegistrations();
 		} catch (error) {
 			this.error = messageOf(error);
+			this.errorDetail = undefined;
 		}
 	}
 
@@ -283,6 +287,7 @@ export class NotificationCenter {
 	async enable(backends: readonly BackendConnection[]): Promise<void> {
 		this.busy = true;
 		this.error = undefined;
+		this.errorDetail = undefined;
 		try {
 			this.load();
 			if (this.permission === "unsupported") {
@@ -338,7 +343,9 @@ export class NotificationCenter {
 			this.#checkKeys();
 			await this.registerAll(backends);
 		} catch (error) {
-			this.error = messageOf(error);
+			const failure = pushSubscriptionError(error);
+			this.error = failure.message;
+			this.errorDetail = failure.detail;
 		} finally {
 			this.busy = false;
 		}
@@ -379,6 +386,7 @@ export class NotificationCenter {
 	async disable(backends: readonly BackendConnection[]): Promise<void> {
 		this.busy = true;
 		this.error = undefined;
+		this.errorDetail = undefined;
 		try {
 			for (const backend of backends) {
 				if (!backend.ready || this.backends[backend.id]?.supported === false) continue;

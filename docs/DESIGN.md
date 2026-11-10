@@ -2913,6 +2913,8 @@ apps/<native>/      later; technology not chosen
 Web Push, behind one server-side `Notifier` that every event source calls: the activity watch (a reply, a failed
 compaction), the worker reporter, the schedule runner, the deploy status, the login prompts and memory maintenance.
 APNs/FCM would replace the transport, not the interface.
+Web notification enablement explains a push-service `AbortError` with Brave’s “Use Google services for push messaging”
+setting, restart and retry steps; the raw error remains a small secondary detail. Other errors are unchanged.
 
 - **Android goes through FCM.** The Android app has no Web Push, so it registers its Firebase Cloud Messaging token
   with `notifications.registerFcm` (feature `fcm-push`) and the backend sends the same payload as FCM data through the

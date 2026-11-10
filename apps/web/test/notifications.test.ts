@@ -19,6 +19,7 @@ import {
 	presenceFor,
 	presenceProjectId,
 	publicKeyMismatch,
+	pushSubscriptionError,
 	quietHoursDraft,
 	quietHoursProblem,
 	testNotificationText,
@@ -47,6 +48,32 @@ function device(overrides: Partial<NotificationDevice> = {}): NotificationDevice
 		...overrides,
 	};
 }
+
+describe("push subscription errors", () => {
+	test("explains the Brave setting for a push-service AbortError and keeps the raw detail", () => {
+		const error = new DOMException("Registration failed - push service error", "AbortError");
+		expect(pushSubscriptionError(error)).toEqual({
+			message: "The browser's push service refused. In Brave, turn on Use Google services for push messaging under Settings → Privacy and security, restart the browser, then try again.",
+			detail: error.message,
+		});
+	});
+
+	test("leaves an AbortError with other text unchanged", () => {
+		expect(pushSubscriptionError(new DOMException("Registration failed - no active Service Worker", "AbortError")))
+			.toEqual({ message: "Registration failed - no active Service Worker" });
+	});
+
+	test("leaves permission denied unchanged", () => {
+		expect(pushSubscriptionError(new DOMException("Permission denied", "NotAllowedError")))
+			.toEqual({ message: "Permission denied" });
+	});
+
+	test("leaves an unrelated error unchanged, even with the same message", () => {
+		expect(pushSubscriptionError(new Error("Registration failed - push service error")))
+			.toEqual({ message: "Registration failed - push service error" });
+		expect(pushSubscriptionError(new Error("Network unavailable"))).toEqual({ message: "Network unavailable" });
+	});
+});
 
 describe("notification kinds", () => {
 	test("describes every kind the protocol has", () => {

@@ -1,5 +1,14 @@
 # Continue
 
+## Brave push-service guidance (T89)
+
+Web Settings → Notifications now explains the exact push-service `AbortError`: in Brave, enable “Use Google services
+for push messaging” under Settings → Privacy and security, restart, then retry. The raw browser message stays below
+in smaller text; other errors are unchanged. The pure mapping in `notifications.ts` has four new unit tests.
+Web: 882 tests pass, check has zero errors/warnings, build passes; root typecheck and public guard pass.
+Four desktop light/dark before/after screenshots on T89 use headless Chromium, an isolated createSetup backend and
+stubbed permission/subscribe calls. No dependencies, main move, push or deployment.
+
 ## Preserve Android sessions through access expiry (T90)
 
 Android now backs off and refreshes its retained credential before reconnecting after access rejection, including 4401.

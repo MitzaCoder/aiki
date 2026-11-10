@@ -136,6 +136,18 @@ export function kindIsFailure(kind: NotificationKind): boolean {
 /** The browser's push permission, or `unsupported` where it has no Push API at all. */
 export type PushPermission = NotificationPermission | "unsupported";
 
+/** Explain the push-service refusal without assuming which Chromium browser is in use. */
+export function pushSubscriptionError(error: unknown): { message: string; detail?: string } {
+	const message = error instanceof Error ? error.message : String(error);
+	if (error instanceof Error && error.name === "AbortError" && message === "Registration failed - push service error") {
+		return {
+			message: "The browser's push service refused. In Brave, turn on Use Google services for push messaging under Settings → Privacy and security, restart the browser, then try again.",
+			detail: message,
+		};
+	}
+	return { message };
+}
+
 /** Something the app knows about one backend's registration, without the runes. */
 export type BackendNotificationFacts = {
 	/** Whether the backend's release advertises the `notifications` feature. */
