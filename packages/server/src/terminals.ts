@@ -106,8 +106,8 @@ const CANONICAL_MODE = process.platform === "darwin" ? 0x100 : 0x2;
 /** Input held for a client that is not ready yet: at most this much, for at most this long. */
 const HELD_INPUT_LIMIT = 256 * 1024;
 const HELD_INPUT_MAX_MS = 15_000;
-/** zellij's client writes only terminal queries and mode switches (a few hundred bytes) until the server draws the session. */
-const FIRST_RENDER_BYTES = 2_000;
+/** Zellij clears the screen on its first render; its startup terminal queries do not. May span PTY chunks. */
+const FIRST_SCREEN_CLEAR = "\x1b[2J";
 
 const DEFAULT_PENDING_LIMIT = 2 * 1024 * 1024;
 const DEFAULT_FLUSH_MS = 8;
@@ -399,18 +399,18 @@ export class TerminalHost {
 			log: this.#log,
 		});
 		this.#attachments.add(attachment);
-		// A session is listed once its server has its socket up, a moment after its client starts. Wait for it, so the next
-		// list shows it and the next new name is not this one.
-		if (this.#multiplexer === "zellij" && created) await this.#waitForSession(session, attachment);
-		return attachment;
-	}
-
-	async #waitForSession(session: string, attachment: TerminalAttachment): Promise<void> {
-		const deadline = Date.now() + 5_000;
-		while (Date.now() < deadline && !attachment.ended) {
-			if ((await this.listSessions()).some((entry) => entry.name === session)) return;
-			await Bun.sleep(25);
+		// Do not probe a booting server with list-sessions. Zellij 0.45.1 handles that probe's disconnect before
+		// session_data exists and panics (RemoveClient in zellij-server/src/lib.rs). Its first screen is the readiness
+		// event: the session exists by then, without creating and dropping another client during initialization.
+		if (this.#multiplexer === "zellij" && created) {
+			try {
+				await attachment.waitForRender();
+			} catch (error) {
+				await attachment.detach();
+				throw error;
+			}
 		}
+		return attachment;
 	}
 
 	#outsideService(availability: TerminalAvailability, command: string[]): string[] {
@@ -518,7 +518,9 @@ export class TerminalAttachment {
 	#heldInput: Uint8Array[] | undefined;
 	#heldBytes = 0;
 	#rawPoll: ReturnType<typeof setInterval> | undefined;
-	#bytesSeen = 0;
+	#rendered = false;
+	#renderTail = "";
+	readonly #firstRender = Promise.withResolvers<void>();
 
 	constructor(options: AttachmentOptions) {
 		this.#options = options;
@@ -543,6 +545,7 @@ export class TerminalAttachment {
 		if (options.holdInputUntilRaw) this.#heldInput = [];
 		void this.#process.exited.then((code) => {
 			this.#exited = true;
+			this.#firstRender.resolve();
 			this.#ended ??= { reason: "exited", exitCode: code };
 			// The PTY's last bytes arrive before its EOF; wait for it, but not for long.
 			setTimeout(() => {
@@ -576,6 +579,23 @@ export class TerminalAttachment {
 		return this.#dropping;
 	}
 
+	/** A new zellij server has initialized once its client draws the first screen, not merely when its socket exists. */
+	async waitForRender(): Promise<void> {
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		try {
+			await Promise.race([
+				this.#firstRender.promise,
+				new Promise<never>((_resolve, reject) => {
+					// Includes a service-manager round trip, server startup and the first shell on a loaded backend.
+					timer = setTimeout(() => reject(new ServerError("terminal_unavailable", "Timed out starting zellij")), 30_000);
+				}),
+			]);
+			if (this.ended) throw new ServerError("terminal_unavailable", "Zellij exited before drawing its session");
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+
 	/** Type into the PTY. */
 	write(bytes: Uint8Array | string): void {
 		if (this.#finished || this.#detached || this.#process.terminal === undefined) return;
@@ -602,7 +622,7 @@ export class TerminalAttachment {
 			if (terminal === undefined || this.#finished || this.#detached) return this.#stopRawPoll();
 			// Raw mode alone is not enough: the client switches early, but only reads keys once the server has drawn
 			// the session, which is its first full-screen write.
-			const ready = (terminal.localFlags & CANONICAL_MODE) === 0 && this.#bytesSeen >= FIRST_RENDER_BYTES;
+			const ready = (terminal.localFlags & CANONICAL_MODE) === 0 && this.#rendered;
 			if (ready || Date.now() - started > HELD_INPUT_MAX_MS) {
 				const held = this.#heldInput ?? [];
 				this.#heldInput = undefined;
@@ -663,7 +683,12 @@ export class TerminalAttachment {
 
 	#onData(data: Uint8Array): void {
 		if (this.#detached || this.#finished) return;
-		this.#bytesSeen += data.length;
+		if (!this.#rendered) {
+			const output = this.#renderTail + new TextDecoder().decode(data);
+			this.#rendered = output.includes(FIRST_SCREEN_CLEAR);
+			this.#renderTail = output.slice(-(FIRST_SCREEN_CLEAR.length - 1));
+			if (this.#rendered) this.#firstRender.resolve();
+		}
 		this.#lastDataAt = Date.now();
 		if (this.#dropping) return;
 		this.#pending.push(data);

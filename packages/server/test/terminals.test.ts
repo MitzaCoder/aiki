@@ -82,14 +82,17 @@ class Probe {
 		readonly terminalId: number,
 		readonly autoAck: boolean,
 	) {
-		client.onBinary((raw) => {
+		const receive = (raw: Uint8Array) => {
 			const frame = decodeTerminalFrame(raw);
 			if (frame === undefined || frame.kind !== TERMINAL_FRAME.output || frame.terminalId !== terminalId) return;
 			this.chunks.push(frame.payload);
 			this.frames += 1;
 			this.bytes += frame.payload.length;
 			if (this.autoAck) client.sendBinary(encodeTerminalAck(terminalId, frame.payload.length));
-		});
+		};
+		// The socket may deliver startup frames before the request continuation installs this probe.
+		for (const raw of client.binaryFrames) receive(raw);
+		client.onBinary(receive);
 	}
 	text(): string {
 		return new TextDecoder().decode(Buffer.concat(this.chunks));
@@ -391,13 +394,20 @@ describe.skipIf(ZELLIJ === null)("terminals on zellij sessions", () => {
 		expect(list.version).toMatch(/^\d+\.\d+/);
 
 		// A new session named from the prefix, starting in the project's folder.
+		let outputBeforeOpen = false;
+		const stopCheckingOrder = client.onBinary(() => {
+			if (!client.messages.some((message) => message.type === "terminal.open")) outputBeforeOpen = true;
+		});
 		const first = await open(client, { prefix: "My Project", cwd: setup.projectDir });
+		stopCheckingOrder();
+		expect(outputBeforeOpen).toBe(false);
 		expect(first.response).toMatchObject({ session: "my-project-1", created: true });
 		first.type("echo zj-$((2+3)) && pwd\r");
 		await first.waitForText("zj-5", 30_000);
 		await first.waitForText(setup.projectDir);
 
-		const second = await open(client, { prefix: "My Project" });
+		// A small screen need not produce 2 KiB: readiness is the render event, not an output byte count.
+		const second = await open(client, { prefix: "My Project", cols: 20, rows: 5 });
 		expect(second.response.session).toBe("my-project-2");
 
 		const listed = (await client.request({ type: "terminal.list" })) as { sessions: { name: string; attached: boolean; exited: boolean }[] };
@@ -471,6 +481,32 @@ describe.skipIf(ZELLIJ === null)("terminals on zellij sessions", () => {
 });
 
 describe("TerminalHost", () => {
+	test("readiness waits for a screen clear across chunks, not a byte threshold", async () => {
+		let output = "";
+		const host = new TerminalHost({ multiplexer: "none", command: ["bash", "-c",
+			"stty -echo; printf '%2100s'; read -r first; printf '\\033[2'; read -r second; printf J; read -r last",
+		] });
+		try {
+			const terminal = await host.open({ cols: 20, rows: 5 }, {
+				output: (bytes) => { output += new TextDecoder().decode(bytes); },
+				resync: () => undefined,
+				closed: () => undefined,
+			});
+			let ready = false;
+			const rendered = terminal.waitForRender().then(() => { ready = true; });
+			await until(() => output.length >= 2100, "startup output");
+			expect(ready).toBe(false);
+			terminal.write("first\n");
+			await until(() => output.endsWith("\x1b[2"), "partial screen clear");
+			expect(ready).toBe(false);
+			terminal.write("second\n");
+			await rendered;
+			expect(ready).toBe(true);
+		} finally {
+			await host.stop();
+		}
+	});
+
 	test("stop detaches what is attached and refuses new terminals", async () => {
 		const host = new TerminalHost({ multiplexer: "none", command: BASH });
 		const sink = { output: () => undefined, resync: () => undefined, closed: () => undefined };

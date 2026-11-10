@@ -2037,6 +2037,10 @@ here and nothing depends on xterm.js.
   the shared child environment above (no server settings; only the `AIKI_CHILD_PROCESS` marker), with
   `TERM=xterm-256color`, `COLORTERM=truecolor`, `SHELL` set to the user's login shell when unset (a system unit has none), and `XDG_RUNTIME_DIR` for the user manager. `terminal.list` runs
   `zellij list-sessions --no-formatting`; kill runs `zellij kill-session` then `delete-session`.
+  Opening a new session waits for its first screen-clear render (up to 30 seconds), never polling list-sessions during
+  initialization: Zellij 0.45.1 can panic handling a probing client's disconnect before its session state exists.
+  Startup output is held behind the `terminal.open` response. Early input waits for raw mode and the first screen
+  clear, including an escape sequence split across PTY chunks; readiness does not depend on screen size or byte count.
 - **Availability and installation.** The server finds zellij through `AIKI_ZELLIJ`, then `PATH`, then
   `~/.local/bin/zellij`. The PC and the T14 already have it on the service's PATH through
   `/home/user/.local/bin` (home-manager's `programs.zellij`), but that is an accident of the PATH line:

@@ -983,7 +983,14 @@ export class ClientConnection {
 						);
 					}
 					const terminalId = ++this.#terminalSequence;
-					// Output is sent from timers, which cannot run between the host answering and the response below.
+					// Startup can draw while host.open waits for readiness. Keep its output behind the open response,
+					// so the client knows the terminal ID before receiving its first screen (or close event).
+					let opened = false;
+					const startup: (() => void)[] = [];
+					const afterOpen = (send: () => void): void => {
+						if (opened) send();
+						else startup.push(send);
+					};
 					const terminal = await host.open(
 						{
 							...(request.session === undefined ? {} : { session: request.session }),
@@ -993,19 +1000,19 @@ export class ClientConnection {
 							rows: request.rows,
 						},
 						{
-							output: (bytes) => {
+							output: (bytes) => afterOpen(() => {
 								if (this.#closed) return;
 								try {
 									this.#io.sendBinary(encodeTerminalFrame(TERMINAL_FRAME.output, terminalId, bytes));
 								} catch (error) {
 									this.#log(`terminal ${terminalId}: send failed: ${errorMessage(error)}`);
 								}
-							},
-							resync: () => this.#respond({ type: "terminal.resync", terminalId }),
-							closed: (info) => {
+							}),
+							resync: () => afterOpen(() => this.#respond({ type: "terminal.resync", terminalId })),
+							closed: (info) => afterOpen(() => {
 								this.#terminals.delete(terminalId);
 								this.#respond({ type: "terminal.closed", terminalId, ...info });
-							},
+							}),
 						},
 					);
 					if (!this.#authorized()) {
@@ -1022,6 +1029,8 @@ export class ClientConnection {
 						cols: terminal.cols,
 						rows: terminal.rows,
 					});
+					opened = true;
+					for (const send of startup) send();
 					return;
 				}
 				case "terminal.resize": {
