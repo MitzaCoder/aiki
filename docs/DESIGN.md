@@ -1155,6 +1155,36 @@ Decided with the user on 2026-11-06. Web only; protocol addition: the optional `
 - **Phones.** Below 640px of board width one column shows at a time, with the column names as tabs and a swipe
   (scroll snap) between them; no dragging, the menu moves cards.
 
+### Collapsible task families (T74 / D44)
+
+The web task list uses collapsible families, with no prototype switch or query flag. Kanban remains unchanged.
+Quiet same-status children nest beneath their parent using a small chevron, a neutral progress ring (direct subtasks
+done/total, excluding dropped tasks) and a 14px guide/indent capped visually at three levels. Root families and siblings
+retain priority order; nesting puts a parent before its children. Section counts still include folded rows.
+
+**Visibility takes precedence over collapsing.** Nest only when parent and child share both status and section. A
+child in another status, or in Needs you when its parent is not, keeps its own row in the original group, with a
+muted `↳ T57` link to the parent. Review, blocked, waiting, open-question and open-warning descendants always remain
+visible, even if the saved parent choice is collapsed; any required ancestor path remains visible too. Do not show
+an ineffective disclosure when every nested child must stay visible. A newly blocked/review/waiting task or question
+therefore appears immediately without requiring the user to reopen a family. Waiting sections start open (the user
+may still explicitly fold a whole section); recently closed starts folded unless it contains an open question or
+warning. Filtered, archived or missing
+parents leave visible children at the group root with a parent link. Existing top-level/focus filters still apply.
+
+**Choices and access.** Quiet families default collapsed. Explicit true/false choices persist per parent in the
+project/backend-scoped local key `aiki.task-families.v1:<backend>:<project>`; nested choices survive closing their
+ancestor. Storage failure falls back to in-memory choices. Disclosures are separate native buttons with
+`aria-expanded`, Enter/Space support, visible focus and touch targets. Hierarchy is expressed with real nested lists,
+not an ARIA tree, so the list retains ordinary Tab navigation (no new arrow-key mode). No expansion animation; reduced
+motion also disables existing row/status motion. Found-while, blocked-by and related glyph links have accessible names
+and native title tooltips. Feedback counts, ref links and task navigation remain.
+
+Android remains separate: port same-status nesting, always-visible attention/cross-status rows,
+progress, parent links and per-project local expansion choices. No protocol/backend change is needed.
+
+
+
 ### Ticket and pull request links
 
 Decided with the user on 2026-11-06 (cards on 2026-11-07). Contract in `packages/protocol/src/refs.ts` (features

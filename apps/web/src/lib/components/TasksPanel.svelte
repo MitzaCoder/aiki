@@ -1,5 +1,8 @@
 <script lang="ts">
 	import CardMarkdown from './markdown/CardMarkdown.svelte';
+	import { page } from '$app/state';
+	import TaskFamilyMeta from './TaskFamilyMeta.svelte';
+	import { familyExpansionKey, loadFamilyExpansion, needsFamilyAttention, saveFamilyExpansion, taskFamilies, type TaskFamily } from '#lib/task-families.js';
 	import { waitingSummary } from '#lib/task-waiting.js';
 	import { overlayScroll } from '#lib/scrollbars.js';
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
@@ -15,8 +18,7 @@
 	import LooseWorkers from '#lib/components/LooseWorkers.svelte';
 	import RefChip from '#lib/components/RefChip.svelte';
 	import TaskFilters from '#lib/components/TaskFilters.svelte';
-	import TaskRelationChips from '#lib/components/TaskRelationChips.svelte';
-	import { applyTaskFilter, openFeedbackCount } from '#lib/task-relations.js';
+	import { applyTaskFilter } from '#lib/task-relations.js';
 	import { taskFilter } from '#lib/tasks-view.svelte.js';
 	import { useRefLinks } from '#lib/ref-links.svelte.js';
 	import { compactRelativeTime, relativeTime } from '#lib/relative-time.js';
@@ -36,8 +38,8 @@
 		type TaskSectionId
 	} from '#lib/tasks.js';
 	import { questionAskedBy } from '#lib/threads.js';
-	import type { BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@aiki/protocol';
-	import type { Snippet } from 'svelte';
+	import type { BoardQuestion, ThreadSummary, WorkerSummary } from '@aiki/protocol';
+	import { untrack, type Snippet } from 'svelte';
 
 	/**
 	 * The project's tasks, the body of the sidebar's Tasks tab: every task grouped by what it needs from the user (needs
@@ -69,6 +71,26 @@
 
 	const refLinks = useRefLinks();
 
+	// Quiet work starts folded. Remember explicit choices per parent, backend and project.
+	const expansionKey = $derived(familyExpansionKey(page.params.backend ?? '', page.params.id ?? ''));
+	let savedExpansion = $state<{ key: string; choices: Record<string, boolean> } | null>(null);
+	const expansion = $derived(savedExpansion?.key === expansionKey ? savedExpansion.choices : {});
+
+	function familyStorage(): Storage | undefined {
+		try { return typeof localStorage === 'undefined' ? undefined : localStorage; } catch { return undefined; }
+	}
+
+	$effect(() => {
+		const key = expansionKey;
+		untrack(() => { savedExpansion = { key, choices: loadFamilyExpansion(key, familyStorage()) }; });
+	});
+
+	function toggleFamily(id: string): void {
+		const choices = { ...expansion, [id]: expansion[id] !== true };
+		savedExpansion = { key: expansionKey, choices };
+		saveFamilyExpansion(expansionKey, choices, familyStorage());
+	}
+
 	let adding = $state(false);
 	let sectionOpen = $state<Partial<Record<TaskSectionId, boolean>>>({});
 	let answeredOpen = $state(false);
@@ -83,6 +105,7 @@
 			? []
 			: taskSections({ tasks: shownTasks, questions: board.board.questions }, { includeArchived: board.showArchived })
 	);
+	const familySections = $derived(sections.map((section) => ({ section, families: taskFamilies(section, expansion) })));
 	const loose = $derived(board?.board === undefined ? [] : looseWaiting({ tasks, questions: board.board.questions }));
 	const answered = $derived(board?.board === undefined ? [] : answeredQuestions(board.board));
 	const decisions = $derived(board?.board?.decisions ?? []);
@@ -90,13 +113,8 @@
 	const archivedShown = $derived(board?.showArchived === true ? tasks.filter((task) => task.archived).length : 0);
 	const openCount = $derived(shownTasks.filter((task) => !task.archived && task.status !== 'done' && task.status !== 'dropped').length);
 
-	/** Whether the row has a parent, subtasks or open feedback to say. */
-	function hasRelations(task: BoardTask): boolean {
-		return task.parent != null || (task.subtasks?.length ?? 0) > 0 || openFeedbackCount(task) > 0;
-	}
-
 	function isOpen(section: TaskSection): boolean {
-		return sectionOpen[section.id] ?? !section.collapsedByDefault;
+		return sectionOpen[section.id] ?? (section.rows.some(needsFamilyAttention) || !section.collapsedByDefault);
 	}
 
 	function toggle(section: TaskSection): void {
@@ -153,7 +171,8 @@
 	{/if}
 {/snippet}
 
-{#snippet taskRow(row: TaskRow)}
+{#snippet taskRow(family: TaskFamily, depth = 0)}
+	{@const row = family.row}
 	{@const warned = row.waiting.some(isWarning)}
 	{@const gist = rowGist(row)}
 	{@const refs = taskRefs(row.task)}
@@ -175,6 +194,11 @@
 					<span class="task-status-dot" class:task-row-pulse={row.task.status === 'in_progress'}></span>
 				{/if}
 			</span>
+			{#if family.canToggle}
+				<button type="button" class="family-toggle" aria-label="{family.expanded ? 'Collapse' : 'Expand'} subtasks of {row.task.id}" aria-expanded={family.expanded} title={family.expanded ? 'Collapse subtasks' : `Expand subtasks (${family.foldedCount} folded)`} onclick={() => toggleFamily(row.task.id)}>
+					<ChevronRightIcon class="size-3.5 {family.expanded ? 'rotate-90' : ''}" />
+				</button>
+			{/if}
 			<span class="flex min-w-0 flex-1 flex-col gap-0.5">
 				<a
 					href={taskHref(row.task.id)}
@@ -188,7 +212,8 @@
 				{#if gist.length > 0 && row.task.status !== 'waiting'}
 					<span class="truncate text-task-sm text-(--chat-fg-muted)">{gist}</span>
 				{/if}
-				{#if needsYou || refs.length > 0 || hasRelations(row.task)}
+				<TaskFamilyMeta task={row.task} {tasks} archivedLinks={board?.archivedLinks} nested={depth > 0} {taskHref} onopen={onopentask} />
+				{#if needsYou || refs.length > 0}
 					<span class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-[0.6875rem] leading-4 text-(--chat-fg-subtle)">
 						{#if needsYou}
 							<span class="inline-flex shrink-0 items-center gap-1 font-medium text-(--task-status)">
@@ -198,7 +223,6 @@
 								<span class="shrink-0">+{row.waiting.length - 1} more</span>
 							{/if}
 						{/if}
-						<TaskRelationChips task={row.task} {tasks} archivedLinks={board?.archivedLinks} hrefOf={taskHref} onopen={onopentask} />
 						{@render refChips(refs)}
 					</span>
 				{/if}
@@ -209,6 +233,13 @@
 			</span>
 			<ChevronRightIcon class="task-row-chevron mt-0.5 size-3.5 shrink-0 text-(--chat-fg-subtle)" aria-hidden="true" />
 		</div>
+		{#if family.children.length > 0}
+			<ul class="family-children" class:family-depth-limit={depth >= 3} aria-label="Subtasks of {row.task.id}">
+				{#each family.children as child (child.row.task.id)}
+					{@render taskRow(child, depth + 1)}
+				{/each}
+			</ul>
+		{/if}
 	</li>
 {/snippet}
 
@@ -304,7 +335,8 @@
 					</section>
 				{/if}
 
-				{#each sections as section (section.id)}
+				{#each familySections as entry (entry.section.id)}
+					{@const section = entry.section}
 					<section class="flex flex-col gap-1.5" data-section={section.id} aria-label={section.label}>
 						{#if section.collapsedByDefault}
 							<button
@@ -322,8 +354,8 @@
 						{/if}
 						{#if isOpen(section)}
 							<ul class="task-group">
-								{#each section.rows as row (row.task.id)}
-									{@render taskRow(row)}
+								{#each entry.families as family (family.row.task.id)}
+									{@render taskRow(family)}
 								{/each}
 							</ul>
 						{/if}
@@ -407,6 +439,21 @@
 </div>
 
 <style>
+	.family-toggle {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		place-items: center;
+		min-width: 28px;
+		min-height: 28px;
+		margin: -4px -4px 0 -8px;
+		border-radius: 4px;
+		color: var(--chat-fg-subtle);
+	}
+	.family-toggle:hover { background: var(--chat-surface-2); }
+	.family-toggle:focus-visible { outline: 2px solid var(--accent-2); }
+	.family-children { margin-left: 14px; border-left: 1px solid var(--chat-border); }
+	.family-depth-limit { margin-left: 0; }
 	/* A section's rows as one inset-grouped card, split by hairlines that start where the text does. */
 	.task-group {
 		display: flex;
@@ -485,6 +532,7 @@
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
+		.task-row, :global(.task-row-chevron) { transition: none; }
 		.task-row-pulse {
 			animation: none;
 		}

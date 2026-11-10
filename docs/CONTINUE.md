@@ -1,5 +1,18 @@
 # Continue
 
+## Collapsible web task families (T74 / D44)
+
+The task list now uses C only, without a dev flag. Quiet same-status children start folded; parent choices persist
+per backend/project under `aiki.task-families.v1`. Cross-status or cross-section children stay in their own group
+with a parent breadcrumb. Review, blocked, waiting, question and warning rows never fold away; same-status
+attention descendants stay nested and visible. Attention sections start open. Counts include folded work. Native
+Enter/Space buttons, nested lists and reduced-motion rules preserve keyboard/touch access. Android remains deferred;
+it will need these visibility rules and scoped local expansion choices.
+Rebased onto the renamed main as well. Web: 825 tests, zero check errors/warnings and build pass; root: 1,720 tests
+and typecheck pass. Added-line public-source
+scan passes. T74 has nine after screenshots plus a recording of keyboard expansion, reload persistence and live
+attention escaping a collapsed family. No main move, push or deployment.
+
 ## Stable migration inventory (T81)
 
 Migration claims now wait 14 idle days (30-day absolute cap), refreshing last-seen on proof-bound polls and registration.
@@ -25,6 +38,7 @@ pre-auth rollback (including failed manual-rollback restoration), even with the 
 Deploy a known-good metadata-bearing release while optional before cutover. Never use old tooling to bypass the guard.
 Root: 1,808 tests, zero failures, typecheck; web: 829 tests, zero check errors/warnings, build. Generator check exits 0:
 330 DTOs / 88 overloads. Public guard/Gitleaks pass. Protocol untouched; no Android rebuild, live data access or deploy.
+
 
 ## Full device sign-in rehearsal (T68)
 
@@ -131,6 +145,7 @@ and public-source guard pass. No UI, relay, deployment or cross-backend migratio
 backends to required until updated clients have claimed, been approved, acknowledged and rebound push.
 
 
+
 ## Usage analysis and subscription resets (T78)
 
 Phase-one web prototype adds role/model/project/task usage over the 90-day log. `usage-breakdown` adds optional
@@ -145,6 +160,7 @@ Checks: root 1,715 tests and typecheck; web 810 tests, zero check errors/warning
 (305 DTOs / 79 overloads); Android 584 tests (two existing skips), unit tests and debug assembly pass. Focused server
 regressions pass (30 tests). T78 holds synthetic before/after captures in desktop light/dark and phone dark for all
 tabs, reset confirmation/result, browser checks and an 11.6-second interaction recording. No real reset, push or deployment.
+
 
 ## Anthropic subscription user agent (T76)
 
@@ -175,6 +191,7 @@ unit tests, assembly and lint: 584 tests, two existing skips, no failures/errors
 Publication guard and Gitleaks pass; the copyright notice is the only protected-name match. Private configuration,
 three baseline snapshots, a read-only simulation and an unapplied host-config patch are prepared in the stable
 checkout's ignored local directory. No manual data move, reinstall or host rebuild is needed for this release.
+
 
 ## Pi 1.5.1 upgrade (T73)
 
