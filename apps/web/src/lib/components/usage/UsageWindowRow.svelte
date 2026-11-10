@@ -40,7 +40,7 @@
 					datetime={window.resetsAt ?? undefined}
 					title={resetTitle}
 				>
-					{resetLabel(pace, now)}{#if pace.resetsAt !== null && pace.resetsAt > now}<span class="text-(--chat-fg-subtle) @min-[28rem]:@max-[44rem]:hidden"
+					{resetLabel(pace, now)}{#if pace.resetsAt !== null && pace.resetsAt > now}<span class="text-(--chat-fg-subtle)"
 							>&nbsp;· {clockTime(pace.resetsAt, now)}</span
 						>{/if}
 				</time>

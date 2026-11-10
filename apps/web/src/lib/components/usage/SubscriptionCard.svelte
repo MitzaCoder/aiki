@@ -4,11 +4,13 @@
 	import type { SubscriptionUsage } from '@aiki/protocol';
 	import ProviderMark from './ProviderMark.svelte';
 	import UsageWindowRow from './UsageWindowRow.svelte';
+	import SubscriptionResets from './SubscriptionResets.svelte';
+	import type { BackendConnection } from '#lib/harness.svelte.js';
 	import { exactTime } from '#lib/relative-time.js';
 	import { isStale, sourceLabel, updatedLabel } from '#lib/subscription-usage.js';
 
 	/** One subscription: who it is (provider, plan, account), how fresh its numbers are, and each of its windows. */
-	let { subscription, now, index = 0 }: { subscription: SubscriptionUsage; now: number; index?: number } = $props();
+	let { subscription, now, index = 0, backend }: { subscription: SubscriptionUsage; now: number; index?: number; backend?: BackendConnection } = $props();
 
 	const stale = $derived(isStale(subscription.updatedAt, now));
 </script>
@@ -58,6 +60,7 @@
 			{/each}
 		</div>
 	{/if}
+	<SubscriptionResets {subscription} {backend} />
 </article>
 
 <style>

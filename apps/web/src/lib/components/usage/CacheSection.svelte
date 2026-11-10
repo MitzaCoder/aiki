@@ -30,7 +30,7 @@
 	 * One backend's prompt cache statistics: what its model requests cost, how much of that billed a cached prompt again
 	 * and why, where and after what, what would have helped, and each costly miss with what changed in the request.
 	 */
-	let { cache }: { cache: BackendCacheStats } = $props();
+	let { cache, showRange = true }: { cache: BackendCacheStats; showRange?: boolean } = $props();
 
 	const stats = $derived(cache.stats);
 	const summary = $derived(stats === undefined ? undefined : summaryLines(stats));
@@ -62,7 +62,7 @@
 		<CoinsIcon class="size-4 text-(--chat-fg-subtle)" />
 		<h3 class="text-sm font-semibold tracking-tight">Prompt cache</h3>
 		<span class="h-px min-w-4 flex-1 bg-(--chat-border)"></span>
-		<div class="flex rounded-lg border border-(--chat-border) p-0.5 text-xs" role="group" aria-label="Range">
+		{#if showRange}<div class="flex rounded-lg border border-(--chat-border) p-0.5 text-xs" role="group" aria-label="Range">
 			{#each CACHE_STATS_RANGES as days (days)}
 				<button
 					type="button"
@@ -76,7 +76,7 @@
 					{days} days
 				</button>
 			{/each}
-		</div>
+		</div>{/if}
 	</div>
 
 	{#if cache.error}

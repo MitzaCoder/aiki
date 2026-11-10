@@ -7,7 +7,13 @@ Phase-one web prototype adds role/model/project/task usage over the 90-day log. 
 with this release. `subscription-resets` adds explicit confirmed one-shot Claude/Codex reset consumption, fresh
 read-only grant discovery, request UUID deduplication and unknown-outcome handling; no real reset was triggered.
 See DESIGN and `research/usage-analysis.md` for recording gaps, tab decisions and undocumented provider contracts.
-Android DTOs are generated; its usage screen is intentionally unchanged pending web review. No push or deployment.
+Android DTOs are generated; its usage screen is intentionally unchanged pending web review. Log schema is 2;
+legacy logs migrate additively and internal calls cannot be backfilled. Web has five keyboard-accessible tabs and
+Today/7/30-day periods, model totals plus role splits, cost-ranked tasks and clearly qualified waste signals.
+Checks: root 1,715 tests and typecheck; web 810 tests, zero check errors/warnings and build; generator check exit 0
+(305 DTOs / 79 overloads); Android 584 tests (two existing skips), unit tests and debug assembly pass. Focused server
+regressions pass (30 tests). T78 holds synthetic before/after captures in desktop light/dark and phone dark for all
+tabs, reset confirmation/result, browser checks and an 11.6-second interaction recording. No real reset, push or deployment.
 
 ## Anthropic subscription user agent (T76)
 
