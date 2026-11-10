@@ -19,6 +19,8 @@ import type { CredentialStore, Models } from "@earendil-works/pi-ai";
 import { PROTOCOL_SCHEMAS, type SubscriptionUsage, type UsageSample, type UsageWindow } from "@aiki/protocol";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
+import { consumeReset, discoverResets, type ResetTransport } from "./subscription-resets.ts";
+import type { SubscriptionResets, SubscriptionsResetRequest } from "@aiki/protocol";
 import { errorMessage } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 
@@ -62,6 +64,7 @@ export type WindowReading = {
 };
 
 export type UsageReading = {
+	manualResets?: SubscriptionResets | null;
 	source: "usage_api" | "response_headers";
 	windows: WindowReading[];
 	plan?: string | null;
@@ -130,6 +133,8 @@ export class SubscriptionUsageService {
 	readonly #log: (message: string) => void;
 	readonly #readers: Record<string, UsageReader>;
 	readonly #states = new Map<string, ProviderState>();
+	readonly #resetAttempts = new Map<string, { signature: string; answer: Promise<{ ok: boolean; code: string }> }>();
+	readonly #resetting = new Set<string>();
 	#clients = 0;
 	#pollTimer: ReturnType<typeof setInterval> | undefined;
 	#lastSignature = "";
@@ -168,6 +173,39 @@ export class SubscriptionUsageService {
 		}
 		return this.#list();
 	}
+
+	/** Confirmed reset; fresh discovery gates the action. Mutation is never automatically retried. */
+ async reset(request: Pick<SubscriptionsResetRequest, "providerId" | "creditId" | "program" | "requestId" | "confirmed">): Promise<{ok:boolean;code:string}> {
+  if(request.confirmed!==true || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(request.requestId)) return {ok:false,code:"confirmation_required"};
+  const key=request.providerId+":"+request.requestId;
+  const signature=JSON.stringify([request.creditId,request.program]);
+  const previous=this.#resetAttempts.get(key);
+  if(previous)return previous.signature===signature?previous.answer:{ok:false,code:"request_id_reused"};
+  if(this.#resetting.has(request.providerId))return {ok:false,code:"reset_in_progress"};
+  if(this.#resetAttempts.size>=128)return {ok:false,code:"too_many_attempts"};
+  this.#resetting.add(request.providerId);
+  const answer=(async()=>{
+   try {
+    const auth=await this.#models.getAuth(request.providerId);
+    const token=auth?.auth.apiKey;
+    const transport=this.#resetTransport(request.providerId,token);
+    if(!transport)return {ok:false,code:"unsupported"};
+    const resets=await discoverResets(transport);
+    const credit=resets?.credits.find(c=>c.id===request.creditId&&c.program===request.program);
+    if(!credit?.usable || credit.remaining<=0)return {ok:false,code:"unavailable"};
+    const result=await consumeReset(transport,credit,request.requestId);
+    await this.#read(request.providerId,{force:true});
+    return result;
+   } catch { return {ok:false,code:"unknown_outcome"}; }
+   finally { this.#resetting.delete(request.providerId); }
+  })();
+  this.#resetAttempts.set(key,{signature,answer});
+  return answer;
+ }
+ #resetTransport(providerId:string,token:string|undefined):ResetTransport|undefined {
+  if(!token || (providerId!=="anthropic"&&providerId!=="openai-codex"))return undefined;
+  return {providerId,token,baseUrl:providerId==="anthropic"?this.#anthropicBaseUrl:this.#chatgptBaseUrl,fetch:this.#fetch,now:this.#now()};
+ }
 
 	/** A client connected: poll while any is. The first one reads whatever is older than the poll interval. */
 	clientConnected(): void {
@@ -288,6 +326,8 @@ export class SubscriptionUsageService {
 				const apiKey = auth?.auth.apiKey;
 				if (apiKey === undefined) throw new Error("No credential to read usage with; log in again");
 				const reading = await reader({ apiKey }, state);
+				const transport = this.#resetTransport(providerId, apiKey);
+				if (providerId !== "anthropic") reading.manualResets = (transport ? await discoverResets(transport) : null) ?? reading.manualResets ?? null;
 				this.#apply(providerId, reading);
 			} catch (error) {
 				const message = this.#describeFailure(state, error);
@@ -320,7 +360,9 @@ export class SubscriptionUsageService {
 			"user-agent": "claude-code/2.1.0",
 		};
 		const usage = await this.#getJson(`${this.#anthropicBaseUrl}/api/oauth/usage`, headers);
-		const reading: UsageReading = { source: "usage_api", windows: parseClaudeUsage(usage) };
+		const hasResetPrograms = isRecord(usage) && ("cedar_ember" in usage || "juniper_tide" in usage);
+		const transport = this.#resetTransport("anthropic", token);
+		const reading: UsageReading = { source: "usage_api", windows: parseClaudeUsage(usage), manualResets: hasResetPrograms && transport ? await discoverResets(transport) : null };
 		if (this.#now() - state.profileReadAt > PROFILE_MAX_AGE_MS) {
 			// The plan and email are extras: a failed profile read leaves the usage standing.
 			try {
@@ -562,6 +604,7 @@ export function applyReading(usage: SubscriptionUsage, reading: UsageReading, at
 		source: reading.source,
 		updatedAt: at,
 		error: null,
+		...(reading.manualResets === undefined ? {} : { manualResets: reading.manualResets }),
 		...(reading.plan == null ? {} : { plan: reading.plan }),
 		...(reading.account == null ? {} : { account: reading.account }),
 	};
@@ -897,7 +940,11 @@ export function parseCodexUsage(body: unknown): UsageReading {
 			if (window !== undefined) windows.push(window);
 		}
 	}
-	return { source: "usage_api", windows, plan: codexPlanLabel(body.plan_type) };
+	const resetBlock = isRecord(body.rate_limit_reset_credits) ? body.rate_limit_reset_credits : undefined;
+	const available = resetBlock?.available_count;
+	const manualResets = typeof available === "number" && Number.isSafeInteger(available) && available >= 0
+		? { available, credits: [], reason: "Credit details not reported" } : null;
+	return { source: "usage_api", windows, plan: codexPlanLabel(body.plan_type), manualResets };
 }
 
 /**

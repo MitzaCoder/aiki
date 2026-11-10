@@ -178,7 +178,37 @@ export const LongCacheWhatIfSchema = Type.Object({
 });
 export type LongCacheWhatIf = Static<typeof LongCacheWhatIfSchema>;
 
+/** Usage analysis is additive under the usage-breakdown feature. Costs are catalog equivalents, not quota. */
+export const UsageGroupSchema = Type.Object({
+ key: Type.String(),
+ label: Type.String(),
+ requests: Type.Integer(),
+ inputTokens: Type.Number(),
+ cacheReadTokens: Type.Number(),
+ cacheWriteTokens: Type.Number(),
+ outputTokens: Type.Number(),
+ cost: Money,
+ maxPromptTokens: Type.Number(),
+});
+export type UsageGroup = Static<typeof UsageGroupSchema>;
+
+export const UsageAnalysisSchema = Type.Object({
+ totals: UsageGroupSchema,
+ byRole: Type.Array(UsageGroupSchema),
+ byModel: Type.Array(UsageGroupSchema),
+ byModelRole: Type.Array(UsageGroupSchema),
+ byProject: Type.Array(UsageGroupSchema),
+ byTask: Type.Array(UsageGroupSchema),
+ conversations: Type.Array(UsageGroupSchema),
+ failed: UsageGroupSchema,
+ checkIns: UsageGroupSchema,
+ retries: UsageGroupSchema,
+ internalSince: Type.Union([Type.String(), Type.Null()]),
+});
+export type UsageAnalysis = Static<typeof UsageAnalysisSchema>;
+
 export const CacheStatsSchema = Type.Object({
+ usage: Type.Optional(UsageAnalysisSchema),
 	from: Type.String({ description: "ISO 8601, the start of the range." }),
 	to: Type.String({ description: "ISO 8601, when the stats were read." }),
 	keptDays: Type.Integer({ minimum: 1, description: "How long the backend keeps the request log." }),
@@ -205,6 +235,7 @@ export const CacheStatsRequestSchema = Type.Object({
 	type: Type.Literal("cache.stats"),
 	id: RequestIdSchema,
 	days: Type.Optional(Type.Integer({ minimum: 1, maximum: 120, description: "Default 30." })),
+	calendarToday: Type.Optional(Type.Boolean({ description: "Local midnight to now, using utcOffsetMinutes; usage-breakdown." })), 
 	projectId: Type.Optional(Type.String({ minLength: 1 })),
 	utcOffsetMinutes: Type.Optional(
 		Type.Integer({ minimum: -14 * 60, maximum: 14 * 60, description: "The asker's offset from UTC, for `days`. Default 0." }),

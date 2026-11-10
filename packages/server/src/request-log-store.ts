@@ -18,7 +18,7 @@ import type { PromptFingerprint } from "./prompt-fingerprint.ts";
 
 export const REQUEST_LOG_FILE = "request-log.sqlite";
 export const REQUEST_LOG_KEEP_DAYS = 90;
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Which conversation sent a request. */
@@ -31,7 +31,11 @@ export type ConversationIdentity = {
 	scheduleId: string | null;
 };
 
+export type InternalUsagePurpose = "compaction" | "memory_extraction" | "memory_maintenance";
+
 export type RequestRow = ConversationIdentity & {
+	/** Internal calls have no transcript identity; ordinary roles derive from existing identity fields. */
+	purpose?: InternalUsagePurpose | null;
 	/** The response's timestamp (pi-ai stamps it when the request starts), ms since the epoch. */
 	at: number;
 	projectId: string;
@@ -65,6 +69,7 @@ export type RequestRow = ConversationIdentity & {
 };
 
 type DbRow = {
+	purpose: string | null;
 	at: number;
 	project_id: string;
 	conversation_id: number;
@@ -99,6 +104,7 @@ type DbRow = {
 };
 
 const COLUMNS = [
+	"purpose",
 	"at",
 	"project_id",
 	"conversation_id",
@@ -134,6 +140,7 @@ const COLUMNS = [
 
 function toDb(row: RequestRow): DbRow {
 	return {
+		purpose: row.purpose ?? null,
 		at: row.at,
 		project_id: row.projectId,
 		conversation_id: row.conversationId,
@@ -170,6 +177,7 @@ function toDb(row: RequestRow): DbRow {
 
 function fromDb(row: DbRow): RequestRow {
 	return {
+		purpose: (row.purpose ?? null) as InternalUsagePurpose | null,
 		at: row.at,
 		projectId: row.project_id,
 		conversationId: row.conversation_id,
@@ -213,8 +221,10 @@ export class RequestLogStore {
 
 	private constructor(db: Database) {
 		this.#db = db;
+		const knownColumns = new Set(db.query<{ name: string }, []>("PRAGMA table_info(requests)").all().map(column => column.name));
+		const columns = COLUMNS.filter(column => knownColumns.has(column));
 		this.#insert = db.prepare(
-			`INSERT INTO requests (${COLUMNS.join(", ")}) VALUES (${COLUMNS.map((column) => `$${column}`).join(", ")})`,
+			`INSERT INTO requests (${columns.join(", ")}) VALUES (${columns.map((column) => `$${column}`).join(", ")})`,
 		);
 	}
 
@@ -287,9 +297,17 @@ export class RequestLogStore {
 			rows INTEGER NOT NULL,
 			error TEXT
 		) STRICT`);
-		db.query("INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', ?)").run(String(SCHEMA_VERSION));
+		const columns = db.query<{ name: string }, []>("PRAGMA table_info(requests)").all();
+		if (!columns.some(column => column.name === "purpose")) db.exec("ALTER TABLE requests ADD COLUMN purpose TEXT");
+		db.query("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)").run(String(SCHEMA_VERSION));
+		db.query("INSERT OR IGNORE INTO meta (key, value) VALUES ('internal_since', ?)").run(String(options.now ?? Date.now()));
 		db.query("INSERT OR IGNORE INTO meta (key, value) VALUES ('live_since', ?)").run(String(options.now ?? Date.now()));
 		return new RequestLogStore(db);
+	}
+
+	internalSince(): number | null {
+		const row = this.#db.query<{ value: string }, []>("SELECT value FROM meta WHERE key = 'internal_since'").get();
+		return row === null ? null : Number(row.value);
 	}
 
 	/** When this log started recording requests as they ran: older ones come from the transcripts. */
@@ -408,11 +426,11 @@ export class RequestLogStore {
 		const rows =
 			query.projectId === undefined
 				? this.#db
-						.query<DbRow, [number, number]>(`SELECT ${COLUMNS.join(", ")} FROM requests WHERE at >= ? AND at < ? ORDER BY at, id`)
+						.query<DbRow, [number, number]>(`SELECT * FROM requests WHERE at >= ? AND at < ? ORDER BY at, id`)
 						.all(query.from, query.to)
 				: this.#db
 						.query<DbRow, [number, number, string]>(
-							`SELECT ${COLUMNS.join(", ")} FROM requests WHERE at >= ? AND at < ? AND project_id = ? ORDER BY at, id`,
+							`SELECT * FROM requests WHERE at >= ? AND at < ? AND project_id = ? ORDER BY at, id`,
 						)
 						.all(query.from, query.to, query.projectId);
 		return rows.map(fromDb);

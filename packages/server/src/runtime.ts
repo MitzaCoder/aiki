@@ -1172,7 +1172,7 @@ export class ProjectManager {
 		const compaction = new CompactionService({
 			conversation,
 			coordinators,
-			models: this.models,
+			models: this.#requestLog?.observeInternalModels(this.models, project.id, "compaction") ?? this.models,
 			now: () => this.#clock(),
 			log: (message) => this.#log(`project ${project.id}: ${message}`),
 		});
@@ -1194,7 +1194,7 @@ export class ProjectManager {
 			conversation,
 			memory: this.#memory,
 			store: this.#extractions,
-			models: this.models,
+			models: this.#requestLog?.observeInternalModels(this.models, project.id, "memory_extraction") ?? this.models,
 			log: (message) => this.#log(`project ${project.id}: ${message}`),
 		});
 		// A background thread's compactions are extracted too, each conversation by its own service.
@@ -1214,7 +1214,7 @@ export class ProjectManager {
 						background: true,
 						memory: this.#memory,
 						store: this.#extractions,
-						models: this.models,
+						models: this.#requestLog?.observeInternalModels(this.models, project.id, "memory_extraction") ?? this.models,
 						log,
 					});
 					threadExtractions.set(conversationId, service);

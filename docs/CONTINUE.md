@@ -1,5 +1,14 @@
 # Continue
 
+## Usage analysis and subscription resets (T78)
+
+Phase-one web prototype adds role/model/project/task usage over the 90-day log. `usage-breakdown` adds optional
+`cache.stats.usage` and local-calendar Today; internal compaction/extraction/maintenance usage begins accumulating
+with this release. `subscription-resets` adds explicit confirmed one-shot Claude/Codex reset consumption, fresh
+read-only grant discovery, request UUID deduplication and unknown-outcome handling; no real reset was triggered.
+See DESIGN and `research/usage-analysis.md` for recording gaps, tab decisions and undocumented provider contracts.
+Android DTOs are generated; its usage screen is intentionally unchanged pending web review. No push or deployment.
+
 ## Anthropic subscription user agent (T76)
 
 Anthropic chat models override pi-ai 1.5.1's old user agent with `claude-cli/2.1.311`.

@@ -38,7 +38,7 @@ import {
 	type PromptFingerprint,
 	startsOver,
 } from "./prompt-fingerprint.ts";
-import { type ConversationIdentity, REQUEST_LOG_KEEP_DAYS, type RequestLogStore, type RequestRow } from "./request-log-store.ts";
+import { type ConversationIdentity, REQUEST_LOG_KEEP_DAYS, type RequestLogStore, type RequestRow, type InternalUsagePurpose } from "./request-log-store.ts";
 
 export const REQUEST_LOG_EXTENSION_NAME = stateKind("request-log");
 
@@ -372,6 +372,33 @@ export class RequestLog {
 				if (typeof value !== "function") return value;
 				if (property === "streamSimple") return wrapStream(value as (...args: unknown[]) => unknown);
 				return (value as (...args: unknown[]) => unknown).bind(target);
+			},
+		});
+	}
+
+	/** Known internal services only. Never guesses a role from prompt text, and never persists prompt content. */
+	observeInternalModels(models: Models, projectId: string, purpose: InternalUsagePurpose): Models {
+		const record = (message: AssistantLike): void => {
+			if (this.#closed) return;
+			this.#queue = this.#queue.then(async () => {
+				await new Promise(resolve => setTimeout(resolve, 0));
+				try {
+					const requests = new ConversationRequests({ projectId, conversationId: 0, identity: UNKNOWN_IDENTITY });
+					const row = requests.request(message, { wake: null, retention: "none", changes: null, source: "live" });
+					this.store.insert({ ...row, purpose });
+				} catch (error) { this.#log(`request log: internal usage could not be recorded: ${errorMessage(error)}`); }
+			});
+		};
+		return new Proxy(models, {
+			get(target, property, receiver) {
+				const value = Reflect.get(target, property, receiver) as unknown;
+				if (typeof value !== "function") return value;
+				if (property === "completeSimple") return async (...args: unknown[]) => {
+					const answer = await value.apply(target, args) as AssistantLike;
+					record(answer);
+					return answer;
+				};
+				return value.bind(target);
 			},
 		});
 	}

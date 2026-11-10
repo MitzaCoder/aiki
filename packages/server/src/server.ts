@@ -288,7 +288,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			? undefined
 			: new TerminalHost({ configFile: join(dataDir, "terminals", "zellij-config.kdl"), ...(options.terminals ?? {}), log });
 	const features = (options.features ?? HARNESS_FEATURES).filter(
-		(feature) => ((feature !== "cache-stats" && feature !== "cache-keep-warm") || requestLog !== undefined) && (feature !== "terminal" || terminals !== undefined),
+		(feature) => ((feature !== "cache-stats" && feature !== "cache-keep-warm" && feature !== "usage-breakdown") || requestLog !== undefined) && (feature !== "terminal" || terminals !== undefined),
 	);
 	// One VAPID key pair for every backend: a browser holds one subscription, so the key cannot belong to one process.
 	const notificationsDir = join(dataDir, "notifications");
@@ -401,7 +401,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	const memoryMaintenance = new MemoryMaintenanceService({
 		memory,
 		store: maintenanceStore,
-		models,
+		models: requestLog?.observeInternalModels(models, "backend-maintenance", "memory_maintenance") ?? models,
 		projects: store,
 		timezone: schedules.timezone,
 		...(options.now === undefined ? {} : { now: options.now }),

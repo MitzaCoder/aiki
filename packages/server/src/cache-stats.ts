@@ -15,6 +15,7 @@ import type {
 	WakeReason,
 } from "@aiki/protocol";
 import { calculateCost, type Model, type Models, type Usage } from "@earendil-works/pi-ai";
+import { usageAnalysis } from "./usage-analysis.ts";
 import type { ProjectStore } from "./projects.ts";
 import { REQUEST_LOG_KEEP_DAYS, type RequestLogStore, type RequestRow } from "./request-log-store.ts";
 
@@ -179,6 +180,7 @@ export type CacheStatsInput = {
 	from: number;
 	to: number;
 	liveSince: number | null;
+	internalSince?: number | null;
 	projectNames: ReadonlyMap<string, string>;
 	models?: Pick<Models, "getModel">;
 	utcOffsetMinutes?: number;
@@ -292,6 +294,7 @@ export function cacheStats(input: CacheStatsInput): CacheStats {
 
 	const missed = rows.filter((row) => row.missTokens > 0);
 	return {
+		usage: usageAnalysis(input.rows, input.projectNames, input.internalSince ?? null),
 		from: new Date(input.from).toISOString(),
 		to: new Date(input.to).toISOString(),
 		keptDays: REQUEST_LOG_KEEP_DAYS,
@@ -326,15 +329,21 @@ export async function readCacheStats(options: {
 	days?: number;
 	projectId?: string;
 	utcOffsetMinutes?: number;
+	calendarToday?: boolean;
 	now?: number;
 }): Promise<CacheStats> {
-	const { from, to } = cacheStatsRange(options.now ?? Date.now(), options.days);
+	const now = options.now ?? Date.now();
+	const offset = (options.utcOffsetMinutes ?? 0) * 60_000;
+	const { from, to } = options.calendarToday
+		? { from: Math.floor((now + offset) / DAY_MS) * DAY_MS - offset, to: now + 1 }
+		: cacheStatsRange(now, options.days);
 	const projects = await options.projects.list().catch(() => []);
 	return cacheStats({
 		rows: options.store.rows({ from, to, ...(options.projectId === undefined ? {} : { projectId: options.projectId }) }),
 		from,
 		to,
 		liveSince: options.store.liveSince(),
+		internalSince: options.store.internalSince(),
 		projectNames: new Map(projects.map((project) => [project.id, project.name])),
 		...(options.models === undefined ? {} : { models: options.models }),
 		...(options.utcOffsetMinutes === undefined ? {} : { utcOffsetMinutes: options.utcOffsetMinutes }),

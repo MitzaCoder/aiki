@@ -172,6 +172,10 @@ suspend fun HarnessClient.request(value: DraftsAttachmentGetRequest, explicitNul
     value.id, withExplicitNulls(wireJson.encodeToJsonElement(DraftsAttachmentGetRequest.serializer(), value).jsonObject, explicitNulls), DraftsAttachmentGetResponse.serializer()
 )
 
+suspend fun HarnessClient.request(value: SubscriptionsResetRequest, explicitNulls: Set<String> = emptySet()): SubscriptionsResetResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(SubscriptionsResetRequest.serializer(), value).jsonObject, explicitNulls), SubscriptionsResetResponse.serializer()
+)
+
 suspend fun HarnessClient.request(value: SubscriptionsUsageRequest, explicitNulls: Set<String> = emptySet()): SubscriptionsUsageResponse = exchange(
     value.id, withExplicitNulls(wireJson.encodeToJsonElement(SubscriptionsUsageRequest.serializer(), value).jsonObject, explicitNulls), SubscriptionsUsageResponse.serializer()
 )

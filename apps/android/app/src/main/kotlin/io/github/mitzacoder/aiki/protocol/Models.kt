@@ -10,7 +10,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
 /** Same absent-hello-features fallback as packages/client. An explicit empty list stays empty. */
-val DEFAULT_HARNESS_FEATURES: Set<String> = setOf("projects", "filesystem", "models", "credentials", "logins", "conversation", "workers", "context", "server-status", "memory", "schedules", "memory-maintenance", "notifications", "board", "subscription-usage", "threads", "artifacts", "storage", "drain", "task-reports", "cache-stats", "ref-status", "board-moves", "ref-details", "fcm-push", "schedule-events", "project-archive", "filesystem-complete", "filesystem-edit", "artifact-tags", "terminal", "queued-inputs", "chat-drafts", "notification-hold", "ui-proof", "task-links", "task-waiting", "sidebar-attention", "cache-keep-warm")
+val DEFAULT_HARNESS_FEATURES: Set<String> = setOf("projects", "filesystem", "models", "credentials", "logins", "conversation", "workers", "context", "server-status", "memory", "schedules", "memory-maintenance", "notifications", "board", "subscription-usage", "threads", "artifacts", "storage", "drain", "task-reports", "cache-stats", "usage-breakdown", "subscription-resets", "ref-status", "board-moves", "ref-details", "fcm-push", "schedule-events", "project-archive", "filesystem-complete", "filesystem-edit", "artifact-tags", "terminal", "queued-inputs", "chat-drafts", "notification-hold", "ui-proof", "task-links", "task-waiting", "sidebar-attention", "cache-keep-warm")
 
 /** The most refs one `refs.status` reads. */
 const val MAX_REF_STATUS_REFS: Int = 200
@@ -1290,7 +1290,45 @@ data class UsageWindow(
 )
 
 @Serializable
+data class SubscriptionResetCredit(
+    val `id`: String,
+    val `program`: String,
+    val `label`: String,
+    val `remaining`: Long,
+    val `usable`: Boolean,
+    val `expiresAt`: String?,
+    val `clears`: List<String>
+)
+
+@Serializable
+data class SubscriptionResets(
+    val `available`: Long,
+    val `credits`: List<SubscriptionResetCredit>,
+    val `reason`: String?
+)
+
+@Serializable
+data class SubscriptionsResetRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "subscriptions.reset",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `providerId`: String,
+    val `creditId`: String,
+    val `program`: String,
+    val `requestId`: String,
+    @kotlinx.serialization.EncodeDefault val `confirmed`: Boolean = true
+)
+
+@Serializable
+data class SubscriptionsResetResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "subscriptions.reset",
+    val `id`: String,
+    val `ok`: Boolean,
+    val `code`: String
+)
+
+@Serializable
 data class SubscriptionUsage(
+    val `manualResets`: SubscriptionResets? = null,
     val `providerId`: String,
     val `label`: String,
     val `plan`: String?,
@@ -1414,6 +1452,7 @@ data class LongCacheWhatIf(
 
 @Serializable
 data class CacheStats(
+    val `usage`: CacheStatsUsage? = null,
     val `from`: String,
     val `to`: String,
     val `keptDays`: Long,
@@ -1432,6 +1471,34 @@ data class CacheStats(
 )
 
 @Serializable
+data class CacheStatsUsage(
+    val `totals`: CacheStatsUsageTotals,
+    val `byRole`: List<CacheStatsUsageTotals>,
+    val `byModel`: List<CacheStatsUsageTotals>,
+    val `byModelRole`: List<CacheStatsUsageTotals>,
+    val `byProject`: List<CacheStatsUsageTotals>,
+    val `byTask`: List<CacheStatsUsageTotals>,
+    val `conversations`: List<CacheStatsUsageTotals>,
+    val `failed`: CacheStatsUsageTotals,
+    val `checkIns`: CacheStatsUsageTotals,
+    val `retries`: CacheStatsUsageTotals,
+    val `internalSince`: String?
+)
+
+@Serializable
+data class CacheStatsUsageTotals(
+    val `key`: String,
+    val `label`: String,
+    val `requests`: Long,
+    val `inputTokens`: Double,
+    val `cacheReadTokens`: Double,
+    val `cacheWriteTokens`: Double,
+    val `outputTokens`: Double,
+    val `cost`: Double,
+    val `maxPromptTokens`: Double
+)
+
+@Serializable
 data class CacheStatsKeepWarm(
     val `refreshes`: Long,
     val `cachedTokens`: Double,
@@ -1444,6 +1511,7 @@ data class CacheStatsRequest(
     @kotlinx.serialization.EncodeDefault val `type`: String = "cache.stats",
     val `id`: String = java.util.UUID.randomUUID().toString(),
     val `days`: Long? = null,
+    val `calendarToday`: Boolean? = null,
     val `projectId`: String? = null,
     val `utcOffsetMinutes`: Long? = null
 )

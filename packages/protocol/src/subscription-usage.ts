@@ -27,7 +27,25 @@ export const UsageWindowSchema = Type.Object({
 });
 export type UsageWindow = Static<typeof UsageWindowSchema>;
 
+export const SubscriptionResetCreditSchema = Type.Object({
+ id: Type.String(),
+ program: Type.String(),
+ label: Type.String(),
+ remaining: Type.Integer({ minimum: 0 }),
+ usable: Type.Boolean(),
+ expiresAt: Type.Union([Type.String(), Type.Null()]),
+ clears: Type.Array(Type.String()),
+});
+export type SubscriptionResetCredit = Static<typeof SubscriptionResetCreditSchema>;
+export const SubscriptionResetsSchema = Type.Object({
+ available: Type.Integer({ minimum: 0 }),
+ credits: Type.Array(SubscriptionResetCreditSchema),
+ reason: Type.Union([Type.String(), Type.Null()]),
+});
+export type SubscriptionResets = Static<typeof SubscriptionResetsSchema>;
+
 export const SubscriptionUsageSchema = Type.Object({
+ manualResets: Type.Optional(Type.Union([SubscriptionResetsSchema, Type.Null()], { description: "Null or absent means not reported, never zero. subscription-resets feature." })),
 	providerId: Type.String({ minLength: 1 }),
 	label: Type.String({ description: 'e.g. "Claude", "ChatGPT".' }),
 	plan: Type.Union([Type.String(), Type.Null()], { description: 'e.g. "Max 20x", "Pro", when the provider says.' }),
@@ -50,6 +68,25 @@ export const SubscriptionsUsageRequestSchema = Type.Object({
 	refresh: Type.Optional(Type.Boolean()),
 });
 export type SubscriptionsUsageRequest = Static<typeof SubscriptionsUsageRequestSchema>;
+
+/** Explicit one-credit consumption. No auto-redemption; requestId is a stable idempotency key. */
+export const SubscriptionsResetRequestSchema = Type.Object({
+ type: Type.Literal("subscriptions.reset"),
+ id: RequestIdSchema,
+ providerId: Type.String(),
+ creditId: Type.String(),
+ program: Type.String(),
+ requestId: Type.String({ format: "uuid" }),
+ confirmed: Type.Literal(true),
+});
+export type SubscriptionsResetRequest = Static<typeof SubscriptionsResetRequestSchema>;
+export const SubscriptionsResetResponseSchema = Type.Object({
+ type: Type.Literal("subscriptions.reset"),
+ id: RequestIdSchema,
+ ok: Type.Boolean(),
+ code: Type.String(),
+});
+export type SubscriptionsResetResponse = Static<typeof SubscriptionsResetResponseSchema>;
 
 // --- responses ---------------------------------------------------------------------------------------------------
 

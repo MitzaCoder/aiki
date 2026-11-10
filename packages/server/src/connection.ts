@@ -465,6 +465,13 @@ export class ClientConnection {
 					});
 					return;
 				}
+				case "subscriptions.reset": {
+					if (!this.#features.includes("subscription-resets")) return this.#unknownRequest(request);
+					if (!this.#subscriptionUsage) throw new ServerError("bad_request", "Subscription resets are unavailable");
+					const answer = await this.#subscriptionUsage.reset(request);
+					this.#respond({ type: "subscriptions.reset", id: request.id, ...answer });
+					return;
+				}
 				case "subscriptions.usage": {
 					const subscriptions =
 						this.#subscriptionUsage === undefined
@@ -482,9 +489,11 @@ export class ClientConnection {
 						projects: this.#manager.store,
 						models: this.#manager.models,
 						...(request.days === undefined ? {} : { days: request.days }),
+						...(request.calendarToday === undefined || !this.#features.includes("usage-breakdown") ? {} : { calendarToday: request.calendarToday }),
 						...(request.projectId === undefined ? {} : { projectId: request.projectId }),
 						...(request.utcOffsetMinutes === undefined ? {} : { utcOffsetMinutes: request.utcOffsetMinutes }),
 					});
+					if (!this.#features.includes("usage-breakdown")) delete stats.usage;
 					this.#respond({ type: "cache.stats", id: request.id, stats });
 					return;
 				}

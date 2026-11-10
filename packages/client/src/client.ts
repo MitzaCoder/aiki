@@ -1030,10 +1030,16 @@ export class HarnessClient {
 	 * What the backend's model requests cost over the last `days` (default 30), and how much of it re-billed a prompt the
 	 * provider should still have cached: why, where, and what a longer cache would have saved. Needs `cache-stats`.
 	 */
-	async readCacheStats(options: { days?: number; projectId?: string; utcOffsetMinutes?: number } = {}): Promise<CacheStats> {
+	/** Spend one saved reset only after the user confirms. Needs subscription-resets. */
+	async resetSubscription(options: Omit<import("@aiki/protocol").SubscriptionsResetRequest, "type" | "id">): Promise<import("@aiki/protocol").SubscriptionsResetResponse> {
+		return this.#call<import("@aiki/protocol").SubscriptionsResetResponse>({type:"subscriptions.reset",...options});
+	}
+
+	async readCacheStats(options: { days?: number; projectId?: string; utcOffsetMinutes?: number; calendarToday?: boolean } = {}): Promise<CacheStats> {
 		const response = await this.#call<CacheStatsResponse>({
 			type: "cache.stats",
 			...(options.days === undefined ? {} : { days: options.days }),
+			...(options.calendarToday === undefined ? {} : { calendarToday: options.calendarToday }),
 			...(options.projectId === undefined ? {} : { projectId: options.projectId }),
 			...(options.utcOffsetMinutes === undefined ? {} : { utcOffsetMinutes: options.utcOffsetMinutes }),
 		});

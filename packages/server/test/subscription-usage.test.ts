@@ -21,6 +21,7 @@ import {
 	type SubscriptionUsageOptions,
 } from "../src/subscription-usage.ts";
 import { createSetup, TestClient, type TestSetup } from "./support.ts";
+import { parseClaudeResets, parseCodexResets } from "../src/subscription-resets.ts";
 
 const HOUR = 3_600_000;
 const T0 = Date.parse("2026-11-04T10:00:00Z");
@@ -187,6 +188,50 @@ function byProvider(list: SubscriptionUsage[], providerId: string): Subscription
 	if (usage === undefined) throw new Error(`no ${providerId} in ${JSON.stringify(list)}`);
 	return usage;
 }
+
+describe("saved subscription resets (fake HTTP only)", () => {
+	const credit = {id:"credit-1",status:"available",expires_at:"2027-01-01T00:00:00Z"};
+	it("distinguishes unknown, ineligible, expired and available reset grants", () => {
+		expect(parseCodexResets({},T0)).toBeNull();
+		expect(parseCodexResets({available_count:1,credits:[{...credit,expires_at:"invalid"}]},T0)).toBeNull();
+		expect(parseCodexResets({available_count:1,credits:[credit]},T0)?.credits[0]?.usable).toBe(true);
+		expect(parseCodexResets({available_count:1,credits:[{...credit,expires_at:"2020-01-01T00:00:00Z"}]},T0)?.credits[0]?.usable).toBe(false);
+		expect(parseClaudeResets({eligible:false,ineligible_reason:"surface",grants:[]},"cedar_ember",T0)).toMatchObject({available:0,reason:"surface"});
+		expect(parseClaudeResets({eligible:true,grants:[{id:"grant",resets_left:2,clears:["five_hour"],usable_now:true}]},"cedar_ember",T0)?.available).toBe(2);
+		expect(parseClaudeResets({eligible:true,arm:"reset",available:true},"juniper_tide",T0)?.credits[0]).toMatchObject({usable:true,remaining:1});
+		expect(parseClaudeResets({eligible:true,grants:[{}]},"cedar_ember",T0)).toBeNull();
+	});
+	it("requires confirmation, rechecks availability, deduplicates a confirmed consume and sends Codex account auth", async () => {
+		const posts:{body:any;headers:Headers}[]=[];
+		const fakeFetch = (async (input:RequestInfo|URL,init?:RequestInit) => {
+			const url=String(input);
+			if(init?.method==="POST") {posts.push({body:JSON.parse(String(init.body)),headers:new Headers(init.headers)});return Response.json({code:"reset"});}
+			if(url.includes("rate-limit-reset-credits"))return Response.json({available_count:1,credits:[credit]});
+			if(url.endsWith("/wham/usage"))return Response.json({rate_limit:{},plan_type:"pro"});
+			return Response.json({five_hour:{utilization:30,resets_at:null}});
+		}) as typeof fetch;
+		const test=await setupService({fetch:fakeFetch});
+		const request={providerId:"openai-codex",creditId:"credit-1",program:"codex",requestId:crypto.randomUUID(),confirmed:true as const};
+		expect(await test.service.reset({...request,confirmed:false as never})).toMatchObject({ok:false});expect(posts).toHaveLength(0);
+		expect(await test.service.reset({...request,creditId:"missing",requestId:crypto.randomUUID()})).toMatchObject({code:"unavailable"});
+		const first=test.service.reset(request);
+		expect(await test.service.reset({...request,requestId:crypto.randomUUID()})).toMatchObject({code:"reset_in_progress"});
+		const answers=await Promise.all([first,test.service.reset(request)]);expect(answers.every(a=>a.ok)).toBe(true);expect(posts).toHaveLength(1);
+		expect(posts[0]?.body).toMatchObject({credit_id:"credit-1",redeem_request_id:request.requestId,account_id:"acct-123"});expect(posts[0]?.headers.get("chatgpt-account-id")).toBe("acct-123");
+		expect(await test.service.reset({...request,creditId:"different"})).toMatchObject({code:"request_id_reused"});
+	});
+	it("uses read-only Claude discovery flags and its profile organization; never retries uncertain consumption",async()=>{
+		let posts=0;const paths:string[]=[];let sent:any;
+		const fakeFetch=(async(input:RequestInfo|URL,init?:RequestInit)=>{const url=String(input);paths.push(url);
+			if(init?.method==="POST"){posts++;sent=JSON.parse(String(init.body));throw Error("response lost");}
+			if(url.endsWith("/profile"))return Response.json({organization:{uuid:"org-synthetic"}});
+			if(url.includes("cedar_ember=1"))return Response.json({eligible:true,grants:[{id:"grant-1",resets_left:1,usable_now:true,clears:["five_hour"]}]});
+			return Response.json({five_hour:{utilization:90,resets_at:null},cedar_ember:null});
+		}) as typeof fetch;
+		const test=await setupService({fetch:fakeFetch});const request={providerId:"anthropic",creditId:"grant-1",program:"cedar_ember",requestId:crypto.randomUUID(),confirmed:true as const};
+		expect(await test.service.reset(request)).toMatchObject({ok:false,code:"unknown_outcome"});expect(await test.service.reset(request)).toMatchObject({ok:false});expect(posts).toBe(1);expect(sent).toEqual({program:"cedar_ember",grant_id:"grant-1",request_id:request.requestId});expect(paths.some(p=>p.includes("skip_spend=1"))).toBe(true);expect(paths.some(p=>p.endsWith("/api/organizations/org-synthetic/reset_rate_limits"))).toBe(true);
+	});
+});
 
 describe("subscription usage parsing", () => {
 	it("reads Claude's usage windows and plan", () => {
