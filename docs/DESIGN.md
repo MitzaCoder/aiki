@@ -12,7 +12,8 @@ settings win over file values; a missing default file is fine, but an explicit m
 
 Durable document/task kinds use `AIKI_STATE_NAMESPACE` (default `aiki`); the context extension and project context
 folder can also be configured. These are storage identities, not display names. Set them before the first restart of
-an existing installation and keep them stable. This avoids rewriting sessions and keeps rollback possible.
+an existing installation and keep them stable. This avoids rewriting session identities for a source-name change.
+Dependency upgrades can still migrate their own formats; consult the version-upgrade notes before rolling back.
 
 Deployment receives per-target env files from private `deploy/local/server-<target>.env` (`host` for this machine),
 installs them atomically in the target's XDG config directory before restart, and never includes them in release

@@ -2,6 +2,8 @@
 
 ## Aiki identity and existing installations (T70)
 
+Rebased onto the pi 1.5.1 integration upgrade; all checks below were rerun on that base. Its upstream storage-format
+and downgrade caveats still apply (see the upgrade notes below).
 Public packages/settings/storage now use Aiki identifiers. The mechanical rename is a separate commit; its replay
 script stays in private local configuration. The server loads an optional XDG `aiki/server.env` before registering
 durable kinds; `--print-config` is read-only. Per-target private env sources preserve existing data/config paths,
