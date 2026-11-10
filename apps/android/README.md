@@ -163,7 +163,9 @@ The manifest keeps FCM auto-init off. `:app:checkReleaseRelayAuth` inspects the 
 providers; `:app:checkReleaseRelaySeam` checks the merged release manifest. Neither debug fake exists in release.
 
 Dependencies: Firebase Auth 25.0.0, Credential Manager and Play services bridge 1.6.0, Google ID 1.2.1. See
-`licenses/relay-dependencies.md` for attribution and terms. Real Google sign-in, email delivery/App Links verification,
+`licenses/relay-dependencies.md` for attribution and terms. The T97 debug APK grew from 59,319,993 to 68,015,434
+bytes (+8,695,441 bytes, including UI and dependencies); these are debug, not release-signed APKs.
+Real Google sign-in, email delivery/App Links verification,
 FCM delivery, Play services behavior and release-signed sideloading require separate consented real-service testing.
 
 ## Verification: actual behavior versus appearance

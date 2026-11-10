@@ -1,5 +1,50 @@
 # Continue
 
+## Optional Android relay account screens (T97)
+
+Settings → Notifications now has the default-off optional relay row and Learn more. Only that switch opens privacy
+consent and Google/email sign-in (D51). Firebase Auth is lazy; first run, backend connection/device approval, projects
+and direct notifications do not prompt for a relay account. Credential Manager uses the Web client ID; email uses
+Hosting App Links, exact-host paste validation, locally remembered address, a same-boot persistent 60-second resend
+cooldown, masked link input and cold/warm intent handling without saving links in activity state.
+
+The phone check keeps the persisted switch off until confirmation, then existing plumbing selects encrypted relay
+notifications for eligible signed-in backends. Unsupported backends retain direct registration. Settings show identity,
+this phone, backend status/details, daily remaining allowances/reset times, more limits and the other-phone inventory.
+Turn off, this-phone sign-out and all-phone deletion are separate. Sign-out erases receive authority before Firebase
+and Credential Manager clearing. Deletion asks for fresh sign-in and explicit confirmation, preserves durable pending
+work and reports completion only from the relay contract. Foreground checks observe account deletion/disable and set
+recovery without showing prompts elsewhere. Revoked tokens stop local relay receive without falsely claiming account
+deletion. Backend device sessions and project data remain independent.
+
+Dependencies: Firebase Auth 25.0.0, Credential Manager/Play bridge 1.6.0, Google ID 1.2.1. The Android README lists the
+three private sign-in properties/environment names and three debug-only controls. Release source sets omit emulator
+hosts, fake credentials and fake tokens; `checkReleaseRelayAuth` inspects APK DEX and also runs the merged-manifest
+seam check. Synthetic config lived outside the repository; no real Firebase/Google project, credentials, FCM service
+or operator phone was used. No bookmark move, push or deployment.
+
+T97 artifacts prove default-off before/after, consent, email through On with a working signed-in scratch backend,
+real backend encrypted test → relay Functions → fake FCM capture → app decryption → Android shade, Google fake sign-in,
+another-phone removal, turn-off/sign-out, fresh Google re-authentication and completed deletion, three problem states
+(phone limit/operator pause/rate limit), light/dark screens, fresh use without account prompts and direct receive with
+the relay off. Recordings accompany screenshots. The final email recording masks the link. The shared scripted demo
+stack and a cursor/broadcast driver were used; no replacement launcher remains. All owned emulator/backend/relay/
+bridge processes were stopped. Verification scripts and the precise emulator recipe are in the verification README.
+
+Two emulator findings were fixed: a sub-second phone clock lag rejected the exact stored challenge receipt; the
+one-shot demo seed retained a Bun gRPC handle after SDK cleanup and never reached readiness. The deadline now trusts
+its matching receipt (still enforcing identity, nonce and expiry); the seed explicitly exits after successful cleanup.
+The proven SDK connection uses adb reverse, not the host alias. Quota responses lack configured totals, so settings
+show remaining/reset, not invented used/total gauges. Real Google sign-in, email delivery, verified App Links, FCM,
+Play services behavior and the release-signed APK remain outside emulator proof. Offline deletion/recovery and the full
+OS recreation/permission matrix were not exhaustively emulator-tested; durable deletion has JVM coverage.
+
+Checks: 799 JVM tests in 104 suites, 2 opt-in skips, 0 failures/errors; debug assemble and lint (0 errors), plain build
+with no private values and both release packaging checks pass. Verification Bun: 7 tests / 49 assertions. Protocol
+check: 337 DTOs / 91 request overloads. Root typecheck, relay tools typecheck/build and public-source guard pass.
+Root tests were not repeated for this Android/relay/docs-only change. The optional verification strict TypeScript
+command finds an existing server `models.ts` type error; root typecheck and the required verification tests pass.
+
 ## T101 relay deploy/admin preparation (emulator verified only)
 
 Fresh/missing relayControl settings/booleans now mean paused/closed; numeric defaults cannot grant authority. Tests and
@@ -40,6 +85,7 @@ Acceptance summary: 76 locally proven, 27 need the real project, 0 not covered (
 shutdown gaps are operator configuration/drills, not code. Actual metrics/quotas, supported spend-stop mechanism, ADC
 quota project, database IAM/rules/TTL, build/runtime/Scheduler IAM, ingress and release-device/provider acceptance still
 require the operator's real project. Nothing has been deployed or opened for sign-up.
+
 
 ## Standalone relay demo stack
 

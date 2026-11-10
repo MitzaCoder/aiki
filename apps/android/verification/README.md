@@ -5,6 +5,50 @@ scratch-only and loopback-only. No server/protocol/client/web source or lockfile
 change is required. Installed-workspace dependencies are reused deliberately;
 Android has no additional Bun workspace/package.
 
+## Relay account proof (T97)
+
+Use the standalone `relay/` demo launcher, never a real Firebase project, account, client config or FCM service.
+Track x owns emulator and backend state for this proof. Set `HARNESS_ANDROID_DEVICE=x` on every wrapper/driver call.
+Install with `install -r`. Keep synthetic client config outside the checkout and supply it through the private build
+values listed in `apps/android/README.md`. Enable both debug fake controls and use `demo-aiki-relay` only. The fake
+FCM source skips Messaging initialization and never enables FCM auto-init.
+
+Assigned ports are Auth 19571, Firestore 19572, Functions 19573, hub 19574, logging 19575, websocket 19576 and fake FCM
+19577. Start `bun run demo:stack --minutes 30` from `relay/` with all seven `RELAY_*_PORT` overrides, through `setsid -f`
+and redirected logs/stdin. Use the readiness JSON's PID to stop it. The launcher scrubs the environment and seeds the
+demo control document. `demo-seed.ts` explicitly exits after SDK cleanup because Bun can otherwise retain gRPC handles.
+
+The proven Android configuration uses `adb reverse` for Auth 19571 and Functions 19573, with app URLs on
+`127.0.0.1`. Direct host-alias HTTP worked in a shell, but Auth SDK operations failed in this emulator until reverse
+was used. Do not substitute a real Firebase endpoint to diagnose that failure.
+
+- `relay/deliver-captured.ts` polls the launcher's cursor-based capture endpoint and broadcasts `data.aiki` to the
+  owned emulator's debug receive boundary. No tokens, nonces, ciphertext or links are printed. Start it only after
+  stack readiness; its deadline is bounded by `RELAY_BRIDGE_SECONDS` (default 600). Restart it after a stack restart.
+- `relay/open-email-link.ts` reads only the Auth emulator's OOB endpoint and opens a synthetic Hosting App Link on
+  the owned emulator, without logging the one-time code or putting email in the URL. The domain and API key must
+  match the synthetic build: `relay.example.test` and `demo-api-key-not-a-real-key`.
+- `relay/fixtures.ts add-phone [synthetic@example.test]` enrolls another fake phone through the actual Auth and relay
+  HTTP APIs and captured possession challenge. `google@example.test` uses the same unsigned demo Google identity
+  as the debug provider. `pause`, `resume`, `phone-limit`, `rate-limit` and `restore-limits` change only the demo's
+  Firestore control document over loopback. No Admin credential lookup is used.
+- `launch-real.ts --fresh` accepts `ANDROID_VERIFY_AUTH_MODE=optional` and `ANDROID_VERIFY_RELAY_ENDPOINT` for one
+  isolated real Aiki backend. Its child receives only the explicit scratch environment and prints effective paths
+  before startup. Pair/approve only that backend's device; use its owner socket/CLI, never live backend data.
+- `DEBUG_RELAY` accepts either captured `aiki` or legacy plaintext `payload`, sharing the real FCM receive boundary.
+  The existing `DEBUG_PUSH --es token demo-direct-token` can explicitly enable direct notifications while the relay
+  switch remains off. All delivery receivers remain debug-only and DUMP-protected.
+
+T97 evidence includes default-off before/after, privacy consent, email send/cooldown and cold/warm link return,
+Google fake sign-in, encrypted backend test in the notification shade, another-phone removal, turn-off, sign-out,
+fresh Google re-authentication and completed deletion, three scoped problem states, light/dark screens, and D51 first
+run/backend/project/direct-receive interactions. Links in the paste field are masked and never saved in activity state.
+The clock-lag regression uses a server-issued possession deadline, not a stricter comparison to an imperfect phone
+wall clock. Existing strict identity, nonce, exact-receipt and expiry checks remain.
+
+This cannot prove real Google sign-in, real email delivery, verified App Links, FCM delivery, Play services behavior
+or release-signed sideloading. The release APK seam/auth checks are static packaging gates, not real-service acceptance.
+
 ## Device sign-in verification
 
 `ANDROID_VERIFY_AUTH_MODE=optional` on `launch-real.ts --fresh` selects a migration-capable scratch backend;

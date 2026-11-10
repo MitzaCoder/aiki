@@ -51,6 +51,7 @@ const server = await startServer({
 	timezone: "UTC",
 	status: { deployStatusFile: null },
 	notifications: {
+		relayEndpoint: process.env.ANDROID_VERIFY_RELAY_ENDPOINT || null,
 		vapidKeyFile: join(root, "data", "vapid.json"),
 		subject: "mailto:android-fixture@example.invalid",
 		send: async () => ({ status: 201, message: "Scratch push discarded" }),
