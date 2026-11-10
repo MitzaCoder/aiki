@@ -458,3 +458,50 @@ test('backend address persistence whitelists fields even when given an extended 
 	expect(serialized).not.toContain('sessionToken');
 	expect(serialized).not.toContain('must-not-export');
 });
+
+
+test('web push sync rebinds an unreadable legacy row after migration', async () => {
+	const s = await setup('optional');
+	const auth = await owner(s);
+	const client = await socket(auth);
+	const sessionId = (await auth.refresh()).sessionId;
+	const deviceId = 'synthetic-migrating-browser';
+	const subscription = {
+		endpoint: 'https://push.example.invalid/migration',
+		keys: { p256dh: 'synthetic-key', auth: 'synthetic-auth' },
+	};
+	await s.server.notifications.register({
+		deviceId, label: 'Synthetic browser', backendKey: 'fixture', subscription,
+		preferences: { kinds: [], mutedProjects: [], quietHours: null },
+		allowLegacyRegistration: true,
+	});
+	await expect(client.readNotificationDevice(deviceId)).rejects.toThrow('another session');
+
+	// Bun executes the class's ordinary TS directly. These state initializers need no DOM/reactivity for sync.
+	const globals = globalThis as unknown as { $state?: (value: unknown) => unknown };
+	const previous = globals.$state;
+	globals.$state = (value) => value;
+	try {
+		const { NotificationCenter } = await import('../src/lib/notifications.svelte.ts');
+		const center = new NotificationCenter();
+		center.load();
+		center.settings = { ...center.settings, deviceId };
+		const { applicationServerKey } = await import('@aiki/client');
+		center.subscription = {
+			options: { applicationServerKey: applicationServerKey(await client.readNotificationsConfig()).buffer },
+			toJSON: () => subscription,
+		} as unknown as PushSubscription;
+		const backend = {
+			id: 'fixture', url: s.server.url, ready: true, authSessionId: sessionId,
+			features: ['notifications'], supports: (feature: string) => feature === 'notifications', client,
+		} as unknown as import('../src/lib/harness.svelte.ts').BackendConnection;
+		await center.sync([backend]);
+		expect(center.backends.fixture?.error).toBeUndefined();
+		expect(center.backends.fixture?.device?.deviceId).toBe(deviceId);
+		expect((await client.readNotificationDevice(deviceId))?.deviceId).toBe(deviceId);
+		expect((await Bun.file(s.dataDir + '/notifications/devices.json').json()).devices[0].sessionId).toBe(sessionId);
+	} finally {
+		if (previous === undefined) delete globals.$state;
+		else globals.$state = previous;
+	}
+});

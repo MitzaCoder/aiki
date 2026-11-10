@@ -256,19 +256,22 @@ export class NotificationCenter {
 			return;
 		}
 		this.#set(backend.id, { ...next, publicKey });
-		try {
-			const device = await backend.client.readNotificationDevice(this.deviceId);
-			this.#set(backend.id, { ...this.#entry(backend.id), device });
-		} catch (error) {
-			this.#set(backend.id, { ...this.#entry(backend.id), error: messageOf(error) });
-			return;
-		}
 		const keyMatches =
 			this.subscription === null ||
 			samePublicKey(subscriptionServerKey(this.subscription) ?? publicKey, publicKey);
-		// Register again on every connect, not only when the backend has no device: preferences changed while it was
-		// unreachable reach it here, and registering is the protocol's upsert.
-		if (this.subscription !== null && keyMatches) await this.#register(backend);
+		// Upsert before reading: after migration the old anonymous row is not readable by the new session yet.
+		// Registration binds it to that session and returns the device, including its previous delivery status.
+		if (this.subscription !== null && keyMatches) {
+			await this.#register(backend);
+		} else {
+			try {
+				const device = await backend.client.readNotificationDevice(this.deviceId);
+				this.#set(backend.id, { ...this.#entry(backend.id), device });
+			} catch (error) {
+				this.#set(backend.id, { ...this.#entry(backend.id), error: messageOf(error) });
+				return;
+			}
+		}
 		await this.postWorkerRegistrations();
 	}
 
