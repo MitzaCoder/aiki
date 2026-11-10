@@ -2,10 +2,11 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { SetTimer } from "@earendil-works/pi-durable";
+import { InboxDoc, type SetTimer } from "@earendil-works/pi-durable";
+import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { Board, BoardTask, BoardTaskInput, BoardTaskSnapshot, ModelRef, Schedule, ScheduleInput } from "@aiki/protocol";
 import { emptyBoardState, recordScheduledReport, scheduleTaskForRun, saveTask } from "../src/board.ts";
-import { createSetup, errorOf, TestClient, type TestSetup } from "./support.ts";
+import { createSetup, entryText, errorOf, TestClient, ViewClient, type TestSetup } from "./support.ts";
 
 const cleanups: (() => Promise<void>)[] = [];
 const clients: TestClient[] = [];
@@ -147,6 +148,44 @@ async function untilReported(client: TestClient, projectId: string, taskId: stri
 }
 
 describe("one board task per clock schedule", () => {
+	for (const onReport of ["review", "record"] as const) it(`delivers an amended scheduled ${onReport} run once`, async () => {
+		const { test, client, projectId } = await start();
+		let release = () => {};
+		const gate = new Promise<void>((resolve) => { release = resolve; });
+		let requests = 0;
+		let workerId = "";
+		test.faux.setResponses(Array.from({ length: 100 }, () => async (request: TranscriptContext) => {
+			const last = request.messages.findLast((m) => m.role !== "system");
+			const asked = text(last?.content);
+			if (asked.includes(BRIEF)) {
+				requests++;
+				await gate;
+				return fauxAssistantMessage([fauxToolCall("read", { path: "README.md" })], { stopReason: "toolUse" });
+			}
+			if (asked === "Amend scheduled worker") return fauxAssistantMessage([fauxToolCall("worker_send", { id: workerId, message: "Include the check results", interrupt: true })], { stopReason: "toolUse" });
+			if (asked === "Include the check results") return fauxAssistantMessage("Scheduled work complete.");
+			return fauxAssistantMessage("Noted.");
+		}));
+		const saved = await saveSchedule(client, projectId, { onReport });
+		const run = await runNow(client, projectId, saved.id);
+		workerId = run.workerId!;
+		await until(() => requests === 1);
+		const { runtime } = await test.server.manager.open(projectId);
+		await client.request({ type: "conversation.submit", projectId, requestId: "amend-scheduled", content: "Amend scheduled worker" });
+		const workers = await runtime.workers.state();
+		const worker = workers.workers[workerId]!;
+		await until(async () => (await runtime.harness.snapshot(InboxDoc, worker.conversationId as never, BACKGROUND_CONTEXT))!.items.length === 1);
+		release();
+		await until(async () => !(await runtime.harness.inspect(BACKGROUND_CONTEXT)).tasks.some((t) => t.record.kind === "aiki.worker-reporter" && t.record.state.status !== "terminal"));
+		await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
+		const view = new ViewClient(client);
+		await view.start(projectId);
+		expect(view.view!.entries.filter((e) => entryText(e).startsWith(`[worker ${workerId} reported]`))).toHaveLength(1);
+		const timeline = await client.request({ type: "board.task.timeline", projectId, taskId: run.taskId! });
+		if (timeline.type !== "board.task.timeline") throw errorOf(timeline);
+		expect(timeline.entries.filter((e) => e.label === `Worker ${workerId} reported`)).toHaveLength(1);
+	});
+
 	it("creates the task on the first run, reuses it for later and manual runs, and keeps it across a restart", async () => {
 		const { test, clock, client, projectId } = await start();
 		const saved = await saveSchedule(client, projectId);

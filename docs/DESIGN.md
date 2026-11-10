@@ -840,15 +840,21 @@ Status: backend, protocol, client and web UI done (milestone 2).
   a background reporter task delivers one message, waits for the answer and posts the report back. Both are background,
   so the coordinator's abort and idle waits never reach a worker; only `conversation.abort({ background: true })` does.
 - Worker amendments use `worker_send` with `interrupt: true` (steer into the current run); queue only a separate next
-  task. Several submissions can share one final answer. Reports equal to that worker's previous report, and the exact
+  task. Several submissions can share one final answer. That answer is delivered once, keyed by the worker conversation
+  and final assistant entry (`worker-answer:<conversation>:<entry>`), not by each submission's sending call. Report
+  admission, worker/board changes, the single timeline event and reporter completion share one transaction. A second
+  reporter for the same answer exits without a passive transcript copy, timeline entry, push or turn. Admission and
+  forgetting stay serialized. Older checkpoints recover their answer from the original submission; already-decided
+  legacy notify checkpoints retain their delivery choice and do not repeat their board changes. Failures without an
+  answer retain the sending-call key. Distinct answers equal to that worker's previous report, and the exact
   one-line worker answer `Nothing new.`, are passive writes: kept in the coordinator transcript without a turn or push.
   Workers use that line only for an already-covered queued request with no new result, warning or question. Coordinators
   end without a chat reply for already-handled or unchanged reports, just as for uneventful check-ins.
 - `worker_forget` marks the worker done and withdraws its queued inputs in one commit, without aborting its running
   answer or tools. Pending reporters never deliver new work to a forgotten worker. Late output (including failures) is
   recorded only, keeps done status, and cannot change its board task or notify devices. Missing/pruned records count as
-  forgotten; conversation identity prevents an old reporter affecting a reused worker ID. Report decisions are durable
-  before delivery; admission and forgetting are serialized so late delivery cannot race past release.
+  forgotten; conversation identity prevents an old reporter affecting a reused worker ID. Decisions and delivery are
+  durable together, so late delivery cannot race past release.
 - A coordinator answer with no content produces no web turn or Android row; tool/thinking steps remain when present.
   No UI change is needed for silent turns.
 - Only the worker's final answer enters the coordinator's context, as a message starting with
@@ -890,8 +896,17 @@ Status: backend, protocol, client and web UI done (milestone 2).
 - Thinking level, in order: the one `worker_spawn` names, the one the user picked with the model in the composer, the
   level the project's `workerModels` entry carries for that model. A model the coordinator names without a level still
   takes its list entry's level; with none, the model's own default applies.
-- Requests derive their IDs from the tool call that started them, so a rerun after a crash neither sends a message nor
-  posts a report twice.
+- Worker input request IDs derive from the sending tool call; report IDs derive from the final answer. A rerun after
+  a crash neither sends a message nor posts a report twice. T85 reproduced duplicate transcript/timeline entries when
+  spawn and steer reporters shared an answer: the old per-call report key treated each as different, and the unchanged
+  guard still wrote passive copies and timeline events. This predates pi 1.5.1: the earlier quiet-report test explicitly
+  expected two transcript entries for that one answer. The 1.5.1 compatibility change adapted watch envelopes and
+  session/report callbacks, not report delivery. The user confirmed all observed repeats followed interrupting sends
+  and appeared at the next coordinator step, not as fresh wakes. No live data was needed. Busy-coordinator tests
+  explicitly assert one final answer and one transcript/timeline report after an initial task plus two interrupts,
+  alongside a user steer and
+  restart before its next turn (reports themselves intentionally use `followUp`, not `steer`). Schedule worker reports
+  share the same answer-keyed admission for both `review` and `record`.
 - Protocol: the `workers` feature; `workers.list`; `workers.defaults.set` stores the composer's pick as if it had been
   picked with a message (an older backend answers `unknown_request`, and the client falls back to sending it with the
   next message); the `workers.state` event pushes the project's whole list and defaults on every change;
@@ -958,7 +973,10 @@ big, long work, started by main or by a schedule. There is no "new thread" butto
   receiver, and each thread has an hourly cap, so threads cannot ping-pong. Requests and hand-overs only.
 - **Finishing.** A background thread ends with `thread_finish` and a summary, which reaches the thread that started
   it (main for schedules) as `[thread <id> finished] …`, reviewed or recorded (`onFinish`). Threads started by a
-  schedule archive 7 days after finishing; others stay until archived. To wait (for a report, an answer, a message)
+  schedule archive 7 days after finishing; others stay until archived. Unlike worker submissions, summaries come from
+  one explicit finish call, keyed `thread-finished:<thread>:<call>`, with no per-submission reporter fan-out. Replaying
+  that call before and after restart leaves one summary in both review and record modes (T85 regression tests).
+  To wait (for a report, an answer, a message)
   a thread ends its turn; its prompt says so, and `thread_finish` is refused while its workers run or a board
   question it asked is open, since weaker models read "wait for the answer" as "finish".
 - **Schedules.** A schedule of kind `thread` starts a background thread with the user's own prompt (nothing

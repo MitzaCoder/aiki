@@ -29,6 +29,7 @@ import type { AssistantMessage, Models } from "@earendil-works/pi-ai";import {
 	defineExtension,
 	defineTask,
 	defineTool,
+	type EntryId,
 	type EntryRecord,
 	type Extension,
 	type Harness,
@@ -212,15 +213,16 @@ type ReporterInput = {
 
 type ReporterState =
 	| { phase: "deliver" }
-	| { phase: "report"; text: string | null; status: WorkerStatus; failure: string | null }
-	| { phase: "notify"; text: string | null; status: WorkerStatus; failure: string | null; recorded: boolean; notify: boolean };
+	| { phase: "report"; answerId?: EntryId; text: string | null; status: WorkerStatus; failure: string | null }
+	// Older notify checkpoints already committed their board changes and recorded/notify decision.
+	| { phase: "notify"; answerId?: EntryId; text: string | null; status: WorkerStatus; failure: string | null; recorded: boolean; notify: boolean; decisionPending?: boolean };
 
 /**
  * Delivers one message to one worker and reports its answer back.
  *
  * The worker's answer is the only thing that reaches the coordinator: the reporter appends it as a follow-up input, so
- * the coordinator reads a report instead of a whole transcript. Both writes use request IDs derived from the tool call,
- * so a restart that reruns this task finds its earlier submissions instead of duplicating them.
+ * the coordinator reads a report instead of a whole transcript. Inputs use the sending call's request ID; reports use
+ * the final answer entry's ID, since several steered inputs can share it. Admission and board changes are atomic.
  */
 function createWorkerReporter(service: WorkerService): Task<ReporterInput, ReporterState, null, object> {
 	return defineTask<ReporterInput, ReporterState, null>({
@@ -294,156 +296,123 @@ function createWorkerReporter(service: WorkerService): Task<ReporterInput, Repor
 						const text = answerText(answer?.model?.[0] as AssistantMessage | undefined);
 						return {
 							status: "running",
-							checkpoint: { phase: "report", text, status: "idle", failure: null },
+							checkpoint: { phase: "report", answerId: answered, text, status: "idle", failure: null },
 						};
 					},
 					context,
 				);
 			},
 			report: async (reporter, runtime, context) => {
-				const { workerId, callId, schedule } = reporter.input;
-				const { text, status, failure } = reporter.state.checkpoint;
-
-				// A scheduled run with `record`: the report becomes an ordinary user entry in the transcript, part of the
-				// coordinator's context from now on, but nothing wakes it. A `shared` scheduled run is forgotten as soon as
-				// it reports; a `workspace` one stays until the coordinator merges its work and calls worker_forget.
-				const scheduledRecord = schedule !== undefined && schedule.onReport === "record";
-				const forget = schedule !== undefined && schedule.isolation === "shared";
-
-				await runtime.commit(async (tx) => {
-					const state = await tx.doc(WorkersDoc, runtime.conversationId);
-					const worker = state.workers[workerId];
-					const forgotten = worker === undefined || worker.status === "done" || worker.conversationId !== reporter.input.conversationId;
-					const quiet = forgotten || (text !== null && (worker?.lastReport === text || text.trim() === NO_NEW_WORKER_REPORT));
-					const next = {
-						status: "running" as const,
-						checkpoint: { phase: "notify" as const, text, status, failure, recorded: scheduledRecord || quiet, notify: !quiet },
-					};
-					// A forgotten/pruned/replaced worker can only leave a transcript record, never board or status changes.
-					if (forgotten || worker === undefined) return next;
-					// Reads come before the first write. A failure moves the worker's task to blocked; a report moves nothing,
-					// the coordinator moves the task to review once it checked the work. A failed scheduled run opens (or
-					// updates) its schedule's task. A stop moves nothing: the coordinator chose it.
-					const taskId = worker.taskId ?? null;
-					const scheduleId = worker.scheduleId ?? null;
-					const moves = worker.status !== "stopped" && status === "failed";
-					// A `record` run of a schedule has no coordinator turn to move its task: the harness puts the run in it.
-					const recordsRun = scheduledRecord && scheduleId !== null && worker.status !== "stopped" && status === "idle" && text !== null && taskId !== null;
-					// The board is the project's, on main's conversation, whichever thread's worker this is.
-					const board =
-						taskId !== null || (moves && scheduleId !== null) || recordsRun
-							? await openBoard(tx, service.mainId as ConversationId)
-							: undefined;
-					const history =
-						board !== undefined && taskId !== null ? await openTaskHistory(tx, service.mainId as ConversationId, taskId) : undefined;
-					const now = new Date().toISOString();
-					if (board !== undefined) {
-						const key = `worker-report:${callId}`;
-						const reason = `worker ${workerId} failed: ${failure ?? "no reason given"}`;
-						const before = statusesOf(board);
-						if (recordsRun && scheduleId !== null && taskId !== null && text !== null) {
-							recordScheduledReport(board, { key, scheduleId, taskId, workerId, text, now });
-						} else if (moves && taskId !== null) {
-							moveTaskForWorker(board, { key, taskId, move: { kind: "failed", workerId, reason }, now });
-						} else if (moves && scheduleId !== null) {
-							recordScheduleProblem(board, { key, scheduleId, title: schedule?.title ?? scheduleId, reason, now });
-						}
-						await snapshotStatusChanges(tx, service.mainId as ConversationId, board, before, { by: HARNESS_WRITER, at: now, key });
-						// The timeline says what became of the worker: a report, or the failure and its reason.
-						const task = board.tasks.find((candidate) => candidate.id === taskId);
-						if (history !== undefined && task !== undefined && worker.status !== "stopped") {
-							if (status === "failed") {
-								addTimelineEvent(
-									history,
-									task,
-									{ at: now, kind: "worker", label: `Worker ${workerId} failed`, detail: failure ?? "no reason given", ref: workerId, by: HARNESS_WRITER },
-									key,
-								);
-							} else if (text !== null) {
-								addTimelineEvent(
-									history,
-									task,
-									{ at: now, kind: "worker", label: `Worker ${workerId} reported`, detail: reportGist(text), ref: workerId, by: HARNESS_WRITER },
-									key,
-								);
-							}
-						}
-					}
-					// A stop that arrived while the answer was in flight wins over the answer.
-					if (worker.status !== "stopped") worker.status = status;
-					worker.updatedAt = now;
-					worker.failure = failure;
-					if (text !== null) worker.lastReport = text;
-					if (forget) {
-						worker.status = "done";
-						worker.workspacePath = null;
-						pruneDone(state);
-					}
-					return next;
-				}, context);
+				// Keep the old phase boundary so reporters persisted by earlier releases can resume.
+				await runtime.commit(() => ({
+					status: "running",
+					checkpoint: { ...reporter.state.checkpoint, phase: "notify", recorded: false, notify: true, decisionPending: true },
+				}), context);
 			},
 			notify: async (reporter, runtime, context) => service.withReportAdmission(async () => {
 				const { workerId, callId, schedule, conversationId } = reporter.input;
 				const { text, status, failure } = reporter.state.checkpoint;
-				const state = await runtime.snapshot(WorkersDoc, runtime.conversationId, context);
-				const worker = state?.workers[workerId];
-				// Recheck after the durable decision: a forget may have happened before admission or during a restart.
-				// Scheduled shared workers are retired by the report itself and still deliver their scheduled result.
-				const retiredBySchedule = schedule?.isolation === "shared";
-				const forgotten = worker === undefined || worker.conversationId !== conversationId || (worker.status === "done" && !retiredBySchedule);
-				const recorded = reporter.state.checkpoint.recorded || forgotten;
-
-				// The user's devices hear only about new, live output; a push never holds up the hand-off.
-				if (reporter.state.checkpoint.notify && !forgotten) {
+				const owner = (await service.coordinators.conversation(runtime.conversationId)) ?? service.coordinator;
+				const report = text === null ? failureReport(workerId, failure) : reportText(workerId, text);
+				const scheduledRecord = schedule?.onReport === "record";
+				const forget = schedule?.isolation === "shared";
+				let notify = false;
+				await runtime.commit(async (tx) => {
+					// A steer can settle several submissions with one final answer. Their sending call IDs differ;
+					// the answer entry does not. Recover it for checkpoints written before answerId was stored too.
+					const sent = await tx.submissionByRequest(conversationId as ConversationId, `worker-message:${callId}`);
+					const answerId = reporter.state.checkpoint.answerId ?? (sent?.status === "done" && "answer" in sent ? sent.answer : undefined);
+					const requestId = answerId === undefined ? `worker-report:${callId}` : `worker-answer:${conversationId}:${answerId}`;
+					const existing = await tx.submissionByRequest(runtime.conversationId, requestId);
+					const legacy = await tx.submissionByRequest(runtime.conversationId, `worker-report:${callId}`);
+					const terminal = { status: "terminal" as const, outcome: { status: "completed" as const, result: null } };
+					if (existing !== undefined || legacy !== undefined) return terminal;
+					const state = await tx.doc(WorkersDoc, runtime.conversationId);
+					const worker = state.workers[workerId];
+					// A legacy scheduled shared worker may already have been retired in the report phase.
+					const decisionPending = reporter.state.checkpoint.decisionPending === true;
+					const retiredBySchedule = !decisionPending && forget && reporter.state.checkpoint.notify;
+					const forgotten = worker === undefined || worker.conversationId !== conversationId || (worker.status === "done" && !retiredBySchedule);
+					const quiet = forgotten || (decisionPending
+						? text !== null && (worker?.lastReport === text || text.trim() === NO_NEW_WORKER_REPORT)
+						: !reporter.state.checkpoint.notify);
+					const recorded = scheduledRecord || quiet || reporter.state.checkpoint.recorded;
+					notify = !quiet && reporter.state.checkpoint.notify;
+					if (decisionPending && !forgotten && worker !== undefined) {
+						// Reads come before the first write. A failure moves the worker's task to blocked; a report moves nothing,
+						// the coordinator moves the task to review once it checked the work. A failed scheduled run opens (or
+						// updates) its schedule's task. A stop moves nothing: the coordinator chose it.
+						const taskId = worker.taskId ?? null;
+						const scheduleId = worker.scheduleId ?? null;
+						const moves = worker.status !== "stopped" && status === "failed";
+						// A `record` run of a schedule has no coordinator turn to move its task: the harness puts the run in it.
+						const recordsRun = scheduledRecord && scheduleId !== null && worker.status !== "stopped" && status === "idle" && text !== null && taskId !== null;
+						// The board is the project's, on main's conversation, whichever thread's worker this is.
+						const board =
+							taskId !== null || (moves && scheduleId !== null) || recordsRun
+								? await openBoard(tx, service.mainId as ConversationId)
+								: undefined;
+						const history =
+							board !== undefined && taskId !== null ? await openTaskHistory(tx, service.mainId as ConversationId, taskId) : undefined;
+						const now = new Date().toISOString();
+						if (board !== undefined) {
+							const key = requestId;
+							const reason = `worker ${workerId} failed: ${failure ?? "no reason given"}`;
+							const before = statusesOf(board);
+							if (recordsRun && scheduleId !== null && taskId !== null && text !== null) {
+								recordScheduledReport(board, { key, scheduleId, taskId, workerId, text, now });
+							} else if (moves && taskId !== null) {
+								moveTaskForWorker(board, { key, taskId, move: { kind: "failed", workerId, reason }, now });
+							} else if (moves && scheduleId !== null) {
+								recordScheduleProblem(board, { key, scheduleId, title: schedule?.title ?? scheduleId, reason, now });
+							}
+							await snapshotStatusChanges(tx, service.mainId as ConversationId, board, before, { by: HARNESS_WRITER, at: now, key });
+							// The timeline says what became of the worker: a report, or the failure and its reason.
+							const task = board.tasks.find((candidate) => candidate.id === taskId);
+							if (history !== undefined && task !== undefined && worker.status !== "stopped") {
+								if (status === "failed") {
+									addTimelineEvent(
+										history,
+										task,
+										{ at: now, kind: "worker", label: `Worker ${workerId} failed`, detail: failure ?? "no reason given", ref: workerId, by: HARNESS_WRITER },
+										key,
+									);
+								} else if (text !== null) {
+									addTimelineEvent(
+										history,
+										task,
+										{ at: now, kind: "worker", label: `Worker ${workerId} reported`, detail: reportGist(text), ref: workerId, by: HARNESS_WRITER },
+										key,
+									);
+								}
+							}
+						}
+						// A stop that arrived while the answer was in flight wins over the answer.
+						if (worker.status !== "stopped") worker.status = status;
+						worker.updatedAt = now;
+						worker.failure = failure;
+						if (text !== null) worker.lastReport = text;
+						if (forget) {
+							worker.status = "done";
+							worker.workspacePath = null;
+							pruneDone(state);
+						}
+					}
+					// Admission, the timeline and task completion share one commit. A restart cannot replay one
+					// without the others, and a second reporter for this answer finds the existing submission.
+					if (report !== null) {
+						await owner.submit(tx, recorded ? {
+							type: "write", entry: { kind: "pi.user", model: [{ role: "user", content: report, timestamp: runtime.now() }] }, requestId,
+						} : { type: "input", content: report, whenBusy: "followUp", requestId });
+					}
+					return terminal;
+				}, context);
+				if (notify) {
 					const threadId = service.coordinators.threadIdOf(runtime.conversationId);
-					service.notifyWorkerReport({
-						workerId,
-						callId,
-						text,
-						status,
-						failure,
-						schedule,
+					service.notifyWorkerReport({ workerId, callId, text, status, failure, schedule,
 						...(threadId === undefined ? {} : { threadId }),
 					});
 				}
-
-				const report = text === null ? failureReport(workerId, failure) : reportText(workerId, text);
-				if (report !== null && recorded) {
-					// A write, not an input: an idle coordinator appends the entry and starts nothing, and a busy one places it
-					// at its next boundary. Either way the model sees it, and no turn runs for it. The request ID makes a rerun
-					// after a crash find the entry it already wrote.
-					// The coordinator that owns this worker: main, or the background thread that started it.
-					const owner = (await service.coordinators.conversation(runtime.conversationId)) ?? service.coordinator;
-					await owner.submit(
-						{
-							type: "write",
-							entry: {
-								kind: "pi.user",
-								model: [{ role: "user", content: report, timestamp: runtime.now() }],
-							},
-							requestId: `worker-report:${callId}`,
-						},
-						BACKGROUND_CONTEXT,
-					);
-					await runtime.commit(
-						() => ({ status: "terminal", outcome: { status: "completed", result: null } }),
-						context,
-					);
-					return;
-				}
-				if (report !== null) {
-					const coordinator = await runtime.conversation(runtime.conversationId, context);
-					if (coordinator !== undefined) {
-						await coordinator.submit(
-							{ type: "input", content: report, whenBusy: "followUp", requestId: `worker-report:${callId}` },
-							context,
-						);
-					}
-				}
-				await runtime.commit(
-					() => ({ status: "terminal", outcome: { status: "completed", result: null } }),
-					context,
-				);
 			}),
 		},
 		abort: (_reporter, runtime, context) =>

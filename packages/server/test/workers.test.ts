@@ -5,6 +5,7 @@ import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@earendil-work
 import { InboxDoc, type JsonObject } from "@earendil-works/pi-durable";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { NO_NEW_WORKER_REPORT, WorkersDoc } from "../src/workers.ts";
+import { openBoard, saveTask } from "../src/board.ts";
 import type { ConversationView, ModelRef, WorkerModel, WorkersListResponse } from "@aiki/protocol";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -1361,7 +1362,7 @@ describe("check-in timers across restarts", () => {
 });
 
 describe("quiet worker reports", () => {
-	async function scenario(options: { held?: boolean; toolBoundary?: boolean; answer?: string } = {}) {
+	async function scenario(options: { held?: boolean; toolBoundary?: boolean; toolBoundaries?: number; answer?: string; changedAnswer?: boolean } = {}) {
 		const test = await setup();
 		const client = await connect(test.server);
 		await greet(client);
@@ -1369,11 +1370,18 @@ describe("quiet worker reports", () => {
 		await configure(client, projectId);
 		const gate = deferredGate();
 		let workerRequests = 0;
+		let workerAnswers = 0;
 		let reportTurns = 0;
 		let reportNotifications = 0;
 		let aborted = false;
 		const { runtime } = await test.server.manager.open(projectId);
 		const { conversation } = runtime;
+		await runtime.harness.commit(async (tx) => {
+			const board = await openBoard(tx, conversation.id);
+			saveTask(board, { task: { title: "Read the README", description: "", acceptance: null, status: "todo", blockedBy: [], blockedReason: null, writeScopes: [] }, author: "coordinator", now: new Date().toISOString() });
+		}, BACKGROUND_CONTEXT);
+		const busyGate = deferredGate();
+		let busyRequests = 0;
 		runtime.workers.notifyWorkerReport = () => { reportNotifications++; };
 		const route = async (request: TranscriptContext, opts: RouteOptions) => {
 			const { role, text } = lastMessage(request);
@@ -1384,14 +1392,20 @@ describe("quiet worker reports", () => {
 					opts?.signal?.addEventListener("abort", () => { aborted = true; }, { once: true });
 					await holdUntil(gate.promise, opts);
 				}
-				if (workerRequests === 1 && options.toolBoundary) {
+				if (workerRequests <= (options.toolBoundaries ?? (options.toolBoundary ? 1 : 0))) {
 					return fauxAssistantMessage([fauxToolCall("read", { path: "README.md" })], { stopReason: "toolUse" });
 				}
-				return fauxAssistantMessage(options.answer ?? "The work is done.");
+				workerAnswers++;
+				return fauxAssistantMessage(options.answer ?? (options.changedAnswer ? `The work is done (${workerRequests}).` : "The work is done."));
 			}
 			if (role === "toolResult") return fauxAssistantMessage("Tool finished.");
 			if (text.startsWith("[worker reader")) { reportTurns++; return fauxAssistantMessage("Reviewed."); }
-			if (text === "Spawn") return fauxAssistantMessage([fauxToolCall("worker_spawn", { id: "reader", task: BRIEF })], { stopReason: "toolUse" });
+			if (text === "Busy") {
+				busyRequests++;
+				await holdUntil(busyGate.promise, opts);
+				return fauxAssistantMessage([fauxToolCall("read", { path: "README.md" })], { stopReason: "toolUse" });
+			}
+			if (text === "Spawn") return fauxAssistantMessage([fauxToolCall("worker_spawn", { id: "reader", task: BRIEF, taskId: "T1" })], { stopReason: "toolUse" });
 			if (text === "Forget") return fauxAssistantMessage([fauxToolCall("worker_forget", { id: "reader", removeWorkspace: false })], { stopReason: "toolUse" });
 			if (text === "Queue" || text === "Amend") return fauxAssistantMessage([fauxToolCall("worker_send", { id: "reader", message: "Covered request", interrupt: text === "Amend" })], { stopReason: "toolUse" });
 			return fauxAssistantMessage("Idle.");
@@ -1418,7 +1432,12 @@ describe("quiet worker reports", () => {
 			await until(async () => !(await runtime.harness.inspect(BACKGROUND_CONTEXT)).tasks.some((t) => t.record.kind === "aiki.worker-reporter" && t.record.state.status !== "terminal"));
 			await conversation.waitForIdle(BACKGROUND_CONTEXT);
 		};
-		return { test, client, projectId, view, runtime, conversation, worker, send, gate, reports, settle, counts: () => ({ workerRequests, reportTurns, reportNotifications, aborted }) };
+		const timeline = async (reader = client) => {
+			const history = await reader.request({ type: "board.task.timeline", projectId, taskId: "T1" });
+			if (history.type !== "board.task.timeline") throw errorOf(history);
+			return history.entries.filter((event) => event.label === "Worker reader reported");
+		};
+		return { test, client, projectId, view, runtime, conversation, worker, send, gate, busyGate, reports, settle, timeline, counts: () => ({ workerRequests, workerAnswers, reportTurns, reportNotifications, aborted, busyRequests }) };
 	}
 
 	workerTest("records identical answers without starting a second coordinator turn, including after restart", async () => {
@@ -1444,13 +1463,64 @@ describe("quiet worker reports", () => {
 		expect(s.counts().reportTurns).toBe(1);
 	});
 
+	workerTest("first and worker_send reports each have one message and one timeline entry", async () => {
+		const s = await scenario({ changedAnswer: true });
+		await s.settle(1);
+		expect(s.reports()).toHaveLength(1);
+		expect(await s.timeline()).toHaveLength(1);
+		await s.send("Queue");
+		await s.settle(2);
+		expect(s.reports()).toHaveLength(2);
+		expect(await s.timeline()).toHaveLength(2);
+		expect(s.counts().reportTurns).toBe(2);
+	});
+
+	for (const amended of [false, true]) for (const restart of [false, true]) workerTest(`queues one report ${amended ? "from the initial task plus two interrupts " : ""}while the coordinator is busy${restart ? " across restart" : ""}`, async () => {
+		const s = await scenario({ held: true, toolBoundaries: amended ? 2 : 0 });
+		if (amended) {
+			await s.send("Amend");
+			await s.send("Amend");
+			await until(async () => (await s.runtime.harness.snapshot(InboxDoc, s.worker.conversationId as never, BACKGROUND_CONTEXT))!.items.length === 2);
+		}
+		await s.client.request({ type: "conversation.submit", projectId: s.projectId, requestId: "busy", content: "Busy" });
+		await until(async () => s.counts().busyRequests > 0);
+		s.gate.release();
+		await until(async () => (await s.runtime.harness.snapshot(InboxDoc, s.conversation.id, BACKGROUND_CONTEXT))!.items.length > 0);
+		const inbox = (await s.runtime.harness.snapshot(InboxDoc, s.conversation.id, BACKGROUND_CONTEXT))!;
+		expect(inbox.items).toHaveLength(1);
+		// Reports deliberately follow up. A real user steer can arrive before the same next boundary.
+		await s.client.request({ type: "conversation.submit", projectId: s.projectId, requestId: "busy-steer", content: "Keep working", whenBusy: "steer" });
+		expect((await s.runtime.harness.snapshot(InboxDoc, s.conversation.id, BACKGROUND_CONTEXT))!.items.some((item) => item.mode === "steer")).toBe(true);
+		expect(s.counts().reportTurns).toBe(0);
+		expect(await s.timeline()).toHaveLength(1);
+		if (restart) {
+			const server = await s.test.restart();
+			const client = await connect(server);
+			await greet(client);
+			const view = new ViewClient(client);
+			await view.start(s.projectId);
+			s.busyGate.release();
+			const { runtime } = await server.manager.open(s.projectId);
+			await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
+			const finished = await view.waitForView((v) => v.entries.some((e) => entryText(e).startsWith("[worker reader reported]")));
+			expect(finished.entries.filter((e) => entryText(e).startsWith("[worker reader reported]"))).toHaveLength(1);
+			expect(await s.timeline(client)).toHaveLength(1);
+		} else {
+			s.busyGate.release();
+			await s.settle(1);
+		}
+		expect(s.counts()).toMatchObject({ workerRequests: amended ? 3 : 1, workerAnswers: 1, reportTurns: 1 });
+	});
+
 	workerTest("two submissions answered by the same run only wake the coordinator once", async () => {
 		const s = await scenario({ held: true, toolBoundary: true });
 		await s.send("Amend");
 		await until(async () => (await s.runtime.harness.snapshot(InboxDoc, s.worker.conversationId as never, BACKGROUND_CONTEXT))!.items.length === 1);
 		s.gate.release();
-		await s.settle(2);
+		await s.settle(1);
 		expect(s.counts()).toMatchObject({ workerRequests: 2, reportTurns: 1, reportNotifications: 1 });
+		expect(await s.timeline()).toHaveLength(1);
+		expect(s.reports()).toHaveLength(1);
 	});
 
 	workerTest("the explicit nothing-new line is recorded without a coordinator turn", async () => {

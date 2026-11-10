@@ -1,5 +1,24 @@
 # Continue
 
+## One delivery per worker answer (T85)
+
+Spawn and steer reporters can share a final answer. Their old per-call IDs wrote duplicate transcript copies and
+board timeline events; the unchanged-text guard suppressed wakes, not those copies. This predates pi 1.5.1 (the
+November 9 test expected two copies). Reports now use the worker conversation/final-entry ID, with admission,
+board changes and reporter completion in one commit. Distinct unchanged answers remain passive. Old checkpoints
+recover the answer and preserve already-decided delivery. Schedule workers share the fix; explicit thread finish
+calls already deduplicate and now have review/record restart regressions.
+
+Fake-model tests cover first/second reports, two and three submissions sharing one answer, busy coordinators with
+user steers, restart before the coordinator handles a report, schedule review/record and replayed thread summaries.
+Rebased onto main `509eb285` (settings isolation plus rollout docs), retaining all continuation sections. The user
+confirmed every observed repeat followed interrupting sends and arrived at the next step, not as a fresh wake.
+The two-interrupt cases now explicitly count one final answer, one transcript report and one timeline entry.
+Root rerun: 1,887 tests / 23,005 assertions, zero failures; typecheck passes. The first root run hit the terminal
+scope test's `scoped-ok` timeout and exceeded the command limit; the one full rerun passed. Web check: zero
+errors/warnings; build passes. Public guard and Gitleaks pass. No live data/logs were read; no UI, dependencies,
+main move, push or deployment.
+
 ## Device sign-in rollout status (T57/T69)
 
 The operator's backends run auth-capable releases in `optional` mode. All known clients (three backends; web browsers and

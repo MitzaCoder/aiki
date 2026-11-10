@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
+import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import type { JsonObject, SetTimer } from "@earendil-works/pi-durable";
@@ -417,6 +418,31 @@ describe("background threads", () => {
 			const progress = (await file.json()) as { lastProcessedEntryId: number | null; threads?: Record<string, number> };
 			return progress.lastProcessedEntryId === null && progress.threads?.[String(record?.conversationId)] !== undefined;
 		});
+	});
+
+	for (const onFinish of ["review", "record"] as const) threadTest(`deduplicates a replayed ${onFinish} finish call across restart`, async () => {
+		const test = await setup();
+		const callId = "synthetic-thread-finish";
+		script(test, (turn) => turn.who === "thread" && turn.text === THREAD_BRIEF
+			? fauxAssistantMessage([fauxToolCall("thread_finish", { summary: SUMMARY }, { id: callId })], { stopReason: "toolUse" })
+			: undefined, { onFinish });
+		const { client, projectId, view } = await openProject(test);
+		await submit(client, projectId, "Start the thread.");
+		await view.waitForView((value) => userEntries(value, "[thread jira-run finished]").length === 1);
+		const { runtime } = await test.server.manager.open(projectId);
+		await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
+		expect(await runtime.harness.commit((tx) => tx.submissionByRequest(runtime.conversation.id, `thread-finished:jira-run:${callId}`), BACKGROUND_CONTEXT)).toBeDefined();
+		const record = (await runtime.threads.record("jira-run"))!;
+		await runtime.threads.finish(record, SUMMARY, callId);
+		const server = await test.restart();
+		const next = await connect(server);
+		await next.hello();
+		const { runtime: reopened } = await server.manager.open(projectId);
+		await reopened.threads.finish((await reopened.threads.record("jira-run"))!, SUMMARY, callId);
+		await reopened.conversation.waitForIdle(BACKGROUND_CONTEXT);
+		const nextView = new ViewClient(next);
+		await nextView.start(projectId);
+		expect(userEntries(nextView.view, "[thread jira-run finished]")).toHaveLength(1);
 	});
 
 	threadTest("records a summary without waking main when onFinish is record", async () => {
