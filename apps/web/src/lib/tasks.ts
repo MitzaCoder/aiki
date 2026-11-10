@@ -1,3 +1,4 @@
+import { markdownText } from "@mihai-harness/protocol";
 /**
  * How tasks read in the app once agents keep a report on each: the Tasks view's sections by what a task needs, the
  * `?task=` link that opens a task's sheet, a report's lines for a row, and what changed between two snapshots. Pure
@@ -310,7 +311,7 @@ export function taskSections(
 export function rowGist(row: TaskRow): string {
 	const { task, section } = row;
 	if (task.status === "waiting") return task.waiting?.note ?? "";
-	if (section === "needs_you") return row.waiting[0]?.text ?? "";
+	if (section === "needs_you") return markdownText(row.waiting[0]?.text ?? "");
 	const report = task.report;
 	const candidates =
 		section === "review" || section === "closed"

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { markdownText } from '@mihai-harness/protocol';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
@@ -121,7 +122,7 @@
 						<CircleHelpIcon class="size-3.5 shrink-0 text-(--accent-2)" aria-hidden="true" />
 					{/if}
 					<span class="shrink-0 font-medium text-(--chat-fg-muted)">{asker ?? 'Main'}</span>
-					<span class="min-w-0 flex-1 truncate text-(--chat-fg)">{question.text}</span>
+					<span class="min-w-0 flex-1 truncate text-(--chat-fg)">{markdownText(question.text)}</span>
 					<ChevronRightIcon class="size-3.5 shrink-0 text-(--chat-fg-subtle)" aria-hidden="true" />
 				</button>
 			{/each}

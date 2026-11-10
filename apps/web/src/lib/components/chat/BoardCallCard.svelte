@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CardMarkdown from '../markdown/CardMarkdown.svelte';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import CircleStopIcon from '@lucide/svelte/icons/circle-stop';
@@ -83,7 +84,7 @@
 				<pre class="error-output">{part.output || 'The board tool failed.'}</pre>
 			{:else}
 				{#if view.detail}
-					<p class="px-3.5 py-2.5 text-xs break-words whitespace-pre-wrap text-(--chat-fg-muted)">{view.detail}</p>
+					<div class="px-3.5 py-2.5 text-(--chat-fg-muted)"><CardMarkdown source={view.detail} /></div>
 				{/if}
 				{#if onopenboard}
 					<button

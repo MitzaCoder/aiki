@@ -1,3 +1,4 @@
+import { markdownText } from "@mihai-harness/protocol";
 /// <reference lib="webworker" />
 /**
  * The app's service worker: an app shell that follows a deploy quickly, the push notifications themselves, and the
@@ -159,7 +160,7 @@ worker.addEventListener("push", (event) => {
 			const url = payload === null ? "/" : notificationUrl(payload);
 			const title = payload?.title ?? "mihai-harness";
 			const options: NotificationOptions & { renotify?: boolean; timestamp?: number } = {
-				body: payload?.body ?? "Open the app to see what happened.",
+				body: payload?.kind === "board_question" ? markdownText(payload.body) : payload?.body ?? "Open the app to see what happened.",
 				icon: ICON,
 				badge: BADGE,
 				tag: payload?.tag ?? "mihai-harness",

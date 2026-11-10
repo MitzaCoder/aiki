@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CardMarkdown from './markdown/CardMarkdown.svelte';
 	import { waitingSummary } from '#lib/task-waiting.js';
 	import { overlayScroll } from '#lib/scrollbars.js';
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
@@ -355,10 +356,9 @@
 							<ul class="flex flex-col gap-1.5">
 								{#each answered as question (question.id)}
 									<li class="rounded-xl border border-(--chat-border)/60 px-2.5 py-2 text-task-sm">
-										<p class="break-words text-(--chat-fg-muted)">
-											<span class="font-mono text-(--chat-fg-subtle)">{question.id}</span> {question.text}
-										</p>
-										<p class="mt-0.5 break-words text-(--chat-fg)">{question.answer}</p>
+										<span class="font-mono text-(--chat-fg-subtle)">{question.id}</span>
+										<CardMarkdown source={question.text} />
+										<CardMarkdown source={question.answer ?? ''} />
 									</li>
 								{/each}
 							</ul>
@@ -382,11 +382,10 @@
 							<ul class="flex flex-col gap-1.5">
 								{#each decisions as decision (decision.id)}
 									<li class="rounded-xl border border-(--chat-border)/60 px-2.5 py-2 text-task-sm">
-										<p class="break-words text-(--chat-fg)">
-											<span class="font-mono text-(--chat-fg-subtle)">{decision.id}</span> {decision.text}
-										</p>
+										<span class="font-mono text-(--chat-fg-subtle)">{decision.id}</span>
+										<CardMarkdown source={decision.text} />
 										{#if decision.why}
-											<p class="mt-0.5 break-words text-(--chat-fg-muted)">{decision.why}</p>
+											<div class="mt-1 text-(--chat-fg-muted)"><CardMarkdown source={decision.why} /></div>
 										{/if}
 										<p class="mt-0.5 text-[0.6875rem] text-(--chat-fg-subtle)">
 											{#if decision.taskId}{decision.taskId} · {/if}{ago(decision.at)}

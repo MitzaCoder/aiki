@@ -376,3 +376,13 @@
 .dark .shiki span {
 	color: var(--shiki-dark);
 }
+
+/* Compact board prose; the shared code/link safety and theme tokens stay unchanged. */
+.md.md-card { font-size: .875rem; line-height: 1.55; max-width: 68ch; min-width: 0; }
+.md-card p, .md-card ul, .md-card ol, .md-card blockquote { margin: .4em 0; }
+.md-card ul, .md-card ol { padding-left: 1.5em; }
+.md-card li { margin: .15em 0; }
+.md-card li > p { margin: .15em 0; }
+.md-card li > ul, .md-card li > ol { margin: .15em 0; }
+.md-card strong { font-weight: 700; }
+.md-card h1, .md-card h2, .md-card h3 { font-size: 1.05em; margin: .6em 0 .3em; }

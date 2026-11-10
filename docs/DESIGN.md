@@ -1962,6 +1962,11 @@ one quiet line; a failed one keeps the existing notice. The Info tab's usage blo
     so.
 - Markdown is rendered with `marked`, sanitized with DOMPurify, and code is
   highlighted with shiki (a light and a dark theme at once; CSS picks one).
+- **Board Markdown (T60).** Questions, warnings, answered questions and decisions (including their why) reuse the
+  chat renderer on web and Android, in a compact card style with tighter paragraph/list spacing, nested indentation
+  and theme-aware labels. Raw HTML is never interpreted. Suggested answers remain buttons with clean plain labels;
+  submitting preserves the original option. One-line pins and notifications strip Markdown before truncation.
+  Long card text folds the rendered content behind an accessible Show more / Show less toggle, never a source slice.
 - **User Markdown (T33).** Main and thread user bubbles (including web waiting/failed sends) use the assistant renderer:
   `Markdown` on web, `RichMarkdown` on Android. Web task feedback shows the same formatted message; short sidebar and
   timeline snippets stay plain. User soft newlines remain line breaks, headings are chat-sized, HTML is literal text,

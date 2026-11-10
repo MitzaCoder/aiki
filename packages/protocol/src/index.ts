@@ -1460,3 +1460,5 @@ export { MAIN_THREAD_ID, THREAD_FINISHED_PREFIX, THREAD_MESSAGE_PREFIX } from ".
 
 export { CacheWarmStretchSchema } from "./conversation.ts";
 export type { CacheWarmStretch } from "./conversation.ts";
+
+export { markdownText } from "./markdown.ts";

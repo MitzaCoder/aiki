@@ -1,3 +1,4 @@
+import { markdownText } from "@mihai-harness/protocol";
 /**
  * Web Push notifications: one VAPID key pair for every backend, devices registered per backend, and one `Notifier` the
  * rest of the server calls. Android devices register an FCM token instead of a subscription and are sent the same
@@ -973,7 +974,7 @@ export function boardQuestionNotification(input: {
 	return {
 		kind: "board_question",
 		title: `${input.warning === true ? "Warning" : "Question"} · ${input.projectName}`,
-		body: notificationLine(input.text),
+		body: notificationLine(markdownText(input.text)),
 		projectId: input.projectId,
 		...(input.threadId === undefined ? {} : { threadId: input.threadId }),
 		...(input.taskId === undefined || input.taskId === null ? {} : { taskId: input.taskId }),

@@ -15,6 +15,7 @@ beforeAll(async () => {
 		import { linkRefMentions } from ${JSON.stringify(resolve(import.meta.dir, '../src/lib/refs.ts'))};
 		const samples = {
 			format: ['# Heading\\n\\n- **bold** and *italic*\\n- \`code\` and [link](https://example.com)\\n\\n| A | B |\\n|---|---|\\n| x | y |', true],
+			board: ['**Release plan**\\n\\n- **Validate:** run \`bun test\`\\n  - Phone\\n  - Keyboard\\n\\n1. Build\\n2. Read [guide](https://example.com/guide)\\n\\n<b>literal</b>', true],
 			user: ['one\\ntwo\\nthree', true],
 			assistant: ['one\\ntwo\\nthree', false],
 			html: ['<img src=x onerror=alert(1)>\\n<script>alert(1)</script>\\n\\n[bad](javascript:alert(1))', true],
@@ -51,6 +52,14 @@ describe('user Markdown through the shared renderer', () => {
 	test('renders formatting, lists, links, inline code, tables and shared fenced blocks', () => {
 		for (const tag of ['h1', 'ul', 'strong', 'em', 'code', 'a', 'table']) expect(rendered.format!.html).toContain(`<${tag}`);
 		expect(rendered.fence!.code).toBe('const x = 1;');
+	});
+	test('renders compact board prose without interpreting agent HTML', () => {
+		const board = rendered.board!;
+		for (const tag of ['strong', 'ul', 'ol', 'code', 'a']) expect(board.html).toContain(`<${tag}`);
+		expect(board.html).toMatch(/<ul>[\s\S]*<ul>/);
+		expect(board.html).toContain('rel="noopener noreferrer"');
+		expect(board.text).toContain('<b>literal</b>');
+		expect(board.html).not.toContain('<b>');
 	});
 	test('keeps single chat newlines without changing the assistant or its cache', () => {
 		expect(rendered.user!.breaks).toBe(2);

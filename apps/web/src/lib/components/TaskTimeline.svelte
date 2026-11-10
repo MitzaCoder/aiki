@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { markdownText } from '@mihai-harness/protocol';
 	import CircleDotIcon from '@lucide/svelte/icons/circle-dot';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
 	import FlagIcon from '@lucide/svelte/icons/flag';
@@ -114,7 +115,7 @@
 								{/if}
 							</p>
 							{#if entry.detail}
-								<p class="line-clamp-4 text-task-sm break-words whitespace-pre-wrap text-(--chat-fg-muted)">{entry.detail}</p>
+								<p class="line-clamp-4 text-task-sm break-words whitespace-pre-wrap text-(--chat-fg-muted)">{markdownText(entry.detail)}</p>
 							{/if}
 							<p class="text-[0.6875rem] text-(--chat-fg-subtle)">
 								<span title={exactTime(entry.at)}>{relativeTime(entry.at, Date.now())}</span>

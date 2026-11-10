@@ -1,3 +1,4 @@
+import { markdownText } from '@mihai-harness/protocol';
 /**
  * How the board reads in the app: tasks grouped by status, the questions waiting on the user, a task's editor draft and
  * the checks on it, the order after a move, and the transcript's one-line cards for the coordinator's `board` calls and
@@ -356,7 +357,7 @@ function firstString(record: Args | undefined, keys: readonly string[]): string 
 }
 
 function clip(text: string, length = 90): string {
-	const line = text.replace(/\s+/g, " ").trim();
+	const line = markdownText(text);
 	return line.length > length ? `${line.slice(0, length - 1)}…` : line;
 }
 

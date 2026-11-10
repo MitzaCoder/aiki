@@ -1,5 +1,14 @@
 # Continue
 
+## Board Markdown (T60)
+
+Web board prose uses `CardMarkdown`, a compact variant of the safe chat renderer, including warnings, decisions,
+answered questions and expanded board-tool cards. `markdownText` in protocol parses plain option labels, pins,
+Needs-you rows and notification bodies before truncation; options still submit their original source.
+Long cards fold rendered content, never a Markdown substring. DESIGN describes the shared web/native contract.
+Web: 801 tests, zero check warnings/errors, build and root typecheck pass; root: 1,685 tests pass.
+Synthetic UI proof is on T60. Throwaway server demos should keep a `ViewClient` watch open while seeding and capturing.
+
 ## Current state
 
 Aiki is an early personal cross-device agent harness built on pi durable. The code still uses `mihai-harness` and

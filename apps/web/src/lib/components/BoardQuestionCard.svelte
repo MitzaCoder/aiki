@@ -1,4 +1,6 @@
 <script lang="ts">
+	import CardMarkdown from './markdown/CardMarkdown.svelte';
+	import { markdownText } from '@mihai-harness/protocol';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
 	import LayersIcon from '@lucide/svelte/icons/layers';
@@ -101,9 +103,7 @@
 					{/if}
 				{/if}
 			</p>
-			<p class="text-task font-medium break-words whitespace-pre-wrap text-(--chat-fg)">
-				{question.text}
-			</p>
+			<CardMarkdown source={question.text} />
 		</div>
 	</div>
 
@@ -116,7 +116,7 @@
 					class="max-w-full rounded-full border border-(--chat-border) bg-(--chat-surface) px-2.5 py-1 text-left text-xs font-medium break-words text-(--chat-fg) transition-colors hover:border-(--accent-2) hover:bg-(--chat-surface-2) disabled:opacity-50"
 					onclick={() => send(option)}
 				>
-					{option}
+					{markdownText(option)}
 				</button>
 			{/each}
 		</div>

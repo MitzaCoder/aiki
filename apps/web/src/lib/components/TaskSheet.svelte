@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CardMarkdown from './markdown/CardMarkdown.svelte';
 	import { overlayScroll } from '#lib/scrollbars.js';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
@@ -507,11 +508,9 @@
 											<ul class="flex flex-col gap-1.5">
 												{#each decisions as decision (decision.id)}
 													<li class="rounded-xl border border-(--chat-border)/70 px-3 py-2 text-task">
-														<p class="break-words">
-															<span class="font-mono text-xs text-(--chat-fg-subtle)">{decision.id}</span>
-															{decision.text}
-														</p>
-														{#if decision.why}<p class="mt-0.5 text-task-sm break-words text-(--chat-fg-muted)">{decision.why}</p>{/if}
+														<span class="font-mono text-xs text-(--chat-fg-subtle)">{decision.id}</span>
+														<CardMarkdown source={decision.text} />
+														{#if decision.why}<div class="mt-1 text-(--chat-fg-muted)"><CardMarkdown source={decision.why} /></div>{/if}
 														<p class="mt-0.5 text-[0.6875rem] text-(--chat-fg-subtle)">{ago(decision.at)}</p>
 													</li>
 												{/each}
