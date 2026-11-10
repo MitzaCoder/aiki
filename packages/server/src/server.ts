@@ -23,6 +23,7 @@ import {
 	requestOrigin,
 } from "./artifacts.ts";
 import { DraftStore } from "./drafts.ts";
+import { localWebOrigin, serveWeb } from "./static-web.ts";
 import { PromptCacheRetention } from "./cache-retention.ts";
 import { ClientConnection, type ClientConnectionOptions } from "./connection.ts";
 import { type LoadedSkill, loadAgentContext } from "./context.ts";
@@ -75,6 +76,8 @@ export type StartServerOptions = {
 	/** Usually `resolveDataDir()`; tests use a temp directory. */
 	dataDir: string;
 	auth?: AuthOptions;
+	/** Public SPA files only; API and artifact authentication remain independent. */
+	webDir?: string;
 	/** Default: `AIKI_PORT`, else 7317. `0` picks a free port (the handle reports it). */
 	port?: number;
 	/** Default: `AIKI_HOST`, else 127.0.0.1. `0.0.0.0` listens on every interface. */
@@ -674,6 +677,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		port,
 		async fetch(request, bunServer) {
 			const url = new URL(request.url);
+			if (options.webDir && !localWebOrigin(url.origin, bunServer.port ?? port)) return new Response("Forbidden host", { status: 403 });
 			const peer = bunServer.requestIP(request)?.address ?? "unknown";
 			const trusted = (
 				options.auth?.trustedProxies ??
@@ -698,7 +702,8 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			}
 			const origin = request.headers.get("origin");
 			const required = auth.mode === "required";
-			const originAllowed = isOriginAllowed(origin, allowedOrigins, required || url.pathname.startsWith("/auth/"));
+			const originAllowed = isOriginAllowed(origin, allowedOrigins, required || url.pathname.startsWith("/auth/")) ||
+				Boolean(options.webDir && localWebOrigin(origin, bunServer.port ?? port));
 			if (!originAllowed && (required || url.pathname.startsWith("/auth/")))
 				return authJson({ error: { code: "forbidden_origin" } }, 403);
 			// Optional/off signed artifacts retain the pre-auth HTTP/CORS behaviour, including disallowed Origins.
@@ -775,6 +780,8 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					(response) => response ?? new Response("Not found", { status: 404 }),
 				);
 			}
+			// Pairing needs the public application shell before this browser has a device session.
+			if (options.webDir) return serveWeb(request, options.webDir);
 			if (auth.mode === "required") {
 				try {
 					auth.authenticate(bearer(request));

@@ -1,7 +1,7 @@
 import { resolveDataDir, resolveHostname, resolvePort } from "./data-dir.ts";
 import { ALLOWED_ORIGINS_ENV } from "./origins.ts";
 import { loadServerEnv, resolvedServerConfig } from "./server-env.ts";
-import { configureServerSettings } from "./server-settings.ts";
+import { configureServerSettings, serverSettings } from "./server-settings.ts";
 
 configureServerSettings(loadServerEnv());
 if (process.argv.includes("--print-config")) {
@@ -19,6 +19,7 @@ if (process.argv[2] === "auth") {
 		dataDir: resolveDataDir(),
 		hostname: resolveHostname(),
 		port: resolvePort(),
+		...(serverSettings.AIKI_WEB_DIR ? { webDir: serverSettings.AIKI_WEB_DIR } : {}),
 	});
 
 	const origins =

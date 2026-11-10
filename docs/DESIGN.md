@@ -2,6 +2,28 @@
 
 Name: Aiki (command and data directory: `aiki`).
 
+## Local installer and first run
+
+The public installer ships a versioned source/web archive and a private, checksum-pinned Bun runtime (no Node
+fallback), for Linux and macOS x64/arm64; Windows uses WSL. `~/.local/bin/aiki` selects an immutable release under
+`${XDG_DATA_HOME:-~/.local/share}/aiki`, with separate `data/` and XDG config. `--dir` puts configuration there too,
+for isolated installs. Updating prepares dependencies before switching `current`; `previous` retains one rollback
+candidate. Neither updating nor rollback restarts a running process or reverses storage migrations: stop first and
+back up before upgrades. Uninstall preserves data/config unless explicitly purged. The owner's `deploy/` remains
+independent; no installer action uses its units, roots or watcher.
+
+Only the installed CLI opts into `AIKI_WEB_DIR`. The server then serves the static SPA after API routes, with
+GET/HEAD, safe path resolution, no-store HTML/service-worker responses and immutable hashed assets. Its fixed
+loopback origins are accepted for WebSockets; no reflected Host/Origin allow-list. `/aiki-local.json` advertises
+same-origin discovery; hosted builds without this endpoint retain their existing multi-backend setup. Fresh local
+installs bind loopback only. Device authentication is separate (T57); a future installer pairing command can print
+its one-time local token between service startup and opening the URL. No remote access or auth claim ships here.
+
+A fresh local backend with no provider/project shows Welcome, reusing account settings and the folder picker.
+Credentials stay on the backend and providers remain direct pi-ai integrations; paid API keys are a clear option,
+and subscription sign-in remains subject to the provider's terms. After adding a folder, existing project settings
+choose the coordinator model. Generic release builds never include personal backend suggestions or local config.
+
 ## Installation identity and private compatibility
 
 Public packages use `@aiki/*`, server settings use `AIKI_*`, and new installations use XDG `aiki` data/config
