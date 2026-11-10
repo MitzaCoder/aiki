@@ -1,5 +1,7 @@
 package com.mihaisaru.harness.features.tasks
 
+import com.mihaisaru.harness.features.chat.markdownText
+
 import com.mihaisaru.harness.protocol.*
 import com.mihaisaru.harness.ui.theme.TaskStatusTone
 import java.net.URI
@@ -214,7 +216,7 @@ fun rowGist(row: TaskRow): String {
     val task = row.task
     if (task.status == "waiting") return task.waiting?.note.orEmpty()
     val report = task.report
-    if (row.section == TaskSectionId.NeedsYou) return row.waiting.firstOrNull()?.text.orEmpty()
+    if (row.section == TaskSectionId.NeedsYou) return markdownText(row.waiting.firstOrNull()?.text.orEmpty())
     val candidates = when (row.section) {
         TaskSectionId.Review, TaskSectionId.Closed -> listOf(report.results, report.now, task.description)
         TaskSectionId.Blocked -> listOf(task.blockedReason.orEmpty(), report.now, report.results)

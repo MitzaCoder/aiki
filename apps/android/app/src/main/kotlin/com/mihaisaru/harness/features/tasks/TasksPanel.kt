@@ -169,11 +169,9 @@ fun TasksPanel(context: ProjectScreenContext, modifier: Modifier = Modifier, too
                 FoldHeading("Answered", answeredOpen, onToggle = { answeredOpen = !answeredOpen }, count = answered.size)
                 if (answeredOpen) answered.forEach { question ->
                     FoldedCard {
-                        Text(buildAnnotatedString {
-                            withStyle(SpanStyle(fontFamily = JetBrainsMono, color = colors.fgSubtle)) { append(question.id) }
-                            append(" ${question.text}")
-                        }, style = TextStyles.taskSm, color = colors.fgMuted)
-                        Text(question.answer.orEmpty(), Modifier.padding(top = 2.dp), style = TextStyles.taskSm, color = colors.fg)
+                        Text(question.id, style = TaskType.xs, fontFamily = JetBrainsMono, color = colors.fgSubtle)
+                        BoardMarkdown(question.text)
+                        BoardMarkdown(question.answer.orEmpty(), Modifier.padding(top = 2.dp))
                     }
                 }
             }
@@ -224,11 +222,9 @@ internal fun FoldedCard(content: @Composable ColumnScope.() -> Unit) {
 internal fun DecisionCard(decision: BoardDecision, now: Long, withTask: Boolean) {
     val colors = Jarvis.colors
     FoldedCard {
-        Text(buildAnnotatedString {
-            withStyle(SpanStyle(fontFamily = JetBrainsMono, color = colors.fgSubtle)) { append(decision.id) }
-            append(" ${decision.text}")
-        }, style = if (withTask) TextStyles.taskSm else TextStyles.task, color = colors.fg)
-        decision.why?.takeIf { it.isNotBlank() }?.let { Text(it, Modifier.padding(top = 2.dp), style = TextStyles.taskSm, color = colors.fgMuted) }
+        Text(decision.id, style = TaskType.xs, fontFamily = JetBrainsMono, color = colors.fgSubtle)
+        BoardMarkdown(decision.text)
+        decision.why?.takeIf { it.isNotBlank() }?.let { BoardMarkdown(it, Modifier.padding(top = 4.dp)) }
         Text(
             listOfNotNull(decision.taskId?.takeIf { withTask }, relativeTime(decision.at, now)).joinToString(" · "),
             Modifier.padding(top = 2.dp), style = TaskType.meta, color = colors.fgSubtle,

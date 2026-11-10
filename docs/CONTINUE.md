@@ -6,8 +6,10 @@ Web board prose uses `CardMarkdown`, a compact variant of the safe chat renderer
 answered questions and expanded board-tool cards. `markdownText` in protocol parses plain option labels, pins,
 Needs-you rows and notification bodies before truncation; options still submit their original source.
 Long cards fold rendered content, never a Markdown substring. DESIGN describes the shared web/native contract.
-Web: 801 tests, zero check warnings/errors, build and root typecheck pass; root: 1,685 tests pass.
-Synthetic UI proof is on T60. Throwaway server demos should keep a `ViewClient` watch open while seeding and capturing.
+Android uses `BoardMarkdown` over compact `RichMarkdown`, and a CommonMark-based `markdownText` for the same plain
+surfaces. Chat defaults and code controls are unchanged. Web: 801 tests, zero check warnings/errors, build and root
+typecheck pass; root: 1,685 tests pass. Android: 584 tests (two existing skips), assembly and lint pass (no errors);
+protocol generation is unchanged (299 DTOs / 78 overloads). Synthetic UI proof is on T60. Throwaway server demos should keep a `ViewClient` watch open while seeding and capturing.
 
 ## Current state
 

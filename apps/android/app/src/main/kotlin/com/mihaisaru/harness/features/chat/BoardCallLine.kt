@@ -40,7 +40,7 @@ data class BoardCallView(val summary: String, val detail: String? = null)
 
 private fun JsonObject.firstString(vararg keys: String): String? = keys.firstNotNullOfOrNull { key -> (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content?.trim()?.takeIf(String::isNotEmpty) }
 private fun clip(text: String, length: Int = 90): String {
-    val line = text.replace(Regex("\\s+"), " ").trim()
+    val line = markdownText(text)
     return if (line.length > length) line.take(length - 1) + "…" else line
 }
 
@@ -86,7 +86,7 @@ fun boardCallView(arguments: JsonElement?, output: String?): BoardCallView? {
     val details: @Composable ColumnScope.() -> Unit = {
         if (failed) Text(part.text.ifBlank { "The board tool failed." }, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall, color = Jarvis.colors.danger)
         else {
-            view.detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Jarvis.colors.fgMuted) }
+            view.detail?.let { com.mihaisaru.harness.features.tasks.BoardMarkdown(it) }
             if (context != null) TextButton(onClick = { context.navigate(Destination.Panel(context.route, PanelTab.Board)) }, contentPadding = PaddingValues(0.dp)) { Text("Open the Board") }
         }
     }

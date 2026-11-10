@@ -114,7 +114,7 @@ internal fun showPinnedBoardQuestions(activePanel: PanelTab?): Boolean = activeP
                         onClick = { chosen = question.id },
                     ) {
                         Text(questionAskedBy(question, threads) ?: "Main", style = small.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium), color = colors.fgMuted, maxLines = 1)
-                        Text(question.text, Modifier.weight(1f), style = small, color = colors.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(markdownText(question.text), Modifier.weight(1f), style = small, color = colors.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         LucideGlyph(Lucide.ChevronRight, size = 14.dp, tint = colors.fgSubtle)
                     }
                 }

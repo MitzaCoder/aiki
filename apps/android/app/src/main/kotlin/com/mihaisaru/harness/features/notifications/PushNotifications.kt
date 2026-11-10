@@ -1,5 +1,7 @@
 package com.mihaisaru.harness.features.notifications
 
+import com.mihaisaru.harness.features.chat.markdownText
+
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationChannelGroup
@@ -64,8 +66,8 @@ fun showPushNotification(context: Context, payload: NotificationPayload): Boolea
     val notification = NotificationCompat.Builder(context, channel)
         .setSmallIcon(R.drawable.ic_notification)
         .setContentTitle(payload.title)
-        .setContentText(payload.body)
-        .setStyle(NotificationCompat.BigTextStyle().bigText(payload.body))
+        .setContentText(if (payload.kind == "board_question") markdownText(payload.body) else payload.body)
+        .setStyle(NotificationCompat.BigTextStyle().bigText(if (payload.kind == "board_question") markdownText(payload.body) else payload.body))
         .setContentIntent(tap)
         .setAutoCancel(true)
         .setOnlyAlertOnce(!isNotificationFailure(payload.kind))

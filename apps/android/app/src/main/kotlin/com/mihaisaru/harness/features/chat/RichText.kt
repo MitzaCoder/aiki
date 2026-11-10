@@ -96,17 +96,25 @@ internal fun inline(node: Node, linkers: List<TextLinker> = emptyList(), userMes
 /** Shared native Markdown entry point for memory, context and other feature panels. */
 @Composable fun HarnessMarkdown(text: String, modifier: Modifier = Modifier) = RichMarkdown(text, modifier)
 
-@Composable fun RichMarkdown(source: String, modifier: Modifier = Modifier, userMessage: Boolean = false) {
+private val LocalCompactMarkdown = compositionLocalOf { false }
+
+@Composable fun RichMarkdown(source: String, modifier: Modifier = Modifier, userMessage: Boolean = false, compact: Boolean = false) {
     val document = remember(source) { parser.parse(source) }
-    QuotableSelection(modifier) { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { children(document).forEach { MarkdownNode(it, userMessage) } } }
+    CompositionLocalProvider(LocalCompactMarkdown provides compact) {
+        ProvideTextStyle(if (compact) LocalTextStyle.current.copy(fontSize = 14.sp, lineHeight = 21.sp) else LocalTextStyle.current) {
+            QuotableSelection(modifier) { Column(verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 8.dp)) { children(document).forEach { MarkdownNode(it, userMessage) } } }
+        }
+    }
 }
 @Composable private fun MarkdownNode(node: Node, userMessage: Boolean = false) {
     val linkers = LocalTextLinkers.current
+    val compact = LocalCompactMarkdown.current
+    val lineHeight = if (compact) 21.sp else 25.sp
     fun inline(node: Node) = inline(node, linkers, userMessage)
     when(node) {
         is FencedCodeBlock -> CodeBlock(node.literal,node.info)
         is IndentedCodeBlock -> CodeBlock(node.literal,"")
-        is Heading -> MarkdownText(inline(node),fontSize = (if(userMessage) maxOf(16, 19 - node.level) else 26 - node.level * 2).sp,fontWeight = FontWeight.SemiBold)
+        is Heading -> MarkdownText(inline(node),fontSize = (if(compact) 15 else if(userMessage) maxOf(16, 19 - node.level) else 26 - node.level * 2).sp,fontWeight = FontWeight.SemiBold)
         is ThematicBreak -> HorizontalDivider()
         is TableBlock -> MarkdownTable(node, ::inline)
         is org.commonmark.node.Paragraph -> if(children(node).any { it is org.commonmark.node.Image }) {
@@ -114,12 +122,12 @@ internal fun inline(node: Node, linkers: List<TextLinker> = emptyList(), userMes
                 if(child is org.commonmark.node.Image && (child.destination.startsWith("https://") || child.destination.startsWith("http://"))) AsyncImage(model = child.destination,contentDescription = inline(child).text,modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp))
                 else MarkdownText(inline(child))
             } }
-        } else MarkdownText(inline(node),lineHeight = 25.sp)
+        } else MarkdownText(inline(node),lineHeight = lineHeight)
         // The marker's Text is Compose's: a bare `Text(String)` here is commonmark's node constructor and draws nothing.
         // Markers in the subtle colour, numbers in tabular figures (web `li::marker`).
         is BulletList, is OrderedList -> Column { children(node).forEachIndexed { i,item -> Row {
-            androidx.compose.material3.Text(if(node is OrderedList) "${node.startNumber + i}. " else "• ",lineHeight = 25.sp,color = Jarvis.colors.fgSubtle,style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum"))
-            Column(Modifier.weight(1f)) { children(item).forEach { MarkdownNode(it, userMessage) } }
+            androidx.compose.material3.Text(if(node is OrderedList) "${node.startNumber + i}. " else "• ",lineHeight = lineHeight,color = Jarvis.colors.fgSubtle,style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum"))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 0.dp)) { children(item).forEach { MarkdownNode(it, userMessage) } }
         } } }
         // A gradient bar at the left and muted text (web `.md blockquote`).
         is BlockQuote -> {
@@ -130,7 +138,7 @@ internal fun inline(node: Node, linkers: List<TextLinker> = emptyList(), userMes
             }
         }
         is HtmlBlock -> androidx.compose.material3.Text(node.literal) // Never execute model-supplied HTML. (Plain `Text` here would be commonmark's node.)
-        else -> MarkdownText(inline(node),lineHeight = 25.sp)
+        else -> MarkdownText(inline(node),lineHeight = lineHeight)
     }
 }
 

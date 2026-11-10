@@ -1,5 +1,7 @@
 package com.mihaisaru.harness.features.panels
 
+import com.mihaisaru.harness.features.tasks.BoardMarkdown
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -202,15 +204,17 @@ internal fun boardReorderedIds(tasks: List<BoardTask>, taskId: String, delta: In
         if (answered.isNotEmpty()) {
             Fold("Answered questions", answered.size, answeredOpen, { answeredOpen = !answeredOpen })
             if (answeredOpen) answered.forEach { question -> BoardNote {
-                Text(buildAnnotatedString { withStyle(SpanStyle(fontFamily = FontFamily.Monospace, color = colors.fgSubtle)) { append(question.id) }; append(" ${question.text}") }, color = colors.fgMuted)
-                Text(question.answer.orEmpty(), color = colors.fg)
+                Text(question.id, fontFamily = FontFamily.Monospace, color = colors.fgSubtle)
+                BoardMarkdown(question.text)
+                BoardMarkdown(question.answer.orEmpty())
             } }
         }
         if (decisions.isNotEmpty()) {
             Fold("Decisions", decisions.size, decisionsOpen, { decisionsOpen = !decisionsOpen })
             if (decisionsOpen) decisions.forEach { decision -> BoardNote {
-                Text(buildAnnotatedString { withStyle(SpanStyle(fontFamily = FontFamily.Monospace, color = colors.fgSubtle)) { append(decision.id) }; append(" ${decision.text}") }, color = colors.fg)
-                decision.why?.let { Text(it, color = colors.fgMuted) }
+                Text(decision.id, fontFamily = FontFamily.Monospace, color = colors.fgSubtle)
+                BoardMarkdown(decision.text)
+                decision.why?.let { BoardMarkdown(it) }
                 Text((decision.taskId?.let { "$it · " } ?: "") + com.mihaisaru.harness.features.status.relativeTime(decision.at, System.currentTimeMillis()),
                     style = MaterialTheme.typography.labelSmall, color = colors.fgSubtle)
             } }

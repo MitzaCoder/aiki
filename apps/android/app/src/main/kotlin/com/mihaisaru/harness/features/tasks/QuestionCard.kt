@@ -1,5 +1,7 @@
 package com.mihaisaru.harness.features.tasks
 
+import com.mihaisaru.harness.features.chat.markdownText
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -107,7 +109,7 @@ fun QuestionCard(
                         )
                     }
                 }
-                Text(question.text, style = TextStyles.task.copy(fontWeight = FontWeight.Medium), color = colors.fg)
+                BoardMarkdown(question.text)
             }
         }
         if (!warning && question.options.isNotEmpty()) {
@@ -122,7 +124,7 @@ fun QuestionCard(
                         modifier = Modifier.heightIn(min = 32.dp),
                     ) {
                         Box(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), contentAlignment = Alignment.CenterStart) {
-                            Text(option, style = TaskType.xsMedium, color = colors.fg)
+                            Text(markdownText(option), style = TaskType.xsMedium, color = colors.fg)
                         }
                     }
                 }
