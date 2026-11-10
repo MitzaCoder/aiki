@@ -28,6 +28,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
+import { childEnvironment } from "./child-environment.ts";
 import { DatabaseSync } from "node:sqlite";
 import type {
 	MemoryChange,
@@ -412,7 +413,7 @@ async function git(dir: string, args: readonly string[]): Promise<GitResult> {
 	const proc = Bun.spawn(["git", "-C", dir, ...args], {
 		stdout: "pipe",
 		stderr: "pipe",
-		env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "true" },
+		env: { ...childEnvironment(), GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "true" },
 	});
 	const [stdout, stderr, code] = await Promise.all([
 		new Response(proc.stdout).text(),

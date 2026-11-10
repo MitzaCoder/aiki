@@ -39,6 +39,7 @@ import type { Environment } from "./data-dir.ts";
 import { ServerError, errorMessage } from "./errors.ts";
 import type { FcmSender } from "./fcm.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
+import { serverSettings } from "./server-settings.ts";
 
 /** Where the keys, the devices and the dedupe state live, under the data directory. */
 export const NOTIFICATIONS_DIR_NAME = "notifications";
@@ -87,7 +88,7 @@ function expandHome(path: string): string {
 }
 
 /** `${AIKI_VAPID_KEY_FILE}` when set, else `<data>/notifications/vapid.json`. */
-export function resolveVapidKeyFile(dataDir: string, env: Environment = process.env): string {
+export function resolveVapidKeyFile(dataDir: string, env: Environment = serverSettings): string {
 	const override = env[VAPID_KEY_FILE_ENV];
 	if (override !== undefined && override.trim().length > 0) return resolve(expandHome(override.trim()));
 	return join(dataDir, NOTIFICATIONS_DIR_NAME, VAPID_KEY_FILE_NAME);
@@ -97,7 +98,7 @@ export function resolveVapidKeyFile(dataDir: string, env: Environment = process.
  * The VAPID `sub`: RFC 8292 wants a `mailto:` or an `https:` URL, and the app's own URL is the one that names this
  * harness. It comes from the allowed-origins configuration rather than a constant, so the deploy and the app agree.
  */
-export function resolveVapidSubject(allowedOrigins: readonly string[], env: Environment = process.env): string {
+export function resolveVapidSubject(allowedOrigins: readonly string[], env: Environment = serverSettings): string {
 	const override = env[VAPID_SUBJECT_ENV];
 	if (override !== undefined && override.trim().length > 0) {
 		const trimmed = override.trim();

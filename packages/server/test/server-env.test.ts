@@ -13,8 +13,9 @@ test("optional XDG env file fills only absent settings and parses quoted values"
 	const root = fixture(); mkdirSync(join(root, "aiki"));
 	writeFileSync(join(root, "aiki/server.env"), 'AIKI_DATA_DIR="/tmp/example data"\nAIKI_CONFIG_DIR=/tmp/config\nAIKI_HOST=0.0.0.0\nAIKI_PORT=8123\nAIKI_ALLOWED_ORIGINS="https://app.example.test"\n');
 	const env = { XDG_CONFIG_HOME: root, AIKI_PORT: "9000" } as Record<string, string | undefined>;
-	loadServerEnv(env);
-	expect(resolvedServerConfig(env)).toMatchObject({ dataDir: "/tmp/example data", configDir: "/tmp/config", hostname: "0.0.0.0", port: 9000, allowedOrigins: ["https://app.example.test"] });
+	const settings = loadServerEnv(env);
+	expect(env.AIKI_DATA_DIR).toBeUndefined();
+	expect(resolvedServerConfig(settings)).toMatchObject({ dataDir: "/tmp/example data", configDir: "/tmp/config", hostname: "0.0.0.0", port: 9000, allowedOrigins: ["https://app.example.test"] });
 });
 
 test("missing default is optional, explicit missing file and unexpected settings fail closed", () => {

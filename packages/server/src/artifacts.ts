@@ -12,6 +12,8 @@
  * The token is the only authorization, so nothing is served without one that verifies (compared in constant time) and
  * has not expired. Responses honor one byte range (206), so a `<video>` seeks.
  */
+import { childEnvironment } from "./child-environment.ts";
+import { serverSettings } from "./server-settings.ts";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { constants } from "node:fs";
 import { copyFile, mkdir, open, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
@@ -34,7 +36,7 @@ export const DEFAULT_ARTIFACT_LIST_LIMIT = 100;
 const DURATION_PROBE_TIMEOUT_MS = 10_000;
 
 /** The per-file cap from the environment: a positive whole number of bytes, else the default. */
-export function resolveArtifactMaxBytes(env: Readonly<Record<string, string | undefined>> = process.env): number {
+export function resolveArtifactMaxBytes(env: Readonly<Record<string, string | undefined>> = serverSettings): number {
 	const raw = env[ARTIFACT_MAX_BYTES_ENV]?.trim();
 	if (raw === undefined || raw.length === 0) return DEFAULT_ARTIFACT_MAX_BYTES;
 	const value = Number(raw);
@@ -171,6 +173,7 @@ export async function probeDurationSeconds(path: string): Promise<number | null>
 		const child = Bun.spawn(
 			[ffprobe, "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", path],
 			{
+				env: childEnvironment(),
 				stdout: "pipe",
 				stderr: "ignore",
 				stdin: "ignore",
@@ -578,7 +581,7 @@ export class ArtifactUrlSigner {
  */
 export function requestOrigin(
 	request: Request,
-	env: Readonly<Record<string, string | undefined>> = process.env,
+	env: Readonly<Record<string, string | undefined>> = serverSettings,
 ): string {
 	const configured = env.AIKI_PUBLIC_URL?.trim();
 	if (configured !== undefined && configured.length > 0) {

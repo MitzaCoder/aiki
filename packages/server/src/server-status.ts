@@ -7,6 +7,7 @@
  * every change is pushed as `server.status.changed`; `busy` is computed on demand because a restart only asks for it
  * before restarting.
  */
+import { serverSettings } from "./server-settings.ts";
 import type { DeployStatus, DiskStatus, ReleaseInfo, ServerStatus } from "@aiki/protocol";
 import { existsSync, readFileSync, realpathSync, watch, type FSWatcher } from "node:fs";
 import { homedir } from "node:os";
@@ -59,7 +60,7 @@ export function resolveReleaseRoot(from: string = import.meta.dir): string {
  * `<releaseRoot>/../../deploy-status.json` when the release sits in a deploy root's `releases/` directory (the layout
  * `current -> releases/<name>` gives, so the symlink is resolved first), else `null`: nothing wrote one.
  */
-export function resolveDeployStatusFile(releaseRoot: string, env: Environment = process.env): string | null {
+export function resolveDeployStatusFile(releaseRoot: string, env: Environment = serverSettings): string | null {
 	const override = env[DEPLOY_STATUS_FILE_ENV];
 	if (override !== undefined && override.trim().length > 0) return resolve(expandHome(override.trim()));
 	const real = realpathOf(releaseRoot);
@@ -125,7 +126,7 @@ export type ServerStatusServiceOptions = {
 	releaseRoot?: string;
 	/** The deploy's status file. Default: `resolveDeployStatusFile(releaseRoot, env)`; `null` watches no deploy status. */
 	deployStatusFile?: string | null;
-	/** The environment the deploy status file is resolved from. Default: `process.env`. */
+	/** The environment the deploy status file is resolved from. Default: `serverSettings`. */
 	env?: Environment;
 	/** The clock, for tests. Default: `Date.now`. */
 	now?: () => number;
@@ -168,7 +169,7 @@ export class ServerStatusService {
 		this.#releaseRoot = options.releaseRoot ?? resolveReleaseRoot();
 		this.#deployStatusFile =
 			options.deployStatusFile === undefined
-				? resolveDeployStatusFile(this.#releaseRoot, options.env ?? process.env)
+				? resolveDeployStatusFile(this.#releaseRoot, options.env ?? serverSettings)
 				: options.deployStatusFile;
 		this.#log = options.log ?? ((message) => console.log(message));
 		this.#onChange = options.onChange;

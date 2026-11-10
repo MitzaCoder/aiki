@@ -8,6 +8,7 @@
  * whichever is smaller, so a large disk is not low with hundreds of gigabytes left and a small one not from the start.
  * Which disks are low is kept in `disks.json` in the data directory, so a restart does not announce a crossing again.
  */
+import { serverSettings } from "./server-settings.ts";
 import type { DiskStatus } from "@aiki/protocol";
 import { stat, statfs } from "node:fs/promises";
 import { join } from "node:path";
@@ -27,7 +28,7 @@ export const DISKS_FILE_NAME = "disks.json";
 
 export type DiskThreshold = { percent: number; bytes: number };
 
-export function resolveDiskThreshold(env: Record<string, string | undefined> = process.env): DiskThreshold {
+export function resolveDiskThreshold(env: Record<string, string | undefined> = serverSettings): DiskThreshold {
 	const number = (raw: string | undefined): number | undefined => {
 		const value = raw === undefined || raw.trim() === "" ? Number.NaN : Number(raw);
 		return Number.isFinite(value) && value >= 0 ? value : undefined;

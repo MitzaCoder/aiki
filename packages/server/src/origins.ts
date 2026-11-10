@@ -6,6 +6,7 @@
  * `AIKI_ALLOWED_ORIGINS`. With the variable unset, no browser origin is allowed and non-browser clients keep
  * working.
  */
+import { serverSettings } from "./server-settings.ts";
 
 export const ALLOWED_ORIGINS_ENV = "AIKI_ALLOWED_ORIGINS";
 
@@ -37,7 +38,7 @@ export function parseAllowedOrigins(raw: string): string[] {
 }
 
 /** The allowed origins from the environment; an unset or empty variable allows none. */
-export function resolveAllowedOrigins(env: Environment = process.env): string[] {
+export function resolveAllowedOrigins(env: Environment = serverSettings): string[] {
 	const raw = env[ALLOWED_ORIGINS_ENV];
 	return raw === undefined || raw.trim().length === 0 ? [] : parseAllowedOrigins(raw);
 }

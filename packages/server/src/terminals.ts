@@ -29,6 +29,8 @@ import {
 	terminalPrefix,
 } from "@aiki/protocol";
 import { ServerError, errorMessage } from "./errors.ts";
+import { childEnvironment } from "./child-environment.ts";
+import { serverSettings } from "./server-settings.ts";
 
 export type TerminalMultiplexer = "zellij" | "none";
 
@@ -113,10 +115,10 @@ const COMMAND_TIMEOUT_MS = 8_000;
 const SCOPE_PROBE_TTL_MS = 60_000;
 
 /** The variables a terminal must not inherit: this server's own settings and its service manager's. */
-const SCRUBBED_ENV = [/^AIKI_/, /^ZELLIJ/, /^INVOCATION_ID$/, /^JOURNAL_STREAM$/, /^NOTIFY_SOCKET$/, /^SYSTEMD_EXEC_PID$/];
+const SCRUBBED_ENV = [/^ZELLIJ/, /^INVOCATION_ID$/, /^JOURNAL_STREAM$/, /^NOTIFY_SOCKET$/, /^SYSTEMD_EXEC_PID$/];
 
 /** Whether terminals are on: yes, unless `AIKI_TERMINALS` is `off` (or `0`, `false`, `no`). */
-export function terminalsEnabled(env: Record<string, string | undefined> = process.env): boolean {
+export function terminalsEnabled(env: Readonly<Record<string, string | undefined>> = serverSettings): boolean {
 	const value = env.AIKI_TERMINALS?.trim().toLowerCase();
 	return !(value === "off" || value === "0" || value === "false" || value === "no");
 }
@@ -146,7 +148,7 @@ export class TerminalHost {
 
 	constructor(options: TerminalHostOptions = {}) {
 		this.#multiplexer = options.multiplexer ?? "zellij";
-		this.#zellijOption = options.zellij;
+		this.#zellijOption = options.zellij ?? (options.env ?? serverSettings).AIKI_ZELLIJ;
 		this.#survive = options.survive ?? "auto";
 		this.#command = options.command;
 		this.#configFile = options.configFile;
@@ -169,7 +171,7 @@ export class TerminalHost {
 
 	/** The zellij binary, or undefined when none can be found. */
 	#zellij(): string | undefined {
-		const configured = this.#zellijOption ?? this.#baseEnv.AIKI_ZELLIJ;
+		const configured = this.#zellijOption;
 		if (configured !== undefined && configured.length > 0) return existsSync(configured) ? configured : Bun.which(configured, { PATH: this.#baseEnv.PATH ?? "" }) ?? undefined;
 		const found = Bun.which("zellij", { PATH: this.#baseEnv.PATH ?? "" });
 		if (found !== null) return found;
@@ -184,7 +186,7 @@ export class TerminalHost {
 	/** The environment a terminal or a zellij command runs in. */
 	#env(): Record<string, string> {
 		const env: Record<string, string> = {};
-		for (const [key, value] of Object.entries(this.#baseEnv)) {
+		for (const [key, value] of Object.entries(childEnvironment(this.#baseEnv))) {
 			if (value === undefined || SCRUBBED_ENV.some((pattern) => pattern.test(key))) continue;
 			env[key] = value;
 		}

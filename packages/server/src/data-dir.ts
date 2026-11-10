@@ -1,3 +1,4 @@
+import { serverSettings } from "./server-settings.ts";
 import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -40,7 +41,7 @@ function expandHome(path: string): string {
 /**
  * `${AIKI_DATA_DIR}` when set, else `${XDG_DATA_HOME:-~/.local/share}/aiki`.
  */
-export function resolveDataDir(env: Environment = process.env): string {
+export function resolveDataDir(env: Environment = serverSettings): string {
 	const override = env[DATA_DIR_ENV];
 	if (override !== undefined && override.trim().length > 0) return resolve(expandHome(override.trim()));
 	const xdg = env["XDG_DATA_HOME"];
@@ -52,7 +53,7 @@ export function resolveDataDir(env: Environment = process.env): string {
  * `${AIKI_AGENT_DIR}` when set, else `~/.pi/agent` of the user the server runs as. `~` expands to that user's
  * home, which is not necessarily the one whose files the harness should read.
  */
-export function resolveAgentDir(env: Environment = process.env): string {
+export function resolveAgentDir(env: Environment = serverSettings): string {
 	const override = env[AGENT_DIR_ENV];
 	if (override !== undefined && override.trim().length > 0) return resolve(expandHome(override.trim()));
 	return join(homedir(), ".pi", "agent");
@@ -62,7 +63,7 @@ export function resolveAgentDir(env: Environment = process.env): string {
  * `${AIKI_CONFIG_DIR}` when set, else `${XDG_CONFIG_HOME:-~/.config}/aiki`: where the harness keeps its
  * own `SYSTEM.md` and `APPEND_SYSTEM.md`, separate from pi's agent directory.
  */
-export function resolveConfigDir(env: Environment = process.env): string {
+export function resolveConfigDir(env: Environment = serverSettings): string {
 	const override = env[CONFIG_DIR_ENV];
 	if (override !== undefined && override.trim().length > 0) return resolve(expandHome(override.trim()));
 	const xdg = env["XDG_CONFIG_HOME"];
@@ -74,19 +75,19 @@ export function resolveConfigDir(env: Environment = process.env): string {
  * `${AIKI_CLAUDE_DIR}` when set, else `~/.claude` of the user the server runs as: Claude Code's home, whose
  * `skills` directory holds the personal skills, the ones synced from claude.ai, and the installed plugins' skills.
  */
-export function resolveClaudeDir(env: Environment = process.env): string {
+export function resolveClaudeDir(env: Environment = serverSettings): string {
 	const override = env[CLAUDE_DIR_ENV];
 	if (override !== undefined && override.trim().length > 0) return resolve(expandHome(override.trim()));
 	return join(homedir(), ".claude");
 }
 
 /** AIKI_HOST when set, else 127.0.0.1. */
-export function resolveHostname(env: Environment = process.env): string {
+export function resolveHostname(env: Environment = serverSettings): string {
 	const raw = env[HOST_ENV];
 	return raw !== undefined && raw.trim().length > 0 ? raw.trim() : DEFAULT_HOSTNAME;
 }
 
-export function resolvePort(env: Environment = process.env): number {
+export function resolvePort(env: Environment = serverSettings): number {
 	const raw = env[PORT_ENV];
 	if (raw === undefined || raw.trim().length === 0) return DEFAULT_PORT;
 	const port = Number(raw);

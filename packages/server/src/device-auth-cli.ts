@@ -1,9 +1,11 @@
 /** Owner-only local control; the service never logs command payloads or bootstrap output. */
+import { serverSettings } from "./server-settings.ts";
 import { chmodSync, existsSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { DeviceAuth, DeviceAuthError, validateBackendOrigin } from "./device-auth.ts";
 import { authFailure, authJson, readAuthBody } from "./device-auth-http.ts";
 import { resolveDataDir } from "./data-dir.ts";
+import { assertDataDirNotOwned } from "./data-dir-owner.ts";
 
 type ControlOptions = {
 	loopbackOrigin: string;
@@ -17,15 +19,8 @@ export async function startAuthControl(
 	options: ControlOptions,
 ): Promise<() => void> {
 	const socket = join(auth.dir, "auth.sock");
-	if (existsSync(socket)) {
-		let active = false;
-		try {
-			await fetch("http://localhost/", { unix: socket, signal: AbortSignal.timeout(500) });
-			active = true;
-		} catch {}
-		if (active) throw new Error("Owner control socket already in use");
-		unlinkSync(socket);
-	}
+	await assertDataDirNotOwned(auth.dir);
+	if (existsSync(socket)) unlinkSync(socket);
 	const server = Bun.serve({
 		unix: socket,
 		async fetch(request) {
@@ -90,7 +85,7 @@ export async function ownerCommand(
 			const backend = local ? options.loopbackOrigin : flag("--backend");
 			if (!backend || (!local && !auth.hosts.includes(validateBackendOrigin(backend))))
 				throw new DeviceAuthError("backend_origin_required", 400);
-			const webApp = flag("--web-app") ?? process.env.AIKI_WEB_APP ?? options.allowedOrigins[0];
+			const webApp = flag("--web-app") ?? serverSettings.AIKI_WEB_APP ?? options.allowedOrigins[0];
 			if (!local && !webApp) throw new DeviceAuthError("web_app_required", 400);
 			if (webApp) validateBackendOrigin(webApp);
 			const grant = auth.bootstrap(local);
@@ -102,6 +97,12 @@ export async function ownerCommand(
 	throw new DeviceAuthError("invalid_command", 400);
 }
 export async function runAuthCli(args: string[]): Promise<void> {
+	// Even default same-user data paths may be the live installation: agent commands require deliberate targeting.
+	if (serverSettings.AIKI_CHILD_PROCESS === "1" && !serverSettings.AIKI_ENV_FILE?.trim() && !serverSettings.AIKI_DATA_DIR?.trim()) {
+		console.error("Owner CLI from an agent requires explicit AIKI_ENV_FILE or AIKI_DATA_DIR");
+		process.exitCode = 1;
+		return;
+	}
 	try {
 		const response = await fetch("http://localhost/", {
 			unix: join(resolveDataDir(), "auth.sock"),

@@ -3,6 +3,7 @@
  * link settings, `gh` and `acli` for the live state of tickets and pull requests. A command never throws: a missing
  * tool, a timeout or a failure comes back as a result the caller can tell apart.
  */
+import { childEnvironment } from "./child-environment.ts";
 import { execFile } from "node:child_process";
 
 export type CommandResult = {
@@ -31,7 +32,7 @@ export const runHostCommand: RunCommand = (command, args, options) =>
 				timeout: options.timeoutMs,
 				maxBuffer: 8 * 1024 * 1024,
 				encoding: "utf8",
-				env: { ...process.env, GH_PROMPT_DISABLED: "1", GH_NO_UPDATE_NOTIFIER: "1", NO_COLOR: "1", TERM: "dumb" },
+				env: { ...childEnvironment(), GH_PROMPT_DISABLED: "1", GH_NO_UPDATE_NOTIFIER: "1", NO_COLOR: "1", TERM: "dumb" },
 			},
 			(error, stdout, stderr) => {
 				if (error === null) {

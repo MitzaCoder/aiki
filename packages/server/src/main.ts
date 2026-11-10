@@ -1,8 +1,9 @@
 import { resolveDataDir, resolveHostname, resolvePort } from "./data-dir.ts";
 import { ALLOWED_ORIGINS_ENV } from "./origins.ts";
 import { loadServerEnv, resolvedServerConfig } from "./server-env.ts";
+import { configureServerSettings } from "./server-settings.ts";
 
-loadServerEnv();
+configureServerSettings(loadServerEnv());
 if (process.argv.includes("--print-config")) {
 	console.log(JSON.stringify(resolvedServerConfig(), null, 2));
 	process.exit(0);

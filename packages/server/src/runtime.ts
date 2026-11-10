@@ -10,7 +10,7 @@ import type { CodemodeSandbox } from "@earendil-works/pi-codemode";
 import type { Models } from "@earendil-works/pi-ai";
 import type { Conversation, ConversationView, Harness, Registry } from "@earendil-works/pi-durable";
 import { Harness as HarnessImpl, LiveDoc, createRegistry } from "@earendil-works/pi-durable";
-import { NodeExecutionEnv } from "@earendil-works/pi-durable/env/node";
+import { AgentExecutionEnv } from "./agent-execution-env.ts";
 import { createNodePhotonImages } from "@earendil-works/pi-durable/images/node";
 import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite/node";
 import type { ImageProcessor } from "@earendil-works/pi-durable/tools";
@@ -1137,7 +1137,7 @@ export class ProjectManager {
 					}),
 					...(this.#now === undefined ? {} : { now: this.#now }),
 					...(this.#setTimer === undefined ? {} : { setTimer: this.#setTimer }),
-					env: ({ cwd }) => new NodeExecutionEnv({ cwd: cwd ?? project.path }),
+					env: ({ cwd }) => new AgentExecutionEnv({ cwd: cwd ?? project.path }),
 					onReport: (report) => {
 						const detail = report.kind === "storage_failed" ? `: ${errorMessage(report.error)}` : "";
 						this.#log(`project ${project.id}: ${report.kind}${detail}`);

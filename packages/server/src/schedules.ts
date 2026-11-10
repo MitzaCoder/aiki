@@ -55,6 +55,7 @@ import { Type } from "typebox";
 import { Value } from "typebox/value";
 import { ServerError, errorMessage } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
+import { serverSettings } from "./server-settings.ts";
 import { type Notifier, scheduleProblemNotification } from "./notifications.ts";
 import type { ProjectStore } from "./projects.ts";
 import {
@@ -131,7 +132,7 @@ export function isValidTimezone(timezone: string): boolean {
  * UTC. Every schedule is read and written in it, and `schedules.list` reports it so the app can say which clock runs.
  */
 export function resolveTimezone(): string {
-	const configured = process.env[TIMEZONE_ENV]?.trim();
+	const configured = serverSettings[TIMEZONE_ENV]?.trim();
 	if (configured !== undefined && configured.length > 0 && isValidTimezone(configured)) return configured;
 	const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
 	if (typeof detected === "string" && detected.length > 0 && isValidTimezone(detected)) return detected;

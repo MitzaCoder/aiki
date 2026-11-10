@@ -2,6 +2,7 @@
  * The little jj the harness needs itself: workspace isolation for workers. Everything else (merging, reviewing,
  * resolving conflicts) is the coordinator's work through the usual tools.
  */
+import { childEnvironment } from "./child-environment.ts";
 import { execFile } from "node:child_process";
 import { rm, stat } from "node:fs/promises";
 import { join } from "node:path";
@@ -18,7 +19,7 @@ function run(args: readonly string[], cwd: string): Promise<{ stdout: string; st
 		execFile(
 			"jj",
 			[...args],
-			{ cwd, timeout: 60_000, maxBuffer: 4 * 1024 * 1024, encoding: "utf8" },
+			{ cwd, env: childEnvironment(), timeout: 60_000, maxBuffer: 4 * 1024 * 1024, encoding: "utf8" },
 			(error, stdout, stderr) => {
 				if (error === null) {
 					resolve({ stdout, stderr });

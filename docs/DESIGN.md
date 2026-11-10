@@ -10,6 +10,84 @@ folders. Existing installations need not move data or replace their service: the
 settings win over file values; a missing default file is fine, but an explicit missing file is an error.
 `--print-config` resolves paths, binding and origins without opening data or starting a listener.
 
+### Server settings and child commands
+
+The executable reads process settings plus the private env file into an immutable internal `serverSettings` object
+before importing identity-bearing modules. File values never enter `process.env`; after capturing the real environment,
+the executable removes its `AIKI_*` settings there too. Existing resolvers read the private object, so deploy/unit
+settings, precedence, owner CLI lookup and import-time storage identities remain unchanged. Programmatic server users
+retain process-environment defaults unless they explicitly configure that object.
+
+Every host process uses the shared `childEnvironment` helper: pi's execution environment (coordinator, worker,
+background thread, scheduled worker/thread, direct bash/powershell and codemode calls), terminal PTYs and zellij/scope
+commands, workspace `jj`, memory `git`, host `git`/`jj`/`gh`/`acli`, and artifact `ffprobe`. All `AIKI_*` names are
+removed, including `AIKI_ENV_FILE`, unknown future settings and per-exec overrides. No internal command needs the
+server's settings. The only allowlisted child variable is **`AIKI_CHILD_PROCESS=1`**, created by the helper rather than
+copied. It tells a nested entry point not to rediscover the parent's `server.env` through the inherited HOME/XDG config
+path. An explicitly supplied `AIKI_ENV_FILE` still opts in; explicit new data/config settings still work. Intentional
+owner CLI invocations from an agent therefore require an explicit installation env file or data-directory setting;
+marker-only `auth` refuses before connecting, even if the user's default data directory has a live owner. For example:
+
+```sh
+AIKI_CHILD_PROCESS=1 AIKI_ENV_FILE=/path/to/private/server.env bun packages/server/src/main.ts auth status
+AIKI_CHILD_PROCESS=1 AIKI_DATA_DIR=/path/to/backend-data bun packages/server/src/main.ts auth status
+```
+
+These explicit routes also support pair/devices/mode/migration commands. Server-start ownership checks are never run
+by the `auth` branch: the owner CLI connects to the running owner's socket instead of opening backend state.
+
+PATH, HOME, XDG directories, locale, SSH agent, provider and other tooling variables remain inherited, including
+worker-selected `HARNESS_ANDROID_DEVICE` and Android SDK variables. Terminals additionally retain their existing
+service-manager/zellij scrub and terminal defaults. This prevents accidental installation reuse, not deliberate access:
+agents still run as the backend's OS user. Same-user default data paths may coincide. Always use explicit temporary
+data/config directories for source-server experiments; do not rely on changing only HOME or the port.
+
+Every spawn must pass its environment explicitly. In this Bun version an implicit `Bun.spawn` can use the native
+startup environment even after `process.env` was changed. Likewise pi merges `process.env` back into `shellEnv`, so
+`AgentExecutionEnv` forces `inheritEnv: false` with a fully constructed child environment. A spawn-inventory regression
+requires review of new direct spawn sites; do not bypass the shared environment for new helpers. Deployment remains
+outside this path: the watcher installs private env files and systemd starts the server itself, not an agent command.
+
+Before touching any data directory, startup probes its owner Unix socket. A live listener refuses startup with a clear
+message after retrying a live listener every 100 ms for up to 3 seconds; timeout/unknown errors fail closed rather
+than unlinking the socket. A missing/refused socket allows startup immediately, and stale socket cleanup remains
+supported. Shutdown retains the owner socket through all asynchronous writes and releases it last. Tests cover an
+immediate restart, a stale socket and a new start while the old stop is still flushing (150 ms overlap). Systemd
+already waits for the old process to exit before starting its replacement; the extra grace period is below deploy's
+20-second health budget. This is a small second defence, **not an exclusive lifetime lock**: simultaneous first
+starts and existing servers with owner control disabled are not covered. A full race-proof directory lock is follow-up.
+
+All backend `AIKI_*` inputs are listed below. Consumers use the private snapshot (explicit process settings beat env
+file values; explicit programmatic options still win). Only the loader captures the raw incoming environment. An
+exact-statement regression guards the capture/child-environment boundaries against new direct `process.env` or
+`Bun.env` reads, including aliases and computed keys.
+
+| Settings | Consumer |
+| --- | --- |
+| `AIKI_DATA_DIR`, `AIKI_CONFIG_DIR`, `AIKI_AGENT_DIR`, `AIKI_CLAUDE_DIR`, `AIKI_HOST`, `AIKI_PORT` | `data-dir.ts` resolvers; entry point/server/runtime/owner CLI |
+| `AIKI_ALLOWED_ORIGINS` | `origins.ts` |
+| `AIKI_STATE_NAMESPACE` | `state-identity.ts` |
+| `AIKI_PROJECT_CONTEXT_DIR`, `AIKI_CONTEXT_EXTENSION` | `context.ts` |
+| `AIKI_AUTH_MODE`, `AIKI_BACKEND_ORIGINS`, `AIKI_PUBLIC_URL` | `device-auth.ts`; public URL is the backend-origin fallback |
+| `AIKI_PUBLIC_URL` | `artifacts.ts` legacy optional/off origin |
+| `AIKI_TRUSTED_PROXIES` | `server.ts` HTTP forwarding/local-bootstrap decisions |
+| `AIKI_WEB_APP` | `device-auth-cli.ts` owner pairing URL |
+| `AIKI_ARTIFACT_MAX_BYTES` | `artifacts.ts` |
+| `AIKI_FCM_KEY_FILE` | `fcm.ts` |
+| `AIKI_VAPID_KEY_FILE`, `AIKI_VAPID_SUBJECT` | `notifications.ts` |
+| `AIKI_DISK_LOW_PERCENT`, `AIKI_DISK_LOW_BYTES` | `disks.ts` |
+| `AIKI_WORK_FINISHED_MINUTES` | `work-finished.ts` |
+| `AIKI_TOOL_CALL_CAP_MINUTES` | `tool-caps.ts` |
+| `AIKI_DEPLOY_STATUS_FILE` | `server-status.ts` |
+| `AIKI_TERMINALS`, `AIKI_ZELLIJ` | `terminals.ts` (explicit terminal env/options may override) |
+| `AIKI_TIMEZONE` | `schedules.ts` |
+| `AIKI_ENV_FILE` | `server-env.ts` raw startup file selector; private owner-CLI explicit-target guard |
+| `AIKI_CHILD_PROCESS` | Generated child marker; `server-env.ts` discovery suppression and private owner-CLI guard |
+
+Deployment's standalone `health-check.ts` deliberately keeps its own read-only env-file/path resolution. It runs in
+the watcher/service-user environment, not the backend's command environment; tests cover required owner-socket deep
+checks/drain and persisted-mode rollback refusal, including when the backend is stopped.
+
 Durable document/task kinds use `AIKI_STATE_NAMESPACE` (default `aiki`); the context extension and project context
 folder can also be configured. These are storage identities, not display names. Set them before the first restart of
 an existing installation and keep them stable. This avoids rewriting session identities for a source-name change.
@@ -1867,8 +1945,8 @@ here and nothing depends on xterm.js.
   owns the terminals it opened and **detaches them (kills only the attach client) when its socket closes**; the same on
   `stop()`. Limits: 8 terminals per connection, 16 per server (`terminal_limit`), cols 1–500, rows 1–200, input frames
   64 KiB. Session names are checked (`bad_request`) so they cannot be an option or a path. The shell's environment is
-  the server's without `AIKI_*`, with `TERM=xterm-256color`, `COLORTERM=truecolor`, `SHELL` set to the user's
-  login shell when unset (a system unit has none), and `XDG_RUNTIME_DIR` for the user manager. `terminal.list` runs
+  the shared child environment above (no server settings; only the `AIKI_CHILD_PROCESS` marker), with
+  `TERM=xterm-256color`, `COLORTERM=truecolor`, `SHELL` set to the user's login shell when unset (a system unit has none), and `XDG_RUNTIME_DIR` for the user manager. `terminal.list` runs
   `zellij list-sessions --no-formatting`; kill runs `zellij kill-session` then `delete-session`.
 - **Availability and installation.** The server finds zellij through `AIKI_ZELLIJ`, then `PATH`, then
   `~/.local/bin/zellij`. The PC and the T14 already have it on the service's PATH through

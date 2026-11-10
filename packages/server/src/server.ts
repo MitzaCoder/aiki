@@ -1,12 +1,14 @@
+/**
+ * The Bun server: `Bun.serve` on the configured interface (loopback by default) and the WebSocket protocol at `/ws`.
+ * This is a backend only; the web app is deployed separately and talks to it over the socket.
+ */
+import { serverSettings } from "./server-settings.ts";
 import { isIP } from "node:net";
 import type { ServerWebSocket } from "bun";
 import { DeviceAuth, DeviceAuthError, type AuthOptions, type Identity } from "./device-auth.ts";
 import { authFailure, authJson, handleAuthHttp, bearer } from "./device-auth-http.ts";
 import { startAuthControl } from "./device-auth-cli.ts";
-/**
- * The Bun server: `Bun.serve` on the configured interface (loopback by default) and the WebSocket protocol at `/ws`.
- * This is a backend only; the web app is deployed separately and talks to it over the socket.
- */
+import { assertDataDirNotOwned } from "./data-dir-owner.ts";
 import type { CredentialStore, Models } from "@earendil-works/pi-ai";
 import type { SetTimer } from "@earendil-works/pi-durable";
 import type { ImageProcessor } from "@earendil-works/pi-durable/tools";
@@ -257,6 +259,7 @@ type SocketData = {
 export async function startServer(options: StartServerOptions): Promise<HarnessServer> {
 	const log = options.log ?? ((message: string) => console.log(message));
 	const dataDir = options.dataDir;
+	await assertDataDirNotOwned(dataDir);
 	const auth = new DeviceAuth(dataDir, options.auth, options.now);
 	auth.onAudit = (event, identifier) => log(`auth: ${event} ${identifier} minute=${Math.floor(auth.now() / 60_000)}`);
 	await ensureDataDir(dataDir);
@@ -674,7 +677,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			const peer = bunServer.requestIP(request)?.address ?? "unknown";
 			const trusted = (
 				options.auth?.trustedProxies ??
-				process.env.AIKI_TRUSTED_PROXIES?.split(",") ??
+				serverSettings.AIKI_TRUSTED_PROXIES?.split(",") ??
 				[]
 			).includes(peer);
 			const forwardedSource = trusted ? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() : undefined;
@@ -1003,7 +1006,6 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			if (stopped) return;
 			stopped = true;
 			clearInterval(authTimer);
-			stopAuthControl();
 			scheduleScheduler.stop();
 			scheduleEvents.stop();
 			maintenanceClock.stop();
@@ -1025,6 +1027,8 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			await requestLog?.close().catch(() => undefined);
 			server.stop(true);
 			auth.close();
+			// Retain ownership through every asynchronous shutdown write, so an overlapping start waits safely.
+			stopAuthControl();
 		},
 	};
 	return handle;

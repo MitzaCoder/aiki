@@ -7,6 +7,7 @@
  * one-hour access token, and only that token goes to FCM. Messages are data-only, carrying the same JSON payload a
  * browser gets through Web Push, so the app draws the notification itself (channel, tap target, presence).
  */
+import { serverSettings } from "./server-settings.ts";
 import { Buffer } from "node:buffer";
 import { chmod } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -31,7 +32,7 @@ function expandHome(path: string): string {
 }
 
 /** `${AIKI_FCM_KEY_FILE}` when set, else `<data>/notifications/fcm-service-account.json`. */
-export function resolveFcmKeyFile(dataDir: string, env: Environment = process.env): string {
+export function resolveFcmKeyFile(dataDir: string, env: Environment = serverSettings): string {
 	const override = env[FCM_KEY_FILE_ENV];
 	if (override !== undefined && override.trim().length > 0) return resolve(expandHome(override.trim()));
 	return join(dataDir, "notifications", FCM_KEY_FILE_NAME);

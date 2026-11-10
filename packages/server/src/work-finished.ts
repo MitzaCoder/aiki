@@ -9,6 +9,7 @@
  * that reply. Both values live in `work.json` next to `project.json`, and the notification's dedupe key derives from
  * `busySince`, so a restart neither forgets a stretch of work nor announces it twice.
  */
+import { serverSettings } from "./server-settings.ts";
 import { join } from "node:path";
 import { errorMessage } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
@@ -23,7 +24,7 @@ export const DEFAULT_WORK_QUIET_MS = 30_000;
 
 type WorkFile = { version: 1; busySince: string | null; lastReply: string | null };
 
-export function resolveWorkFinishedMs(env: Record<string, string | undefined> = process.env): number {
+export function resolveWorkFinishedMs(env: Record<string, string | undefined> = serverSettings): number {
 	const raw = env[WORK_FINISHED_MINUTES_ENV];
 	const minutes = raw === undefined || raw.trim() === "" ? Number.NaN : Number(raw);
 	return (Number.isFinite(minutes) && minutes >= 0 ? minutes : DEFAULT_WORK_FINISHED_MINUTES) * 60_000;

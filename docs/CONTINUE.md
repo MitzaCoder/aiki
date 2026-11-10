@@ -1,5 +1,28 @@
 # Continue
 
+## Agent command environment isolation (T82)
+
+Rebased onto task families/graph and board messages (`e9c693ff`), retaining T80/T81. The entry point captures settings
+privately; env-file values never enter `process.env`.
+Every spawn uses `childEnvironment`, removing backend `AIKI_*` settings. The sole marker `AIKI_CHILD_PROCESS=1`
+suppresses automatic installation env-file discovery. Marker-only `auth` refuses even a live default data path;
+explicit `AIKI_ENV_FILE` or `AIKI_DATA_DIR` permits deliberate owner access. Pair/list/revoke/mode/claim-list/approval
+pass from normal/SSH shells and both explicit agent routes, including a real bash-tool regression. Owner CLI never
+runs server-start ownership checks. Real isolated entry points prove env-file auth mode, backend/public origins,
+trusted proxies and web-app URL reach server/CLI. DESIGN inventories every setting; a native-env guard prevents
+new direct-read bypasses. Spawn inventory also flags new sites. PATH/HOME/XDG, provider/tooling, SSH, locale and
+worker Android variables remain. Pi forces `inheritEnv: false`; Bun's implicit spawns may reuse native startup env,
+so every spawn still needs the explicit helper.
+
+Live-owner preflight retries every 100 ms for 3 seconds; missing/refused sockets proceed immediately. Shutdown holds
+the socket through asynchronous writes. Immediate/stale restarts and a 150-ms overlap during shutdown flush pass.
+Systemd already serializes replacement; the grace is below deploy's 20-second health budget. This is not a lifetime
+lock: simultaneous first starts or an existing server without owner control remain follow-up. Always isolate source
+experiments on temp data/config paths. Required deploy health/deep/drain and rollback guards pass unchanged (63 tests).
+Latest checks: AIKI-unset root 1,878 tests / 22,948 assertions, first run; typecheck; web check zero errors/warnings
+and build; public guard/Gitleaks pass. The earlier T80/T81 base also passed inherited root (1,837 / 12,246).
+All servers used synthetic temp fixtures; no live data/config, main, push or deploy was touched.
+
 ## Bubble club graph (T79)
 
 Bubble club is the only graph; alternate looks/flag are removed. Camera and List/Board/Graph choices are local per

@@ -11,6 +11,7 @@
  * unchanged. The extension is installed like any other and removed for workers the same way memory and compaction are
  * (`WorkerService.removedExtensions`), so this is the one place the cap applies.
  */
+import { serverSettings } from "./server-settings.ts";
 import { withCancel } from "@earendil-works/chord/context";
 import { defineExtension, type Extension, type ToolExecutionResult, type ToolRegistration, type Wrap } from "@earendil-works/pi-durable";
 
@@ -31,7 +32,7 @@ export const TOOL_CALL_CAP_MINUTES_ENV = "AIKI_TOOL_CALL_CAP_MINUTES";
 const CAPPED_TOOLS = ["bash", "powershell", "codemode"] as const;
 
 /** `AIKI_TOOL_CALL_CAP_MINUTES` when it names a positive number of minutes, else the default. */
-export function resolveToolCallCapMs(env: Readonly<Record<string, string | undefined>> = process.env): number {
+export function resolveToolCallCapMs(env: Readonly<Record<string, string | undefined>> = serverSettings): number {
 	const raw = env[TOOL_CALL_CAP_MINUTES_ENV];
 	if (raw === undefined || raw.trim().length === 0) return DEFAULT_TOOL_CALL_CAP_MS;
 	const minutes = Number(raw);

@@ -1,4 +1,5 @@
 /** Durable backend-local owner authentication; no network identity is inferred from a name or address. */
+import { serverSettings } from "./server-settings.ts";
 import { Database } from "bun:sqlite";
 import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -147,12 +148,12 @@ export class DeviceAuth {
 					hosts: [],
 					observedHosts: [],
 				};
-		const override = options.mode ?? process.env.AIKI_AUTH_MODE;
+		const override = options.mode ?? serverSettings.AIKI_AUTH_MODE;
 		if (override !== undefined) this.#state.mode = mode(override);
 		const origins =
 			options.backendOrigins ??
-			process.env.AIKI_BACKEND_ORIGINS?.split(",").filter(Boolean) ??
-			(process.env.AIKI_PUBLIC_URL ? [new URL(process.env.AIKI_PUBLIC_URL).origin] : undefined);
+			serverSettings.AIKI_BACKEND_ORIGINS?.split(",").filter(Boolean) ??
+			(serverSettings.AIKI_PUBLIC_URL ? [new URL(serverSettings.AIKI_PUBLIC_URL).origin] : undefined);
 		if (origins) this.#state.hosts = [...new Set(origins.map(validateBackendOrigin))];
 		const keyFile = join(dir, "auth.delivery-key");
 		if (!existsSync(keyFile)) writeFileSync(keyFile, randomBytes(32), { mode: 0o600, flag: "wx" });
