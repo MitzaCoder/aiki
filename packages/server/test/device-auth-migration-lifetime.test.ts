@@ -103,6 +103,8 @@ test("migration approval expires after fourteen days and explicit revocation nev
 	expect(auth.active(first.sessionId)).toBe(false);
 });
 
+// This fills the real 100-row cap: 100 sequential digests and durable SQLite transactions, not a timer assertion.
+// Thirty-two copies on one CPU exceed Bun's default 5 seconds; allow a loaded disk/CPU without retrying any work.
 test("long-terminal migration rows are purged so churn cannot fill the global cap", async () => {
 	let now = Date.now();
 	const s = await authSetup({ auth: { mode: "optional" }, now: () => now });
@@ -116,4 +118,4 @@ test("long-terminal migration rows are purged so churn cannot fill the global ca
 	s.server.auth.setMode("optional");
 	await s.server.auth.migration(claimProof(), "loopback");
 	expect(s.server.auth.inventory()).toHaveLength(1);
-});
+}, 30_000);
