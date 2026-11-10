@@ -48,6 +48,8 @@ data class RelayRoute(
     val phase: Phase = Phase.Staged,
     val predecessor: String? = null,
     val retireAt: Long? = null,
+    val retiringElapsed: Long? = null,
+    val retiringBoot: String? = null,
     val clock: RelayClock? = null,
 ) {
     @Serializable
@@ -72,6 +74,7 @@ data class RelayState(
     val activeToken: String? = null,
     val enrollment: RelayEnrollment? = null,
     val routes: Map<String, RelayRoute> = emptyMap(),
+    val selectedBackends: Map<String, String> = emptyMap(),
     val admissions: Map<String, String> = emptyMap(),
     val deletions: List<RelayDeletion> = emptyList(),
     val counters: Map<String, Long> = emptyMap(),
@@ -89,6 +92,17 @@ data class RelayState(
             kotlinx.serialization.json.JsonObject(raw + ("windows" to kotlinx.serialization.json.JsonObject(windows))).toString()
         }
         return copy(routes = kept, admissions = nextAdmissions)
+    }
+    /** Monotonic retirement also fails closed after reboot and wall-clock rollback. */
+    fun retire(time: RelayTime): RelayState {
+        val expired = routes.values.filter { route ->
+            route.phase == RelayRoute.Phase.Retiring && (route.retiringBoot != time.boot() ||
+                route.retiringElapsed == null || time.elapsed() < route.retiringElapsed ||
+                time.elapsed() - route.retiringElapsed >= RelayCrypto.RETENTION_MS)
+        }
+        return copy(routes = routes.mapValues { (_, route) ->
+            if (route in expired) route.copy(retireAt = 0) else route
+        }).retire(time.wall())
     }
     override fun toString(): String = "RelayState"
 }
