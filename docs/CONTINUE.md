@@ -1,5 +1,65 @@
 # Continue
 
+## Relay budgets and durable account cleanup (T94)
+
+Updated the stale workspace and based this task on squashed T93 `xlqlowlw` / `56c592f5`, which includes T92.
+Implementation is `xrntxzzk` / `6a271382`; the following docs commit records its handoff. Emulator-only, no backend
+uses it. No real Firebase configuration/credentials/login, main movement, push, deploy, Aiki server or system install.
+
+Built transactional route/account/IP/global send budgets, challenge/enrollment/signup/capacity budgets, bounded
+pre-proof admission, kill/enrollment switches, recent-auth accounts/delete, minimal disabled markers, deliberate
+re-enable/fresh enrollment, phone-only disable, leased resumable cascades and hourly v2 reconciliation. All pilot
+ceilings are tunable in relayControl/settings, missing settings mean defaults, failed reads never do. Each external
+attempt is charged with its durable send reservation; duplicate/status results are not charged as sends. Deletion
+works with every budget exhausted and switches off. Global/IP daily counts survive UID deletion. Source IP appears
+only as a daily HMAC bucket; key rotation and logical bucket expiry use UTC days.
+
+Windows are **fixed UTC minute/hour/day counters**, not exact rolling limits: N per aligned window, at most 2N in any
+rolling interval of the same width; a boundary test proves the bound. Coarse admission reserves up to 30 in-flight or
+non-delivery requests/IP; validated new sends refund slots, so more than 30 simultaneous proof checks on a NAT may
+temporarily get request_rate despite available send budget. Active account capacity counts active relay rows until
+disable/delete; its next-day retryAt is a recheck time, not a guaranteed slot-reset. TTL and provider outages cannot
+guarantee physical IP-bucket deletion exactly at 24h; midnight logical expiry plus indexed hourly repair is implemented.
+
+Account work commits a blocking marker first, then uses owner leases, batches of 50 and durable phases; incomplete
+work has no TTL. Completed disable retains only uid/state/cleanupComplete plus Auth identity and short-window counters.
+Reconciliation checks Auth drift, resumes work, expires rows, prunes maps, removes orphan ownership and removes phones
+after their last route or thirty route-less days. Scheduled export is discovered but automatic triggering is ignored
+without Pub/Sub in this emulator suite; its plain core is called directly. Admin wrapper always re-execs env -i into
+demo/loopback-only Auth/Firestore, has no operator HTTP endpoint and is smoke-tested.
+
+README has exact commands/limits/API/storage/operator examples and acceptance mappings. accounts/status adds
+quotas[{scope,budget,remaining,resetAt}], effective caps, active-account switches and pending deletion. Quota/capacity
+errors carry fixed scope + retryAt and Retry-After; FCM transients retain D52. accounts/delete accepts {operationId},
+requires auth_time within five minutes and returns 200 deleted only after relay/Auth erasure, else 202 deleting +
+Retry-After. If Auth is removed before a finalization crash, revocation-checked polling cannot succeed: 410
+account_deleted is not proof all relay work is erased. Reconciliation finishes it. No revocation bypass or new erasure
+credential was silently added. Guaranteed authenticated final erasure receipts would need a separate protocol choice.
+
+**Integration blocker found:** frozen T92 relayCredentialHash hashes compact JSON
+["aiki-push-v1","credential",bearer], whereas approved T93 hashes the raw full bearer. A synthetic cross-check returned
+credential_hashes_match=false. T94 intentionally changed neither contract. Reconcile framing/hex encoding before
+server/Android transport uses them. The relay still validates strict outer keys only and never decrypts payloads.
+Real-project GFE forwarding suffix also remains unverified by design; test it before IP budgets rely on it.
+
+Verification: 80 emulator checks / 1,079 assertions, 52.42s tests / 75.58s full offline command, under unshare -Urn with
+only loopback. Includes every cleanup-phase crash, quota contention/restart/churn/reset, direct Auth signup bypass,
+disabled/deleted Auth drift, linked UID, no sensitive logs and metering. A late re-run exposed fixture clock bugs:
+the hourly-expiry case crossed a calendar-hour reset and a newly REST-issued auth_time could be ahead of the frozen
+relay clock; fixtures now anchor that hour and synchronize issuance time. Final full suite passes, no skipped checks.
+
+Measured real SDK document operations (reads/writes/deletes): accepted send 20/10/0; first begin+confirm enrollment
+31/21/1; deleting one phone/one route/one accepted-attempt account 33/13/9. Counts include proof/management budget
+transactions and minimum empty-query reads, committed writes only, no transaction retry in the specimens. They
+supersede the design's 6+6 send assumption, exclude Auth/FCM/TTL/platform costs, and are asserted by a regression test.
+
+Root: 2,035 tests / 23,778 assertions / 169 files, 190.80s (includes T92; no relay test auto-discovery), zero failures,
+no rerun. Root install 0.568s, typecheck 1.17s and public/Gitleaks pass (timed 2.33s). Relay frozen install 0.01s,
+source/tests/tools typecheck 3.47s and build 1.63s, formatter passes. No new dependencies. All emulator/helper processes
+and in-process Auth/fake FCM listeners stopped; post-run ports/process inspection is clean. Reproduce from relay/:
+bun install --frozen-lockfile; bun run typecheck; bun run build; online once bun run emulator:setup; then
+unshare -Urn sh -c 'ip link set lo up && bun run test:emulator'. Isolated state/cache and ports remain unchanged.
+
 ## Bound relay metadata and delete authority (T95 follow-up)
 
 Rebased workspace onto the accepted merged tip `pxxrzxsu` before changing code. Relay receipts now have a scheduled

@@ -3004,7 +3004,7 @@ cross-key event dedupe; storage, concurrency, key retirement and monotonic-time 
 belong to the later integration task, not this library. Keys must rotate before a restored
 counter can repeat a sequence. A persistence failure must not display a notification.
 
-### Firebase relay emulator package (T93)
+### Firebase relay emulator package (T93–T94)
 
 `relay/` is an isolated TypeScript/Bun package outside the root workspaces, with its own dependencies/lockfile,
 Node 22 v2 HTTPS function, Firestore deny-all client rules, TTL/index configuration and strict local validators.
@@ -3018,16 +3018,34 @@ A relay account and relay push are optional (D51): Aiki works fully without eith
 against Auth/Firestore emulators and smoke-test the actual Functions emulator over HTTP with loopback fake FCM.
 A successful user/network-namespace run proves cached execution works without outbound networking. Relay tests
 have explicit `.cases.ts` names so root tests/typecheck need neither relay dependencies nor Java.
-Nothing is deployed or used by any backend. T94's rate budgets, control switches, disable/delete cascade and
-reconciliation remain unimplemented. D52 uses JSON bytes with `application/octet-stream`, leaving body caps/parsing
+Nothing is deployed or used by any backend. T94 adds transactional route/account/IP/global budgets, kill/enrollment
+switches, durable leased account disable/deletion, recent-auth account deletion and hourly Auth/expiry reconciliation.
+All ceilings are tunable in `relayControl/settings`; defaults match the pilot table. Minute/hour windows are fixed
+UTC-aligned counters: N per aligned window, at most 2N in an arbitrary rolling window (documented approximation).
+A bounded coarse IP reservation precedes costly proof lookups and is refunded for new external sends; deletion remains
+available with budgets exhausted. Source-IP buckets use a daily rotating HMAC key and expire logically at UTC midnight.
+Global/IP daily use survives account deletion. Application logs contain no identities, bodies or IP addresses.
+
+Operator actions are plain tested core functions and a scrubbed, demo-only CLI; there is no operator HTTP endpoint.
+Account markers block immediately, before Auth/cascade work; phase checkpoints and leases make outages retryable.
+Deletion completion is returned only after relay/Auth erasure. Auth removal can prevent subsequent revocation-checked
+polling during a finalization crash: 410 means Auth is gone, not proof every relay work item has finished; hourly repair
+finishes the durable cascade. Reconciliation scrubs expired rows, orphan ownership and stale capacity maps.
+
+D52 uses JSON bytes with `application/octet-stream`, leaving body caps/parsing
 and fixed no-store responses inside our handler. Malformed non-protocol `application/json` still hits the upstream
 framework's parser/logs; real clients never use that media type. Absent-route delete is indefinitely idempotent 204
 with a well-formed delete bearer; no delete credential tombstones remain. Secret-free revocation markers only prevent
 stale create retries from reviving authority. Transient sends retain retry times/Retry-After and the same digest;
 accepted/token-invalid alone are terminal. A new challenge operation atomically replaces the old pending challenge.
-Typed Firestore converters and concern-separated source/tests make transaction guarantees reviewable before T94.
+Typed Firestore converters and concern-separated source/tests document each transaction guarantee. The emulator
+meters 20 reads/10 writes for one accepted send, 31 reads/21 writes/1 delete for first enrollment, and 33 reads/13 writes/
+9 deletes for deletion of a one-phone/one-route/one-attempt account; these supersede the design's 6+6 send estimate.
 The trusted-IP adapter uses only the direct Google front end's appended X-Forwarded-For address; verify the actual
-project's ingress suffix before enabling IP limits. README maps every in-scope design acceptance item to tests.
+project's ingress suffix before enabling IP limits. README maps the in-scope design acceptance items to tests.
+Integration warning found after rebasing on T92: the relay hashes the raw full bearer; the frozen crypto helper hashes
+compact JSON `["aiki-push-v1","credential",bearer]`. A synthetic cross-check confirms different digests. Neither side
+was silently changed by T94; reconcile this contract before server/Android transport integration.
 
 ### Existing notification transports
 

@@ -1,10 +1,10 @@
 # Push relay (emulator only)
 
 Isolated Bun package, **not a root workspace**, not deployed and not used by any Aiki backend.
-Implements T93's first half of the approved [design](../docs/research/push-relay-design.md).
+Implements T93 and T94 of the approved [design](../docs/research/push-relay-design.md).
 No real Firebase project, login, credentials, key file, FCM or App Check service is used by the tests.
-Do not deploy this package: T94's transactional rate budgets, switches, disable/delete cascade and reconciliation
-are not implemented. D51 makes both relay accounts and relay push optional: Aiki works fully without them.
+Do not deploy this package: real-project IAM/provider/ingress acceptance and the credential-digest integration
+mismatch below are not resolved. T94's budgets, switches, durable cleanup and reconciliation are implemented. D51 makes both relay accounts and relay push optional: Aiki works fully without them.
 D52 settles the original parser, deletion, retry and lost-challenge questions as documented below.
 
 ## Exact emulator recipe
@@ -83,7 +83,8 @@ to its platform log; application logging is restricted to `app_check valid|inval
 - `firestore.indexes.json`: TTL overrides and disabled automatic indexes; only installation cascade query fields indexed.
 - `src/client-address.ts`: extracts only the GFE-appended rightmost X-Forwarded-For address for the direct 2nd-gen
   endpoint, never a client-supplied earlier value. Missing/malformed metadata is empty (T94 must fail closed).
-  Emulator mode ignores forwarded headers and accepts only its loopback peer. See Google's
+  The loopback-bound emulator ignores forwarded headers and uses a fixed loopback admission IP because its worker
+  receives serialized requests without a peer socket; core checks inject reserved synthetic IPs. See Google's
   [function headers](https://docs.cloud.google.com/functions/docs/reference/headers) and
   [load-balancer headers](https://docs.cloud.google.com/load-balancing/docs/https#x-forwarded-for_header).
   **Verify the actual forwarding suffix on the real project before IP limits rely on it.** Extra load balancers or
@@ -99,6 +100,156 @@ Initial install: 708 packages, approximately 298 MiB `node_modules`; Firestore j
 isolated HOME, plus approximately 30 MiB Bun cache (92 MiB total emulator state after checks). Firebase CLI uses
 `HOME/.cache/firebase/emulators` for the jar despite XDG_CACHE_HOME; both locations remain isolated.
 Build output is not committed. Bun blocks two optional dependency postinstalls; no trust override is needed.
+
+## T94 budgets, switches and account lifecycle
+
+### Implemented limits
+
+All values are tunable nonnegative integers under `relayControl/settings.limits`. Missing settings use these code
+defaults; an unreadable/malformed document fails closed. A value of zero exhausts that budget. Operator changes do
+not reset counters. All applicable ceilings compose; an exhausted budget wins, with the latest reset among ties.
+
+| Limit keys | Pilot default |
+| --- | --- |
+| routeMinute / routeDay | 30 / 500 |
+| accountMinute / accountDay | 60 / 2,000 |
+| ipMinute / ipDay (sends) | 120 / 5,000 |
+| managementMinute / managementDay (source IP) | 10 / 200 |
+| requestMinute (coarse proof/status/duplicate admission) | 30 |
+| accountChallengeHour / accountChallengeDay | 3 / 10 |
+| ipChallengeHour / ipChallengeDay | 10 / 20 |
+| enrollmentDay (new enrollment operations/account) | 20 |
+| newAccountIpDay / newAccountDay (whole relay) | 5 / 20 |
+| activeAccounts / activePhones | 100 / 300 |
+| relaySendDay / relayChallengeDay | 5,000 / 100 |
+| accountPhones / phoneRoutes / accountRoutes / pendingChallenges | 3 / 8 / 24 / 3 |
+
+**Window algorithm:** minute/hour/day counters are fixed, UTC-aligned windows, identified by
+`floor(serverNow / width) * width`. Each has one count and startedAt, never one durable timestamp per event.
+N requests fit each aligned window; an arbitrary rolling interval of the same width can contain **at most 2N**
+because it intersects at most two aligned windows. The boundary test demonstrates that exact worst case.
+This is the documented approximation permitted by the brief, not a claim of the original design's exact rolling
+minute bound. Hours are aligned calendar hours; daily windows reset at UTC midnight.
+
+A new external send reserves route/account/IP/global allowance **in its attempt transaction**, including ambiguous
+or transient retries after the lease/retryAt. Completed result, status and too-early retry lookups spend no send
+allowance. Failed/expired/replaced challenges retain their charge. A same-operation begin receipt spends no new
+challenge/enrollment allowance. Well-formed new enrollment operations also spend enrollmentDay on structural/capacity
+rejection; only the enrollment counter commits on that rejection, not external-challenge/new-account budgets.
+Token replacement consumes challenge budgets but is not a new-phone enrollment attempt.
+
+Before expensive Auth/route lookups, a random in-document coarse IP reservation occupies one of requestMinute slots.
+Validated new external sends refund that slot; statuses, duplicate results, invalid proofs and new enrollment/create
+requests retain it. Successful non-status management operations otherwise refund it while spending management quotas.
+Thus steady valid sends can use the larger send budgets, but **more than 30 simultaneous proof checks** on one NAT can
+temporarily get request_rate even if send allowance remains. This is deliberate bounded admission, not a positive Auth
+cache. There are no counters keyed by unverified route/message IDs; an invalid-proof flood on one IP keeps one bounded
+IP row, no send-attempt rows. Firestore contention can still yield safe transient 503s.
+
+Deletion paths bypass all these budgets, even with switches off. This means a well-formed absent-route delete still
+costs a Firestore lookup: D52's indefinite 204 and guaranteed cleanup availability cannot also make that lookup subject
+to an exhausted proof budget. This residual abuse cost is explicit, not a promise that application quotas cap hostile
+invocation/Firestore/Auth bills. Direct Auth signup also bypasses relay admission caps (tested).
+
+Source-IP bucket IDs are daily HMAC-SHA-256 values, not raw IPs. relayRuntime/state retains only the current day's
+random key and bounded live account/phone membership. Daily aggregate global/IP counters survive deletion; UID/route
+counters are erased by account deletion, while disable retains short-window counters so re-enable refunds nothing.
+IP buckets expire logically at UTC midnight (at most 24 hours). TTL and hourly indexed expiry cleanup physically
+erase them eventually; **Firestore TTL/outages cannot guarantee physical removal exactly at 24 hours**.
+The first request after midnight rotates the key; reconciliation also rotates it when accounts are present.
+
+Active capacity means active relay rows/reserved or enrolled phones, not just phones that sent recently. Pending
+phone capacity expires in five minutes; account capacity remains occupied until disable/delete. Active-capacity
+exhaustion has no known reset: enrollment_capacity's retryAt is the next UTC-day recheck time, not a promise of a free
+slot. Daily-account admission limits have a real midnight reset. New accounts and phones reserve capacity atomically.
+
+### Switches and status
+
+`enabled:false` pauses send/challenge/route-create/activate/renew request paths with 503 relay_disabled, including
+idempotent calls on those write paths. `send/status`, inventory and account status remain readable subject to request
+budgets; deletion remains available. The reservation and final pre-FCM check both read uncached control/account state.
+Already in-flight FCM cannot be recalled. `enrollmentEnabled:false` prevents new relay accounts/phones, not existing
+phone token replacement, route maintenance or Firebase Auth signup.
+
+`accounts/status` adds `quotas:[{scope,budget,remaining,resetAt}]` (15 bounded entries), effective phone/route caps,
+and for an active account relayEnabled/enrollmentEnabled. A deleting marker reports state deleting and
+deletionPending true. Values are advisory snapshots; request authorization always rechecks durable state.
+Quota errors are `{error:<scope>,retryAt:<epoch-ms>}` plus Retry-After seconds, rounded up. Scope codes distinguish
+route_rate/account_rate/ip_rate/request_rate/challenge_rate/enrollment_rate/relay_capacity/enrollment_capacity.
+Transient FCM errors keep D52's error-only bodies and Retry-After.
+
+### Durable cleanup and authentication
+
+`accounts/delete` requires `{operationId}`, verified/revocation-checked phone identity and auth_time no older than
+five minutes (future auth_time is refused too). It first commits a deleting marker plus accountCleanup work. The
+marker blocks every send/challenge/create/renew before any cascade. Work uses a 60-second owner lease, batches of 50,
+and at most 100 phase steps per run. Each batch and phase advance commit together. Crashes/outages leave pending work;
+retries and the hourly core resume it. Completed work is deleted, never TTL-expired while unfinished.
+
+Phases: auth_disable (disable only), routes, installations, challenges, operations, attempts, owners, counters
+(delete only), auth_delete (delete only), finish. Disable changes Auth disabled and revokes refresh tokens before
+erasing relay state, retaining only Auth identity, a minimal uid/state/cleanupComplete marker and short-window abuse
+counters. Re-enable is explicit, requires completed cleanup, and restores no phone/route. Deletion erases UID-specific
+counters too, deletes Auth, then removes the final account marker/work. Global/IP counters and unlinkable route
+revocation markers are not refunded. A phone-only removal/sign-out preserves other phones and account budgets.
+
+**Auth-finalization ambiguity:** after Auth has been deleted, its old ID token can no longer pass required revocation
+checking. A crash before final marker removal therefore prevents authenticated completion polling: status/delete give
+410 account_deleted, not a false 200 erasure confirmation. Reconciliation finishes the work; a test covers that gap.
+Successful 200 deleted is returned only after both relay and Auth deletion. Repeated calls before Auth removal are
+idempotent. If the app needs an authenticated final erasure receipt after Auth removal, that requires a separate
+approved protocol decision; this implementation does not bypass revocation or retain a new deletion credential.
+
+The v2 `onSchedule` export `reconcile` runs every 60 minutes. Its plain `reconcileRelay` core checks uncached Auth
+state, queues the same durable cascade for missing/disabled users, resumes work, prunes capacity maps, removes orphan
+ownership and expires records in code. Expiry queries for high-volume attempt/operation/quota rows are indexed so
+hourly repair does not reread every unexpired send. Account/route/installation scans are pilot-bounded.
+Functions emulator discovers the scheduled export but ignores automatic triggering without Pub/Sub; tests call its
+plain core directly. The suite does not claim production Scheduler/IAM acceptance.
+
+### Emulator operator commands (no operator HTTP endpoint)
+
+Start the emulators in a separate terminal with `bun run emulator:start` (bounded to ten minutes), then from relay/:
+
+```sh
+bun run tools/admin.ts settings '{"enabled":false}'
+bun run tools/admin.ts settings '{"enabled":true,"enrollmentEnabled":false}'
+bun run tools/admin.ts settings '{"limits":{"relaySendDay":5000,"accountDay":2000}}'
+bun run tools/admin.ts disable synthetic-uid
+bun run tools/admin.ts enable synthetic-uid
+bun run tools/admin.ts phone-disable synthetic-uid synthetic-installation-id
+bun run tools/admin.ts resume synthetic-uid
+bun run tools/admin.ts reconcile
+```
+
+Replace synthetic identifiers with emulator fixture IDs; do not put real account identifiers in public reports.
+The wrapper always re-execs its child with env -i, explicit PATH, isolated HOME/XDG, demo-aiki-relay and loopback
+Auth/Firestore endpoints. The child refuses other homes/projects/hosts. Ports honor RELAY_AUTH_PORT and
+RELAY_FIRESTORE_PORT. Fixed success/failure output contains no UID or settings body. Operator functions are directly
+tested; a subprocess smoke checks the scrubbed CLI. Real-project use is a later, separately operator-approved task.
+
+### Metered Firestore operations
+
+These are **actual SDK calls against the emulator**, not static estimates: failed transaction reads count, committed
+set/update count as writes, deletes are separate, and empty queries count as one minimum read. No retry happened in
+the measured specimens. Index-storage work, TTL, Auth API calls, FCM and platform logs are not Firestore document ops.
+
+| Specimen | Reads | Writes | Deletes |
+| --- | ---: | ---: | ---: |
+| One accepted send, including proof reservation/refund, quotas and final result | 20 | 10 | 0 |
+| First enrollment, begin + confirm, including management/proof admission | 31 | 21 | 1 |
+| Entire account deletion: one phone, one route, one accepted attempt and its UID counters | 33 | 13 | 9 |
+
+The design's 6-read/6-write send assumption is superseded. Uncached Auth checks also add provider API latency/quota.
+Transaction retries, larger cascades and reconciliation add operations; these numbers are not a bill or cost ceiling.
+
+### Integration mismatch found after the T92 rebase
+
+T93 hashes the raw full bearer string. The frozen T92 helper instead hashes compact JSON
+`["aiki-push-v1","credential",bearer]`. A synthetic cross-check returned credential_hashes_match=false.
+Both preserve disjoint send/delete purpose, but they are **not interoperable**. T94 did not silently change either
+approved contract. Resolve the digest input framing (and hex encoding at routes/create) before server/Android
+integration; do not connect these components just because their individual tests pass.
 
 ## HTTP API
 
@@ -120,7 +271,8 @@ Auth infrastructure errors give `503 relay_unavailable`. Account row is created 
 
 | Endpoint | Exact body | Success JSON (200 unless noted) |
 | --- | --- | --- |
-| `accounts/status` | `{}` | `{state,phones,routes,phoneLimit:3,routeLimit:24}`; state `unenrolled` before enrollment |
+| `accounts/status` | `{}` | `{state,phones,routes,phoneLimit,routeLimit,quotas,...}`; state `unenrolled` before enrollment; quota and pending-deletion fields below |
+| `accounts/delete` | `{operationId}` | 200 `{state:"deleted",deletionPending:false}` only after confirmed erasure; otherwise 202 `{state:"deleting",deletionPending:true}` + Retry-After |
 | `installations/list` | `{}` | `{installations:[{installationId,state,createdAt,lastManagementAt}]}`; timestamps numeric milliseconds, last management nullable |
 | `installations/begin` | `{installationId,operationId,token}` | `{challengeId,deadline}` |
 | `installations/confirm` | `{installationId,operationId,challengeId,nonce}` | `{installationId,generation}` |
@@ -176,16 +328,20 @@ replacement survives. The same message's terminal `failed/token_invalid` result 
 message IDs get 410 `token_invalid` until the phone challenges a replacement.
 
 Fixed result codes: `accepted`, `token_invalid`, `fcm_rate_limited`, `fcm_unavailable`.
-Error responses are `{error:<fixed code>}`:
+Error responses are `{error:<fixed code>}`; quota/capacity errors additionally include numeric-millisecond `retryAt`:
 
-- 400 `invalid_request`; 401 `unauthorized`; 403 `admission_denied`, `account_disabled`.
+- 400 `invalid_request`; 401 `unauthorized`, `recent_auth_required`; 403 `admission_denied`, `account_disabled`.
 - 404 `not_found` (unknown/wrong send capability and cross-account management indistinguishable; delete has the
   absent-route 204 exception above). Delete rejects a send/malformed bearer before any lookup.
 - 405 `method_not_allowed`; 413 `body_too_large`; 415 `unsupported_encoding`, `unsupported_content_type`.
 - 409 `operation_conflict`, `installation_inactive`, `installation_exists`, `phone_limit`,
   `route_limit`, `challenge_invalid`, `challenge_expired`, `route_inactive`, `message_conflict`.
 - 410 `account_deleted`, `route_expired`, `route_inactive`, `token_invalid`, `message_expired`.
-- 429 `fcm_rate_limited`; 503 `fcm_unavailable`, `relay_unavailable` (never raw SDK error text).
+- 429 `fcm_rate_limited`, `route_rate`, `account_rate`, `ip_rate`, `request_rate`, `challenge_rate`,
+  `enrollment_rate`, `relay_capacity`, `enrollment_capacity`.
+- 503 `fcm_unavailable`, `relay_unavailable`, `relay_disabled`, `enrollment_disabled`, `enrollment_capacity`,
+  `client_address_unavailable` (never raw SDK error text). `cleanup_pending` / `account_not_disabled` are fixed 409
+  operator-core errors, not exposed through a new operator HTTP API.
 
 ## Firestore data model
 
@@ -194,8 +350,8 @@ a permission check. Single-field wildcard indexing is disabled; cascade query fi
 
 | Collection / document ID | Fields |
 | --- | --- |
-| `accounts/{uid}` | uid, state, createdAt, lastManagementAt, phoneAllowance, routeAllowance; `phones` map of installation ID to deadline/challengeDeadline, `routes` map of route ID to installationId/deadline/predecessorId. These bounded maps serialize capacity transactions. Expired entries pruned on management mutations/status. |
-| `installations/{installationId}` | uid, state (pending/active/token_invalid/deleted), token/tokenHash nullable, generation, createdAt, lastManagementAt, deadline, challengeDeadline, pendingOperationId, confirmation receipt (operationId/challengeId/nonceHash/replacing/generation), last 32 completedOperations; deleted rows retain uid/generation/create time and purgeAt only. |
+| `accounts/{uid}` | uid, state, createdAt, lastManagementAt, phoneAllowance, routeAllowance; `phones` map of installation ID to deadline/challengeDeadline, `routes` map of route ID to installationId/deadline/predecessorId. These bounded maps serialize capacity transactions. Expired entries pruned on management mutations/status. A completed disable retains only uid/state/cleanupComplete. |
+| `installations/{installationId}` | uid, state (pending/active/token_invalid/deleted), token/tokenHash nullable, generation, createdAt, lastManagementAt, deadline, challengeDeadline, pendingOperationId, hadRoutes, confirmation receipt (operationId/challengeId/nonceHash/replacing/generation), last 32 completedOperations; deleted rows retain uid/generation/create time and purgeAt only. |
 | `challenges/{installationId}_{operationId}` | uid, installationId, operationId, replacing, challengeId, nonceHash, tokenHash, stagedToken, deadline, attempts, purgeAt; deleted atomically on completion. |
 | `challengeOperations/{installationId}_{operationId}` | uid, installationId, tokenHash, replacing, challengeId, deadline, purgeAt; 24-hour idempotent begin receipt, no token or nonce; retained across replacement/completion, erased on phone removal. |
 | `tokenOwners/{sha256(token)}` | uid, installationId, generation; one global owner; replaced only in confirm transaction. Old owner's token scrubbed atomically. |
@@ -203,13 +359,22 @@ a permission check. Single-field wildcard indexing is disabled; cascade query fi
 | `routeRevocations/{routeId}` | purgeAt only, through original absolute expiry +24 hours; no UID/installationId/credential hashes. Prevents a stale phone create retry from reviving deleted authority, **not** used to authorize delete. |
 | `sendAttempts/{routeId}_{messageId}` | uid, routeId, messageId, digest, reservedAt, state, code when settled, leaseUntil, retryAt for transient failure, attemptId, purgeAt; no ciphertext/token/provider reply. |
 
+Additional typed collections:
+
+| Collection / document ID | Fields and retention |
+| --- | --- |
+| relayControl/settings | enabled, enrollmentEnabled, partial limits; missing means defaults; no credentials |
+| relayRuntime/state | ipDay, current ipKey, accounts UID membership, phones installationId → uid/deadline; pilot-bounded capacity |
+| rateLimits/ip-day-hmac, global, account-hash, route-hash | day, windows name → count/startedAt, bounded requests id/at, purgeAt; UID only on authenticated account/route rows |
+| accountCleanup/uid | uid, operationId, mode, phase, leaseOwner/leaseUntil, purgeAt reserved metadata (not applied to unfinished work); no token/profile/content; no TTL on unfinished work |
+
 TTL: challenges/challenge-operation receipts/attempts/deleted installations 24 hours; active route purge lease +24 hours.
 All delete-only receipt tombstones are removed. The secret-free revocation marker is retained solely for create/revoke
 race safety; deletion of an absent route writes nothing, including when that marker exists.
-TokenOwners has no TTL; confirmation/invalidation/removal updates it atomically. T94 must scrub orphan ownership and
-expired installations/challenges/challenge-operation receipts/routes/attempts and prune account maps; no silent token
-restoration. Account cleanup must include challengeOperations. routeRevocations deliberately cannot be linked to a UID.
-Index/TTL placeholders also cover future `rateLimits`, `relayControl`, `accountCleanup`; no such rows are written yet.
+TokenOwners has no TTL; confirmation/invalidation/removal and reconciliation update it atomically. The hourly core
+scrubs orphan ownership and expired records, prunes maps and removes installations after the last route (hadRoutes)
+or thirty days without a route. routeRevocations deliberately cannot be linked to a UID. Query indexes cover UID
+cascades and due expiry; other automatic indexes remain disabled.
 
 ## D52 residual and lifecycle decisions
 
@@ -223,7 +388,7 @@ One successor per predecessor is enforced at the relay. The phone enforces one p
 never receives backend/session identity. Backend create retries must not reuse a revoked route ID; the anonymous
 revocation marker also rejects delayed create retries during the original authority's lifetime.
 
-## Section 12 acceptance coverage (this half)
+## Section 12 acceptance coverage (T93 and T94)
 
 All test names below are in `checks/<concern>.cases.ts`, imported by the single emulator entry point.
 Each table row is the in-scope part of a section 12 acceptance item; nothing below claims T94 or client acceptance.
@@ -256,19 +421,41 @@ Each table row is the in-scope part of a section 12 acceptance item; nothing bel
 | No outbound network; trusted source-address extraction | router: “network guard rejects…”; startup: “trusted client address…”; whole suite passes in isolated network namespace |
 | Typed stored documents fail closed | installations: “Firestore converters fail closed…” |
 
-Deferred, not falsely counted: T94 budgets/global admission caps/kill switch/operator disable/account deletion/reconciliation
-and their crash/restart/UID-churn tests; ECDH/AEAD/replay/client registration/transport outboxes (T92 and subsequent server/
-Android work); provider linking UI/conflict handling, OS delivery, web worker lifecycle and real-project acceptance.
+### T94 acceptance coverage
+
+| Requirement | Test coverage in checks/ |
+| --- | --- |
+| Defaults, fail-closed malformed/missing/unreadable control | budgets: “missing control uses every pilot default…”; “specific control-read outage…” |
+| Concurrent send edge; durable restart; fixed-window bound | budgets: “transactional send ceilings…”; “fixed UTC minute windows…” |
+| Route/phone/UID churn; daily reset; source-IP key rotation | budgets: “IP/NAT and global daily scopes…”; “account sends persist across route rotation…” |
+| Global sends/new-account caps across distinct IPs; deletion refunds nothing | budgets: “global daily sends and new-account budgets…”; “new-account caps do not refund…” |
+| Global account/phone reservation, expired slot release | budgets: “global account and phone capacity reservations…” |
+| Invalid-proof storage bound; status/duplicates spend requests not sends | budgets: “invalid-proof floods…”; “status and identical completed lookups…” |
+| Challenge account/IP/global budgets; failed/expired/replaced challenges | budgets: “replacement, failed and expired challenges…”; “IP and relay challenge ceilings…” |
+| Enrollment attempts include capacity rejection; duplicate begin exempt | budgets: “every well-formed new enrollment attempt…” |
+| NAT management limits, reset fields and daily allowance | budgets: “management/NAT minute and daily windows compose…” |
+| Kill/enrollment semantics; final pre-FCM check; deletion with every budget exhausted | budgets: “kill and enrollment switches…”; “management request budgets are IP-scoped…” |
+| Direct Auth signup bypasses relay caps | budgets: “new-account caps do not refund after deletion; direct Auth signup…” |
+| Disable/delete block before cascade; crash/resume every phase; all phones erased | lifecycle: parameterized “cleanup resumes after a crash at phase…” (10 phases) |
+| Recent auth/revocation, pending deletion/status, Auth-erased polling residual | lifecycle: “account deletion requires recent revoked-checked authentication…”; “Auth-erased deletion polling…” |
+| Re-enable requires fresh enrollment; old routes never revive; marker minimal | lifecycle: “operator disable/re-enable…”; “disabled marker stays minimal…” |
+| One-phone disable/sign-out preserves other phones and counters | lifecycle: “one-phone disable and sign-out…” |
+| Out-of-band Auth change; unfinished work; expiry/orphan/map cleanup | lifecycle: “out-of-band Auth disable/delete…”; “reconciliation resumes unfinished deletion…” |
+| Last route removes its phone; linked providers share one UID/quota | lifecycle: “reconciliation removes a phone after its last route…”; “linked Google/email providers…” |
+| No sensitive logs; scrubbed operator CLI | lifecycle: “operator settings and lifecycle logs…”; “emulator-only admin launcher…” |
+| Real document-operation cost | metering: “meter actual SDK reads and committed writes/deletes…” |
+
+Deferred, not falsely counted: integrated ECDH/AEAD/replay/client registration/transport outboxes (T92 and subsequent
+server/Android work); provider linking UI/conflict handling, OS delivery, web worker lifecycle and real-project acceptance.
 Verified email-provider claim does not prove email-link UI use; this is the design's explicit admission boundary.
 
-## Next task / integration boundary
+## Server and Android integration boundary
 
-T94 adds route/account/IP/global transactional request/send/challenge/daily limits, admission caps, durable control
-switches, operator disable, recent-auth `accounts/delete`, resumable `accountCleanup` and hourly orphan reconciliation.
-Charge before every external attempt; completed-result/status lookups must not spend send budget. Preserve first
-reservation times, generation fencing, bounded membership and delete-without-budget behavior. Check control/account
-state in the reservation transaction, fail closed on unreadable state, and perform uncached Auth state lookup.
-This package has neither production quota protection nor a live deployment recipe.
+This remains emulator-only and has no live deployment recipe. Preserve first-reservation times, digest/generation
+fencing and deletion without quota. Server retries must distinguish quota scope and Retry-After from capability
+failure, never churn routes/message IDs to evade budgets. Android needs recent reauthentication for account deletion,
+202 pending progress, account-wide versus phone-only removal, disabled/operator-paused states and the status quota
+fields. Neither account sign-in nor relay push is required for ordinary Aiki use.
 
 Server transport must persist ciphertext/message IDs and delete-only outbox entries, pin the relay URL, use only route
 capabilities, never phone Firebase tokens/FCM addresses, and keep Notifier's policy before transport. Do not advertise
