@@ -1,5 +1,37 @@
 # Continue
 
+## T97 review: final relay integration and quieter settings
+
+Rebased the full Android stack onto `wzpknwxq` (final relay deployment/admin stack). All continuation sections were
+retained, with Android sections above the incoming relay section. The demo seed keeps both the selected-database
+handling and its explicit successful exit after SDK cleanup. Root/relay dependencies were installed again.
+Android verification fixtures no longer write Firestore documents: control changes call the scrubbed emulator-only
+`operator.ts` with explicit assigned ports and --yes; phone fixtures still use the public Auth/relay HTTP APIs.
+
+No relay endpoint now means no relay settings at all. Before/after screenshots of the existing page match its
+layout in light/dark; configured builds show the off row below This device. Consent uses the reviewed plain wording,
+with the optional Google point still conditional. Longer deletion/retention details are behind Learn more, in plain
+words. Today's use initially shows only Your account today: N left and a local reset time (tomorrow where needed);
+all shared and shorter-window budgets are behind More limits. Reviewed authored relay text has no route/enrollment/
+capability/provider-log/identity wording. The operator checklist now names the actual private Android properties,
+documents email-only pilot configuration and replaces obsolete Android not-built notes, without adding identifiers.
+
+On the final relay, the owned emulator completed email sign-in, actual Android notification permission, phone check,
+On with the signed-in scratch backend Working, and a real backend test through relay → fake FCM → app decryption →
+notification shade. T97 has refreshed light/dark before, no-relay after, configured-off after and email-only consent
+screens, the quiet usage/Working screenshot, shade screenshot and one joined main-path recording. The recording joins
+two actual UI captures in order (setup, then test delivery); no terminal capture or simulated display. These supersede
+old placement/consent/usage screenshots. Earlier other-flow evidence remains historical, not a re-run on this base.
+
+The coordinator timeboxed further capture after the working main path: operator-pause/problem states, Google sign-in,
+other-phone actions and deletion were not re-proven on the final relay. No new main-path incompatibility was found.
+All owned emulator/backend/relay/bridge processes were stopped by PID; no real Firebase config/project, phone, push,
+deploy or bookmark move was used. Final review gates pass: 807 JVM tests / 106 suites / 2 opt-in skips / 0 failures
+or errors; assemble, lint (41 warnings / 0 errors), release manifest/auth APK checks and the no-private-values build.
+Root install/typecheck, protocol generation check (337 DTOs / 91 requests), verification Bun (7 tests / 49 assertions),
+relay install/typecheck/build and public-source checks pass. No additional capture was made after the timebox.
+
+
 ## Email-only pilot sign-in (D54 / T97)
 
 An empty Google Web client ID now leaves relay email sign-in available, hides Continue with Google entirely and

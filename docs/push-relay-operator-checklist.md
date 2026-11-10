@@ -14,8 +14,9 @@ hourly reconciliation. Relay tests use Auth/Firestore/Functions emulators and fa
 outboxes and optional Android storage/receive/registration plumbing have fake-service tests. Relay is off by default.
 
 Not proven: real Google/email sign-in, email delivery, App Links, FCM/background delivery, runtime IAM, billing,
-App Check or production ingress. Android sign-in/account screens and their build settings are **not built yet**
-on this baseline. Production deploy/admin tooling and the IAM starting plan are built in
+App Check or production ingress. Android sign-in/account screens and their build settings are built and proven
+against emulators, not real sign-in/mail/FCM or a release-signed phone. Production deploy/admin tooling and the IAM
+starting plan are built in
 [relay/DEPLOY.md](../relay/DEPLOY.md), but **not verified on a real project**. D53 resolved credential-digest/envelope
 parity against the frozen vectors. Nothing here permits deployment; finish the remaining release/live gates first.
 
@@ -29,7 +30,9 @@ These are settled. They are not questions to answer again.
 
 - [x] One 2nd-gen HTTPS Cloud Function and Firestore in the existing Firebase project. Use runtime credentials;
   export no admin key. The built hourly reconciliation export also needs a reviewed scheduled deployment.
-- [x] Thin Firebase Auth accounts. Google sign-in or email link. Only the phone signs in. Open to anyone within limits.
+- [x] Thin Firebase Auth accounts. The pilot starts with email links only (D54); Google sign-in is optional later.
+  An empty `harness.relayGoogleClientId` hides Google sign-in without disabling email. Only the phone signs in.
+  Open to anyone within limits after the remaining live acceptance gates.
 - [x] Accounts and relay notifications are optional. Ask for an account only when enabling relay notifications.
   Ordinary app use and backend sign-in need no relay account. Web push needs no relay.
 - [x] Three phones/account, eight routes/phone, 24 routes/account; 2,000 notifications/account/day,
@@ -65,10 +68,11 @@ config files, keys, fingerprints, account emails or console screenshots containi
    Who maintains OAuth settings, handles incidents and supports lost phones/account erasure/link failures?
    Why: deployment, runtime and shutdown access are different permissions. Typical answer: “I deploy and support it;
    login kept privately; another administrator must grant roles; I hold the kill switch.” No login credentials needed.
-5. [ ] Is Google sign-in enabled? Is the OAuth consent screen external and published for production, with support and
+5. [ ] If enabling optional Google sign-in later: is it enabled? Is the OAuth consent screen external and published
+   for production, with support and
    privacy details? Why: test-user-only consent cannot serve open sign-up. Typical answer: “Google enabled; external
    publication pending; support/privacy contacts kept privately in operator notes.”
-6. [ ] Do both the Android OAuth client and Web OAuth client ID exist? Why: Android needs the package/release SHA-1
+6. [ ] If enabling Google: do both the Android OAuth client and Web OAuth client ID exist? Why: Android needs the package/release SHA-1
    binding; Credential Manager needs the Web client ID as audience, not the Android ID. Typical answer: “Both exist;
    package binding checked; IDs kept privately for the release build.” Do not send a client secret.
 7. [ ] Are the actual release signing certificate's SHA-1 and SHA-256 registered in the Firebase Android app? Is a
@@ -86,7 +90,7 @@ config files, keys, fingerprints, account emails or console screenshots containi
     phones must work? Why: monitored-first must not break existing apps; later integrity checks need outside-Play
     settings. Typical answer: “Not used; link not set up; ordinary supported Play-services phones required.”
 11. [ ] What privacy contact should the app show? Why: users need help with identity, lost phones and deletion.
-    Typical answer: “Contact chosen; kept privately in operator notes for the future app configuration.”
+    Typical answer: “Contact chosen; kept privately in `harness.relayPrivacyContact` for the release build.”
 12. [ ] Which of the three backends goes first, and how long should we wait for offline phones before removing old
     registrations and revoking the exported FCM key? Does that key have other users?
     Why: the first backend has a one-week observation period, but offline phones may need longer.
@@ -101,7 +105,7 @@ its commands are for you after agreement, never for the agent. Do not adapt the 
 
 - [ ] **Agree to the scope first.** Confirm project/app, incident owner, region, offline grace and shared-workload
   impact from section 3. Result: a private staging plan and explicit permission, not permission inferred from answers.
-  Verify the remaining release blockers before deployment: Android account flow/build settings and live acceptance.
+  Verify the remaining release blockers before deployment: release-signed device/provider checks and live acceptance.
   Frozen digest interoperability is checked. Review the built deploy/admin procedure, runtime identity/region/database
   and scheduled repair configuration; emulator checks do not prove real IAM or production readiness.
 - [ ] **Costs money: enable Blaze if needed.** Attach the agreed billing account yourself. Check effective regional
@@ -135,16 +139,19 @@ its commands are for you after agreement, never for the agent. Do not adapt the 
   Preserve unrelated indexes using the config generator's shared-index merge. All relay collection groups are prefixed
   `relay`; stop on a namespace collision. TTL deletes are billed. Verify client denial, TTL/index readiness and expiry
   queries on the actual chosen database; keep unfinished cleanup work out of TTL. Leave relay backups/PITR off.
-- [ ] **Configure Auth providers and abuse controls.** Enable Google and Email/Password with Email link enabled;
+- [ ] **Configure Auth providers and abuse controls.** Enable Email/Password with Email link enabled for the pilot;
+  enable Google only when deliberately adding that optional method. Leave the Web client ID empty for email-only builds;
   disable unused providers. Aiki must expose no password flow. Enable email enumeration protection and review effective
   signup/mail quotas, generic send-link responses and provider shutdown controls. Add only needed authorized domains
   and the agreed HTTPS continuation URL. Result: verified Google/email accounts can authenticate; anonymous/unverified
   accounts cannot enroll. Verify using synthetic test accounts, including provider conflicts; never merge by email.
   Do not upgrade Identity Platform. If already enabled, confirm MAU exposure and existing usage privately.
-- [ ] **Publish OAuth consent and check both clients.** Set external production audience and support/privacy details.
+- [ ] **When enabling optional Google sign-in, publish OAuth consent and check both clients.** Set external production
+  audience and support/privacy details.
   Verify Android client package/release SHA-1 binding and Web client ID audience. Result: a non-test user can use the
   release APK. No OAuth client secret belongs in the APK, backend or repo. Keep client IDs in private release notes
-  until the Android build property is available; that property is **not built yet**.
+  and set `harness.relayGoogleClientId` (`HARNESS_RELAY_GOOGLE_CLIENT_ID`) to the Web client ID, never the Android ID.
+  Leave it empty during the email-only pilot.
 - [ ] **Register release SHA-1 and SHA-256.** Use the certificate that signs the distributed APK, not only debug.
   Verify both in the intended Firebase Android app and Android OAuth binding. Register any replacement before signing
   rotation. Keep fingerprints privately in release records; never send signing keys or passwords.
@@ -152,7 +159,8 @@ its commands are for you after agreement, never for the agent. Do not adapt the 
   Verify sender name/templates, quota and real mail delivery. Host `/.well-known/assetlinks.json` binding the private
   package value to release SHA-256. The APK needs the chosen HTTPS host, `autoVerify` and `/__/auth/links`, current
   Auth SDK, `handleCodeInApp=true` and Hosting `linkDomain`; no Dynamic Links or Play-install fallback.
-  Email-link manifest/build configuration and recovery UI are **not built yet**. Result after that work: Android
+  Set `harness.relayEmailLinkDomain` (`HARNESS_RELAY_EMAIL_LINK_DOMAIN`) to the Hosting host only. The manifest and
+  cold/warm link, email re-entry and strict-host paste recovery UI are built and emulator-tested. Required live result: Android
   verifies the association and mail/browser links return to the installed release APK. Test cold/warm/cross-device
   return, email re-entry, expired/used links and strict-host paste recovery. Keep all link values privately; never log codes.
 - [ ] **Set App Check to monitoring, not new enforcement.** Review existing enforcement before any change.
@@ -183,8 +191,11 @@ its commands are for you after agreement, never for the agent. Do not adapt the 
   `HARNESS_GOOGLE_SERVICES_JSON` at client config outside the checkout. Set `harness.pushRelayUrl` /
   `HARNESS_PUSH_RELAY_URL` to the approved HTTPS v1 base URL. Use ignored `apps/android/local.properties`, or private
   `android.properties` selected by `HARNESS_ANDROID_PROPERTIES`. Do not copy config into the repo.
-  Web OAuth client ID, email-link domain and privacy-contact build properties are **not built yet**; do not invent
-  their names or reuse the unrelated existing app-link origin. Result: the release-signed APK uses the intended
+  Set `harness.relayEmailLinkDomain` / `HARNESS_RELAY_EMAIL_LINK_DOMAIN` and `harness.relayPrivacyContact` /
+  `HARNESS_RELAY_PRIVACY_CONTACT`. Google is optional: leave `harness.relayGoogleClientId` /
+  `HARNESS_RELAY_GOOGLE_CLIENT_ID` empty for email-only sign-in, or set the Web client ID when enabling Google.
+  Do not reuse the unrelated app-link origin. Without a relay endpoint the app shows no relay settings at all.
+  Result: the release-signed APK uses the intended
   app/project/endpoint and relay remains off until explicit opt-in. Verify privately, without printing build config.
 - [ ] **Set `AIKI_PUSH_RELAY_ENDPOINT` on one backend only.** Put the complete HTTPS v1 base URL, including `/v1/`,
   in its ignored `deploy/local/server-<target>.env` through the private settings loader. Never put Auth/admin credentials
@@ -231,9 +242,9 @@ its commands are for you after agreement, never for the agent. Do not adapt the 
 - [ ] Turn your plain facts into a scoped staging plan and copyable commands for you to review and run yourself.
   Identify costs, exact targets and rollback before each change. Deploy/IAM/live-admin preparation is built and emulator
   checked in DEPLOY.md; effective IAM, quotas, alerts/provider shutdown and ingress still need your real project.
-  Android sign-in/build settings and release-device acceptance remain separate work.
+  Android sign-in/build settings and account screens are built; release-device/provider acceptance remains separate work.
 - [x] Relay credential-digest and canonical-envelope parity match the frozen vectors (D53). Production imports no
-  shared package code/fixtures. Finish remaining account/UI seams and release gates before proposing live acceptance.
+  shared package code/fixtures. Account/UI seams are emulator-proven; finish release/live gates before opening sign-up.
 - [ ] Help interpret sanitized status facts and record acceptance results without identities or payloads.
   You run login, billing, IAM, provider configuration, deployment and live checks; results come back as plain facts.
 
@@ -250,7 +261,8 @@ close enrollment again. The current code has no staging allowlist/per-user bypas
 Existing enrolled test phones can continue checks with `enabled=true`, `enrollmentEnabled=false`. Do not announce open
 sign-up until all checks pass. Record outcomes privately; never keep real links or tokens as evidence.
 
-- [ ] Google sign-in works for an external non-test user on the release APK without Play Store installation.
+- [ ] When Google is configured, it works for an external non-test user on the release APK without Play Store installation.
+  In the email-only pilot, Google is absent from consent, including its name/photo point.
   Email links work cold/warm, across devices with email re-entry, from target mail/browser apps, with verified App Links
   and paste recovery; used/expired/wrong-host links fail safely.
 - [ ] Consent/privacy contact is shown before sign-in; normal app/backend use works without an account.
@@ -294,7 +306,8 @@ sign-up until all checks pass. Record outcomes privately; never keep real links 
 - [ ] To turn everything off: set `enabled=false` and `enrollmentEnabled=false`, turn relay notifications off in the
   app to stop local receive/queue cleanup, and remove `AIKI_PUSH_RELAY_ENDPOINT` through the private backend settings.
   Verify no relay capability is advertised/new sends authorized; finish queued deletion through the approved cleanup
-  process before removing the function/runtime access. The Android off switch UI is **not built yet** on this baseline.
+  process before removing the function/runtime access. The built Android settings have separate Turn off, this-phone
+  Sign out and all-phone Delete relay account actions; verify their release-signed behavior before rollout.
   To stop an Auth attack, separately disable affected providers/signup controls. Re-enable only deliberately after review.
 
 Migration avoids a planned gap, not every loss or duplicate. FCM and crashes are best effort; already in-flight legacy
