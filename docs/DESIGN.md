@@ -254,8 +254,12 @@ or overwrite unreadable records. Only an explicit new pairing may recover a key 
 invalidated/unrecoverable. Before replacing that shared key, durably mark its existing ciphertext records unreadable;
 replace only the explicitly paired origin's record. Other origins keep their ciphertext/pins until separately paired.
 Temporary key/storage failures and ordinary ciphertext corruption never authorize replacement, even during pairing. Proactive renewal normally refreshes one minute before access expiry; delayed renewal
-must not turn the 15-minute access lifetime into a device sign-out. Web still stops on access rejection while keeping
-its retained credential; automatic web recovery is a follow-up in the shared transport and browser renewal controller.
+must not turn the 15-minute access lifetime into a device sign-out. Web follows the same retained-endpoint distinction:
+a 4401/access rejection reconnects through discovery and one retained refresh per backoff attempt. HTTP access rejection
+must not clear retained credentials. Bare HTTP errors (including 401/403), Host rejection, timeouts, restart windows and
+5xx preserve them; only the structured retained-endpoint codes above clear the session and enrollment proofs.
+Short-lived successful web hellos do not reset backoff; a connection must remain ready for one minute before resetting.
+Clients without a credential preparation callback still stop on auth rejection rather than retrying anonymously.
 
 Every RPC includes normal `type,id`, response echoes both. Management requires authenticated session even optional/off:
 
@@ -440,11 +444,17 @@ visible warning that reopening requires pairing. An edited origin never inherits
 
 Discovery precedes each socket. Only an unpinned explicit 404 permits legacy discovery; network errors, a changed backend
 ID and a pinned 404 cannot downgrade authentication. An explicit auth hello also pins support. Optional/off anonymous
-hello is deliberate mode negotiation, not a fallback after refresh failure. Auth close codes stop reconnects and show
-Pair this backend / This device was signed out / Session expired independently per backend. Network and rate-limit
-failures back off. Access refresh and `auth.renew` run one minute before expiry without replacing healthy sockets.
-Web Locks serialize retained read-stage-rotate-commit across tabs; the staged identical successor is resumed after a
-crash. Browsers without Web Locks may refresh but refuse unsafe rotation rather than race another tab.
+hello is deliberate mode negotiation, not a fallback after refresh failure. Access rejection reconnects independently per
+backend, preserving the open project, drafts and watch state. Only missing credentials, explicit sign-out/revocation or
+definitive retained-session rejection stop reconnects and show Pair this backend / This device was signed out / Session
+expired. Network and rate-limit failures back off. Access refresh and `auth.renew` run one minute before expiry without
+replacing healthy sockets. A proactive refresh/renewal failure joins the same reconnect/backoff path instead of running
+a second refresh loop; definitive retained rejection stops it. Artifact HTTP uses signed URLs (expired URLs are reminted
+through socket RPC); uploads are socket RPC, not bearer HTTP fetches.
+Web Locks serialize retained read-stage-rotate-refresh-commit, including definitive rejection cleanup, across tabs. Read
+the latest stored session inside the lock, never an old in-memory token: a different tab may already have rotated it.
+The staged identical successor is resumed after a crash. Browsers without Web Locks may refresh but refuse unsafe
+rotation rather than race another tab.
 
 `/pair` clears its fragment before startup/discovery, has no referrer or analytics, and supports v2 invitation links,
 headless v1 bootstrap links and same-backend-origin local bootstrap secrets. The static hosted app does not itself

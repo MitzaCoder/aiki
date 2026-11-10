@@ -58,6 +58,7 @@ import {
 	type BackendConfig,
 } from "./backends.ts";
 import { BackendDeviceAuth, authRequest, AuthHttpError, renewIn, browserDeviceLabel, type ClaimResult } from "./device-auth.ts";
+import { renewBackendAccess } from "./access-renewal.ts";
 import { STORAGE_WARNING } from "./device-credentials.ts";
 import type { AuthPairing } from "@aiki/protocol";
 import { contextAnswerIsCurrent } from "./context.ts";
@@ -166,7 +167,7 @@ export class BackendConnection {
 			const wasReady = this.#lastStatus === "ready";
 			this.connection = state;
 			this.#lastStatus = state.status;
-			if (state.status === "closed") {
+			if (state.status !== "ready") {
 				clearTimeout(this.#renewTimer);
 				clearTimeout(this.#migrationTimer);
 				this.authSessionId = undefined;
@@ -189,7 +190,9 @@ export class BackendConnection {
 			if (event.type === "auth.pairingRequested") this.reviewPairing(event.pairing);
 			if (event.type === "auth.devicesChanged") this.devicesVersion += 1;
 			if (event.type === "auth.sessionRevoked") {
+				this.client.close();
 				this.authNotice = "This device was signed out";
+				void this.#deviceAuth.clearSession().catch(() => { this.storageWarning = STORAGE_WARNING; });
 				clearTimeout(this.#renewTimer);
 			}
 		});
@@ -223,18 +226,12 @@ export class BackendConnection {
 	}
 	async #renew(): Promise<void> {
 		if (!this.ready || !this.authSessionId) return;
-		try {
-			const access = await this.#deviceAuth.refresh();
-			const response = await this.client.request({ type: "auth.renew", accessToken: access.accessToken });
-			if (response.type === "error") throw new Error(response.error.message);
-			this.#scheduleRenewal();
-		} catch (error) {
-			if (this.#deviceAuth.store.memoryOnly) this.storageWarning = STORAGE_WARNING;
-			if (error instanceof AuthHttpError && [401, 403].includes(error.status)) {
-				this.client.close(); this.authNotice = error.message; this.connection = { ...this.connection, error: error.message };
-			} else {
-				this.#renewTimer = setTimeout(() => void this.#renew(), error instanceof AuthHttpError ? error.retryAfter * 1000 : 10_000);
-			}
+		const outcome = await renewBackendAccess(this.#deviceAuth, this.client);
+		if (this.#deviceAuth.store.memoryOnly) this.storageWarning = STORAGE_WARNING;
+		if (outcome.state === "renewed" && this.ready) this.#scheduleRenewal();
+		if (outcome.state === "expired") {
+			this.authNotice = outcome.notice;
+			this.connection = { ...this.connection, error: outcome.notice };
 		}
 	}
 	/** Optional-mode enrollment is quiet and never blocks the anonymous socket. */

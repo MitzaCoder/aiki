@@ -31,8 +31,11 @@ export class AuthHttpError extends Error {
 		readonly code: string,
 		readonly status: number,
 		readonly retryAfter: number,
+		public retryable = true,
 	) {
-		super(authErrorText(code));
+		super(retryable && ['auth_invalid', 'auth_expired', 'auth_revoked'].includes(code)
+			? 'Sign-in could not complete. Check the backend and try again.'
+			: authErrorText(code));
 	}
 }
 export function authErrorText(code: string): string {
@@ -67,7 +70,7 @@ export async function authRequest<T>(
 	if (!response.ok) {
 		const error = await response.json().catch(() => ({}));
 		throw new AuthHttpError(
-			error?.error?.code ?? 'auth_invalid',
+			error?.error?.code ?? 'http_error',
 			response.status,
 			Math.max(1, Number(response.headers.get('retry-after')) || 1),
 		);
@@ -208,7 +211,7 @@ export class BackendDeviceAuth {
 				const result = await authRequest<ClaimResult>(this.origin, '/auth/claims/poll', record.migration);
 				if (await this.acceptMigration(result, record.migration) === 'approved') return this.#access!.accessToken;
 			}
-			if (this.mode === 'required') throw new AuthHttpError('auth_required', 401, 0);
+			if (this.mode === 'required') throw new AuthHttpError('auth_required', 401, 0, false);
 			return undefined;
 		}
 		const access = await this.refresh();
@@ -228,7 +231,7 @@ export class BackendDeviceAuth {
 		const work = async () => {
 			const record = await this.record();
 			let session = record.session;
-			if (!session) throw new AuthHttpError('auth_required', 401, 0);
+			if (!session) throw new AuthHttpError('auth_required', 401, 0, false);
 			if (session.stagedSuccessor || rotationDue(session.rotateAfter)) {
 				if (!session.stagedSuccessor) {
 					session.stagedSuccessor = randomSecret(`aiki_s1.${session.sessionId}`);
@@ -236,8 +239,8 @@ export class BackendDeviceAuth {
 					if (this.store.memoryOnly)
 						throw new Error('Cannot rotate without durable device storage. Pair again.');
 				}
-				const rotated = await authRequest<{ rotateAfter: string }>(
-					this.origin,
+				const rotated = await this.#retainedRequest<{ rotateAfter: string }>(
+					record,
 					'/auth/session/rotate',
 					{ successorToken: session.stagedSuccessor },
 					session.sessionToken,
@@ -247,8 +250,8 @@ export class BackendDeviceAuth {
 				record.session = session;
 				await this.store.write(record);
 			}
-			const access = await authRequest<AccessCredentials>(
-				this.origin,
+			const access = await this.#retainedRequest<AccessCredentials>(
+				record,
 				'/auth/session/refresh',
 				{},
 				session.sessionToken,
@@ -272,6 +275,35 @@ export class BackendDeviceAuth {
 			return work();
 		}
 		return withCredentialLock(credentialKey(this.backendId, this.origin), work);
+	}
+	/** Called inside the retained exchange (under Web Locks where available). Other HTTP errors cannot sign out. */
+	async #retainedRequest<T>(record: DeviceCredentialRecord, path: string, body: unknown, token: string): Promise<T> {
+		try {
+			return await authRequest<T>(this.origin, path, body, token);
+		} catch (error) {
+			if (error instanceof AuthHttpError && (
+				(error.status === 401 && ['auth_invalid', 'auth_expired'].includes(error.code)) ||
+				(error.status === 403 && error.code === 'auth_revoked')
+			)) {
+				await this.#forgetSession(record);
+				error.retryable = false;
+				error.message = authErrorText(error.code);
+			}
+			throw error;
+		}
+	}
+	async #forgetSession(record: DeviceCredentialRecord): Promise<void> {
+		delete record.session;
+		delete record.migration;
+		delete record.pairing;
+		this.#access = undefined;
+		await this.store.write(record);
+	}
+	async clearSession(): Promise<void> {
+		if (!this.backendId) return;
+		const clear = async () => this.#forgetSession(await this.record());
+		if (globalThis.navigator?.locks) await withCredentialLock(credentialKey(this.backendId, this.origin), clear);
+		else await clear();
 	}
 	async save(credentials: SessionCredentials): Promise<void> {
 		if (this.backendId !== credentials.backendId) throw new Error('Backend identity mismatch.');

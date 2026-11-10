@@ -173,7 +173,7 @@ export type ClientState = {
 export type HarnessClientOptions = {
 	/** WebSocket URL, including the `/ws` path. */
 	url: string;
-	/** Runs before opening each socket. Tokens never enter client state. */
+	/** Runs before opening each socket. Tokens never enter client state. Errors may set retryable explicitly. */
 	prepareHello?: () => Promise<string | undefined>;
 	webSocketFactory?: WebSocketFactory;
 	clientName?: string;
@@ -305,6 +305,7 @@ export class HarnessClient {
 
 	#socket: HarnessWebSocket | undefined;
 	#reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+	#readySince: number | undefined;
 	#attempt = 0;
 	#sequence = 0;
 	#closedByUser = false;
@@ -493,6 +494,7 @@ export class HarnessClient {
 	/** Stop reconnecting and close the socket. Watches keep their local state for a later `connect()`. */
 	close(): void {
 		this.#closedByUser = true;
+		this.#readySince = undefined;
 		this.#clearReconnect();
 		const socket = this.#socket;
 		this.#socket = undefined;
@@ -1466,7 +1468,7 @@ export class HarnessClient {
 			try { accessToken = await this.#prepareHello(); }
 			catch (error) {
 				const status = (error as { status?: number } | null)?.status;
-				const transient = error instanceof TypeError || (error instanceof DOMException && ["TimeoutError", "AbortError"].includes(error.name)) || status === 429 || (status !== undefined && status >= 500);
+				const transient = (error as { retryable?: boolean } | null)?.retryable ?? (error instanceof TypeError || (error instanceof DOMException && ["TimeoutError", "AbortError"].includes(error.name)) || status === 429 || (status !== undefined && status >= 500));
 				this.#fatal = !transient;
 				this.#setState({ status: transient ? "reconnecting" : "closed", attempt, error: errorMessage(error) });
 				if (transient) this.#scheduleReconnect(status === 429 ? ((error as { retryAfter?: number }).retryAfter ?? 1) * 1000 : 0);
@@ -1516,7 +1518,8 @@ export class HarnessClient {
 			if (this.#socket !== socket) return;
 			if (response.type === "error") {
 				const error = errorFromResponse(response);
-				if (error.code === "unsupported_protocol" || error.code.startsWith("auth_")) {
+				const canRefresh = this.#prepareHello && ["auth_required", "auth_invalid", "auth_expired", "auth_revoked"].includes(error.code);
+				if (error.code === "unsupported_protocol" || (error.code.startsWith("auth_") && !canRefresh)) {
 					this.#fatal = true;
 					this.#clearReconnect();
 					this.#setState({ status: "closed", attempt: this.#attempt, error: error.message });
@@ -1533,7 +1536,8 @@ export class HarnessClient {
 			if (response.type !== "hello") {
 				throw new ClientError("protocol", `Expected a hello response, got ${response.type}`);
 			}
-			this.#attempt = 0;
+			// A hello alone does not prove recovery: repeated short-lived connections must keep backing off.
+			this.#readySince = Date.now();
 			this.#setState({
 				status: "ready",
 				attempt: 0,
@@ -1797,7 +1801,9 @@ export class HarnessClient {
 	#handleClose(socket: HarnessWebSocket, event: { code?: number; reason?: string }): void {
 		if (this.#socket !== socket) return;
 		this.#socket = undefined;
-		if (event.code === 4401 || event.code === 4403) {
+		if (this.#readySince !== undefined && Date.now() - this.#readySince >= 60_000) this.#attempt = 0;
+		this.#readySince = undefined;
+		if ((event.code === 4401 || event.code === 4403) && !this.#prepareHello) {
 			this.#fatal = true;
 			this.#clearReconnect();
 			this.#setState({ status: "closed", attempt: this.#attempt, error: event.code === 4403 ? "This device was signed out" : "Session expired" });

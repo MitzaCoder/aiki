@@ -1,5 +1,27 @@
 # Continue
 
+## Web retained-session recovery (T91)
+
+Reproduced on main in real headless Chromium, paired to a fresh required-mode createSetup backend: advancing only
+its clock past access expiry/grace produced 4401/auth_expired, persistent Session expired and a stuck transcript.
+Reload recovered the retained session. The fixed web app instead discovers/refreshes once per backoff attempt and
+reconnects automatically, keeping the project and draft. Proactive renewal failures join that same backoff loop;
+short successful hellos do not reset it. Only structured invalid/expired/revoked rejection at the retained exchange
+clears credentials/proofs; bare status, discovery/Host rejection and transient failures preserve them. Web Locks read
+the latest rotated credential and serialize rejection cleanup. A late refresh cannot reopen a stopped client.
+Artifact downloads use signed URLs and uploads use socket RPC, not access-bearer fetches. A raw expired-access HTTP
+probe returned 401 (browser fetch saw CORS failure); HTTP refresh/rejection classification is covered separately.
+
+Tests first: 13 initial failures, plus late-renewal and discovery-notice regressions failed before their fixes.
+All 20 new recovery tests pass. Rebased onto `sppsrlul` (deploy-test fixes, Zellij startup fix and relay design),
+keeping all incoming documentation sections with T91 first. Root: 1,937 tests / 23,224 assertions, zero failures,
+180.87 seconds. Web: 897 tests / 13,636 assertions, zero check diagnostics and production build passes. Root typecheck
+and public/Gitleaks checks pass. The incoming stack resolves the earlier deploy-fixture failures. A deploy interrupted
+the first root run; rerunning also exposed an old copied checkout under an ignored scratch HOME. It was moved outside
+the workspace before the clean full run. Keep scratch HOMEs/checkouts outside the repo: Bun discovers ignored tests.
+Existing T91 desktop/dark before/after screenshots and the eight-second recovery recording remain valid; no new proof.
+Demo services were already stopped by PID; no live data, main move, push or deployment by this worker.
+
 ## Firebase-only push relay design (T63)
 
 `docs/research/push-relay-design.md` records D38/D47/D49: Firebase-only relay, thin Google/email-link accounts and open
