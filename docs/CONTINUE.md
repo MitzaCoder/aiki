@@ -21,12 +21,13 @@ main move, push or deployment.
 
 ## Device sign-in rollout status (T57/T69)
 
-The operator's backends run auth-capable releases in `optional` mode. All known clients (three backends; web browsers and
-the Android app) registered stable migration claims, were approved once by exact claim ID, and now connect with their own
-sessions. Backend origins are allowed through the owner CLI; trusted reverse-proxy addresses go into the private server
-env files. Remaining: deploy that config, check `auth hosts list` shows no unknown host while every device stays
-connected, then switch each backend with `auth mode required` (DESIGN "Cutting an existing installation over to required").
-From agent shells, call the owner CLI with an explicit `AIKI_ENV_FILE` or `AIKI_DATA_DIR` (T82 isolation).
+The operator's backends now run **required** device sign-in. All known clients (web browsers and the Android app on three
+backends) were approved once by exact migration claim ID and connect with their own sessions. Each backend allows its
+public origin through `auth hosts allow`; the reverse proxy's source address is in `AIKI_TRUSTED_PROXIES` in the private
+server env files. Anonymous sockets get `auth_required` (4401) and unknown Hosts 403; deep deploy health checks pass in
+required mode through the owner socket. New devices pair from Settings → backend → Devices. To back out on one backend:
+`auth mode optional` (never delete auth state). From agent shells, call the owner CLI with an explicit `AIKI_ENV_FILE`
+or `AIKI_DATA_DIR` (T82 isolation). The push relay for friends is T63; this work only binds existing push rows to sessions.
 
 ## Agent command environment isolation (T82)
 
