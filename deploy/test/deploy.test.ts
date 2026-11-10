@@ -4,6 +4,7 @@
  * stubs on PATH, HOME is a temporary directory, and `bun install` is stubbed out.
  */
 import "./clean-env.ts";
+import { Database } from "bun:sqlite";
 import { afterEach, describe, expect, test } from "bun:test";
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -329,6 +330,7 @@ function makeMachine(): Machine {
 			'scope=""',
 			'if [[ ${1:-} == --user ]]; then scope=" user"; shift; fi',
 			"case ${1:-} in",
+			'show) if [[ $* == *--property=User* ]]; then printf "%s\\n" "${STUB_SERVICE_USER:-$(id -un)}"; fi ;;',
 			'restart) printf "%s%s\\n" "$(date +%s%3N)" "$scope" >> "$STUB_RESTARTS" ;;',
 			"esac",
 			"exit 0",
@@ -383,6 +385,84 @@ async function deployBackend(
 }
 
 describe("backend.sh", () => {
+	function authMode(machine: Machine, mode: string) {
+		const data = join(machine.dir, "data");
+		mkdirSync(data, { recursive: true });
+		const db = new Database(join(data, "auth.sqlite"), { create: true });
+		db.exec("CREATE TABLE auth (id INTEGER PRIMARY KEY, state TEXT)");
+		db.query("INSERT INTO auth VALUES(1, ?)").run(JSON.stringify({ mode }));
+		db.close();
+		return data;
+	}
+
+	test("required mode refuses manual rollback to pre-auth releases before switching or restarting", async () => {
+		const machine = makeMachine();
+		const backend = startBackend({ deployRoot: machine.root });
+		const current = "20261101T120000Z-current", target = "20261001T120000Z-old";
+		for (const name of [current, target]) {
+			const dir = join(machine.root, "releases", name);
+			mkdirSync(dir, { recursive: true });
+			writeFileSync(join(dir, "RELEASE.json"), JSON.stringify(release(COMMIT, name)));
+		}
+		const linked = Bun.spawnSync(["ln", "-s", `releases/${current}`, join(machine.root, "current")]);
+		expect(linked.exitCode).toBe(0);
+		const env = { ...backendEnvironment(machine, port(backend)), AIKI_DATA_DIR: authMode(machine, "required") };
+		const refused = await run(["bash", BACKEND, "system", "rollback"], env);
+		expect(refused.code).toBe(1);
+		expect(refused.stdout).toContain("required device sign-in: refusing release");
+		expect(readFileSync(join(machine.root, "current/RELEASE.json"), "utf8")).toContain(current);
+		expect(readFileSync(machine.restartsFile, "utf8")).toBe("");
+		expect(readJson<{ state: string; message: string }>(join(machine.root, "deploy-status.json"))).toMatchObject({ state: "failed", message: expect.stringContaining("rollback") });
+		writeFileSync(join(machine.root, "releases", target, "RELEASE.json"), JSON.stringify({ ...release(COMMIT, target), supportsDeviceAuth: true }));
+		const accepted = await run(["bash", BACKEND, "system", "rollback", target], env);
+		expect(accepted.code).toBe(0);
+		expect(readFileSync(machine.restartsFile, "utf8").trim().split("\n")).toHaveLength(1);
+	});
+
+	test("required mode refuses automatic pre-auth rollback after a failed new release", async () => {
+		const machine = makeMachine();
+		const backend = startBackend({ deployRoot: machine.root });
+		const previous = "20261001T120000Z-old", next = "20261101T120000Z-new";
+		mkdirSync(join(machine.root, "releases", previous), { recursive: true });
+		writeFileSync(join(machine.root, "releases", previous, "RELEASE.json"), JSON.stringify(release(COMMIT, previous)));
+		expect(Bun.spawnSync(["ln", "-s", `releases/${previous}`, join(machine.root, "current")]).exitCode).toBe(0);
+		prepareIncoming(machine, next);
+		const source = join(machine.root, "incoming", next, "packages/server/src");
+		mkdirSync(source, { recursive: true });
+		writeFileSync(join(source, "device-auth.ts"), "// Synthetic auth implementation marker\n");
+		writeFileSync(join(source, "server.ts"), "const auth = new DeviceAuth(dataDir);\n");
+		// The new process reports the wrong commit. Only that process may be restarted, never the old one.
+		backend.state.release = release(OTHER_COMMIT);
+		backend.state.deployRoot = null;
+		const result = await run(["bash", BACKEND, "system", "release", next, COMMIT, "test"], {
+			...backendEnvironment(machine, port(backend)), AIKI_DATA_DIR: authMode(machine, "required"),
+		});
+		expect(result.code).toBe(1);
+		expect(result.stdout).toContain(`REFUSING release ${previous}`);
+		expect(readFileSync(machine.restartsFile, "utf8").trim().split("\n")).toHaveLength(1);
+		expect(readJson<{ supportsDeviceAuth: boolean }>(join(machine.root, "current/RELEASE.json")).supportsDeviceAuth).toBe(true);
+		expect(readJson<{ state: string; message: string }>(join(machine.root, "deploy-status.json"))).toMatchObject({ state: "failed", message: expect.stringContaining("rollback to") });
+	});
+
+	test("runs guard, drain, record and deep checks as a different system service user without changing socket permissions", async () => {
+		const machine = makeMachine();
+		const backend = startBackend({ deployRoot: machine.root, projects: [{ id: "open-project", state: "open" }] });
+		const sudoLog = join(machine.dir, "sudo.log");
+		writeScript(join(machine.bin, "sudo"), [
+			'printf "%s\\n" "$*" >> "$STUB_SUDO_LOG"',
+			'[[ $1 == -n && $2 == -H && $3 == -u && $4 == check-owner && $5 == -- ]] || exit 90',
+			'shift 5; exec "$@"',
+		].join("\n"));
+		prepareIncoming(machine, "new");
+		const result = await run(["bash", BACKEND, "system", "release", "new", COMMIT, "test"], {
+			...backendEnvironment(machine, port(backend)), STUB_SERVICE_USER: "check-owner", STUB_SUDO_LOG: sudoLog,
+		});
+		expect(result.code).toBe(0);
+		const invocations = readFileSync(sudoLog, "utf8");
+		for (const option of ["--check-release=", "--wait-idle", "--record-open-projects=-", "--deep"]) expect(invocations).toContain(option);
+		expect(readFileSync(join(machine.root, ".open-projects"), "utf8")).toBe("open-project\n");
+	});
+
 	test("preserves an explicitly configured root and service, including its cgroup safety guard", async () => {
 		const machine = makeMachine();
 		machine.root = join(machine.dir, "previous-installation");

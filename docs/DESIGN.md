@@ -170,10 +170,43 @@ returns the original plain-text 403. Legacy signed `/artifacts/` GET/HEAD/OPTION
 disallowed Origin, merely omitting CORS headers; allowed preflight retains `Range`. Required mode rejects disallowed
 Origins before any artifact access. New auth HTTP always uses exact Origin matching.
 
-`deploy/health-check.ts` is unchanged and still uses anonymous hello/status/list/page/drain. It works in optional/off,
-including deep and saved-open-project checks. Required cutover needs the checker to refresh a retained deployment
-session and send its access token in hello (or use an owner-only control operation for equivalent private checks).
-`GET /auth/status` alone is discovery/liveness, not a replacement for release/commit/project integrity checks.
+### Deploy checks and rollback safety
+
+`deploy/health-check.ts` stays standalone (Bun/OS imports only). It probes `GET /auth/status`: off/optional and older
+servers without that route keep the anonymous WebSocket checks. Required uses `health-check <JSON request>` on the
+owner-only `<data>/auth.sock`, not a network exemption or a stored deployment credential. Only hello, server status,
+drain, project list and conversation page are allowed there; they use the same `ClientConnection` dispatch as ordinary
+RPCs, with a fresh local-only connection per request. No device, pairing grant, retained/access token or session is
+created. This is simpler than minting and expiring a second kind of bearer identity. The public HTTP router never
+exposes this command, and anonymous network hello still fails required authentication. Checks match the socket's
+backend ID and listener port to public discovery, so another local backend cannot satisfy them.
+
+Deep checks still verify the expected commit and page the projects saved before restart; wait-idle still drains/polls.
+The checker loads the same private `AIKI_ENV_FILE` or XDG `aiki/server.env` as the entry point (explicit process values
+win), then resolves `AIKI_DATA_DIR` or `${XDG_DATA_HOME:-~/.local/share}/aiki`, including `~` expansion. The warning-only
+remote tailnet check uses `--alive-only`: a valid required auth status counts as alive without trying a local socket.
+Discovery alone never replaces the on-target release/project checks.
+
+User units run the checks as the deploying/service account. For system units, `backend.sh` reads the unit's `User` and
+uses `sudo -n -H -u <service-user>` when it differs from the deploy account (an empty system `User` means root).
+`DEPLOY_HEALTH_USER` can override this choice; `DEPLOY_HEALTH_ENV_FILE` selects a non-default service env file. Remote
+overrides are `DEPLOY_<TARGET>_HEALTH_USER` / `DEPLOY_<TARGET>_HEALTH_ENV_FILE` in private deploy config. Before required
+cutover, ensure the service account can execute Bun and read the copied checker, release and saved-open-project file;
+configure noninteractive sudo for the checker command if accounts differ, or run deployment as the service account.
+Match any service-specific data-dir/XDG overrides through its private env file. Do not chmod the socket or data directory
+for deployment: they stay 0600/0700. Saved project IDs are captured on stdout (`--record-open-projects=-`) and written by
+the deploy account, so the service account needs no write access to the deploy root. Existing same-account setups need
+no permission change. Approved backend origins/proxies and client migration are still prerequisites for required mode.
+
+New `RELEASE.json` files record `supportsDeviceAuth`, detected from the archived server's auth implementation, not the
+deploy tool's version. Before any backend release switch (including automatic rollback and restoration after a failed
+manual rollback), the checker reads `auth.sqlite` **read-only**, even if the server is down. Persisted required mode
+refuses targets without `supportsDeviceAuth: true`; corrupt/unreadable auth state also refuses the switch. The deploy
+status says the rollback was refused and retains the failed auth-capable release instead of exposing an old anonymous
+server. Releases without that metadata are conservatively ineligible in required mode: deploy at least one known-good
+release with this tooling while still optional before cutting over. Keep the current deploy tooling for rollback; do
+not invoke old rollback scripts, manually repoint releases, change auth mode during a deploy, or delete auth state to
+force a downgrade. No script can protect a manual bypass by the host owner.
 
 ### Android device sign-in
 

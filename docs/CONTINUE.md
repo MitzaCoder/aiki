@@ -1,5 +1,17 @@
 # Continue
 
+## Required-mode deploy health checks (T80)
+
+Required local health checks now run only hello/status/drain/list/page through the owner socket and normal RPC dispatch;
+no deployment credential, device or session is created. Optional/off/older servers retain anonymous WebSocket checks;
+remote warning-only checks accept valid required discovery. System checks run as the unit's User, using noninteractive
+sudo only when accounts differ; same-account installations need no permission change. DESIGN documents private env/user
+overrides and required-cutover prerequisites. Releases record auth support; read-only persisted-mode guards refuse
+pre-auth rollback (including failed manual-rollback restoration), even with the backend stopped, and record the refusal.
+Deploy a known-good metadata-bearing release while optional before cutover. Never use old tooling to bypass the guard.
+Root: 1,808 tests, zero failures, typecheck; web: 829 tests, zero check errors/warnings, build. Generator check exits 0:
+330 DTOs / 88 overloads. Public guard/Gitleaks pass. Protocol untouched; no Android rebuild, live data access or deploy.
+
 ## Full device sign-in rehearsal (T68)
 
 The renamed merged stack passes root 1,784 tests and typecheck; web 824 tests, check (zero errors/warnings) and build;
@@ -19,9 +31,8 @@ approval succeeded. Web revocation signed Android out on that backend, removed i
 terminal while the host job kept writing. T68 holds screenshots and short recordings. No real backend, phone, provider
 or deploy was used. Rehearsal processes and emulator are stopped; main was not moved and nothing was pushed.
 
-Optional deep deploy checks pass on all three; required checks fail with auth_required, as designed. Before required
-rollout the checker must refresh a retained deployment session and authenticate hello, or perform equivalent private
-checks over owner control. Discovery alone is insufficient. Old web shows generic reconnects, not auth-specific refusal;
+At rehearsal time optional deep deploy checks passed on all three; required checks failed with auth_required.
+T80 above now performs equivalent private checks over owner control. Discovery alone remains insufficient. Old web shows generic reconnects, not auth-specific refusal;
 Android's terminal retains generic connection-lost wording after revoke, while Backends/Devices correctly show signed out.
 
 ## Web device sign-in (T66)

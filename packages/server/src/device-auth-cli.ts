@@ -5,9 +5,16 @@ import { DeviceAuth, DeviceAuthError, validateBackendOrigin } from "./device-aut
 import { authFailure, authJson, readAuthBody } from "./device-auth-http.ts";
 import { resolveDataDir } from "./data-dir.ts";
 
+type ControlOptions = {
+	loopbackOrigin: string;
+	allowedOrigins: readonly string[];
+	/** Only installed on the owner socket, never the public HTTP router. */
+	healthCheck?: (request: string) => Promise<unknown>;
+};
+
 export async function startAuthControl(
 	auth: DeviceAuth,
-	options: { loopbackOrigin: string; allowedOrigins: readonly string[] },
+	options: ControlOptions,
 ): Promise<() => void> {
 	const socket = join(auth.dir, "auth.sock");
 	if (existsSync(socket)) {
@@ -42,7 +49,7 @@ export async function startAuthControl(
 export async function ownerCommand(
 	auth: DeviceAuth,
 	args: string[],
-	options: { loopbackOrigin: string; allowedOrigins: readonly string[] },
+	options: ControlOptions,
 ): Promise<unknown> {
 	const [command, action, value, ...rest] = args;
 	const flag = (name: string) => {
@@ -50,6 +57,11 @@ export async function ownerCommand(
 		return i < 0 ? undefined : args[i + 1];
 	};
 	switch (command) {
+		case "health-check":
+			if (action && options.healthCheck) return {
+				backendId: auth.backendId, loopbackOrigin: options.loopbackOrigin, answer: await options.healthCheck(action),
+			};
+			break;
 		case "status":
 			return auth.status();
 		case "mode":

@@ -509,7 +509,7 @@ for index in "${ACTIVE[@]}"; do
 	# 6. The tailnet is how devices reach the backend. This is a warning, not a rollback trigger: the release itself
 	#    answered the hello there.
 	if [[ -n $T_TAILNET && $TARGET_STATE == ok ]]; then
-		if "$BUN" run "$REPO_DIR/deploy/health-check.ts" "http://$T_TAILNET:$T_PORT" --timeout-ms=10000; then
+		if "$BUN" run "$REPO_DIR/deploy/health-check.ts" "http://$T_TAILNET:$T_PORT" --alive-only --timeout-ms=10000; then
 			log "reachable from here over the tailnet: http://$T_TAILNET:$T_PORT"
 		else
 			log "WARNING: ${SHA:0:12} is deployed but http://$T_TAILNET:$T_PORT does not answer from here; the server probably binds 127.0.0.1 (AIKI_HOST=0.0.0.0 in the unit?)"

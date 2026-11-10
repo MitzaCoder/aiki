@@ -30,7 +30,7 @@
 #   current -> releases/<name>            what the service runs
 #   deploy-status.json                    how the last attempt went, served as `server.status.deploy`
 #
-# The server's data (~/.local/share/aiki) is untouched, so releases can be switched and rolled back freely.
+# Server data is never rewritten here. Required auth refuses releases without recorded auth support.
 #
 # Over a link that may drop (DEPLOY_SURVIVE_DISCONNECT=1, set by deploy.sh for intermittent targets) it keeps going: see
 # survive_disconnect.
@@ -94,6 +94,32 @@ function sc() {
 	if [[ $MODE == user ]]; then systemctl --user "$@"; else systemctl "$@"; fi
 }
 
+# System units may belong to another OS account. Never relax auth.sock permissions.
+# Configure passwordless sudo for this exact Bun/checker command when accounts differ.
+function health() {
+	local user=${DEPLOY_HEALTH_USER:-} current_user
+	current_user=$(id -un)
+	if [[ -z $user && $MODE == system ]]; then
+		user=$(sc show "$SERVICE" --property=User --value) || return 1
+		# An empty User means root for a real system unit. The service is required before checks.
+		user=${user:-root}
+	fi
+	local command=("$BUN" run "$HEALTH")
+	if [[ -n ${DEPLOY_HEALTH_ENV_FILE:-} ]]; then command=(env "AIKI_ENV_FILE=$DEPLOY_HEALTH_ENV_FILE" "${command[@]}"); fi
+	if [[ -n $user && $user != "$current_user" ]]; then
+		sudo -n -H -u "$user" -- "${command[@]}" "$@"
+	else
+		"${command[@]}" "$@"
+	fi
+}
+
+function require_safe_release() {
+	local output
+	if output=$(health "--check-release=$RELEASES/$1" 2>&1); then return 0; fi
+	log "REFUSING release $1: $output"
+	return 1
+}
+
 function service_exists() {
 	sc cat "$SERVICE" >/dev/null 2>&1
 }
@@ -125,7 +151,10 @@ function write_release_json() { # <release dir> <name> <sha> <description>
 	if ! "$BUN" -e '
 		const [dir, name, commit, description] = process.argv.slice(1);
 		if (!commit) throw new Error("no commit given");
-		const release = { name, commit, description, deployedAt: new Date().toISOString() };
+		const source = Bun.file(`${dir}/packages/server/src/server.ts`);
+		const supportsDeviceAuth = await Bun.file(`${dir}/packages/server/src/device-auth.ts`).exists() &&
+			await source.exists() && (await source.text()).includes("new DeviceAuth(");
+		const release = { name, commit, description, deployedAt: new Date().toISOString(), supportsDeviceAuth };
 		await Bun.write(`${dir}/RELEASE.json`, `${JSON.stringify(release, null, 2)}\n`);
 	' "$1" "$2" "$3" "$4"; then
 		log "WARNING: could not write $1/RELEASE.json; server.status reports no release for it"
@@ -309,10 +338,15 @@ function release_names() {
 # and the restart closes them. Recording never fails; a server that cannot answer leaves the file empty.
 function record_open_projects() {
 	local output
-	output=$("$BUN" run "$HEALTH" "http://127.0.0.1:$PORT" "--record-open-projects=$OPEN_PROJECTS" 2>&1) || true
+	# The deploy account writes this file; the service account only reads it after restart.
+	output=$(health "http://127.0.0.1:$PORT" --record-open-projects=-) || output=""
+	if [[ -n $output ]]; then printf '%s\n' "$output" >"$OPEN_PROJECTS"; else : >"$OPEN_PROJECTS"; fi
+	chmod 0644 "$OPEN_PROJECTS"
+	local count=0
 	while IFS= read -r line; do
-		[[ -n $line ]] && log "open before restart: $line"
+		if [[ -n $line ]]; then count=$((count + 1)); fi
 	done <<<"$output"
+	log "open before restart: $count project(s) open before the restart"
 }
 
 function wait_for_idle() {
@@ -321,7 +355,7 @@ function wait_for_idle() {
 		log "not waiting for $SERVICE to be idle: it is not running"
 		return 0
 	fi
-	output=$("$BUN" run "$HEALTH" "http://127.0.0.1:$PORT" --wait-idle \
+	output=$(health "http://127.0.0.1:$PORT" --wait-idle \
 		"--idle-timeout-ms=$((IDLE_TIMEOUT_SECONDS * 1000))" "--idle-poll-ms=$((IDLE_POLL_SECONDS * 1000))" 2>&1) || true
 	while IFS= read -r line; do
 		[[ -n $line ]] && log "idle: $line"
@@ -340,7 +374,7 @@ function restart_and_verify() {
 	fi
 	# A release from before RELEASE.json existed reports no commit; the deep check then skips that comparison.
 	commit=$(release_field "$dir" commit)
-	if output=$("$BUN" run "$HEALTH" "http://127.0.0.1:$PORT" "--timeout-ms=$HEALTH_TIMEOUT_MS" --deep \
+	if output=$(health "http://127.0.0.1:$PORT" "--timeout-ms=$HEALTH_TIMEOUT_MS" --deep \
 		"--open-projects=$OPEN_PROJECTS" ${commit:+"--expect-commit=$commit"} 2>&1); then
 		log "healthy: $output"
 		return 0
@@ -397,6 +431,10 @@ function command_release() {
 	fi
 
 	previous=$(current_release || true)
+	if ! require_safe_release "$name"; then
+		write_deploy_status failed "$sha" "$subject" "release $name refused: required auth compatibility could not be verified"
+		return 1
+	fi
 	install_unit
 	switch_current "$name"
 	if restart_and_verify "$name"; then
@@ -408,6 +446,10 @@ function command_release() {
 	if [[ -z $previous ]]; then
 		log "no earlier release to roll back to; the server stays on $name and is not answering"
 		write_deploy_status failed "$sha" "$subject" "$name failed its health check and there is no earlier release"
+		return 1
+	fi
+	if ! require_safe_release "$previous"; then
+		write_deploy_status failed "$sha" "$subject" "$name failed; rollback to $previous refused: required auth compatibility could not be verified"
 		return 1
 	fi
 	log "rolling back to $previous"
@@ -450,6 +492,11 @@ function command_rollback() {
 		target=$(release_before "$current") || die "no release before $current to roll back to"
 	fi
 	[[ -d $RELEASES/$target ]] || die "no release $target"
+	if ! require_safe_release "$target"; then
+		commit=$(release_field "$RELEASES/$current" commit)
+		write_deploy_status failed "${commit:-unknown}" "" "rollback to $target refused: required auth compatibility could not be verified"
+		return 1
+	fi
 	log "rolling back $current -> $target"
 	install_unit
 	switch_current "$target"
@@ -464,6 +511,11 @@ function command_rollback() {
 			log "$target has no RELEASE.json; not recording the hand rollback in $STATUS"
 		fi
 		return 0
+	fi
+	if ! require_safe_release "$current"; then
+		commit=$(release_field "$RELEASES/$current" commit)
+		write_deploy_status failed "${commit:-unknown}" "" "restore to $current refused: required auth compatibility could not be verified"
+		return 1
 	fi
 	log "restoring $current"
 	switch_current "$current"
@@ -521,7 +573,7 @@ function command_status() {
 }
 
 function command_health() {
-	"$BUN" run "$HEALTH" "http://127.0.0.1:$PORT" "--timeout-ms=${1:-5000}"
+	health "http://127.0.0.1:$PORT" "--timeout-ms=${1:-5000}"
 }
 
 # For a target reached over an unreliable link (a laptop): DEPLOY_SURVIVE_DISCONNECT=1 makes release, unchanged and

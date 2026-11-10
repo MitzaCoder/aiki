@@ -22,7 +22,7 @@ import {
 } from "./artifacts.ts";
 import { DraftStore } from "./drafts.ts";
 import { PromptCacheRetention } from "./cache-retention.ts";
-import { ClientConnection } from "./connection.ts";
+import { ClientConnection, type ClientConnectionOptions } from "./connection.ts";
 import { type LoadedSkill, loadAgentContext } from "./context.ts";
 import { FileCredentialStore } from "./credentials.ts";
 import { SubscriptionUsageService, type SubscriptionUsageOptions } from "./subscription-usage.ts";
@@ -615,6 +615,27 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 
 	// One-time compact summary upgrade before any socket can open the same project storage.
 	await manager.prepareAttention();
+	const connectionOptions = {
+		manager,
+		credentials,
+		logins,
+		notifications,
+		features,
+		serverStatus: () => serverStatus.status(),
+		drain: (timeoutMs) => {
+			manager.drain.drain(timeoutMs);
+			const until = manager.drain.drainingUntil;
+			return {
+				drainingUntil: until === undefined ? null : new Date(until).toISOString(),
+				toolCalls: manager.drain.toolCalls,
+			};
+		},
+		subscriptionUsage,
+		...(requestLog === undefined ? {} : { requestLog }),
+		...(terminals === undefined ? {} : { terminals }),
+		drafts,
+		log,
+	} satisfies Omit<ClientConnectionOptions, "io">;
 	const activate = (ws: ServerWebSocket<SocketData>): void => {
 		clearTimeout(ws.data.timer);
 		if (ws.data.preAuth) {
@@ -626,27 +647,9 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			auth.connected.set(sid, (auth.connected.get(sid) ?? 0) + 1);
 		}
 		const connection = new ClientConnection({
+			...connectionOptions,
 			deviceAuth: { store: auth, identity: ws.data.identity },
-			manager,
-			credentials,
-			logins,
-			notifications,
-			features,
-			serverStatus: () => serverStatus.status(),
-			drain: (timeoutMs) => {
-				manager.drain.drain(timeoutMs);
-				const until = manager.drain.drainingUntil;
-				return {
-					drainingUntil: until === undefined ? null : new Date(until).toISOString(),
-					toolCalls: manager.drain.toolCalls,
-				};
-			},
-			subscriptionUsage,
-			...(requestLog === undefined ? {} : { requestLog }),
 			artifactUrls: { signer: artifactSigner, origin: ws.data.origin },
-			...(terminals === undefined ? {} : { terminals }),
-			drafts,
-			log,
 			io: {
 				send: (message) => {
 					ws.send(JSON.stringify(message));
@@ -918,7 +921,27 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	const stopAuthControl =
 		options.auth?.controlSocket === false
 			? () => {}
-			: await startAuthControl(auth, { loopbackOrigin: `http://127.0.0.1:${server.port}`, allowedOrigins });
+			: await startAuthControl(auth, {
+				loopbackOrigin: `http://127.0.0.1:${server.port}`, allowedOrigins,
+				healthCheck: async (raw) => {
+					const request = JSON.parse(raw);
+					// No arbitrary RPC forwarding: these are exactly the deploy integrity/drain checks.
+					if (!request || !["hello", "server.status", "server.drain", "projects.list", "conversation.page"].includes(request.type))
+						throw new DeviceAuthError("invalid_command", 400);
+					let answer: unknown;
+					const connection = new ClientConnection({
+						...connectionOptions,
+						io: { send: (message) => { answer = message; }, sendBinary: () => {}, close: () => {} },
+					});
+					try {
+						// This connection has no network transport, identity, watches or retained session.
+						if (request.type !== "hello")
+							await connection.handle(JSON.stringify({ type: "hello", id: "owner-check", protocolVersion: 1 }));
+						await connection.handle(raw);
+						return answer;
+					} finally { connection.close(); }
+				},
+			});
 
 	const actualPort = server.port ?? port;
 	log(`aiki: schedules run in ${schedules.timezone}`);

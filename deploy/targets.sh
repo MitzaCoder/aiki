@@ -68,6 +68,9 @@ function use_target() { # <index>
 	local prefix=DEPLOY_${T_NAME^^}
 	prefix=${prefix//-/_}
 	local root_variable=${prefix}_ROOT service_variable=${prefix}_SERVICE
+	local health_user_variable=${prefix}_HEALTH_USER health_env_variable=${prefix}_HEALTH_ENV_FILE
+	T_HEALTH_USER=${!health_user_variable:-}
+	T_HEALTH_ENV_FILE=${!health_env_variable:-}
 	REMOTE_ROOT=${!root_variable:-${DEPLOY_REMOTE_ROOT:-'$HOME/.local/share/aiki-deploy'}}
 	T_SERVICE=${!service_variable:-${DEPLOY_REMOTE_SERVICE:-aiki.service}}
 	# A target that is not optional gets exactly `ssh <target> <command>`, as before targets were a list.
@@ -118,6 +121,8 @@ function remote_bun() {
 # the script outlives a dropped connection (backend.sh DEPLOY_SURVIVE_DISCONNECT). Empty for the VM.
 function remote_backend_env() {
 	local text="DEPLOY_BACKEND_ROOT=$REMOTE_ROOT DEPLOY_BACKEND_SERVICE=$(printf '%q' "$T_SERVICE") "
+	if [[ -n $T_HEALTH_USER ]]; then text+="DEPLOY_HEALTH_USER=$(printf '%q' "$T_HEALTH_USER") "; fi
+	if [[ -n $T_HEALTH_ENV_FILE ]]; then text+="DEPLOY_HEALTH_ENV_FILE=$(printf '%q' "$T_HEALTH_ENV_FILE") "; fi
 	if [[ $T_UNIT == system && -n $T_BUN ]]; then text+="BUN=$T_BUN "; fi
 	if [[ -n $T_OPTIONAL ]]; then text+="DEPLOY_SURVIVE_DISCONNECT=1 "; fi
 	printf '%s' "$text"

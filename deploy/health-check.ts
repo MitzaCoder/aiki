@@ -34,21 +34,23 @@
  * feature, is not waited for.
  *
  * The deploy runs it against each backend's loopback (that decides a rollback) and, for the VM, from this host over the
- * tailnet (warning only, `hello` only).
+ * tailnet (warning only, `--alive-only`: hello, or required auth discovery).
+ * Required local checks use the owner-only Unix socket and the same limited RPC dispatch, never a device credential.
  */
-/**
- * The protocol version this checker speaks. Copied as it is to each backend (deploy/backend.sh) so it stands alone: it
- * must not import the protocol package. Bump it together with `PROTOCOL_VERSION` in packages/protocol/src/common.ts.
- */
+/** Copied standalone to each backend: built-in imports only, no workspace dependencies. */
+import { readFileSync, statSync } from "node:fs";
+import { homedir } from "node:os";
+import { join, resolve } from "node:path";
+import { parseEnv } from "node:util";
+import { Database } from "bun:sqlite";
+
+/** Keep in step with packages/protocol/src/common.ts. */
 const PROTOCOL_VERSION = 1;
 
 /** The feature that carries `server.status`; older servers do not list it and skip the checks that need it. */
 const SERVER_STATUS_FEATURE = "server-status";
 /** The feature that carries `server.drain`; without it the deploy waits for the server to be idle instead. */
 const DRAIN_FEATURE = "drain";
-
-/** Nothing imported, but top-level await needs module scope. */
-export {};
 
 const DEFAULT_BASE = "http://127.0.0.1:7317";
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -66,6 +68,8 @@ type Options = {
 	idlePollMs: number;
 	/** Where the projects open before the restart are recorded, or read from. */
 	openProjects: string | null;
+	aliveOnly: boolean;
+	checkRelease: string | null;
 	recordOpen: boolean;
 };
 
@@ -82,6 +86,8 @@ function parseOptions(argv: readonly string[]): Options {
 		idlePollMs: DEFAULT_IDLE_POLL_MS,
 		openProjects: null,
 		recordOpen: false,
+		aliveOnly: false,
+		checkRelease: null,
 	};
 	for (const argument of argv) {
 		if (!argument.startsWith("--")) {
@@ -90,6 +96,13 @@ function parseOptions(argv: readonly string[]): Options {
 		}
 		const [name, value] = argument.split("=", 2);
 		switch (name) {
+			case "--alive-only":
+				options.aliveOnly = true;
+				continue;
+			case "--check-release":
+				if (!value) throw new Error("--check-release needs a release directory");
+				options.checkRelease = value;
+				continue;
 			case "--deep":
 				options.deep = true;
 				continue;
@@ -133,6 +146,90 @@ function webSocketUrl(base: string): string {
 	url.search = "";
 	url.hash = "";
 	return url.toString();
+}
+
+/** Deliberately standalone copies of server-env.ts and data-dir.ts; explicit process settings win. */
+function dataDirectory(): string {
+	const env = { ...process.env };
+	const file = env.AIKI_ENV_FILE || join(env.XDG_CONFIG_HOME || join(homedir(), ".config"), "aiki", "server.env");
+	let source: string | undefined;
+	try { source = readFileSync(file, "utf8"); }
+	catch (error) {
+		if (env.AIKI_ENV_FILE || (error as NodeJS.ErrnoException).code !== "ENOENT") throw new Error("Cannot read server env file");
+	}
+	if (source !== undefined) for (const [name, value] of Object.entries(parseEnv(source))) {
+		if (!name.startsWith("AIKI_")) throw new Error("Server env file may only set AIKI_ settings");
+		if (env[name] === undefined) env[name] = value;
+	}
+	const expand = (path: string) => path === "~" ? homedir() : path.startsWith("~/") ? join(homedir(), path.slice(2)) : path;
+	const data = env.AIKI_DATA_DIR?.trim();
+	const xdg = env.XDG_DATA_HOME?.trim();
+	return data ? resolve(expand(data)) : join(xdg ? resolve(expand(xdg)) : join(homedir(), ".local", "share"), "aiki");
+}
+
+/** Read only: a dead backend must not make a required data directory safe to downgrade. */
+async function checkRelease(directory: string): Promise<void> {
+	const file = join(dataDirectory(), "auth.sqlite");
+	try { statSync(file); }
+	catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return; throw error; } // pre-auth installation
+	const db = new Database(file, { readonly: true });
+	try {
+		const row = db.query("SELECT state FROM auth WHERE id=1").get() as { state: string } | null;
+		const mode = row && JSON.parse(row.state).mode;
+		if (!["off", "optional", "required"].includes(mode)) throw new Error("Cannot read persisted auth mode; refusing release switch");
+		if (mode !== "required") return;
+		let supported = false;
+		try { supported = (await Bun.file(join(directory, "RELEASE.json")).json()).supportsDeviceAuth === true; } catch {}
+		if (!supported) throw new Error("required device sign-in: refusing release without recorded device-auth support");
+	} finally { db.close(); }
+}
+
+type CheckSession = Pick<Session, "request" | "close">;
+class OwnerCheckSession {
+	#socket = join(dataDirectory(), "auth.sock");
+	constructor(readonly backendId: string, readonly port: string) {}
+	async request(type: string, fields: Message = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Message> {
+		const response = await fetch("http://localhost/", {
+			unix: this.#socket, method: "POST", headers: { "content-type": "application/json" },
+			body: JSON.stringify({ args: ["health-check", JSON.stringify({ type, id: "health-check", ...fields })] }),
+			signal: AbortSignal.timeout(timeoutMs),
+		});
+		const answer = await response.json() as Message;
+		if (!response.ok || answer.type === "error") {
+			const error = answer.error as { code?: string } | undefined;
+			throw new Error(`owner health check: ${error?.code ?? "failed"}`);
+		}
+		if (answer.backendId !== this.backendId || new URL(String(answer.loopbackOrigin)).port !== this.port)
+			throw new Error("owner socket does not belong to the checked backend");
+		const reply = answer.answer as Message;
+		if (reply.type === "error") throw new Error(`owner health check: ${String((reply.error as { code?: string })?.code)}`);
+		return reply;
+	}
+	close(): void {}
+}
+
+async function requiredBackendId(base: string): Promise<string | null> {
+	const url = new URL(base);
+	url.protocol = url.protocol === "wss:" ? "https:" : url.protocol === "ws:" ? "http:" : url.protocol;
+	url.pathname = "/auth/status"; url.search = ""; url.hash = "";
+	const response = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+	if (response.status === 404) return null; // older releases
+	if (!response.ok) throw new Error(`auth status HTTP ${response.status}`);
+	let status: { authVersion?: unknown; backendId?: unknown; mode?: unknown };
+	try { status = await response.json(); } catch { return null; } // older app-shell responses
+	if (status.authVersion !== 1 || typeof status.backendId !== "string" || !status.backendId ||
+		typeof status.mode !== "string" || !["off", "optional", "required"].includes(status.mode)) throw new Error("invalid auth status");
+	return status.mode === "required" ? status.backendId : null;
+}
+
+async function connect(options: Options): Promise<CheckSession> {
+	const backendId = await requiredBackendId(options.base);
+	if (backendId) {
+		const url = new URL(options.base);
+		if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) throw new Error("required backend needs an on-host owner check");
+		return new OwnerCheckSession(backendId, url.port);
+	}
+	return Session.connect(webSocketUrl(options.base));
 }
 
 /** One connection, many requests: each answer is matched by its id, an `error` answer rejects. */
@@ -231,7 +328,7 @@ class Session {
 
 type Hello = { name: string; version: string; features: ReadonlySet<string> };
 
-async function hello(session: Session): Promise<Hello> {
+async function hello(session: CheckSession): Promise<Hello> {
 	const answer = await session.request("hello", {
 		protocolVersion: PROTOCOL_VERSION,
 		client: { name: "health-check" },
@@ -260,7 +357,7 @@ function isUnknownRequest(error: unknown): boolean {
 /**
  * `server.status`, or null when this server does not answer it. Any other error is the caller's problem.
  */
-async function askStatus(session: Session): Promise<Message | null> {
+async function askStatus(session: CheckSession): Promise<Message | null> {
 	try {
 		return ((await session.request("server.status")).status as Message | undefined) ?? null;
 	} catch (error) {
@@ -270,7 +367,7 @@ async function askStatus(session: Session): Promise<Message | null> {
 }
 
 /** `server.drain` (extending it from now): how many tool calls execute; null when the server does not know it. */
-async function askDrain(session: Session): Promise<number | null> {
+async function askDrain(session: CheckSession): Promise<number | null> {
 	let answer: Message;
 	try {
 		answer = await session.request("server.drain");
@@ -314,7 +411,7 @@ async function projectsToPage(projects: Message[], recordedFile: string | null):
 
 /** The checks after a restart: the release that runs, and that the projects open before it still page their transcript. */
 async function checkDeep(
-	session: Session,
+	session: CheckSession,
 	answer: Hello,
 	expectCommit: string | null,
 	recordedFile: string | null,
@@ -354,7 +451,14 @@ async function checkDeep(
 
 /** `hello`, plus the deep checks when asked. Resolves with what to print. */
 async function check(options: Options): Promise<string> {
-	const session = await Session.connect(webSocketUrl(options.base));
+	if (options.aliveOnly) {
+		if (options.deep || options.expectCommit) throw new Error("--alive-only cannot check release integrity");
+		if (await requiredBackendId(options.base)) return "required device sign-in (discovery alive; no private checks)";
+		const session = await Session.connect(webSocketUrl(options.base));
+		try { const answer = await hello(session); return `${answer.name} ${answer.version}`; }
+		finally { session.close(); }
+	}
+	const session = await connect(options);
 	try {
 		const answer = await hello(session);
 		const summary = `${answer.name} ${answer.version}`;
@@ -381,9 +485,9 @@ async function waitForIdle(options: Options): Promise<string> {
 	let drainUnanswered = false;
 	let draining = false;
 	for (let attempt = 1; ; attempt++) {
-		let session: Session | undefined;
+		let session: CheckSession | undefined;
 		try {
-			session = await Session.connect(webSocketUrl(options.base));
+			session = await connect(options);
 			const answer = await hello(session);
 			reachedServer = true;
 			if (answer.features.has(DRAIN_FEATURE) && !drainUnanswered) {
@@ -437,9 +541,9 @@ async function waitForIdle(options: Options): Promise<string> {
 async function recordOpenProjects(options: Options, path: string): Promise<string> {
 	let projects: string[] = [];
 	let note: string;
-	let session: Session | undefined;
+	let session: CheckSession | undefined;
 	try {
-		session = await Session.connect(webSocketUrl(options.base));
+		session = await connect(options);
 		await hello(session);
 		const listed = (await session.request("projects.list")).projects;
 		const all = Array.isArray(listed) ? (listed as Message[]) : [];
@@ -451,7 +555,9 @@ async function recordOpenProjects(options: Options, path: string): Promise<strin
 		session?.close();
 	}
 	try {
-		await Bun.write(path, projects.map((projectId) => `${projectId}\n`).join(""));
+		const ids = projects.map((projectId) => `${projectId}\n`).join("");
+		if (path === "-") { process.stdout.write(ids); return ""; }
+		await Bun.write(path, ids);
 	} catch (error) {
 		return `${options.base}: ${note}, but could not write ${path} (${message(error)})`;
 	}
@@ -460,8 +566,14 @@ async function recordOpenProjects(options: Options, path: string): Promise<strin
 
 const options = parseOptions(process.argv.slice(2));
 
+if (options.checkRelease) {
+	try { await checkRelease(options.checkRelease); process.exit(0); }
+	catch (error) { console.error(`release switch refused: ${message(error)}`); process.exit(1); }
+}
+
 if (options.recordOpen && options.openProjects !== null) {
-	console.log(await recordOpenProjects(options, options.openProjects));
+	const note = await recordOpenProjects(options, options.openProjects);
+	if (note) console.log(note);
 	process.exit(0);
 }
 
