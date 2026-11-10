@@ -27,9 +27,12 @@ export type RelayErrorCode =
 	| "event_duplicate";
 /** A fixed, content-free validation or authentication failure. */
 export class PushRelayError extends Error {
-	constructor(readonly code: RelayErrorCode) {
+	readonly code: RelayErrorCode;
+	// No parameter property: the web build loads this file through Node's strip-only TypeScript loader.
+	constructor(code: RelayErrorCode) {
 		super(`push_relay_${code}`);
 		this.name = "PushRelayError";
+		this.code = code;
 	}
 }
 function fail(code: RelayErrorCode): never {
