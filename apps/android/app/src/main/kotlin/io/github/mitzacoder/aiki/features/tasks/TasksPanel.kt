@@ -23,6 +23,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.mitzacoder.aiki.data.request
+import io.github.mitzacoder.aiki.data.familyExpansion
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import io.github.mitzacoder.aiki.features.panels.panelData
 import io.github.mitzacoder.aiki.navigation.ProjectScreenContext
 import io.github.mitzacoder.aiki.protocol.*
@@ -47,13 +50,15 @@ fun TasksPanel(context: ProjectScreenContext, modifier: Modifier = Modifier, too
     val view by board.view.collectAsStateWithLifecycle()
     val connection by context.backend.client.state.collectAsStateWithLifecycle()
     val project = context.route.projectId
+    val settings by context.repository.settings.collectAsStateWithLifecycle()
+    val expansion = settings.familyExpansion(context.backend.config.key, project)
     val threads = if (connection.supports("threads")) panelData(context, "task-threads", { it is ThreadsStateEvent && it.projectId == project }) {
         context.backend.client.request(ThreadsListRequest(projectId = project, includeArchived = true)).threads
     }.value.orEmpty() else emptyList()
     val stateKey = "${context.backend.config.key}/$project"
     var adding by rememberSaveable(stateKey) { mutableStateOf(false) }
     // Sections the user opened or folded against their default.
-    var toggled by rememberSaveable(stateKey) { mutableStateOf(listOf<String>()) }
+    var sectionExpansion by rememberSaveable(stateKey) { mutableStateOf(mapOf<String, Boolean>()) }
     var answeredOpen by rememberSaveable(stateKey) { mutableStateOf(false) }
     var decisionsOpen by rememberSaveable(stateKey) { mutableStateOf(false) }
     val list = rememberLazyListState()
@@ -135,20 +140,21 @@ fun TasksPanel(context: ProjectScreenContext, modifier: Modifier = Modifier, too
             }
         }
         sections.forEach { section ->
-            val open = (section.id.name in toggled) != !section.collapsedByDefault
+            val open = sectionExpansion[section.id.name] ?: familySectionStartsOpen(section)
+            val families = taskFamilies(section, expansion)
             item(key = "section-${section.id.name}") {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (section.collapsedByDefault) FoldHeading(section.label, open, onToggle = {
-                        toggled = if (section.id.name in toggled) toggled - section.id.name else toggled + section.id.name
+                        sectionExpansion = sectionExpansion + (section.id.name to !open)
                     }, count = section.rows.size, chevronFirst = false, style = TaskType.sectionTitle)
                     else SectionTitle(section.label, section.rows.size, accent = section.id == TaskSectionId.NeedsYou)
                     if (open) TaskGroup {
-                        section.rows.forEachIndexed { index, row ->
-                            key(row.task.id) {
-                                if (index > 0) GroupHairline()
-                                TaskListRow(row, now, reducedMotion, connection.supports(io.github.mitzacoder.aiki.data.HarnessFeature.TASK_LINKS)) { context.openTask(row.task.id) }
-                            }
-                        }
+                        TaskFamilyRows(
+                            families, now, reducedMotion, connection.supports("task-links"), loadedBoard?.archivedLinks.orEmpty(),
+                            onToggle = { family -> scope.launch {
+                                context.repository.setTaskFamilyExpanded(context.backend.config.key, project, family.row.task.id, !family.expanded)
+                            } }, onOpen = context::openTask,
+                        )
                     }
                 }
             }
@@ -184,6 +190,30 @@ fun TasksPanel(context: ProjectScreenContext, modifier: Modifier = Modifier, too
         }
         // Last: below every task, the answered questions and the decisions.
         if (view.loaded) item(key = "loose-workers") { LooseWorkers(context, tasks) }
+    }
+}
+
+/** Same-status descendants stay within the section; guides stop consuming width after three levels. */
+@Composable
+private fun TaskFamilyRows(
+    families: List<TaskFamily>, now: Long, reducedMotion: Boolean, linksEnabled: Boolean,
+    archived: List<BoardTaskBrief>, onToggle: (TaskFamily) -> Unit, onOpen: (String) -> Unit, depth: Int = 0, reserveDisclosure: Boolean = false,
+) {
+    val guide = Jarvis.colors.border
+    Column {
+        families.forEachIndexed { index, family ->
+            key(family.row.task.id) {
+                if (index > 0) GroupHairline()
+                val disclosureColumn = reserveDisclosure || family.canToggle
+                TaskListRow(family, now, reducedMotion, linksEnabled, depth > 0, disclosureColumn, archived, { onToggle(family) }) { onOpen(family.row.task.id) }
+                if (family.children.isNotEmpty()) Box(
+                    Modifier.padding(start = if (depth < 3) 14.dp else 0.dp)
+                        .drawBehind { drawLine(guide, Offset.Zero, Offset(0f, size.height), strokeWidth = 1.dp.toPx()) },
+                ) {
+                    TaskFamilyRows(family.children, now, reducedMotion, linksEnabled, archived, onToggle, onOpen, depth + 1, disclosureColumn)
+                }
+            }
+        }
     }
 }
 

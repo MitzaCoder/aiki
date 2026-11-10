@@ -1180,8 +1180,14 @@ not an ARIA tree, so the list retains ordinary Tab navigation (no new arrow-key 
 motion also disables existing row/status motion. Found-while, blocked-by and related glyph links have accessible names
 and native title tooltips. Feedback counts, ref links and task navigation remain.
 
-Android remains separate: port same-status nesting, always-visible attention/cross-status rows,
-progress, parent links and per-project local expansion choices. No protocol/backend change is needed.
+**Android (T74).** The Compose list follows the same nesting, ordering, attention visibility, parent links and
+progress rules, with 14dp guides capped at three visible indent levels. Parent expansion is stored in the existing
+local device settings record under the name-neutral `taskFamilyExpansion` field, keyed by backend origin, project
+and parent ID; true and false choices both survive app restarts and closing an ancestor. Disclosures are separate
+48dp controls with TalkBack expanded/collapsed state descriptions and native keyboard activation. No expansion
+animation is used; the existing reduced-motion setting also stops working-dot motion. Small relation controls
+supply spoken labels and long-press tooltips instead of browser title tooltips. Explicit list filters and section
+folding remain user controls; attention sections start open. No protocol/backend change is needed.
 
 
 

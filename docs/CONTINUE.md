@@ -1,5 +1,18 @@
 # Continue
 
+## Android task families (T74)
+
+Android now shares the web's same-status family and always-visible attention rules. Quiet families default folded;
+explicit choices persist per backend/project/parent in local `DeviceSettings.taskFamilyExpansion`. Native controls
+have expanded/collapsed TalkBack descriptions, static progress rings and 14dp guides. Attention sections start open;
+cross-status children retain their own groups and parent links. No web, protocol or backend behavior changes.
+Both changes are rebased onto main `tqplwulm`. Android: 631 tests (two existing skips), assembly and lint pass
+(36 warnings, zero errors); generator check exits 0 (330 DTOs / 88 overloads). Root: 1,837 tests and typecheck pass;
+web: 852 tests, zero check diagnostics and build pass. All continuation sections were retained, ours first.
+The final plain root run and an `AIKI_*`-cleared run both pass. A prior nightly-maintenance timeout did not reproduce
+in the six-test file on either this stack or plain main; no unrelated code was changed. Task-list source/behavior is
+unchanged by the rebase, so existing T74 visual proof still applies. No new media, main move or push.
+
 ## Collapsible web task families (T74 / D44)
 
 The task list now uses C only, without a dev flag. Quiet same-status children start folded; parent choices persist

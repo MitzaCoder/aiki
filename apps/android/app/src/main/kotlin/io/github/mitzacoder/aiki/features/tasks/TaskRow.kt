@@ -4,12 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.draw.rotate
+import io.github.mitzacoder.aiki.protocol.BoardTaskBrief
+import io.github.mitzacoder.aiki.ui.components.Lucide
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.mitzacoder.aiki.features.refs.RefChips
@@ -25,7 +30,11 @@ import io.github.mitzacoder.aiki.ui.theme.Text as TextStyles
  * opens the task's sheet; the ref chips open their own cards.
  */
 @Composable
-internal fun TaskListRow(row: TaskRow, now: Long, reducedMotion: Boolean, linksEnabled: Boolean = false, onOpen: () -> Unit) {
+internal fun TaskListRow(
+    family: TaskFamily, now: Long, reducedMotion: Boolean, linksEnabled: Boolean,
+    nested: Boolean, reserveDisclosure: Boolean, archived: List<BoardTaskBrief>, onToggle: () -> Unit, onOpen: () -> Unit,
+) {
+    val row = family.row
     val colors = Jarvis.colors
     val task = row.task
     val needsYou = row.section == TaskSectionId.NeedsYou
@@ -40,8 +49,14 @@ internal fun TaskListRow(row: TaskRow, now: Long, reducedMotion: Boolean, linksE
         Modifier.fillMaxWidth()
             .then(if (wash != null) Modifier.background(wash) else Modifier)
             .clickable(role = Role.Button, onClickLabel = "Open ${task.id}", onClick = onOpen)
-            .semantics(mergeDescendants = true) { contentDescription = "${task.id}: ${task.title}. ${rowTimeWords(row, now)}" }
-            .padding(start = 12.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
+            .semantics(mergeDescendants = true) {
+                contentDescription = listOfNotNull(
+                    "${task.id}: ${task.title}", taskStatusWords(task.status),
+                    task.parent?.takeIf { nested }?.let { "Subtask of $it" },
+                    task.subtaskCount?.takeIf { it.total > 0 }?.let { "${it.done} of ${it.total} subtasks done" }, rowTimeWords(row, now),
+                ).joinToString(". ")
+            }
+            .padding(start = 12.dp, end = 10.dp, top = if (family.canToggle) 14.dp else 10.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.Top,
     ) {
@@ -52,11 +67,20 @@ internal fun TaskListRow(row: TaskRow, now: Long, reducedMotion: Boolean, linksE
                 else -> TaskStatusDot(task.status, pulse = task.status == "in_progress" && !reducedMotion)
             }
         }
+        if (family.canToggle) IconButton(
+            onClick = onToggle,
+            modifier = Modifier.size(48.dp).offset(y = (-14).dp).semantics {
+                contentDescription = "${if (family.expanded) "Collapse" else "Expand"} subtasks of ${task.id}"
+                stateDescription = if (family.expanded) "Expanded" else "Collapsed, ${family.foldedCount} folded subtasks"
+            },
+        ) {
+            LucideGlyph(Lucide.ChevronRight, Modifier.rotate(if (family.expanded) 90f else 0f), size = 14.dp, tint = colors.fgSubtle)
+        } else if (reserveDisclosure) Spacer(Modifier.width(48.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(task.title, style = TaskType.rowTitle, color = if (row.section == TaskSectionId.Closed) colors.fgMuted else colors.fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (task.status == "waiting") Text(waitingSummary(task, now), style = TaskType.xs, color = colors.fgSubtle)
             else if (gist.isNotEmpty()) Text(gist, style = TextStyles.taskSm, color = colors.fgMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (linksEnabled) TaskRelationChips(task)
+            if (linksEnabled) TaskFamilyMeta(task, nested, archived)
             if (needsYou || task.refs.isNotEmpty()) {
                 FlowRow(
                     Modifier.padding(top = 2.dp),

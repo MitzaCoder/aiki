@@ -22,6 +22,8 @@ data class DeviceSettings(
     val seenReplies: Map<String, Map<String, Long>> = emptyMap(),
     /** How the Tasks view shows tasks on this device, "list" or "board" (web `aiki.tasks-view.v1`). */
     val tasksView: String = "list",
+    /** Backend origin -> project ID -> parent ID -> explicit family expansion choice. */
+    val taskFamilyExpansion: Map<String, Map<String, Map<String, Boolean>>> = emptyMap(),
     /** Waiting calendar dates resolve at this local wall time on this device. */
     val workDayStart: String = DEFAULT_WORK_DAY_START,
     val topLevelTasksOnly: Boolean = false,
