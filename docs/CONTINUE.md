@@ -1,5 +1,49 @@
 # Continue
 
+## Backend encrypted push relay (T95)
+
+Backend relay transport is wired behind private `AIKI_PUSH_RELAY_ENDPOINT` (complete operator-approved HTTPS v1 base
+URL; loopback HTTP only for tests). With no setting, no relay store/files/feature/response fields are introduced;
+direct FCM and Web Push remain unchanged. D51 remains optional. No Android/web UI or account flow was changed.
+The exact RPC shapes, file fields, retry rules, limitations and Android call order are in
+[the backend v1 contract](push-relay-backend-v1.md); DESIGN's Notifications subsection was written first.
+
+`fcm-relay-v1` additionally needs device-auth support and every relay call requires an actual authenticated session,
+even in optional mode. Register with a durable operation ID; verify the backend-confirm HMAC; persist phone keys;
+activate the relay route; then phone-confirm to activate the backend. A stable persisted registration reply survives
+restart. Its serverTime is the original receipt time: use syncRelay's fresh serverTime after a delayed retry before
+anchoring the phone clock. Identity always comes from the session, never labels/device IDs. Confirm retries cannot
+remove a pending successor or resume a paused route. Direct/relay selection is serialized, and durable relay selection
+suppresses stale direct rows before their removal so a crash or in-flight switch cannot double-send the event.
+
+Mode-0600 `notifications/push-relay.json` owns routes/receipts/selections/safe revoked status and exact ciphertext
+send/delete-only outboxes. Independent `push-relay-counters.json` witnesses the next per-key sequence; allocation is
+durable before encryption, exact HTTP body before send. Partial counter restore/malformed keys require new keys.
+A coherent rollback of both files is fundamentally undetectable locally: full-backup restoration must agree fresh
+routes/keys, or a future independent non-rollbackable witness is needed. Operation receipts currently have no pruning.
+Public-source ignore/guard rules reject both private filenames. No exports/logs/config/device read exposes secrets.
+
+Existing dedupe/hold/interaction/filter/TTL/preview policy runs first. Retry checks current session/preferences/archive,
+resends identical bytes with 5-second exponential jitter capped at 15 minutes, honors Retry-After, and stops at event
++12h/route expiry. At 100 queued messages/route, drop newest without allocating a sequence. Terminal route results
+pause new sends; after token/route repair the phone explicitly syncs resume:true, which never replays old events.
+Counter inconsistency cannot resume and requires fresh keys. No direct/plaintext fallback. Test success says accepted,
+never delivered. Revoke/unregister/expiry stop local sends immediately and atomically erase send authority/keys into a
+delete-only outbox before old rows disappear. Cleanup retries independently across restart; only 204 erases its secret.
+Safe status distinguishes pending cleanup from done; still-signed-in phones can read it after unregister.
+
+Checks at the final implementation: root 2,082 tests / 24,144 assertions / 172 files, zero failures (194.45s);
+47 relay fake-HTTP/simulated-phone cases included. Root typecheck passes. Web 897 tests / 13,636 assertions,
+zero check errors/warnings and plain bun run build passes. Android: 741 tests / 95 XML suites, two existing skips,
+zero failures/errors; assemble and lint pass (36 warnings, zero errors). Android builds used an empty explicit private
+properties source and no Firebase config. Protocol generation check (337 DTOs/91 request overloads), crypto-vector
+check, install and public/Gitleaks guard pass. The first root run caught the expected unconditional feature-list
+assertion; it was corrected for the now-conditional feature. No flaky-test rerun was needed.
+
+The exact strip-only-compatible PushRelayError constructor fix from the coordinator is included in the protocol
+commit. All new protocol/client TypeScript is erasable. No Firebase emulator, real relay/provider calls, private
+credentials/config inspection, phone/emulator, UI proof, main movement, push or deployment was needed/performed.
+
 ## Plain notification wording (T98 follow-up)
 
 Notifications now say **On (shared subscription)** and **On (own subscription)**, with **Needs re-subscribe**

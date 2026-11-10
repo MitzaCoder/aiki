@@ -2927,6 +2927,8 @@ apps/<native>/      later; technology not chosen
 
 ### Backend encrypted relay transport (T95)
 
+Exact RPC/storage shapes and Android ordering: [backend relay v1 contract](push-relay-backend-v1.md).
+
 `AIKI_PUSH_RELAY_ENDPOINT` in the existing private server settings is the operator-approved relay v1 base URL
 (ending in `/v1/`). HTTPS is required; HTTP is allowed only on loopback for isolated tests. No admin/account
 credential is accepted. Requests use octet-stream JSON, no-store, a deadline and redirect rejection. Without this
@@ -2939,7 +2941,9 @@ including in optional mode. Identity is the backend's stable ID and authenticate
 public key, transcript confirmation, backend/session IDs and server time. `notifications.confirmRelay` validates the
 phone confirmation before activating. `notifications.syncRelay` updates preferences/lease or unregisters. Existing
 unregister/test/device requests also work with the server-returned device ID. Configuration and device reads expose
-only safe status. The phone activates its relay route before confirming the backend; a successor replaces, never
+only safe status. Sync replies provide a fresh server-time anchor after an old registration receipt. Terminal route
+errors pause new sends until the phone repairs the relay and explicitly syncs `resume:true`; counter inconsistency
+requires new keys instead. Neither path drains an old outbox. The phone activates its relay route before confirming the backend; a successor replaces, never
 adds to, a session's active transport. An active relay selection suppresses old direct rows durably even across a
 crash between files. Replacement removes old queued messages rather than replaying historical events.
 
