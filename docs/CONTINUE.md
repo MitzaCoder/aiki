@@ -1,5 +1,29 @@
 # Continue
 
+## Full device sign-in rehearsal (T68)
+
+The renamed merged stack passes root 1,784 tests and typecheck; web 824 tests, check (zero errors/warnings) and build;
+Android 608 tests (zero failures/errors, two existing skips), assembly and lint (36 warnings, zero errors).
+Generation exits 0: 324 DTOs / 87 overloads. Public guard and Gitleaks pass. The owner CLI also finds its running
+backend when only the private server env file supplies the data directory; a subprocess regression locks this in.
+
+Three data-bearing scratch backends defaulted optional; an empty directory defaulted required. Real pre-auth web/APK
+updates retained addresses, names, notification IDs/settings and a synced draft. Both clients registered claims quietly;
+six comparison codes matched the fixed CLI inventory. Exact batch approval authenticated them without reload and left
+strangers unapproved. Fixed web push sync to upsert before reading the legacy row, which is not yet readable by the new
+session. Regression fails before and passes after; web/FCM rows then bind on all three. Synthetic push transport/tokens
+only, not live delivery. Eight-second artifact URLs reminted on all three web backends; native media remained visible.
+
+Required cutover and disk/client restarts retained sign-in. Android created a link for a fresh browser; matching-code
+approval succeeded. Web revocation signed Android out on that backend, removed its push row and detached its live native
+terminal while the host job kept writing. T68 holds screenshots and short recordings. No real backend, phone, provider
+or deploy was used. Rehearsal processes and emulator are stopped; main was not moved and nothing was pushed.
+
+Optional deep deploy checks pass on all three; required checks fail with auth_required, as designed. Before required
+rollout the checker must refresh a retained deployment session and authenticate hello, or perform equivalent private
+checks over owner control. Discovery alone is insufficient. Old web shows generic reconnects, not auth-specific refusal;
+Android's terminal retains generic connection-lost wording after revoke, while Backends/Devices correctly show signed out.
+
 ## Web device sign-in (T66)
 
 Web now implements the Device sign-in contract: isolated IndexedDB retained credentials and proofs, exact-origin/auth
