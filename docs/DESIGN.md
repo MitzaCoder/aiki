@@ -108,6 +108,7 @@ exact-statement regression guards the capture/child-environment boundaries again
 | `AIKI_WEB_APP` | `device-auth-cli.ts` owner pairing URL |
 | `AIKI_ARTIFACT_MAX_BYTES` | `artifacts.ts` |
 | `AIKI_FCM_KEY_FILE` | `fcm.ts` |
+| `AIKI_PUSH_RELAY_ENDPOINT` | `push-relay/settings.ts` |
 | `AIKI_VAPID_KEY_FILE`, `AIKI_VAPID_SUBJECT` | `notifications.ts` |
 | `AIKI_DISK_LOW_PERCENT`, `AIKI_DISK_LOW_BYTES` | `disks.ts` |
 | `AIKI_WORK_FINISHED_MINUTES` | `work-finished.ts` |
@@ -2923,6 +2924,42 @@ apps/<native>/      later; technology not chosen
 ```
 
 ## Notifications
+
+### Backend encrypted relay transport (T95)
+
+`AIKI_PUSH_RELAY_ENDPOINT` in the existing private server settings is the operator-approved relay v1 base URL
+(ending in `/v1/`). HTTPS is required; HTTP is allowed only on loopback for isolated tests. No admin/account
+credential is accepted. Requests use octet-stream JSON, no-store, a deadline and redirect rejection. Without this
+setting no relay store is opened, files written or feature advertised; direct FCM and Web Push remain unchanged.
+D51: relay accounts and relay push are optional. Nothing outside Android notification settings requests them.
+
+`fcm-relay-v1` requires device sign-in support. Only authenticated sessions may register/confirm/sync relay routes,
+including in optional mode. Identity is the backend's stable ID and authenticated session, never caller labels.
+`notifications.registerRelay` persists an operation receipt and pending derived keys before replying with the backend
+public key, transcript confirmation, backend/session IDs and server time. `notifications.confirmRelay` validates the
+phone confirmation before activating. `notifications.syncRelay` updates preferences/lease or unregisters. Existing
+unregister/test/device requests also work with the server-returned device ID. Configuration and device reads expose
+only safe status. The phone activates its relay route before confirming the backend; a successor replaces, never
+adds to, a session's active transport. An active relay selection suppresses old direct rows durably even across a
+crash between files. Replacement removes old queued messages rather than replaying historical events.
+
+Backend-owned mode-0600 `notifications/push-relay.json` contains pending/active routes, operation receipts, public
+transcript material, purpose-separated derived keys, capabilities, counters, exact encrypted send outboxes and
+delete-only outboxes. `push-relay-counters.json` is an independent high-water witness; counter disagreement fails
+closed to new encryption and requires fresh keys. A coherent rollback of both files cannot be detected by local
+storage alone; backup restoration must use fresh routes/keys. Neither file belongs in exports/support bundles.
+Writes are serialized atomic private-file replacements following the existing stores; sequence allocation is durable
+before encryption and exact envelope bytes are durable before sending. Retries never re-encrypt. Event IDs are
+random and stable for a held event and its retries. Existing Notifier policy runs first; retries re-check session,
+preferences, quiet hours and archive state. No relay failure falls back to direct FCM or plaintext.
+
+Send retries start at five seconds, use exponential jitter capped at fifteen minutes, respect Retry-After and stop
+at message/route expiry (at most twelve hours). A route holds at most 100 messages; the newest event is dropped at
+capacity. Accepted events are removed durably. Terminal responses stop the message and retain safe delivery status;
+acceptance is never described as delivery. Revoke/expiry/unregister cancels local sends immediately and atomically
+replaces route secrets/keys with delete-only work before dropping direct notification rows. Delete retries survive
+restart, do not require a live session, and erase the delete capability only after 204. Safe status distinguishes
+local revoke with cleanup pending from completed cleanup. Already handed-off pushes cannot be recalled.
 
 ### Encrypted relay v1 library (T92)
 

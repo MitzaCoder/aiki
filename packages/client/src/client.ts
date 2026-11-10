@@ -84,6 +84,11 @@ import type {
 	ModelsListResponse,
 	NotificationDevice,
 	NotificationsConfigResponse,
+	NotificationsRegisterRelayRequest,
+	NotificationsRegisterRelayResponse,
+	NotificationsConfirmRelayResponse,
+	NotificationsSyncRelayRequest,
+	NotificationsSyncRelayResponse,
 	NotificationsDeviceResponse,
 	NotificationsInteractionResponse,
 	NotificationsPresenceResponse,
@@ -759,6 +764,35 @@ export class HarnessClient {
 	 * The VAPID public key this backend signs its pushes with. Every backend should answer the same key, because a browser
 	 * holds one push subscription; a backend older than the request answers `unknown_request`.
 	 */
+	/** Return safe transport availability; relay absence means no relay negotiation. */
+	async readNotificationTransports(): Promise<Omit<NotificationsConfigResponse, "type" | "id">> {
+		const { type: _type, id: _id, ...config } =
+			await this.#call<NotificationsConfigResponse>({ type: "notifications.config" });
+		return config;
+	}
+
+	/** Stage a signed-in route and return the persisted key-agreement answer. */
+	async registerRelayNotifications(
+		registration: Omit<NotificationsRegisterRelayRequest, "type" | "id">,
+	): Promise<NotificationsRegisterRelayResponse> {
+		return await this.#call<NotificationsRegisterRelayResponse>({ type: "notifications.registerRelay", ...registration });
+	}
+
+	/** Activate only after phone storage and relay activation have completed. */
+	async confirmRelayNotifications(operationId: string, confirmation: string): Promise<NotificationDevice> {
+		const response = await this.#call<NotificationsConfirmRelayResponse>({
+			type: "notifications.confirmRelay", operationId, confirmation,
+		});
+		return response.device;
+	}
+
+	/** Sync phone-authorized lease/preferences, or locally revoke with durable relay cleanup. */
+	async syncRelayNotifications(
+		sync: Omit<NotificationsSyncRelayRequest, "type" | "id">,
+	): Promise<NotificationsSyncRelayResponse> {
+		return await this.#call<NotificationsSyncRelayResponse>({ type: "notifications.syncRelay", ...sync });
+	}
+
 	async readNotificationsConfig(): Promise<string> {
 		const response = await this.#call<NotificationsConfigResponse>({ type: "notifications.config" });
 		return response.publicKey;

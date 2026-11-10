@@ -4,6 +4,18 @@ package io.github.mitzacoder.aiki.data
 import io.github.mitzacoder.aiki.protocol.*
 import kotlinx.serialization.json.*
 
+suspend fun HarnessClient.request(value: NotificationsRegisterRelayRequest, explicitNulls: Set<String> = emptySet()): NotificationsRegisterRelayResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(NotificationsRegisterRelayRequest.serializer(), value).jsonObject, explicitNulls), NotificationsRegisterRelayResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: NotificationsConfirmRelayRequest, explicitNulls: Set<String> = emptySet()): NotificationsConfirmRelayResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(NotificationsConfirmRelayRequest.serializer(), value).jsonObject, explicitNulls), NotificationsConfirmRelayResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: NotificationsSyncRelayRequest, explicitNulls: Set<String> = emptySet()): NotificationsSyncRelayResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(NotificationsSyncRelayRequest.serializer(), value).jsonObject, explicitNulls), NotificationsSyncRelayResponse.serializer()
+)
+
 suspend fun HarnessClient.request(value: AuthRenewRequest, explicitNulls: Set<String> = emptySet()): AuthRenewResponse = exchange(
     value.id, withExplicitNulls(wireJson.encodeToJsonElement(AuthRenewRequest.serializer(), value).jsonObject, explicitNulls), AuthRenewResponse.serializer()
 )

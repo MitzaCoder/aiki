@@ -1,3 +1,28 @@
+
+export { type NotificationRelayStatus, NotificationRelayStatusSchema } from "./notifications.ts";
+import {
+	NotificationsRegisterRelayRequestSchema,
+	NotificationsRegisterRelayResponseSchema,
+	NotificationsConfirmRelayRequestSchema,
+	NotificationsConfirmRelayResponseSchema,
+	NotificationsSyncRelayRequestSchema,
+	NotificationsSyncRelayResponseSchema,
+} from "./notification-relay.ts";
+
+export {
+	type NotificationsRegisterRelayRequest,
+	NotificationsRegisterRelayRequestSchema,
+	type NotificationsRegisterRelayResponse,
+	NotificationsRegisterRelayResponseSchema,
+	type NotificationsConfirmRelayRequest,
+	NotificationsConfirmRelayRequestSchema,
+	type NotificationsConfirmRelayResponse,
+	NotificationsConfirmRelayResponseSchema,
+	type NotificationsSyncRelayRequest,
+	NotificationsSyncRelayRequestSchema,
+	type NotificationsSyncRelayResponse,
+	NotificationsSyncRelayResponseSchema,
+} from "./notification-relay.ts";
 export * from "./push-relay.ts";
 export * from "./device-auth.ts";
 import {
@@ -430,6 +455,8 @@ import {
 	NotificationsInteractionResponseSchema,
 	type NotificationsPresenceResponse,
 	NotificationsPresenceResponseSchema,
+	type NotificationRelayStatus,
+	NotificationRelayStatusSchema,
 } from "./notifications.ts";
 import {
 	type BoardTaskStatus,
@@ -721,6 +748,9 @@ export const ClientMessageSchema = Type.Union([
 	SchedulesRunRequestSchema,
 	NotificationsConfigRequestSchema,
 	NotificationsRegisterRequestSchema,
+	NotificationsRegisterRelayRequestSchema,
+	NotificationsConfirmRelayRequestSchema,
+	NotificationsSyncRelayRequestSchema,
 	NotificationsRegisterFcmRequestSchema,
 	NotificationsUnregisterRequestSchema,
 	NotificationsDeviceRequestSchema,
@@ -822,6 +852,9 @@ export const ResponseSchema = Type.Union([
 	SchedulesRunResponseSchema,
 	NotificationsConfigResponseSchema,
 	NotificationsRegisterResponseSchema,
+	NotificationsRegisterRelayResponseSchema,
+	NotificationsConfirmRelayResponseSchema,
+	NotificationsSyncRelayResponseSchema,
 	NotificationsRegisterFcmResponseSchema,
 	NotificationsUnregisterResponseSchema,
 	NotificationsDeviceResponseSchema,
@@ -894,6 +927,13 @@ export type ServerMessage = Static<typeof ServerMessageSchema>;
  * them to a generator directly.
  */
 export const PROTOCOL_SCHEMAS: Readonly<Record<string, TSchema>> = {
+	NotificationRelayStatus: NotificationRelayStatusSchema,
+	NotificationsRegisterRelayRequest: NotificationsRegisterRelayRequestSchema,
+	NotificationsRegisterRelayResponse: NotificationsRegisterRelayResponseSchema,
+	NotificationsConfirmRelayRequest: NotificationsConfirmRelayRequestSchema,
+	NotificationsConfirmRelayResponse: NotificationsConfirmRelayResponseSchema,
+	NotificationsSyncRelayRequest: NotificationsSyncRelayRequestSchema,
+	NotificationsSyncRelayResponse: NotificationsSyncRelayResponseSchema,
 	DeviceAuthMode: DeviceAuthModeSchema,
 	DeviceAuthState: DeviceAuthStateSchema,
 	AuthDevice: AuthDeviceSchema,

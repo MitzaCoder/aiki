@@ -54,6 +54,79 @@ open class UnionSerializer<T : Any>(
 }
 
 @Serializable
+data class NotificationRelayStatus(
+    val `available`: Boolean,
+    val `state`: String,
+    val `leaseExpiresAt`: Long?,
+    val `absoluteExpiresAt`: Long?,
+    val `cleanup`: String,
+    val `lastDelivery`: String?
+)
+
+@Serializable
+data class NotificationsRegisterRelayRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "notifications.registerRelay",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `operationId`: String,
+    val `routeId`: String,
+    val `keyId`: String,
+    val `sendBearer`: String,
+    val `deleteBearer`: String,
+    val `leaseExpiresAt`: Long,
+    val `absoluteExpiresAt`: Long,
+    val `phonePublicKey`: String,
+    val `salt`: String,
+    val `label`: String,
+    val `backendKey`: String,
+    val `preferences`: NotificationPreferences,
+    val `predecessorRouteId`: String? = null
+)
+
+@Serializable
+data class NotificationsRegisterRelayResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "notifications.registerRelay",
+    val `id`: String,
+    val `backendPublicKey`: String,
+    val `confirmation`: String,
+    val `backendId`: String,
+    val `sessionId`: String,
+    val `deviceId`: String,
+    val `serverTime`: Long
+)
+
+@Serializable
+data class NotificationsConfirmRelayRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "notifications.confirmRelay",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `operationId`: String,
+    val `confirmation`: String
+)
+
+@Serializable
+data class NotificationsConfirmRelayResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "notifications.confirmRelay",
+    val `id`: String,
+    val `device`: NotificationDevice
+)
+
+@Serializable
+data class NotificationsSyncRelayRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "notifications.syncRelay",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `routeId`: String,
+    val `leaseExpiresAt`: Long? = null,
+    val `preferences`: NotificationPreferences? = null,
+    val `unregister`: Boolean? = null
+)
+
+@Serializable
+data class NotificationsSyncRelayResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "notifications.syncRelay",
+    val `id`: String,
+    val `relay`: NotificationRelayStatus
+)
+
+@Serializable
 data class DeviceAuthState(
     val `mode`: String,
     val `sessionId`: String?,
@@ -2238,7 +2311,8 @@ data class NotificationDevice(
     val `preferences`: NotificationPreferences,
     val `createdAt`: String,
     val `lastDelivery`: NotificationDeviceLastDelivery?,
-    val `transport`: String? = null
+    val `transport`: String? = null,
+    val `relay`: NotificationRelayStatus? = null
 )
 
 @Serializable
@@ -2335,6 +2409,7 @@ data class NotificationsConfigResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "notifications.config",
     val `id`: String,
     val `publicKey`: String,
+    val `relay`: NotificationRelayStatus? = null,
     val `fcm`: NotificationsConfigResponseFcm? = null
 )
 

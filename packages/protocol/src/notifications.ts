@@ -99,8 +99,24 @@ export const PushSubscriptionSchema = Type.Object({
 export type PushSubscription = Static<typeof PushSubscriptionSchema>;
 
 /** How a device is reached: a browser's Web Push subscription or an Android app's FCM token. */
-export const NotificationTransportSchema = Type.Union([Type.Literal("web-push"), Type.Literal("fcm")]);
+export const NotificationTransportSchema = Type.Union([
+	Type.Literal("web-push"), Type.Literal("fcm"), Type.Literal("fcm-relay"),
+]);
 export type NotificationTransport = Static<typeof NotificationTransportSchema>;
+
+/** Safe relay status only; never capabilities, transcript material or keys. */
+export const NotificationRelayStatusSchema = Type.Object({
+	available: Type.Boolean(),
+	state: Type.Union([
+		Type.Literal("unregistered"), Type.Literal("pending"), Type.Literal("active"),
+		Type.Literal("needs_new_keys"), Type.Literal("revoked"),
+	]),
+	leaseExpiresAt: Type.Union([Type.Integer(), Type.Null()]),
+	absoluteExpiresAt: Type.Union([Type.Integer(), Type.Null()]),
+	cleanup: Type.Union([Type.Literal("pending"), Type.Literal("done")]),
+	lastDelivery: Type.Union([Type.String(), Type.Null()]),
+});
+export type NotificationRelayStatus = Static<typeof NotificationRelayStatusSchema>;
 
 export const NotificationDeviceSchema = Type.Object({
 	deviceId: Type.String({ minLength: 1 }),
@@ -124,6 +140,7 @@ export const NotificationDeviceSchema = Type.Object({
 		{ description: "The last push attempt to this device." },
 	),
 	transport: Type.Optional(NotificationTransportSchema),
+	relay: Type.Optional(NotificationRelayStatusSchema),
 });
 export type NotificationDevice = Static<typeof NotificationDeviceSchema>;
 
@@ -245,6 +262,7 @@ export const NotificationsConfigResponseSchema = Type.Object({
 	type: Type.Literal("notifications.config"),
 	id: RequestIdSchema,
 	publicKey: Type.String({ minLength: 1 }),
+	relay: Type.Optional(NotificationRelayStatusSchema),
 	fcm: Type.Optional(
 		Type.Union([Type.Object({ projectId: Type.String({ minLength: 1 }) }), Type.Null()], {
 			description:

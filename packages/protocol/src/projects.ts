@@ -317,6 +317,7 @@ export const HARNESS_FEATURES = [
 	"board-moves",
 	"ref-details",
 	"fcm-push",
+	"fcm-relay-v1",
 	"schedule-events",
 	"project-archive",
 	"filesystem-complete",
@@ -339,7 +340,7 @@ export type HarnessFeature = (typeof HARNESS_FEATURES)[number];
 
 /** Missing hello.features is never evidence of device-auth support. */
 export const LEGACY_HARNESS_FEATURES = HARNESS_FEATURES.filter(
-	(feature) => feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
+	(feature) => feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
 );
 
 export const HarnessFeatureSchema = Type.Union([
@@ -370,6 +371,7 @@ export const HarnessFeatureSchema = Type.Union([
 	Type.Literal("board-moves"),
 	Type.Literal("ref-details"),
 	Type.Literal("fcm-push"),
+	Type.Literal("fcm-relay-v1"),
 	Type.Literal("schedule-events"),
 	Type.Literal("project-archive"),
 	Type.Literal("filesystem-complete"),
