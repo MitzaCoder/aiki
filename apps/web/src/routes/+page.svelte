@@ -2,6 +2,8 @@
 	import { overlayScroll } from '#lib/scrollbars.js';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { onMount } from 'svelte';
+	import { needsWelcome } from '#lib/welcome.js';
+	import Welcome from '#lib/components/Welcome.svelte';
 	import BackendForm from '#lib/components/BackendForm.svelte';
 	import Banner from '#lib/components/Banner.svelte';
 	import ConnectionBadge from '#lib/components/ConnectionBadge.svelte';
@@ -21,6 +23,9 @@
 
 	/** The published backends this browser does not have yet: offered on the first run and on this page. */
 	const suggested = $derived(missingPublished(suggestedBackends.backends, harness.backends.map(({ url }) => url)));
+
+	const localBackend = $derived(harness.backends.find((backend) => backend.id === harness.localBackendId));
+	const firstRun = $derived(needsWelcome(localBackend));
 
 	let pickerBackend = $state<BackendConnection | undefined>(undefined);
 	onMount(() => {
@@ -57,6 +62,9 @@
 	use:overlayScroll={'parent'}
 	class="flex h-full w-full flex-col gap-3 overflow-y-auto px-3 *:shrink-0 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5"
 >
+	{#if firstRun && localBackend}
+		<Welcome backend={localBackend} />
+	{:else}
 	<header class="flex items-start gap-2 pb-1">
 		<ProjectsMenuButton />
 		<div class="flex flex-1 flex-col gap-1">
@@ -219,6 +227,7 @@
 				</Card.Content>
 			</Card.Root>
 		{/each}
+	{/if}
 	{/if}
 </main>
 </div>

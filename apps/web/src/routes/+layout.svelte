@@ -81,6 +81,7 @@
 	onMount(() => {
 		if (page.url.pathname === '/pair') return;
 		harness.start();
+		void harness.discoverLocal();
 		// The worker is what makes the app installable and what shows a push; registering it early keeps it current.
 		void notifications.start();
 		// The published list of backends beside the app: offered as one-tap adds, empty when the host publishes none.

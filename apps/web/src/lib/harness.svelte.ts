@@ -604,6 +604,8 @@ export class BackendConnection {
 /** The configured backends and the operations that add, rename and remove them. */
 export class HarnessApp {
 	backends = $state<BackendConnection[]>([]);
+	/** Set only by the installed server's loopback discovery endpoint; hosted UI never assumes a backend. */
+	localBackendId = $state<string | undefined>(undefined);
 	/**
 	 * Deploy attempts this browser's reader dismissed, oldest first. Shared by every screen, so dismissing the banner on
 	 * the home page also hides it in the chat; a new attempt has a new key and shows again.
@@ -636,6 +638,18 @@ export class HarnessApp {
 			backend.start();
 			void backend.ensureLoaded();
 		}
+	}
+
+	async discoverLocal(): Promise<void> {
+		if (typeof window === "undefined" || !["127.0.0.1", "localhost"].includes(window.location.hostname)) return;
+		try {
+			const response = await fetch("/aiki-local.json", { cache: "no-store", signal: AbortSignal.timeout(3000) });
+			if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) return;
+			if ((await response.json() as { local?: boolean }).local !== true) return;
+			const url = normalizeBackendUrl(window.location.origin);
+			const backend = this.backends.find((entry) => entry.url === url) ?? this.addBackend("This computer", url);
+			this.localBackendId = backend.id;
+		} catch { /* No endpoint: preserve hosted/development behavior. */ }
 	}
 
 	backend(id: string): BackendConnection | undefined {
