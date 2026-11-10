@@ -2,13 +2,30 @@
 
 Aiki is an early personal, cross-device agent harness built on
 [pi durable](https://github.com/earendil-works/pi/tree/main/packages/durable).
-**It is not ready for others to install yet.**
+The local installer is experimental. Network/device pairing is not available yet; keep fresh installs on loopback.
 
 Original project code is [MIT-licensed](LICENSE). Bundled third-party code, fonts and icons retain their own licences;
 see `apps/android/licenses/` and the notices alongside the bundled code.
 
 One app is separate from every backend: it connects to many harness servers at once and shows their projects together.
 Backends own their storage and run their agents and tools on their own machines. Design: `docs/DESIGN.md`.
+
+## Install
+
+Linux and macOS (x64/arm64); Windows through WSL. Once a first release is published:
+
+```sh
+curl -fsSL https://github.com/MitzaCoder/aiki/releases/latest/download/install.sh | sh
+```
+
+The installer brings private, checksum-pinned Bun 1.4.4 and zellij, installs the release and its local web app,
+and tries to start a user service. No root or global Bun/Node installation. Install git and jj for repositories;
+Tailscale is for future phone access. Use `--no-service` to run `aiki start` in a terminal, then `aiki open`.
+Welcome reuses provider settings and the project folder picker. Providers use pi-ai directly; no vendor CLI needed.
+
+Until releases exist, use `sh install.sh --ref COMMIT_OR_TAG --no-service` from a downloaded script.
+[Install guide](docs/INSTALL.md): paths, prerequisites for minimal systems, update/rollback, uninstall,
+troubleshooting and local release testing. **Do not expose the port to the network: Origin checks are not auth.**
 
 ## Local configuration and publication
 

@@ -1,5 +1,22 @@
 # Continue
 
+## Local installer and Welcome (T71)
+
+`install.sh` brings checksum-pinned private Bun 1.4.4 and zellij 0.45.1, versioned source/web releases,
+a local CLI, stopped-process update/rollback and optional user services. Only the CLI opts into same-origin
+static serving and loopback discovery; hosted deployment stays API-only. Welcome reuses provider settings
+and the folder picker. Installed CLI data/config/env-file paths are isolated from inherited backend settings.
+Git/jj/Tailscale checks explain missing tools; minimal systems still need curl/tar/unzip/checksum utilities.
+`docs/INSTALL.md` covers paths, troubleshooting, manual macOS checks and release building. Tag workflow is ready;
+no tag/release/push/bookmark move was made. Device auth/pairing (T57) and single binary (T72) remain separate.
+
+Clean non-root Debian and throwaway-HOME Linux runs covered repeat installation, foreground start/open/status,
+second-release update, rollback, generated service definitions, uninstall/reinstall and purge. A synthetic local
+git-ref install also rebuilt the web app. T71 has six before/after screenshots, first-run video and container log.
+Root: 1,722 tests pass (one earlier nightly-maintenance timeout passed isolated and in two later full runs);
+web: 809 tests, zero check errors/warnings, build passes. Typecheck, protocol generator (299 DTOs / 78 overloads,
+exit 0), shellcheck and public/Gitleaks checks pass. Real service activation and macOS execution are untested.
+
 ## One delivery per worker answer (T85)
 
 Spawn and steer reporters can share a final answer. Their old per-call IDs wrote duplicate transcript copies and

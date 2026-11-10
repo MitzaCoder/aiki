@@ -1,0 +1,144 @@
+# Install Aiki locally
+
+Aiki runs your agents and tools as **your user**, with your filesystem access and provider spending authority.
+Each person installs their own backend. This experimental installer is for Linux and macOS, x64/arm64; Windows
+users run it inside WSL. There is no Node fallback. Device authentication/pairing is separate work: **keep this
+installation on loopback. Do not forward the port, bind it to the LAN, or put it behind Tailscale Serve yet.**
+
+## Install
+
+Once the first tagged release is published:
+
+```sh
+curl -fsSL https://github.com/MitzaCoder/aiki/releases/latest/download/install.sh | sh
+```
+
+To inspect before running, download `install.sh`, read it, then run `sh install.sh`. HTTPS checksums detect download
+corruption; they are not a signature or protection against a compromised publisher. Bun 1.4.4 and zellij 0.45.1
+archive hashes are pinned in the installer. They are private to Aiki and never replace your global tools.
+The release archive and its sibling `.sha256` come from the same GitHub Release.
+
+Install **git** for repositories, **jj** for isolated workers, and **Tailscale** for future phone access. Missing
+tools are explained without blocking local setup (except git is required for `--ref`). On minimal Linux images,
+bootstrap utilities `curl`, `tar`, `unzip`, and `sha256sum` or `shasum` must be available. macOS supplies these except
+that it uses `shasum`. No sudo or system-wide package changes are made. Repository toolchains remain your choice.
+`ffprobe` is optional for video metadata. A failed zellij download leaves chat usable; re-run to enable terminals.
+
+The default tries to install and start a **user** service. Without a user systemd session (Linux) or a logged-in
+launchd GUI session (macOS), continue in the foreground instead:
+
+```sh
+curl -fsSL https://github.com/MitzaCoder/aiki/releases/latest/download/install.sh | sh -s -- --no-service
+export PATH="$HOME/.local/bin:$PATH"   # if the installer says it is missing
+aiki start                             # keep this terminal open
+# In another terminal:
+aiki open                              # http://127.0.0.1:7317
+```
+
+Welcome connects to this computer automatically. Sign in or save an API key in the existing account settings,
+choose a project folder, then choose its coordinator model. Providers still connect directly through pi-ai;
+Claude Code and Codex CLIs are not required. Subscription access is subject to provider policy/account eligibility;
+paid API keys are the straightforward alternative. A saved credential is not proof of successful inference.
+
+## Commands and paths
+
+- `aiki start`: foreground, loopback only. Ctrl-C closes it cleanly. It never auto-opens a browser.
+- `aiki open`: open the local URL; prints it if no browser is available. `AIKI_NO_BROWSER=1` prints only.
+- `aiki status`: check the selected port for Aiki's local discovery endpoint; nonzero when unavailable.
+- `aiki version`: release and private Bun versions.
+- `aiki doctor`: tool availability/versions, local paths, platform and whether the configured port is free.
+- `aiki service install|remove`: user unit `aiki-local.service`, or launch agent
+  `io.github.mitzacoder.aiki.local`. `--print` generates the platform's definition without writing or running it.
+  Linux users who want startup before login may choose to enable linger themselves; Aiki never does so.
+- `aiki update [--version v0.1.0]`: latest stable GitHub release by default, or an exact tag.
+- `aiki rollback`: select the retained previous release, swapping it with current.
+
+Default installation root: `${XDG_DATA_HOME:-~/.local/share}/aiki`; runtime under `runtime/`, immutable releases
+under `releases/`, backend state under `data/`, with `current` and `previous` symlinks. Configuration defaults to
+`${XDG_CONFIG_HOME:-~/.config}/aiki`. The launcher is `~/.local/bin/aiki`. With `--dir /absolute/empty/path`, both
+state and config live there (`data/`, `config/`). Existing unmanaged directories or another launcher are refused.
+Re-running the same version reuses its ready release and does not reinstall dependencies. A normal uninstall
+retains the tiny ownership metadata so reinstalling into the same root reuses your data/config.
+
+The installed CLI deliberately uses its recorded data/config directories, not another backend's inherited
+`AIKI_DATA_DIR`, `AIKI_CONFIG_DIR` or `AIKI_ENV_FILE`. Its own `config/server.env` is loaded if present. Keep
+persistent storage identity settings stable; never borrow another installation's environment or credential files.
+The source/deploy entry point retains its existing environment behavior.
+
+Change port by putting `AIKI_PORT=17317` in this installation's `server.env`, or supplying `AIKI_PORT` to both
+`aiki start` and `aiki open`. The installer prints the default URL; `aiki open` resolves your configured port.
+Linux service definitions capture the installation-time PATH so git/jj installed through user toolchains are found.
+Reinstall the user service after changing tool paths. macOS logs are under the install root at `service.log`;
+Linux logs use the user journal.
+
+## Updating, rollback, backup and removal
+
+**Stop Aiki first.** For a user service use `aiki service remove`; for foreground use Ctrl-C. Updating never
+restarts a running server or interrupts a tool call. It prepares the new release and frozen dependencies before
+switching the `current` symlink, then keeps the previous release only. A later update removes older releases.
+Run `aiki start` (or `aiki service install`) and check `aiki status` afterward. A failed download/checksum/build
+leaves the selected release unchanged. An interrupted install can leave `.install-lock`; remove it only after
+confirming no installer is running.
+
+Back up `data/` and your config directory **while stopped**, plus repositories separately. These include provider
+credentials, conversations, artifacts and absolute repository paths: protect backups like secrets. A code rollback
+does **not** undo database migrations, so consult release notes before downgrading. There is no automatic
+health-triggered rollback or nightly update channel in this first installer.
+
+```sh
+sh install.sh --uninstall               # keeps state/config; removes its launcher/runtime/releases/tools/service
+sh install.sh --uninstall --purge       # also deletes state/config; never deletes project repositories
+# Add the same --dir used during installation, if any.
+```
+
+After an ordinary uninstall, re-run the installer to use the preserved state or to make the purge command available
+again. Purging is permanent. The owner's separate `deploy/` installation, watcher, units and data are never managed
+by this CLI. The local service refuses to overwrite an unrelated unit/agent at its chosen path.
+
+## Development and release testing
+
+Before a public release exists, use an explicit git ref (not a moving `main` watcher):
+
+```sh
+sh install.sh --ref COMMIT_OR_TAG --dir "$HOME/aiki-test" --no-service
+```
+
+This fetches a clean source archive from the public repository, installs the frozen lockfile and builds the web
+app without personal backend suggestions. A release tarball already contains the neutral prebuilt web app.
+Locally, with Bun 1.4.4, build and install archives without creating a tag or a GitHub release:
+
+```sh
+bun scripts/build-release.ts --version v0.0.1-test.1 --out .preview/releases
+sh install.sh --version v0.0.1-test.1 --archive .preview/releases/aiki-v0.0.1-test.1.tar.gz --dir "$HOME/aiki-test" --no-service
+# Build a second version, stop the test server, then:
+aiki update --version v0.0.1-test.2 --archive .preview/releases/aiki-v0.0.1-test.2.tar.gz
+aiki rollback
+```
+
+The builder uses an explicit source allow-list, a clean staging directory, frozen dependencies and a neutral web
+build; no `deploy/local`, Android config, node_modules or environment files enter the tarball. Dependencies retain
+their notices when installed; Bun and zellij keep their upstream licences. `.github/workflows/release.yml` runs
+checks on a `vMAJOR.MINOR.PATCH` tag and attaches the tarball, checksum and installer. The workflow does not create
+tags. GitHub's latest non-prerelease is the only automatic update channel.
+
+### Troubleshooting
+
+- No releases yet / GitHub 404: use `--ref` or a locally built `--archive` until a first tag is published.
+- Permission errors: choose an empty user-owned `--dir`; do not run as root.
+- Checksum mismatch: retry on a trusted connection; do not bypass verification.
+- Bun cannot execute: verify OS/architecture and Linux libc compatibility. x64 uses the baseline build (no AVX2
+  requirement); Linux musl has separate pins. Very old CPUs/libc/kernel versions may need a newer OS.
+- Page opens but is disconnected: verify `aiki status`, configured port, and that the URL is loopback. Remove stale
+  saved backends only in this browser's Settings. Static hosted web deployments do not auto-discover a local server.
+- Port in use: `aiki doctor`; choose another `AIKI_PORT`. Aiki never kills a process to reclaim a port.
+- Provider auth fails: check account eligibility and provider policy; try an API key. Never attach credentials to
+  a support report. No provider credentials are imported from the owner's or vendor CLI installations.
+- Missing jj: chat/shared checkout can work; isolated workers cannot. Install jj and restart with it on PATH.
+
+### Manual macOS checklist (not tested on Linux)
+
+On both Apple Silicon and Intel: verify the pinned download hashes and execution, frozen install/build from a ref,
+paths with spaces/quotes, browser opening, loopback HTTP/WebSocket and first-run setup. Generate and inspect the
+plist; in a disposable account test launchctl bootstrap/bootout, login restart, PATH discovery and `service.log`.
+Then test update/rollback while stopped, running-process refusal, normal uninstall/reinstall and purge. Confirm no
+global Bun, shell profile, unrelated launch agent or existing backend is changed. Cross-compilation is not testing.
