@@ -1,5 +1,29 @@
 # Continue
 
+## Reliable root tests (T83)
+
+Five separate causes: activity deduplication was asserted on whole-project pushes that also carry attention/links;
+now it is checked at the activity publisher, retaining socket working/idle/reply assertions. The nightly test advanced
+its fake clock after a fixed sleep, before scope discovery could finish; it now awaits evaluation before advancing.
+The cap fixture performs 100 durable transactions/digests; its justified loaded-machine budget is 30 seconds, not five.
+Terminal startup has a product race, fixed in the following commit: list-sessions probes can panic Zellij 0.45.1 in
+RemoveClient before session_data exists. That fix awaits the first screen-clear render without probing, handles split
+escapes/small screens, and orders startup output after terminal.open. Its DESIGN update and render/order regressions
+cover the backend change; the test-only commits here do not include it.
+Finally, deploy fixtures fetched real Zellij archives into fake homes: a final-check run stalled on GitHub and hit
+five test timeouts plus the 280-second command limit. All synthetic hosts now have private terminal stubs; any curl
+attempt fails a test assertion. No deployment script behavior changed.
+
+CPU-pinned stress: activity 2/30 failures before, 0/30 after; cap 31/32 heavily starved before, 0/32 after; scoped
+terminal 3/12 in the primary heavy batch before, 0/36 after. Nightly did not fail in 42 natural stress runs; forcing
+advance-before-discovery reproduced its timeout once. It passes 30 stress runs after synchronization. Passing
+artifact revocation deliberately errors its HTTP response stream: Bun logs auth_revoked at artifacts.ts controller.error;
+the reader catches it, and this is not an unhandled test rejection (isolated suite 5 pass, zero errors). No suppression.
+
+Previous full-stack root checks (including the following terminal fix), three consecutive runs: each 1,913 pass / 23,162 assertions / 165 files, zero failures, in 210.44s,
+194.54s and 190.22s. Typecheck and public guard pass. No retries/skips/assertions removed, UI changes, main movement,
+push or deployment. Only the cap's measured bounded workload received a larger test timeout.
+
 ## Brave push-service guidance (T89)
 
 Web Settings → Notifications now explains the exact push-service `AbortError`: in Brave, enable “Use Google services
