@@ -96,6 +96,7 @@
 	/** The background thread this chat is; undefined for main ("main" in the route reads as main too). */
 	const threadId = $derived(isMainThread(threadParam) ? undefined : threadParam);
 	const isThread = $derived(threadId !== undefined);
+	$effect(() => tasksView.useProject(`${backend.id}:${projectId}`));
 
 	/** The parts of the transcript column the chat drives: following new output. */
 	type TranscriptHandle = {
@@ -638,7 +639,7 @@
 		sidebarTab = target;
 		sidebarOpen = true;
 		// Tasks open the way this device last looked at them: the list beside the chat, or the board full width.
-		sidebarExpanded = target === 'board' && supportsTasks && tasksView.mode === 'board';
+		sidebarExpanded = target === 'board' && supportsTasks && tasksView.mode !== 'list';
 	}
 
 	/** The task sheet's "Show with linked": the task list, filtered to that task and everything linked to it. */
@@ -646,7 +647,7 @@
 		taskFilter.focusOn(taskId);
 		sidebarTab = 'board';
 		sidebarOpen = true;
-		sidebarExpanded = supportsTasks && tasksView.mode === 'board';
+		sidebarExpanded = supportsTasks && tasksView.mode !== 'list';
 	}
 
 	/** A reason for a move on a backend whose saves carry no note: it goes to main as a message about the task. */
@@ -1101,6 +1102,8 @@
 							<TasksView
 								{board}
 								workers={workerList}
+								graphWorkers={workers?.allWorkers ?? []}
+								scope={`${backend.id}:${projectId}`}
 								threads={threadList}
 								workerHref={(worker) => workerLink(worker)}
 								taskHref={taskLink}

@@ -1,5 +1,23 @@
 # Continue
 
+## Bubble club graph (T79)
+
+Bubble club is the only graph; alternate looks/flag are removed. Camera and List/Board/Graph choices are local per
+backend/project under name-neutral keys. Captions avoid nodes/each other, hide at low zoom and expose full-title
+tooltips. Aspect-aware initial layout pre-settles before SVG; updates retain tasks, animate worker travel and fade
+completion. TasksPanel is untouched. The synthetic demo script has loopback controls for reports, moves, arrivals,
+completion and 80-task load; it never uses installed data or real worker tools.
+
+T79 has six normal/dense after screenshots, a 15-second live recording and browser/performance JSON. Live travel,
+completion, stable arrivals, saved framing/view, phone pinch/tap, keyboard and reduced motion pass. 80 tasks/10
+workers, three 240-frame Chromium runs: median 16.7ms, p95 16.7–16.8ms, mean 17.38–17.51ms; first graph paint
+87–90ms. Occasional 133–150ms mount/closed/Fit intervals remain; no deeper profiling was pursued. Stacked above web
+and Android family folding, preserving every continuation section and both DESIGN contracts. Web: 872 tests, zero
+check errors/warnings and build pass; root: 1,857 tests and typecheck pass on the first run; public guard passes.
+Isolated createSetup (default auth off) production-build smoke folds/unfolds a list family, opens the graph with
+22 active tasks and six workers, and retains folding across view switches. No page errors or new media. No dependencies,
+main move, push or deployment. Android still needs the native graph, gestures, accessible focus and motion contract.
+
 ## Android task families (T74)
 
 Android now shares the web's same-status family and always-visible attention rules. Quiet families default folded;
@@ -51,7 +69,6 @@ pre-auth rollback (including failed manual-rollback restoration), even with the 
 Deploy a known-good metadata-bearing release while optional before cutover. Never use old tooling to bypass the guard.
 Root: 1,808 tests, zero failures, typecheck; web: 829 tests, zero check errors/warnings, build. Generator check exits 0:
 330 DTOs / 88 overloads. Public guard/Gitleaks pass. Protocol untouched; no Android rebuild, live data access or deploy.
-
 
 ## Full device sign-in rehearsal (T68)
 
@@ -156,7 +173,6 @@ The full client contract, link encoding and comparison fixture are at the top of
 and build; Android: 584 tests (two existing skips), assembly and lint (zero errors, 35 warnings). Typecheck, generation
 and public-source guard pass. No UI, relay, deployment or cross-backend migration bundle was built; do not switch existing
 backends to required until updated clients have claimed, been approved, acknowledged and rebound push.
-
 
 
 ## Usage analysis and subscription resets (T78)

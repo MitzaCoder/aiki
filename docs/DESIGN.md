@@ -1121,9 +1121,9 @@ Decided with the user on 2026-11-06. Web only; protocol addition: the optional `
 `TaskCard.svelte`, `TaskMoveMenu.svelte`, `TaskMoveDialog.svelte`, `TasksView.svelte`.
 
 - **Where.** The sidebar's Tasks tab at its usual width keeps the list. Expanded (its expand control), or as the
-  full-screen sheet on a narrow window, it is the full-width Tasks view with a List | Board switch, remembered per
-  device (`aiki.tasks-view.v1`, list by default). The Tasks button in the header opens the tasks the way this
-  device last looked at them: the list beside the chat, or the board full width. The chat stays the home screen.
+  full-screen sheet on a narrow window, it is the full-width Tasks view with a List | Board | Graph switch, remembered
+  locally per backend/project (`tasks.view.v2:`, list by default). The Tasks button in the header opens this project's
+  last choice: the list beside the chat, or the board/graph full width. The chat stays the home screen.
 - **Columns by status.** To do, Working, Blocked, Ready for review, Waiting, Done. Done holds done and dropped tasks (dropped
   ones greyed and struck through), newest first, the 12 newest then "Show N more"; archived ones only with "Show
   archived". A task with an open question or warning stays in its status column, tinted like its list row; the
@@ -1189,7 +1189,32 @@ animation is used; the existing reduced-motion setting also stops working-dot mo
 supply spoken labels and long-press tooltips instead of browser title tooltips. Explicit list filters and section
 folding remain user controls; attention sections start open. No protocol/backend change is needed.
 
+### Animated task graph (T79)
 
+Bubble club is the chosen web graph: soft clusters and round worker creatures, without a look flag or alternate
+renderers. Expanded Tasks offers List | Board | Graph; the narrow sidebar stays a list. The choice is local per
+backend/project under the name-neutral `tasks.view.v2:` key. Graph is read-only; tasks open the existing sheet.
+
+- Active tasks appear by default; Show closed adds faded done/dropped tasks. Archived tasks stay out. Parent families
+  gather together, including nested descendants. Solid parent, dotted found-while, dashed related and arrowed blocked-by
+  edges have a legend. Arrows point from the blocked task to what it needs. Status has colour and spoken words;
+  parent progress rings show done/total. Review, open questions/warnings and failed workers mark attention.
+- Existing board/worker/thread watches supply real shapes. The graph reads the project-wide worker list without
+  changing the chat's thread filter. Running creatures type and sway gently; idle ones breathe and sleep. Changed
+  nonempty reports send one spark, never a periodic fake report. Reassigned workers travel to their new task;
+  finished/removed workers fade away. Threads are bigger characters linked to their tasks and workers.
+- A small deterministic layout module pre-settles new nodes before rendering. Existing task positions stay fixed on
+  watch replacements; arrivals ease in and updates never refit the camera. Collision bounds include caption space.
+  Label placement excludes nodes and other labels; minor labels disappear at low zoom or when no safe slot remains.
+  Hover/focus reveals a full-title tooltip and highlights family/blockers. Every node is keyboard focusable.
+- Initial cluster columns follow the viewport aspect ratio; retained positions do not reflow on resize or watch updates.
+  First open fits the active graph with padding on desktop and phone. Fit resets framing explicitly. Drag nodes or
+  pan the background; wheel, buttons and pinch zoom. Camera state is local per backend/project under
+  `task-graph.camera.v1:`. Resizing preserves world centre and zoom. No link editing or task moves.
+- Reduced motion disables floating, typing, transitions, departing fades and sparks, retaining status, progress and
+  attention. List remains the full accessible reading path. Android will implement this contract natively later.
+- Synthetic proof uses the throwaway backend seed script. Loopback-only controls exercise reports, reassignment,
+  completion, task arrival and 80 tasks/10 workers. No installed data or real worker tools are used.
 
 ### Ticket and pull request links
 

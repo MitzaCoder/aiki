@@ -758,6 +758,8 @@ export class ProjectWorkers {
 	readonly projectId: string;
 	/** The thread whose workers these are; undefined for main. The server's list and pushes carry every thread's. */
 	readonly threadId: string | undefined;
+	/** Project-wide source for the task graph; the chat's workers remain thread-filtered. */
+	allWorkers = $state<WorkerSummary[]>([]);
 	workers = $state<WorkerSummary[]>([]);
 	defaults = $state<WorkerDefaults>({ ...EMPTY_WORKER_DEFAULTS });
 	loaded = $state(false);
@@ -848,6 +850,7 @@ export class ProjectWorkers {
 	}
 
 	#apply(workers: WorkerSummary[], defaults: WorkerDefaults): void {
+		this.allWorkers = workers;
 		this.workers = workers.filter((worker) => inThread(worker, this.threadId));
 		this.defaults = defaults;
 		this.loaded = true;

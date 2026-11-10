@@ -1,5 +1,5 @@
 /**
- * The full-width Tasks view's List | Board choice, shared by every project on this device and kept in `localStorage`
+ * The full-width Tasks view's List | Board | Graph choice, scoped per backend/project on this device and kept in `localStorage`
  * (`kanban.ts` reads and writes it). The narrow sidebar always shows the list.
  */
 import { loadTasksViewMode, saveTasksViewMode, type TasksViewMode } from "./kanban.ts";
@@ -8,9 +8,17 @@ import { loadTopLevelOnly, saveTopLevelOnly, type TaskFilter } from "./task-rela
 class TasksViewChoice {
 	mode = $state<TasksViewMode>(loadTasksViewMode());
 
+	#scope: string | undefined;
+
+	useProject(scope: string): void {
+		if (this.#scope === scope) return;
+		this.#scope = scope;
+		this.mode = loadTasksViewMode(undefined, scope);
+	}
+
 	set(mode: TasksViewMode): void {
 		this.mode = mode;
-		saveTasksViewMode(mode);
+		saveTasksViewMode(mode, undefined, this.#scope);
 	}
 }
 

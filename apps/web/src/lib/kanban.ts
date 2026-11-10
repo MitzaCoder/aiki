@@ -279,22 +279,23 @@ export function reasonMessage(reason: string): string {
 // --- the remembered view -----------------------------------------------------------------------------------------
 
 /** How the full-width Tasks view shows the tasks; the narrow sidebar always shows the list. */
-export type TasksViewMode = "list" | "board";
+export type TasksViewMode = "list" | "board" | "graph";
 
 /** Per device, like the sidebar. */
 export const TASKS_VIEW_STORAGE_KEY = "aiki.tasks-view.v1";
 
-export function loadTasksViewMode(storage: Pick<Storage, "getItem"> | undefined = browserStorage()): TasksViewMode {
+export function loadTasksViewMode(storage: Pick<Storage, "getItem"> | undefined = browserStorage(), scope?: string): TasksViewMode {
 	try {
-		return storage?.getItem(TASKS_VIEW_STORAGE_KEY) === "board" ? "board" : "list";
+		const mode = storage?.getItem(scope ? `tasks.view.v2:${encodeURIComponent(scope)}` : TASKS_VIEW_STORAGE_KEY);
+		return mode === "board" || mode === "graph" ? mode : "list";
 	} catch {
 		return "list";
 	}
 }
 
-export function saveTasksViewMode(mode: TasksViewMode, storage: Pick<Storage, "setItem"> | undefined = browserStorage()): void {
+export function saveTasksViewMode(mode: TasksViewMode, storage: Pick<Storage, "setItem"> | undefined = browserStorage(), scope?: string): void {
 	try {
-		storage?.setItem(TASKS_VIEW_STORAGE_KEY, mode);
+		storage?.setItem(scope ? `tasks.view.v2:${encodeURIComponent(scope)}` : TASKS_VIEW_STORAGE_KEY, mode);
 	} catch {
 		// Storage can be full or disabled; the choice holds for this page.
 	}

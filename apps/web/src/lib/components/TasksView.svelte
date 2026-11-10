@@ -1,6 +1,8 @@
 <script lang="ts">
 	import ListIcon from '@lucide/svelte/icons/list';
 	import KanbanIcon from '@lucide/svelte/icons/square-kanban';
+	import NetworkIcon from '@lucide/svelte/icons/network';
+	import TaskGraph from '#lib/components/TaskGraph.svelte';
 	import TaskBoard from '#lib/components/TaskBoard.svelte';
 	import TasksPanel from '#lib/components/TasksPanel.svelte';
 	import type { ProjectBoard } from '#lib/board.svelte.js';
@@ -9,12 +11,14 @@
 	import type { ThreadSummary, WorkerSummary } from '@aiki/protocol';
 
 	/**
-	 * The full-width Tasks view: the list or the board, with a List | Board switch this device remembers. The sidebar
+	 * The full-width Tasks view: list, board or graph, with a switch this device remembers. The sidebar
 	 * at its usual width always shows the list; this view is the sidebar expanded, or its sheet on a narrow screen.
 	 */
 	let {
 		board,
 		workers = [],
+		graphWorkers = workers,
+		scope,
 		threads = [],
 		workerHref,
 		taskHref,
@@ -23,6 +27,8 @@
 	}: {
 		board: ProjectBoard | undefined;
 		workers?: readonly WorkerSummary[];
+		graphWorkers?: readonly WorkerSummary[];
+		scope: string;
 		threads?: readonly ThreadSummary[];
 		workerHref?: (worker: WorkerSummary) => string;
 		taskHref: (taskId: string) => string;
@@ -32,7 +38,8 @@
 
 	const MODES: { mode: TasksViewMode; label: string; icon: typeof ListIcon }[] = [
 		{ mode: 'list', label: 'List', icon: ListIcon },
-		{ mode: 'board', label: 'Board', icon: KanbanIcon }
+		{ mode: 'board', label: 'Board', icon: KanbanIcon },
+		{ mode: 'graph', label: 'Graph', icon: NetworkIcon }
 	];
 </script>
 
@@ -57,6 +64,8 @@
 
 {#if tasksView.mode === 'board'}
 	<TaskBoard {board} {workers} {threads} {workerHref} {taskHref} {canNote} {onsendreason} {viewSwitch} />
+{:else if tasksView.mode === 'graph'}
+	{#key scope}<TaskGraph {board} {scope} workers={graphWorkers} {threads} {taskHref} {viewSwitch} />{/key}
 {:else}
 	<TasksPanel {board} {threads} {workers} {workerHref} {taskHref} toolbarStart={viewSwitch} />
 {/if}
