@@ -38,7 +38,8 @@ internal val taskStatusChoices = listOf(
 )
 internal fun waitingDateIn(days: Long, today: LocalDate = LocalDate.now()): String = today.plusDays(days).toString()
 internal fun waitingSummary(task: BoardTask, now: Long = System.currentTimeMillis()): String = task.waiting?.let {
-    "Waiting for ${it.note} · since ${compactRelativeTime(it.since, now)}" + (it.until?.let { date -> " · back on ${formatWaitingTime(date)}" } ?: "")
+    val note = if (it.note.trimStart().startsWith("waiting for", ignoreCase = true)) it.note else "Waiting for ${it.note}"
+    "$note · since ${compactRelativeTime(it.since, now)}" + (it.until?.let { date -> " · back on ${formatWaitingTime(date)}" } ?: "")
 }.orEmpty()
 
 @Composable

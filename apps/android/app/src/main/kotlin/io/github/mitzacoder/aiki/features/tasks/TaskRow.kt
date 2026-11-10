@@ -4,17 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.draw.rotate
 import io.github.mitzacoder.aiki.protocol.BoardTaskBrief
-import io.github.mitzacoder.aiki.ui.components.Lucide
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.mitzacoder.aiki.features.refs.RefChips
@@ -32,7 +28,7 @@ import io.github.mitzacoder.aiki.ui.theme.Text as TextStyles
 @Composable
 internal fun TaskListRow(
     family: TaskFamily, now: Long, reducedMotion: Boolean, linksEnabled: Boolean,
-    nested: Boolean, reserveDisclosure: Boolean, archived: List<BoardTaskBrief>, onToggle: () -> Unit, onOpen: () -> Unit,
+    nested: Boolean, archived: List<BoardTaskBrief>, onToggle: () -> Unit, onOpen: () -> Unit,
 ) {
     val row = family.row
     val colors = Jarvis.colors
@@ -56,7 +52,7 @@ internal fun TaskListRow(
                     task.subtaskCount?.takeIf { it.total > 0 }?.let { "${it.done} of ${it.total} subtasks done" }, rowTimeWords(row, now),
                 ).joinToString(". ")
             }
-            .padding(start = 12.dp, end = 10.dp, top = if (family.canToggle) 14.dp else 10.dp, bottom = 10.dp),
+            .padding(start = 12.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.Top,
     ) {
@@ -67,20 +63,14 @@ internal fun TaskListRow(
                 else -> TaskStatusDot(task.status, pulse = task.status == "in_progress" && !reducedMotion)
             }
         }
-        if (family.canToggle) IconButton(
-            onClick = onToggle,
-            modifier = Modifier.size(48.dp).offset(y = (-14).dp).semantics {
-                contentDescription = "${if (family.expanded) "Collapse" else "Expand"} subtasks of ${task.id}"
-                stateDescription = if (family.expanded) "Expanded" else "Collapsed, ${family.foldedCount} folded subtasks"
-            },
-        ) {
-            LucideGlyph(Lucide.ChevronRight, Modifier.rotate(if (family.expanded) 90f else 0f), size = 14.dp, tint = colors.fgSubtle)
-        } else if (reserveDisclosure) Spacer(Modifier.width(48.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(task.title, style = TaskType.rowTitle, color = if (row.section == TaskSectionId.Closed) colors.fgMuted else colors.fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (task.status == "waiting") Text(waitingSummary(task, now), style = TaskType.xs, color = colors.fgSubtle)
-            else if (gist.isNotEmpty()) Text(gist, style = TextStyles.taskSm, color = colors.fgMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (linksEnabled) TaskFamilyMeta(task, nested, archived)
+            val summary = if (task.status == "waiting") waitingSummary(task, now) else gist
+            if (linksEnabled) TaskFamilyMeta(family, nested, archived, summary, onToggle)
+            else if (summary.isNotEmpty()) Text(
+                summary, style = if (task.status == "waiting") TaskType.xs else TextStyles.taskSm, color = colors.fgMuted,
+                maxLines = if (task.status == "waiting") Int.MAX_VALUE else 1, overflow = TextOverflow.Ellipsis,
+            )
             if (needsYou || task.refs.isNotEmpty()) {
                 FlowRow(
                     Modifier.padding(top = 2.dp),

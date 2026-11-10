@@ -197,20 +197,19 @@ fun TasksPanel(context: ProjectScreenContext, modifier: Modifier = Modifier, too
 @Composable
 private fun TaskFamilyRows(
     families: List<TaskFamily>, now: Long, reducedMotion: Boolean, linksEnabled: Boolean,
-    archived: List<BoardTaskBrief>, onToggle: (TaskFamily) -> Unit, onOpen: (String) -> Unit, depth: Int = 0, reserveDisclosure: Boolean = false,
+    archived: List<BoardTaskBrief>, onToggle: (TaskFamily) -> Unit, onOpen: (String) -> Unit, depth: Int = 0,
 ) {
     val guide = Jarvis.colors.border
     Column {
         families.forEachIndexed { index, family ->
             key(family.row.task.id) {
                 if (index > 0) GroupHairline()
-                val disclosureColumn = reserveDisclosure || family.canToggle
-                TaskListRow(family, now, reducedMotion, linksEnabled, depth > 0, disclosureColumn, archived, { onToggle(family) }) { onOpen(family.row.task.id) }
+                TaskListRow(family, now, reducedMotion, linksEnabled, depth > 0, archived, { onToggle(family) }) { onOpen(family.row.task.id) }
                 if (family.children.isNotEmpty()) Box(
                     Modifier.padding(start = if (depth < 3) 14.dp else 0.dp)
                         .drawBehind { drawLine(guide, Offset.Zero, Offset(0f, size.height), strokeWidth = 1.dp.toPx()) },
                 ) {
-                    TaskFamilyRows(family.children, now, reducedMotion, linksEnabled, archived, onToggle, onOpen, depth + 1, disclosureColumn)
+                    TaskFamilyRows(family.children, now, reducedMotion, linksEnabled, archived, onToggle, onOpen, depth + 1)
                 }
             }
         }

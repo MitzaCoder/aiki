@@ -34,6 +34,14 @@ class TaskWaitingTest {
         assertTrue(summary.startsWith("Waiting for Ana approval · since 3d · back on "))
         assertTrue(summary.contains(Regex("\\d{2}:\\d{2}")))
     }
+    @Test fun summaryDoesNotRepeatWaitingPrefix() {
+        for (note in listOf("Waiting for rebase", "waiting for rebase", "WAITING FOR rebase", "  Waiting for rebase")) {
+            val task = waiting().copy(waiting = waiting().waiting!!.copy(note = note))
+            val summary = waitingSummary(task)
+            assertTrue(summary.startsWith("$note · since"))
+            assertEquals(summary, taskSheetMeta(task).single())
+        }
+    }
     @Test fun decoderAcceptsUnfamiliarStatusesAndUnknownOptionalFields() {
         val raw = wireJson.encodeToString(task("T1")).dropLast(1) + ",\"futureField\":true}"
         val decoded = wireJson.decodeFromString<BoardTask>(raw.replace("\"status\":\"todo\"", "\"status\":\"future_status\""))

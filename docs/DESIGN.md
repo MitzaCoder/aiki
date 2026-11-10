@@ -1306,8 +1306,13 @@ Decided with the user on 2026-11-06. Web only; protocol addition: the optional `
 ### Collapsible task families (T74 / D44)
 
 The web task list uses collapsible families, with no prototype switch or query flag. Kanban remains unchanged.
-Quiet same-status children nest beneath their parent using a small chevron, a neutral progress ring (direct subtasks
-done/total, excluding dropped tasks) and a 14px guide/indent capped visually at three levels. Root families and siblings
+Quiet same-status children nest beneath their parent with a 14px guide/indent capped visually at three levels.
+A task having subtasks never adds a leading column: status, title, status line and trailing time/ID keep exactly the
+same positions as plain rows at every width. The neutral direct-subtask progress pill (ring, done/total excluding
+dropped, and a small rotating chevron) is the disclosure itself; non-foldable families show progress without a
+chevron. Parent links, grouped relation glyphs/counts and progress share a compact inline meta line with the gist
+where it fits, with no padded metadata row. Grouped relations expose every target in their menu and full tooltip
+and accessible description. Waiting notes already beginning with “waiting for” (case insensitive) are not prefixed again. Root families and siblings
 retain priority order; nesting puts a parent before its children. Section counts still include folded rows.
 
 **Visibility takes precedence over collapsing.** Nest only when parent and child share both status and section. A
@@ -1322,8 +1327,8 @@ parents leave visible children at the group root with a parent link. Existing to
 
 **Choices and access.** Quiet families default collapsed. Explicit true/false choices persist per parent in the
 project/backend-scoped local key `aiki.task-families.v1:<backend>:<project>`; nested choices survive closing their
-ancestor. Storage failure falls back to in-memory choices. Disclosures are separate native buttons with
-`aria-expanded`, Enter/Space support, visible focus and touch targets. Hierarchy is expressed with real nested lists,
+ancestor. Storage failure falls back to in-memory choices. Progress disclosures are separate native buttons with
+`aria-expanded`, Enter/Space support, visible focus and expanded hit areas that do not consume layout space. Hierarchy is expressed with real nested lists,
 not an ARIA tree, so the list retains ordinary Tab navigation (no new arrow-key mode). No expansion animation; reduced
 motion also disables existing row/status motion. Found-while, blocked-by and related glyph links have accessible names
 and native title tooltips. Feedback counts, ref links and task navigation remain.
@@ -1331,8 +1336,10 @@ and native title tooltips. Feedback counts, ref links and task navigation remain
 **Android (T74).** The Compose list follows the same nesting, ordering, attention visibility, parent links and
 progress rules, with 14dp guides capped at three visible indent levels. Parent expansion is stored in the existing
 local device settings record under the name-neutral `taskFamilyExpansion` field, keyed by backend origin, project
-and parent ID; true and false choices both survive app restarts and closing an ancestor. Disclosures are separate
-48dp controls with TalkBack expanded/collapsed state descriptions and native keyboard activation. No expansion
+and parent ID; true and false choices both survive app restarts and closing an ancestor. Progress disclosures have
+48dp minimum touch hit areas, without reserving that layout width/height, TalkBack expanded/collapsed state descriptions
+and native keyboard activation. No disclosure column is reserved for parents or descendants. Relation glyphs/counts
+use the same invisible minimum touch expansion; grouped menus retain individual target navigation. No expansion
 animation is used; the existing reduced-motion setting also stops working-dot motion. Small relation controls
 supply spoken labels and long-press tooltips instead of browser title tooltips. Explicit list filters and section
 folding remain user controls; attention sections start open. No protocol/backend change is needed.

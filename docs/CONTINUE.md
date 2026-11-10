@@ -1,5 +1,16 @@
 # Continue
 
+## Compact Android task rows (T87)
+
+Subtask progress is the disclosure; parents and plain rows keep identical leading columns. The 14dp child guide
+remains, but the reserved 48dp disclosure column is gone. Gist, parent link, grouped relation/count menus and progress
+flow inline. Foundation clickable provides invisible minimum touch bounds; tooltip/TalkBack target details and
+expanded state remain. Shared waiting summaries no longer repeat a case-insensitive existing prefix.
+Android: 632 tests, two existing skips, zero failures/errors; assembly/lint pass (36 warnings, zero errors).
+T87 has synthetic before/after light/dark captures, folding and blocker-menu proof. Sample parent 104→82dp,
+blocker/found-while 116→82dp, ordinary rows 62→62dp; the same phone shows 6→7 complete rows. Web companion follows.
+No protocol/backend changes, main move, push or deployment.
+
 ## Local installer and Welcome (T71)
 
 Latest merge verification: the twelve-commit stack now follows the duplicate-report fix and required-mode rollout

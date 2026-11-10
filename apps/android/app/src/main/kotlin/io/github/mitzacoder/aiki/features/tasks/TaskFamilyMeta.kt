@@ -2,27 +2,34 @@
 package io.github.mitzacoder.aiki.features.tasks
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.github.mitzacoder.aiki.protocol.BoardTask
 import io.github.mitzacoder.aiki.protocol.BoardTaskBrief
+import io.github.mitzacoder.aiki.ui.components.Lucide
 import io.github.mitzacoder.aiki.ui.components.LucideGlyph
 import io.github.mitzacoder.aiki.ui.components.LucideIcon
 import io.github.mitzacoder.aiki.ui.theme.Jarvis
+import io.github.mitzacoder.aiki.ui.theme.Text as TextStyles
 
 @Composable
-internal fun TaskFamilyMeta(task: BoardTask, nested: Boolean, archived: List<BoardTaskBrief>) {
+internal fun TaskFamilyMeta(family: TaskFamily, nested: Boolean, archived: List<BoardTaskBrief>, summary: String, onToggle: () -> Unit) {
+    val task = family.row.task
     val links = LocalTaskLinks.current
     val colors = Jarvis.colors
     val groups = linkGroups(task, emptyList(), archived)
@@ -30,24 +37,16 @@ internal fun TaskFamilyMeta(task: BoardTask, nested: Boolean, archived: List<Boa
     val hints = groups.filter { it.kind in setOf("foundWhile", "blockedBy", "related") }
     val progress = task.subtaskCount?.takeIf { it.total > 0 }
     val feedback = openFeedbackCount(task)
-    if (parent == null && hints.isEmpty() && progress == null && feedback == 0L) return
+    if (summary.isEmpty() && parent == null && hints.isEmpty() && progress == null && !family.canToggle && feedback == 0L) return
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+        if (summary.isNotEmpty()) Text(
+            summary, style = if (task.status == "waiting") TaskType.xs else TextStyles.taskSm, color = colors.fgMuted,
+            maxLines = if (task.status == "waiting") Int.MAX_VALUE else 1, overflow = TextOverflow.Ellipsis,
+        )
         parent?.let { target ->
-            val label = "Subtask of ${target.id}" + (links?.title(target.id) ?: target.title).takeIf { it.isNotEmpty() }?.let { ": $it" }.orEmpty()
+            val label = relationDescription("Subtask of", target, links?.title(target.id))
             FamilyRelationLink(label, links?.let { { it.open(target.id) } }) {
                 Text("↳ ${target.id}", style = TaskType.meta, color = colors.fgSubtle)
-            }
-        }
-        progress?.let { count ->
-            Row(Modifier.semantics(mergeDescendants = true) { contentDescription = "${count.done} of ${count.total} subtasks done" }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Canvas(Modifier.size(13.dp)) {
-                    val inset = 1.dp.toPx()
-                    val stroke = Stroke(1.5.dp.toPx())
-                    val arcSize = Size(size.width - 2 * inset, size.height - 2 * inset)
-                    drawArc(colors.fgSubtle.copy(alpha = .2f), -90f, 360f, false, Offset(inset, inset), arcSize, style = stroke)
-                    drawArc(colors.fgSubtle, -90f, 360f * (subtaskFraction(task) ?: 0f), false, Offset(inset, inset), arcSize, style = stroke)
-                }
-                Text("${count.done}/${count.total} subtasks", style = TaskType.meta, color = colors.fgSubtle)
             }
         }
         hints.forEach { group ->
@@ -56,16 +55,53 @@ internal fun TaskFamilyMeta(task: BoardTask, nested: Boolean, archived: List<Boa
                 "blockedBy" -> FamilyIcons.BlockedBy
                 else -> FamilyIcons.Related
             }
-            group.items.forEach { target ->
-                val label = "${group.label} ${target.id}" + (links?.title(target.id) ?: target.title).takeIf { it.isNotEmpty() }?.let { ": $it" }.orEmpty()
-                FamilyRelationLink(label, links?.let { { it.open(target.id) } }) {
-                    LucideGlyph(icon, size = 12.dp, tint = colors.fgSubtle)
+            val labels = group.items.map { relationDescription(group.label, it, links?.title(it.id)) }
+            var menuOpen by remember(task.id, group.kind) { mutableStateOf(false) }
+            Box {
+                FamilyRelationLink(labels.joinToString("; "), links?.let { {
+                    if (group.items.size == 1) it.open(group.items.single().id) else menuOpen = true
+                } }) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                        LucideGlyph(icon, size = 12.dp, tint = colors.fgSubtle)
+                        if (group.items.size > 1) Text("${group.items.size}", style = TaskType.meta, color = colors.fgSubtle)
+                    }
                 }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    group.items.forEachIndexed { index, target ->
+                        DropdownMenuItem(text = { Text(labels[index]) }, onClick = { menuOpen = false; links?.open(target.id) })
+                    }
+                }
+            }
+        }
+        if (progress != null || family.canToggle) {
+            val label = progress?.let { "${it.done} of ${it.total} subtasks done" } ?: "Subtasks of ${task.id}"
+            // Foundation clickable expands touch bounds to the platform's 48dp minimum without a layout column.
+            Row(
+                Modifier.background(colors.fgSubtle.copy(alpha = .08f), RoundedCornerShape(4.dp))
+                    .then(if (family.canToggle) Modifier.clickable(role = Role.Button, onClickLabel = "${if (family.expanded) "Collapse" else "Expand"} subtasks of ${task.id}", onClick = onToggle) else Modifier)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = label
+                        if (family.canToggle) stateDescription = if (family.expanded) "Expanded" else "Collapsed, ${family.foldedCount} folded subtasks"
+                    }.padding(horizontal = 4.dp, vertical = 1.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Canvas(Modifier.size(13.dp)) {
+                    val inset = 1.dp.toPx()
+                    val stroke = Stroke(1.5.dp.toPx())
+                    val arcSize = Size(size.width - 2 * inset, size.height - 2 * inset)
+                    drawArc(colors.fgSubtle.copy(alpha = .2f), -90f, 360f, false, Offset(inset, inset), arcSize, style = stroke)
+                    drawArc(colors.fgSubtle, -90f, 360f * (subtaskFraction(task) ?: 0f), false, Offset(inset, inset), arcSize, style = stroke)
+                }
+                Text(progress?.let { "${it.done}/${it.total}" } ?: "Subtasks", style = TaskType.meta, color = colors.fgSubtle)
+                if (family.canToggle) LucideGlyph(Lucide.ChevronRight, Modifier.rotate(if (family.expanded) 90f else 0f), size = 12.dp, tint = colors.fgSubtle)
             }
         }
         if (feedback > 0) Text("$feedback feedback", style = TaskType.meta, color = colors.fgSubtle)
     }
 }
+
+internal fun relationDescription(label: String, target: TaskLinkTarget, title: String? = null): String =
+    "$label ${target.id}" + (title ?: target.title).takeIf { it.isNotEmpty() }?.let { ": $it" }.orEmpty() + if (target.archived) " (archived)" else ""
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,8 +111,8 @@ private fun FamilyRelationLink(label: String, onOpen: (() -> Unit)?, content: @C
         tooltip = { PlainTooltip { Text(label) } }, state = rememberTooltipState(),
     ) {
         Box(
-            Modifier.heightIn(min = 32.dp).widthIn(min = 32.dp)
-                .then(if (onOpen == null) Modifier else Modifier.clickable(role = Role.Button, onClickLabel = label, onClick = onOpen))
+            // clickable supplies the invisible minimum touch bounds; the glyph keeps its natural inline size.
+            Modifier.then(if (onOpen == null) Modifier else Modifier.clickable(role = Role.Button, onClickLabel = label, onClick = onOpen))
                 .semantics(mergeDescendants = true) { contentDescription = label },
             contentAlignment = Alignment.CenterStart,
         ) { content() }
