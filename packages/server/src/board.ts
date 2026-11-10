@@ -1620,9 +1620,15 @@ export function summaryBoardView(
 
 const TRACKED_FIELDS = ["title", "status", "description", "acceptance", "refs", "blockedBy", "blockedReason", "writeScopes", "parent", "foundWhile", "related", "waiting"] as const;
 
+/** A task's `waiting` field: what it waits for, and when to check again. */
+function isWaiting(value: unknown): value is { note: string; until?: string } {
+	return typeof value === "object" && value !== null && typeof (value as { note?: unknown }).note === "string";
+}
+
 function shown(value: unknown): string {
 	if (Array.isArray(value)) return `[${value.join(",")}]`;
 	if (value === null) return "none";
+	if (isWaiting(value)) return JSON.stringify(clip(`${value.note}${value.until === undefined ? "" : `, until ${value.until}`}`, 200));
 	return typeof value === "string" ? JSON.stringify(clip(value, 120)) : String(value);
 }
 

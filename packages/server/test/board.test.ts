@@ -230,6 +230,31 @@ describe("board and the coordinator", () => {
 		expect(last).toContain("order: T2, T1 first");
 	});
 
+	it("names what a task waits for, and until when, when the user moves it to waiting", async () => {
+		const { test, client, projectId } = await start();
+		test.faux.setResponses(Array.from({ length: 5 }, () => fauxAssistantMessage("noted")));
+		const view = new ViewClient(client);
+		await view.start(projectId);
+
+		const task = await save(client, projectId, input("Fix login", { status: "review" }));
+		await view.waitForView((value) => boardInputs(value).length >= 1);
+
+		const moved = await client.request({
+			type: "board.task.save",
+			projectId,
+			taskId: task.id,
+			expectedRevision: task.revision,
+			task: { ...input("Fix login", { status: "waiting" }), waitingFor: "The release", waitUntil: "2099-11-16T08:00:00Z" },
+		});
+		if (moved.type !== "board.task.save") throw errorOf(moved);
+
+		await view.waitForView((value) => boardInputs(value).length >= 2);
+		const last = boardInputs(view.view)[1] ?? "";
+		expect(last).toContain('status "review" -> "waiting"');
+		expect(last).toContain('waiting none -> "The release, until 2099-11-16T08:00:00');
+		expect(last).not.toContain("[object Object]");
+	});
+
 	it("delivers an answer to a busy coordinator as a steer and keeps openQuestions current", async () => {
 		const { test, client, projectId } = await start();
 		const sawAnswer: boolean[] = [];
