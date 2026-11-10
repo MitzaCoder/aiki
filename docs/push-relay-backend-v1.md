@@ -143,14 +143,17 @@ unmute. Requests already handed off cannot be recalled.
 Retry starts at five seconds, doubles with 0–20% positive jitter, caps at fifteen minutes, and takes the maximum with
 Retry-After (seconds or HTTP date). A route has at most 100 pending entries: drop the **newest** at capacity without
 allocating a sequence; record `queue_full`. Deadline is the earlier of original event + twelve hours and route lease/
-absolute expiry. All unknown 429/503 and other 5xx/timeouts retry; 200 pending retries. Terminal results remove the
+absolute expiry. The HTTP adapter reads fixed `{error:"code"}` failures and `{state,code}` send results, never nested provider errors.
+Known quota scopes (`route_rate`, `account_rate`, etc.) and `relay_disabled` remain visible in `lastDelivery`;
+unknown 429 becomes `rate_limited`, unknown 5xx becomes `relay_unavailable`. All unknown 429/503 and other 5xx/timeouts retry; 200 pending retries. Terminal results remove the
 message. Known terminal route/account/token results additionally pause further new sends until an explicit phone repair/resume.
 
 Local revoke first blocks further submissions in memory, then atomically replaces route/send secrets and keys with
 delete-only work. Old direct rows are removed only after that commit. HTTP is never part of the local revoke wait.
 Delete retries independently of auth/session state across restarts, including after wrong-secret 404. A 204 erases
 its capability immediately; otherwise cleanup stays pending with capped backoff until absolute expiry plus 24 hours.
-At that horizon the relay has purged the route: local erasure and cleanup `done` no longer require an HTTP response.
+At that horizon relay authority has expired in code: local erasure and cleanup `done` no longer require an HTTP
+response. This is not evidence of physical relay erasure; Firestore TTL and scheduled reconciliation are eventual.
 The expiry pump removes the secret before submitting further HTTP, records the bounded `cleanup_expired` diagnosis,
 and prunes expired operation receipts/revoked status in the same atomic local write.
 

@@ -30,7 +30,9 @@ const terminalRouteCodes = new Set(["route_expired", "route_inactive", "token_in
 	"account_deleted", "not_found"]);
 const safeCodes = new Set(["accepted", "retrying", "rate_limited", "relay_unavailable", "route_expired",
 	"token_invalid", "account_disabled", "account_deleted", "route_inactive", "not_found", "message_expired",
-	"message_conflict", "rejected", "queue_full", "needs_new_keys"]);
+	"message_conflict", "rejected", "queue_full", "needs_new_keys", "fcm_rate_limited", "route_rate",
+	"account_rate", "ip_rate", "request_rate", "challenge_rate", "enrollment_rate", "relay_capacity",
+	"enrollment_capacity", "fcm_unavailable", "relay_disabled", "enrollment_disabled", "client_address_unavailable"]);
 
 /** Independent durable sender/cleanup pumps. HTTP failures are fixed safe outcomes, never payload-bearing errors. */
 export class PushRelayTransport {
@@ -228,9 +230,9 @@ export class PushRelayTransport {
 			let code = "", state = "";
 			if (text.length <= 8192) {
 				try {
-					const json = JSON.parse(text) as { code?: unknown; state?: unknown; error?: { code?: unknown } };
-					if (typeof json.code === "string") code = json.code;
-					else if (typeof json.error?.code === "string") code = json.error.code;
+					const json = JSON.parse(text) as { code?: unknown; state?: unknown; error?: unknown };
+					if (typeof json.error === "string") code = json.error;
+					else if (typeof json.code === "string") code = json.code;
 					if (typeof json.state === "string") state = json.state;
 				} catch { /* Non-JSON failures are classified by HTTP status only. */ }
 			}
@@ -284,8 +286,10 @@ export class PushRelayTransport {
 			const accepted = result.status === 200 && result.state === "accepted";
 			const transient = result.status === null || result.status === 429 ||
 				(result.status !== null && result.status >= 500) || (result.status === 200 && result.state === "pending");
-			const message = accepted ? "accepted" : result.status === 429 ? "rate_limited" :
-				transient ? (result.status === 200 ? "retrying" : "relay_unavailable") :
+			const message = accepted ? "accepted" : result.status === 429 ?
+				(safeCodes.has(result.code) ? result.code : "rate_limited") :
+				transient ? (result.status === 200 ? "retrying" :
+					safeCodes.has(result.code) ? result.code : "relay_unavailable") :
 				(safeCodes.has(result.code) ? result.code : result.status === 404 ? "not_found" :
 					result.status === 410 ? "route_expired" : result.status === 409 ? "message_conflict" : "rejected");
 			await this.store.transaction((draft) => {

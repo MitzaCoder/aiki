@@ -45,7 +45,7 @@ export function fakeRelay() {
 		}
 		if (reply.status === 200 && reply.state === "accepted") accepted.add(body);
 		if (reply.status === 204) return new Response(null, { status: 204 });
-		return Response.json({ state: reply.state, code: reply.code }, { status: reply.status,
+		return Response.json(reply.status >= 400 ? { error: reply.code } : { state: reply.state, code: reply.code }, { status: reply.status,
 			headers: { ...(reply.retryAfter ? { "Retry-After": reply.retryAfter } : {}),
 				...(reply.redirect ? { Location: reply.redirect } : {}) } });
 	} });

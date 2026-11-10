@@ -62,14 +62,15 @@ test("pending exact envelope survives restart and accepted events never replay",
 	expect((await phone.admit(f.relay.sends()[2]!, f.clock.now)).sequence).toBe("1");
 });
 
-for (const code of ["fcm_rate_limited", "route_rate", "account_rate", "ip_rate", "relay_capacity", "future_rate"]) {
+for (const code of ["fcm_rate_limited", "route_rate", "account_rate", "ip_rate", "request_rate", "challenge_rate", "enrollment_rate", "relay_capacity", "enrollment_capacity", "future_rate"]) {
 	test(`429 ${code} respects Retry-After with identical envelope and safe rate-limited status`, async () => {
 		const f = await relaySetup();
 		const phone = await simulatedPhone();
 		await phone.activate(f.client);
 		f.relay.replies.push({ status: 429, code, retryAfter: "120" });
-		expect((await f.setup.server.notifications.deliver(event)).deliveries[0]).toMatchObject({ ok: false, status: 429, message: "rate_limited" });
-		expect(f.setup.server.notifications.relay!.status(f.credentials.sessionId).lastDelivery).toBe("rate_limited");
+		const expected = code === "future_rate" ? "rate_limited" : code;
+		expect((await f.setup.server.notifications.deliver(event)).deliveries[0]).toMatchObject({ ok: false, status: 429, message: expected });
+		expect(f.setup.server.notifications.relay!.status(f.credentials.sessionId).lastDelivery).toBe(expected);
 		await f.tick(119_999);
 		expect(f.relay.sends()).toHaveLength(1);
 		await f.tick(1);
@@ -78,12 +79,13 @@ for (const code of ["fcm_rate_limited", "route_rate", "account_rate", "ip_rate",
 	});
 }
 
-for (const code of ["fcm_unavailable", "relay_disabled", "future_unavailable"]) {
+for (const code of ["fcm_unavailable", "relay_unavailable", "relay_disabled", "enrollment_disabled", "enrollment_capacity", "client_address_unavailable", "future_unavailable"]) {
 	test(`503 ${code} is transient, including unknown codes`, async () => {
 		const f = await relaySetup();
 		await (await simulatedPhone()).activate(f.client);
 		f.relay.replies.push({ status: 503, code, retryAfter: new Date(f.clock.now + 30_000).toUTCString() });
-		expect((await f.setup.server.notifications.deliver(event)).deliveries[0]?.message).toBe("relay_unavailable");
+		expect((await f.setup.server.notifications.deliver(event)).deliveries[0]?.message)
+			.toBe(code === "future_unavailable" ? "relay_unavailable" : code);
 		await f.tick(29_999);
 		expect(f.relay.sends()).toHaveLength(1);
 		await f.tick(1);
@@ -100,6 +102,24 @@ for (const failure of [
 	{ status: 410, code: "account_deleted", expected: "account_deleted" },
 	{ status: 403, code: "account_disabled", expected: "account_disabled" },
 	{ status: 409, code: "message_conflict", expected: "message_conflict" },
+	{ status: 400, code: "invalid_request", expected: "rejected" },
+	{ status: 401, code: "unauthorized", expected: "rejected" },
+	{ status: 401, code: "recent_auth_required", expected: "rejected" },
+	{ status: 403, code: "admission_denied", expected: "rejected" },
+	{ status: 405, code: "method_not_allowed", expected: "rejected" },
+	{ status: 413, code: "body_too_large", expected: "rejected" },
+	{ status: 415, code: "unsupported_encoding", expected: "rejected" },
+	{ status: 415, code: "unsupported_content_type", expected: "rejected" },
+	{ status: 409, code: "operation_conflict", expected: "message_conflict" },
+	{ status: 409, code: "installation_inactive", expected: "message_conflict" },
+	{ status: 409, code: "installation_exists", expected: "message_conflict" },
+	{ status: 409, code: "phone_limit", expected: "message_conflict" },
+	{ status: 409, code: "route_limit", expected: "message_conflict" },
+	{ status: 409, code: "challenge_invalid", expected: "message_conflict" },
+	{ status: 409, code: "challenge_expired", expected: "message_conflict" },
+	{ status: 409, code: "cleanup_pending", expected: "message_conflict" },
+	{ status: 409, code: "account_not_disabled", expected: "message_conflict" },
+	{ status: 409, code: "route_inactive", expected: "route_inactive" },
 	{ status: 400, code: "private upstream text", expected: "rejected" },
 	{ status: 200, code: "token_invalid", state: "failed", expected: "token_invalid" },
 ]) {
@@ -110,6 +130,11 @@ for (const failure of [
 		f.relay.replies.push(failure);
 		expect((await f.setup.server.notifications.deliver(event)).deliveries[0]?.message).toBe(failure.expected);
 		expect(f.setup.server.notifications.relay!.status(f.credentials.sessionId).lastDelivery).toBe(failure.expected);
+		if (["not_found", "route_expired", "route_inactive", "token_invalid", "account_deleted", "account_disabled"].includes(failure.expected)) {
+			expect(f.setup.server.notifications.relay!.store.snapshot().routes[0]!.state).toBe("paused");
+			await f.setup.server.notifications.deliver(event);
+			expect(f.relay.sends()).toHaveLength(1);
+		}
 		await f.tick(60_000);
 		expect(f.relay.sends()).toHaveLength(1);
 		expect(f.setup.server.notifications.relay!.store.snapshot().sends).toHaveLength(0);
