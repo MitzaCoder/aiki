@@ -2,6 +2,8 @@ package io.github.mitzacoder.aiki
 
 import android.app.Application
 import android.os.Build
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import io.github.mitzacoder.aiki.data.DeviceStore
 import io.github.mitzacoder.aiki.data.HarnessRepository
 import io.github.mitzacoder.aiki.features.notifications.FirebasePush
@@ -15,9 +17,13 @@ class HarnessApplication : Application() {
         NotificationCenter(repository, FirebasePush, "${Build.MODEL} · Android app", relay = { relayNotifications })
             .also { started = it }
     }
+    /** A wrapper only; Firebase Auth itself is never created until notification opt-in. */
+    val relayAccount by lazy { io.github.mitzacoder.aiki.features.notifications.relay.FirebaseRelayAccount(this) }
+    /** One-time email URL in memory only, never saved in the activity bundle or logs. */
+    var relayEmailLink by androidx.compose.runtime.mutableStateOf<String?>(null)
     /** Lazy receive plumbing; opening it does not open backend sockets or relay storage while relay is off. */
     val relayNotifications by lazy {
-        io.github.mitzacoder.aiki.features.notifications.relay.androidRelayNotifications(this,
+        io.github.mitzacoder.aiki.features.notifications.relay.androidRelayNotifications(this, { relayAccount },
             { key -> repository.session(key)?.client?.let {
                 io.github.mitzacoder.aiki.features.notifications.relay.HarnessRelayBackendRpc(it)
             } }) {

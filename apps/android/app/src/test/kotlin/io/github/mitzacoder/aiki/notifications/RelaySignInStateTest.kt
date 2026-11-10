@@ -75,6 +75,17 @@ class RelaySignInStateTest {
         }
     }
 
+    @Test fun `quota labels never display wire names or unknown remote text`() {
+        for (budget in listOf("accountDay", "accountMinute", "accountChallengeHour", "accountChallengeDay",
+            "enrollmentDay", "ipDay", "ipMinute", "managementMinute", "managementDay", "ipChallengeHour",
+            "ipChallengeDay", "newAccountIpDay", "relaySendDay", "relayChallengeDay", "newAccountDay")) {
+            assertFalse(relayQuotaLabel(budget).contains('_'))
+            assertNotEquals(budget, relayQuotaLabel(budget))
+            assertFalse(relayQuotaLabel(budget).contains("enrollment"))
+        }
+        assertEquals("Service limit", relayQuotaLabel("untrusted remote text"))
+    }
+
     @Test fun `phone limit operator pause and rate limit have different actions`() {
         assertTrue(relayProblemText(RelayErrorCode.PhoneLimit).contains("Remove an old phone"))
         assertTrue(relayProblemText(RelayErrorCode.RelayDisabled).contains("paused by the relay operator"))

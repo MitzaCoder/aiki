@@ -13,12 +13,20 @@ internal object RelayAuthPlatform {
         check(BuildConfig.RELAY_AUTH_EMULATOR.substringAfterLast(':').toIntOrNull() in 1024..65535)
     }
 
+    fun reportFailure(error: Exception) {
+        val code = (error as? com.google.firebase.auth.FirebaseAuthException)?.errorCode.orEmpty()
+        val reason = listOf("cleartext", "timeout", "api key", "resolve", "permission", "network", "connection")
+            .filter { error.message.orEmpty().contains(it, ignoreCase = true) }.joinToString(",")
+        android.util.Log.w("RelayAuthDemo", "${error.javaClass.simpleName}:$code:$reason")
+    }
+
     fun configure(auth: FirebaseAuth) {
         if (BuildConfig.RELAY_AUTH_EMULATOR.isEmpty()) {
             check(!BuildConfig.RELAY_FAKE_GOOGLE && !BuildConfig.RELAY_FAKE_FCM)
             return
         }
         checkDemo()
+        auth.firebaseAuthSettings.setAppVerificationDisabledForTesting(true)
         auth.useEmulator(BuildConfig.RELAY_AUTH_EMULATOR.substringBeforeLast(':'),
             BuildConfig.RELAY_AUTH_EMULATOR.substringAfterLast(':').toInt())
     }

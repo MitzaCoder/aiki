@@ -29,6 +29,9 @@ class RelayAccountAwareApi(private val delegate: RelayApi, private val storage: 
         if (result is RelayResult.Failure) {
             when (result.code) {
                 RelayErrorCode.AccountDeleted -> storage.update { erasedRelayAccount(it, true) }
+                RelayErrorCode.Unauthorized, RelayErrorCode.NotSignedIn -> storage.update {
+                    it.copy(signedIn = false, failure = result.code)
+                }
                 RelayErrorCode.AccountDisabled -> storage.update { it.copy(accountDisabled = true,
                     failure = result.code, retryAfterSeconds = result.retryAfterSeconds) }
                 else -> Unit

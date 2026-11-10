@@ -15,6 +15,7 @@ class RelayNotifications(
     time: RelayTime,
     present: (NotificationPayload) -> Unit,
     storageLost: suspend () -> Unit = {},
+    private val accountStopped: suspend () -> Unit = {},
 ) {
     private val store by lazy(storage)
     private val client by lazy { RelayAccountAwareApi(api(), store) }
@@ -24,8 +25,41 @@ class RelayNotifications(
     val enrollment by lazy { RelayEnrollmentMachine(store, client, time) { mutableRevision.value++ } }
     val accounts by lazy { RelayAccounts(store, client) }
     val routes by lazy { RelayRoutes(store, client, backend(), time) }
-    private val router = RelayMessageRouter({ settings().relayEnabled }, { store }, time,
+    @Volatile private var checkingPhone = false
+    private val router = RelayMessageRouter({ settings().relayEnabled || checkingPhone }, { store }, time,
         { enrollment.challenge(it) }, present, storageLost)
+
+    /** Explicit, cancellable setup accepts challenges while keeping the persisted relay switch off. */
+    suspend fun checkPhone(token: String) {
+        checkingPhone = true
+        enrollment.enable(token)
+    }
+
+    /** Cancelling setup discards receive authority before the screen leaves. */
+    suspend fun cancelPhoneCheck() {
+        if (!checkingPhone) return
+        checkingPhone = false
+        routes.turnOff()
+    }
+
+    /** Confirmed setup can now be represented by the persistent switch. */
+    fun finishPhoneCheck() { checkingPhone = false }
+
+    /** Settings-only snapshot; callers must first obtain explicit opt-in. */
+    suspend fun snapshot(): RelayState = store.read()
+
+    /** Account inventory is never fetched by the default-off row. */
+    suspend fun phones(): RelayResult<List<RelayInstallation>> = client.installations()
+
+    /** Removing a remote phone never touches backend sign-in. */
+    suspend fun removePhone(id: String): RelayResult<Unit> = client.deleteInstallation(id)
+
+    /** Best-effort removal of this installation precedes local Auth sign-out. */
+    suspend fun removeThisPhone(): RelayResult<Unit> {
+        val id = store.read().installationId
+        routes.signOut()
+        return if (id != null) client.deleteInstallation(id) else RelayResult.Success(Unit)
+    }
 
     /** Shares the existing parser/presenter with direct FCM, including the complete no-relay path. */
     suspend fun receive(message: Map<String, String>) {
@@ -93,6 +127,12 @@ class RelayNotifications(
     suspend fun foreground() {
         val current = settings()
         if (!current.relayEnabled) return
+        accounts.status()
+        val account = store.read()
+        if (!account.signedIn || account.accountDeleted || account.accountDisabled || account.accountDeletionPending) {
+            accountStopped()
+            return
+        }
         val token = current.fcmToken
         if (token != null) enrollment.tokenChanged(token) else enrollment.resume()
         routes.maintain()

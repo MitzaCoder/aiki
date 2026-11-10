@@ -16,6 +16,7 @@ enum class RelaySignInProblem(val message: String) {
     EmailUnavailable("Email sign-in is temporarily unavailable. Try again later or continue with Google."),
     AccountDisabled("The operator disabled this relay account. Contact the operator for help or deletion."),
     AccountDeleted("This relay account was deleted. Your backend sign-ins are unchanged."),
+    SignInRequired("Sign in again to use relay notifications. Your backend sign-ins are unchanged."),
     ProviderConflict("Use the sign-in method you used for this account before."),
     Network("Sign-in could not connect. Check your connection and try again."),
     RecentSignInRequired("Sign in again before deleting the relay account."),
@@ -52,6 +53,26 @@ fun validRelayEmailLink(link: String, domain: String): Boolean = try {
         uri.rawAuthority == domain && uri.port == -1 && uri.rawUserInfo == null && uri.rawFragment == null &&
         uri.rawPath == "/__/auth/links" && !uri.rawQuery.isNullOrEmpty()
 } catch (_: Exception) { false }
+
+/** Never show an upstream budget name as settings text. Unknown budgets have a fixed generic label. */
+fun relayQuotaLabel(budget: String): String = when (budget) {
+    "accountDay" -> "Your account today"
+    "accountMinute" -> "Your account this minute"
+    "accountChallengeHour" -> "Phone checks this hour"
+    "accountChallengeDay" -> "Phone checks today"
+    "enrollmentDay" -> "Phone setups today"
+    "ipDay" -> "This network today"
+    "ipMinute" -> "This network this minute"
+    "managementMinute" -> "Settings changes this minute"
+    "managementDay" -> "Settings changes today"
+    "ipChallengeHour" -> "Phone checks from this network this hour"
+    "ipChallengeDay" -> "Phone checks from this network today"
+    "newAccountIpDay" -> "New accounts from this network today"
+    "relaySendDay" -> "Whole service today"
+    "relayChallengeDay" -> "Whole service phone checks today"
+    "newAccountDay" -> "New accounts on this service today"
+    else -> "Service limit"
+}
 
 /** Plain words for each management failure, deliberately independent of remote text. */
 fun relayProblemText(code: RelayErrorCode, retryAfterSeconds: Long? = null): String = when (code) {

@@ -109,6 +109,13 @@ class MainActivity : ComponentActivity() {
     private fun readIntent(intent: Intent?) {
         if (intent == null) return
         val data = intent.dataString
+        if (data != null && io.github.mitzacoder.aiki.features.notifications.relay.validRelayEmailLink(
+            data, BuildConfig.RELAY_EMAIL_LINK_DOMAIN)) {
+            (application as HarnessApplication).relayEmailLink = data
+            intent.data = null
+            pendingLink = PendingAppLink.Web("${BuildConfig.APP_ORIGIN}/settings/notifications")
+            return
+        }
         pairingLink = data?.takeIf { runCatching { java.net.URI(it).path == "/pair" }.getOrDefault(false) }
         if (pairingLink != null) intent.data = null // Never retain a secret-bearing deep link in the activity Intent.
         connectPayload = data?.let(::connectPayloadFromUri)

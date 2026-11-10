@@ -36,7 +36,7 @@ sealed interface RelayResult<out T> {
     data class Failure(val code: RelayErrorCode, val retryAfterSeconds: Long? = null) : RelayResult<Nothing>
 }
 
-/** Account tokens stay phone-side. Firebase Auth plugs into this port in the next task. */
+/** Account tokens stay phone-side; Firebase Auth implements this port without launching implicit sign-in UI. */
 fun interface RelayAccount {
     /** Returns a current ID token, or null without launching any sign-in UI. */
     suspend fun idToken(): String?

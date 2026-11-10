@@ -126,6 +126,7 @@ class RelayClient(
             RelayResult.Failure(when (error.problem) {
                 RelaySignInProblem.AccountDeleted -> RelayErrorCode.AccountDeleted
                 RelaySignInProblem.AccountDisabled -> RelayErrorCode.AccountDisabled
+                RelaySignInProblem.SignInRequired -> RelayErrorCode.Unauthorized
                 else -> RelayErrorCode.NotSignedIn
             })
         }

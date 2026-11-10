@@ -185,6 +185,13 @@ class NotificationsTest {
         val device = NotificationDevice(deviceId = "d", label = "l", backendKey = pc.key, preferences = on.preferencesFor(pc.key), createdAt = "2026-11-07T00:00:00Z", lastDelivery = null, transport = "fcm")
         assertEquals("Registered", label(ready.copy(device = device)))
         assertEquals("Registered; nothing pushed yet.", lastDeliveryText(device))
+        val relayOn = on.copy(relayEnabled = true)
+        val relayState = ready.copy(supportsFcm = false, supportsRelay = true, device = device)
+        assertEquals("Working", backendPushView(relayState, relayOn, null, null).label)
+        val opaqueFailure = device.copy(lastDelivery = NotificationDeviceLastDelivery(
+            at = "not a timestamp", ok = false, status = 410, message = "route_expired"))
+        assertEquals("Last attempt delayed.", relayLastAttemptText(opaqueFailure))
+        assertFalse(relayLastAttemptText(opaqueFailure).contains("route"))
         val failed = device.copy(lastDelivery = NotificationDeviceLastDelivery(at = "2026-11-07T00:00:00Z", ok = false, status = null, message = "FCM is off on this backend (no service-account key)"))
         assertTrue(lastDeliveryText(failed), lastDeliveryText(failed).endsWith(": FCM is off on this backend (no service-account key)."))
     }

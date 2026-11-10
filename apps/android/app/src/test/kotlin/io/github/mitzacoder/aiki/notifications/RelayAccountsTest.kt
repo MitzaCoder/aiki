@@ -83,6 +83,16 @@ class RelayAccountsTest {
         }, time).create("backend", "session", "local") }.isFailure)
     }
 
+    @Test fun revokedTokenStopsReceiveWithoutClaimingAccountDeletion() = runTest {
+        val time = RelayFakeTime()
+        val store = sensitive()
+        val api = RelayFakeApi(time).apply { failure = RelayResult.Failure(RelayErrorCode.Unauthorized) }
+        RelayAccountAwareApi(api, store).begin(store.state.installationId!!, RelayCrypto.newId(), "synthetic-token")
+        assertFalse(store.state.signedIn)
+        assertFalse(store.state.accountDeleted)
+        assertEquals(RelayErrorCode.Unauthorized, store.state.failure)
+    }
+
     @Test fun recentAuthRequiredRetainsDeletionOperationForLaterReauthentication() = runTest {
         val time = RelayFakeTime()
         val store = sensitive()

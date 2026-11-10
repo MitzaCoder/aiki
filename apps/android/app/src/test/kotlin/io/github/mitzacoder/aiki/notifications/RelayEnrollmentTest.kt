@@ -47,6 +47,18 @@ class RelayEnrollmentTest {
         assertFalse(machine.challenge(valid.toString()))
     }
 
+    @Test fun receiptDeadlineSurvivesSmallPhoneClockLag() = runTest {
+        val time = RelayFakeTime()
+        val store = RelayMemoryStore()
+        val api = RelayFakeApi(time)
+        val machine = RelayEnrollmentMachine(store, api, time)
+        machine.enable("fcm")
+        time.now -= 750
+        assertTrue(machine.challenge(challenge(store.state, api.challengeId, time)))
+        assertEquals(1, api.confirms)
+        assertNotNull(store.state.activeToken)
+    }
+
     @Test fun lostChallengeStartsNewOperationWhileBeginRetryReusesOriginal() = runTest {
         val time = RelayFakeTime()
         val store = RelayMemoryStore()

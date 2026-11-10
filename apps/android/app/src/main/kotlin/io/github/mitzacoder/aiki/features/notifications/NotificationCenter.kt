@@ -19,6 +19,7 @@ data class BackendPushState(
     val connected: Boolean = false,
     val supportsNotifications: Boolean = false,
     val supportsFcm: Boolean = false,
+    val supportsRelay: Boolean = false,
     /** Whether `notifications.config` answered on this connection. */
     val configRead: Boolean = false,
     /** The Firebase project the backend sends through; null when FCM is off there (no service-account key). */
@@ -154,6 +155,11 @@ class NotificationCenter(
         return try {
             val result = session.client.request(NotificationsTestRequest(deviceId = notificationDeviceId(backendKey)))
             refresh(session)
+            if (repository.settings.value.notifications.relayEnabled && clientSupportsRelay(session)) {
+                return if (result.ok) "The relay accepted the test. Android may still delay it."
+                else io.github.mitzacoder.aiki.features.notifications.relay.relayProblemText(
+                    io.github.mitzacoder.aiki.features.notifications.relay.RelayErrorCode.fromWire(result.message))
+            }
             val status = result.status?.let { " ($it${result.message?.let { message -> " $message" }.orEmpty()})" } ?: result.message?.let { " ($it)" }.orEmpty()
             when {
                 result.ok -> "FCM accepted it$status."
@@ -163,6 +169,8 @@ class NotificationCenter(
         } catch (error: CancellationException) { throw error }
         catch (error: Exception) { error.message ?: "The test could not be sent." }
     }
+
+    private fun clientSupportsRelay(session: BackendSession): Boolean = session.client.state.value.supports("fcm-relay-v1")
 
     private suspend fun refreshToken(): String? = try {
         val token = tokens.token()
@@ -180,7 +188,7 @@ class NotificationCenter(
         // Every connection starts over: the server forgot this socket's presence and may have restarted with another key.
         session.client.state.map { (it.status == ConnectionStatus.Ready) to it.hello }.distinctUntilChanged().collectLatest { (ready, _) ->
             val connection = session.client.state.value
-            setState(key) { it.copy(connected = ready, supportsNotifications = connection.supports("notifications"), supportsFcm = connection.supports("fcm-push"), configRead = it.configRead && ready) }
+            setState(key) { it.copy(connected = ready, supportsNotifications = connection.supports("notifications"), supportsFcm = connection.supports("fcm-push"), supportsRelay = connection.supports("fcm-relay-v1"), configRead = it.configRead && ready) }
             if (!ready || !connection.supports("notifications")) return@collectLatest
             coroutineScope {
                 launch {
@@ -240,6 +248,11 @@ data class BackendPushView(val label: String, val detail: String, val tone: Tone
 fun backendPushView(state: BackendPushState?, settings: NotificationSettings, appProject: String?, unavailable: String?): BackendPushView = when {
     state == null || !state.connected -> BackendPushView("Not connected", "Registers as soon as this backend is reachable.", BackendPushView.Tone.Muted)
     !state.supportsNotifications -> BackendPushView("No notifications", "This backend runs a release without notifications.", BackendPushView.Tone.Muted)
+    settings.relayEnabled && state.supportsRelay -> when {
+        state.error != null -> BackendPushView("Needs a refresh", "Reopen the relay settings to try again.", BackendPushView.Tone.Warn)
+        state.device == null -> BackendPushView("Setting up", "Waiting for this backend and phone to finish setup.", BackendPushView.Tone.Muted)
+        else -> BackendPushView("Working", relayLastAttemptText(state.device), BackendPushView.Tone.Ok)
+    }
     !state.supportsFcm -> BackendPushView("No Android push", "This backend runs a release that cannot push to the Android app yet.", BackendPushView.Tone.Muted)
     state.error != null -> BackendPushView("Failed", state.error, BackendPushView.Tone.Err)
     unavailable != null -> BackendPushView("Unavailable", unavailable, BackendPushView.Tone.Muted)
@@ -249,6 +262,17 @@ fun backendPushView(state: BackendPushState?, settings: NotificationSettings, ap
     settings.fcmToken == null -> BackendPushView("Waiting for a token", "Firebase has not given this device a token yet.", BackendPushView.Tone.Warn)
     state.device == null -> BackendPushView("Not registered", "This device is not registered here yet.", BackendPushView.Tone.Warn)
     else -> BackendPushView("Registered", lastDeliveryText(state.device), BackendPushView.Tone.Ok)
+}
+
+/** Relay details never expose upstream wire codes or error text. */
+fun relayLastAttemptText(device: NotificationDevice): String {
+    val delivery = device.lastDelivery ?: return "No notification attempt yet."
+    val at = runCatching {
+        java.time.format.DateTimeFormatter.ofLocalizedDateTime(java.time.format.FormatStyle.SHORT)
+            .format(java.time.Instant.parse(delivery.at).atZone(java.time.ZoneId.systemDefault()))
+    }.getOrNull()
+    val outcome = if (delivery.ok) "accepted" else "delayed"
+    return if (at == null) "Last attempt $outcome." else "Last attempt $outcome $at."
 }
 
 /** The last push in words (web `lastDeliveryText`). */

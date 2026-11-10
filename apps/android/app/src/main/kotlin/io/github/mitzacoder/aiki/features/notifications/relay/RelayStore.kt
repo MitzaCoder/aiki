@@ -113,7 +113,9 @@ class RelayStore internal constructor(
         var result = RelayState()
         data.edit { saved ->
             if (saved[LOST] != null) resetKey()
-            val prior = saved[RECORD]?.let(::decode) ?: RelayState()
+            val decoded = saved[RECORD]?.let(::decode) ?: RelayState()
+            val prior = if (decoded.accountDeleted) RelayState(counters = decoded.counters,
+                selectedBackends = decoded.selectedBackends, backendDeletions = decoded.backendDeletions) else decoded
             result = prior.copy(installationId = prior.installationId ?: RelayCrypto.newId(), signedIn = true,
                 failure = null, retryAfterSeconds = null)
             saved[RECORD] = encode(result)

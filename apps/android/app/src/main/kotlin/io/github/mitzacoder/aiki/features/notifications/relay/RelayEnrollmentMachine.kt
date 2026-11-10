@@ -104,7 +104,10 @@ class RelayEnrollmentMachine(
             if (RelayCrypto.text(value["installationId"], 22) != state.installationId ||
                 RelayCrypto.text(value["operationId"], 22) != operation.operationId) return@withLock false
             val deadline = RelayCrypto.timestamp(value["deadline"])
-            if (deadline < time.wall() || deadline > time.wall() + CHALLENGE_MS ||
+            // A received begin receipt is the authoritative deadline. Small phone/relay wall-clock differences
+            // must not reject that same receipt just because delivery was faster than the clock difference.
+            if (deadline < time.wall() || (operation.phase == RelayEnrollment.Phase.Begin &&
+                deadline > time.wall() + CHALLENGE_MS + 10_000) ||
                 (operation.phase != RelayEnrollment.Phase.Begin && deadline != operation.deadline)) return@withLock false
             val id = RelayCrypto.id(RelayCrypto.text(value["challengeId"], 22))
             if (operation.challengeId != null && id != operation.challengeId) return@withLock false

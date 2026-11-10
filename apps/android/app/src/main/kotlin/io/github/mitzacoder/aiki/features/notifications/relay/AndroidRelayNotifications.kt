@@ -8,7 +8,7 @@ import io.github.mitzacoder.aiki.data.DeviceStore
 import io.github.mitzacoder.aiki.features.notifications.showPushNotification
 
 /** Android-only composition; no Keystore, relay file, account or network is touched until explicit opt-in. */
-fun androidRelayNotifications(context: Context, clients: (String) -> RelayBackendRpc?,
+fun androidRelayNotifications(context: Context, account: () -> FirebaseRelayAccount, clients: (String) -> RelayBackendRpc?,
     storageLost: suspend () -> Unit): RelayNotifications {
     val app = context.applicationContext
     val uncertainBoot = RelayCrypto.newId()
@@ -21,8 +21,9 @@ fun androidRelayNotifications(context: Context, clients: (String) -> RelayBacken
     return RelayNotifications(
         settings = { DeviceStore(app).load().notifications },
         storage = { RelayStore(app) },
-        // Real Firebase Auth and signed-in backend RPC adapters arrive in the next tasks. No Firebase Auth dependency.
-        api = { RelayClient(RelayEndpoint(BuildConfig.PUSH_RELAY_URL, BuildConfig.DEBUG), RelayAccount { null }) },
+        api = { RelayClient(RelayEndpoint(BuildConfig.PUSH_RELAY_URL, BuildConfig.DEBUG), RelayAccount {
+            account().apply { optIn() }.idToken()
+        }) },
         backend = { RelayBackendAdapter(
             enabled = { DeviceStore(app).load().notifications.relayEnabled },
             clients = clients,
@@ -32,5 +33,6 @@ fun androidRelayNotifications(context: Context, clients: (String) -> RelayBacken
         time = time,
         present = { showPushNotification(app, it) },
         storageLost = storageLost,
+        accountStopped = storageLost,
     )
 }

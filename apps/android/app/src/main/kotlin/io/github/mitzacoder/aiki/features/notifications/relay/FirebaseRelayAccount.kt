@@ -96,6 +96,9 @@ class FirebaseRelayAccount(
     /** Generic success copy avoids exposing whether an address has an account. */
     suspend fun sendEmail(address: String) = safe {
         checkOptIn()
+        if (emailResendAt() > android.os.SystemClock.elapsedRealtime()) {
+            throw RelaySignInException(RelaySignInProblem.EmailUnavailable)
+        }
         val settings = ActionCodeSettings.newBuilder()
             .setUrl("https://${BuildConfig.RELAY_EMAIL_LINK_DOMAIN}/__/auth/links")
             .setHandleCodeInApp(true)
@@ -103,7 +106,17 @@ class FirebaseRelayAccount(
             .setLinkDomain(BuildConfig.RELAY_EMAIL_LINK_DOMAIN)
             .build()
         auth.sendSignInLinkToEmail(address.trim(), settings).relayAwait()
-        preferences.edit().putString("pending-email", address.trim()).apply()
+        preferences.edit().putString("pending-email", address.trim())
+            .putLong("resend-at", android.os.SystemClock.elapsedRealtime() + 60_000)
+            .putInt("resend-boot", android.provider.Settings.Global.getInt(appContext.contentResolver,
+                android.provider.Settings.Global.BOOT_COUNT, -1)).apply()
+    }
+
+    /** Same-boot monotonic cooldown survives closing settings and process recreation. */
+    fun emailResendAt(): Long {
+        if (!optedIn) return 0
+        val boot = android.provider.Settings.Global.getInt(appContext.contentResolver, android.provider.Settings.Global.BOOT_COUNT, -1)
+        return if (preferences.getInt("resend-boot", -2) == boot) preferences.getLong("resend-at", 0) else 0
     }
 
     /** Address stays local until completion. Cross-phone links ask the user for it again. */
@@ -154,18 +167,23 @@ class FirebaseRelayAccount(
     catch (_: GetCredentialException) { throw RelaySignInException(RelaySignInProblem.Misconfigured) }
     catch (_: FirebaseTooManyRequestsException) { throw RelaySignInException(RelaySignInProblem.EmailUnavailable) }
     catch (error: FirebaseAuthException) {
+        RelayAuthPlatform.reportFailure(error)
         throw RelaySignInException(when (error.errorCode) {
             "ERROR_EXPIRED_ACTION_CODE", "ERROR_INVALID_ACTION_CODE" -> RelaySignInProblem.LinkExpired
             "ERROR_USER_DISABLED" -> RelaySignInProblem.AccountDisabled
-            "ERROR_USER_NOT_FOUND", "ERROR_USER_TOKEN_EXPIRED", "ERROR_INVALID_USER_TOKEN" -> RelaySignInProblem.AccountDeleted
-            "ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL", "ERROR_CREDENTIAL_ALREADY_IN_USE" -> RelaySignInProblem.ProviderConflict
+            "ERROR_USER_NOT_FOUND" -> RelaySignInProblem.AccountDeleted
+            "ERROR_USER_TOKEN_EXPIRED", "ERROR_INVALID_USER_TOKEN" -> RelaySignInProblem.SignInRequired
+            "ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL", "ERROR_CREDENTIAL_ALREADY_IN_USE", "ERROR_USER_MISMATCH" -> RelaySignInProblem.ProviderConflict
             "ERROR_REQUIRES_RECENT_LOGIN" -> RelaySignInProblem.RecentSignInRequired
             "ERROR_TOO_MANY_REQUESTS", "ERROR_QUOTA_EXCEEDED" -> RelaySignInProblem.EmailUnavailable
             "ERROR_INVALID_API_KEY", "ERROR_OPERATION_NOT_ALLOWED", "ERROR_INVALID_CREDENTIAL" -> RelaySignInProblem.Misconfigured
             else -> RelaySignInProblem.Network
         })
     }
-    catch (_: Exception) { throw RelaySignInException(RelaySignInProblem.Network) }
+    catch (error: Exception) {
+        RelayAuthPlatform.reportFailure(error)
+        throw RelaySignInException(RelaySignInProblem.Network)
+    }
 }
 
 private fun createRelayFirebaseAuth(context: Context): FirebaseAuth {
