@@ -11,6 +11,8 @@ import { join } from "node:path";
 export type FakeRelease = { name: string; commit: string; description: string; deployedAt: string };
 
 export type FakeBackendState = {
+	/** Deliberately configurable: health and drain must not depend on a display name. */
+	serverName: string;
 	/** false answers `server.status` with unknown_request, like a server that lists the feature before implementing it. */
 	answerStatus: boolean;
 	/** `hello.features`; null leaves the field out, as servers older than it do. */
@@ -103,6 +105,7 @@ function currentToolCalls(state: FakeBackendState): number {
 
 export function startFakeBackend(overrides: Partial<FakeBackendState> = {}): FakeBackend {
 	const state: FakeBackendState = {
+		serverName: "aiki",
 		answerStatus: true,
 		features: ALL_FEATURES,
 		release: null,
@@ -143,7 +146,7 @@ export function startFakeBackend(overrides: Partial<FakeBackendState> = {}): Fak
 					case "hello":
 						answer({
 							protocolVersion: 1,
-							server: { name: "aiki", version: "0.1.0" },
+							server: { name: state.serverName, version: "0.1.0" },
 							...(state.features === null ? {} : { features: state.features }),
 						});
 						return;

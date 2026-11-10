@@ -67,6 +67,14 @@ function readJson<T>(path: string): T {
 }
 
 describe("health-check", () => {
+	test("health and pre-restart drain accept an arbitrary previous server name", async () => {
+		const backend = startBackend({ serverName: "previous-installation", features: DRAIN_FEATURES });
+		const health = await healthCheck(backend);
+		expect(health.code).toBe(0);
+		const drain = await healthCheck(backend, ["--wait-idle", "--idle-timeout-ms=500"]);
+		expect(drain.code).toBe(0);
+		expect(backend.requests.some((request) => request.type === "server.drain")).toBe(true);
+	});
 	test("answers the hello of a server without a status", async () => {
 		const backend = startBackend({ features: ["projects", "conversation"] });
 		const result = await healthCheck(backend);
@@ -375,6 +383,21 @@ async function deployBackend(
 }
 
 describe("backend.sh", () => {
+	test("preserves an explicitly configured root and service, including its cgroup safety guard", async () => {
+		const machine = makeMachine();
+		machine.root = join(machine.dir, "previous-installation");
+		prepareIncoming(machine, "renamed");
+		const backend = startBackend({ deployRoot: machine.root });
+		const env = { ...backendEnvironment(machine, port(backend)), DEPLOY_BACKEND_ROOT: machine.root, DEPLOY_BACKEND_SERVICE: "previous-worker.service" };
+		const result = await run(["bash", BACKEND, "system", "release", "renamed", COMMIT, "feat: renamed"], env);
+		expect(result.code).toBe(0);
+		expect(result.stdout).toContain("restarting previous-worker.service");
+		expect(readJson<{ commit: string }>(join(machine.root, "current/RELEASE.json")).commit).toBe(COMMIT);
+		writeFileSync(machine.cgroupFile, "0::/system.slice/previous-worker.service\n");
+		const guarded = await run(["bash", BACKEND, "system", "release", "guarded", COMMIT, "feat: guard"], env);
+		expect(guarded.code).toBe(2);
+		expect(guarded.stdout).toContain("REFUSING");
+	});
 	test("writes RELEASE.json, waits for idle, then records an ok deploy", async () => {
 		const machine = makeMachine();
 		// The stand-in backend reports the release `current` points at, like a real one reading its own RELEASE.json.
@@ -692,6 +715,32 @@ describe("deploy.sh", () => {
 
 	type RecordedStatus = { state: string; commit: string; message: string | null; backendUnchanged?: boolean };
 
+	test("installs private server env files outside releases and preserves a remote service/root", async () => {
+		const machine = makeMachine(); const sshLog = addSshStub(machine);
+		const { dir, sha: running } = await makeRepository();
+		const sha = await commitChanges(dir, ["README.md"]);
+		const privateDir = join(machine.dir, "private"); mkdirSync(privateDir);
+		const source = "AIKI_HOST=0.0.0.0\nAIKI_PORT=8123\nAIKI_STATE_NAMESPACE=previous\n";
+		for (const name of ["host", "vm"]) writeFileSync(join(privateDir, `server-${name}.env`), source);
+		const unit = join(privateDir, "previous.service"); writeFileSync(unit, "[Service]\nExecStart=/example/server\n");
+		const remoteRoot = join(machine.dir, "vm-home", "previous-installation");
+		seedRunning(machine.root, running); seedRunning(remoteRoot, running);
+		const backend = startBackend({ release: release(sha) });
+		const env = { ...fullDeployEnvironment(machine, sshLog, backend), DEPLOY_CONFIG_DIR: privateDir,
+			DEPLOY_REMOTE_ROOT: remoteRoot, DEPLOY_REMOTE_SERVICE: "previous-worker.service", DEPLOY_USER_UNIT_FILE: unit,
+			DEPLOY_HOST_ENV_DEST: join(machine.home, ".config/aiki/server.env"), DEPLOY_VM_ENV_DEST: join(machine.dir, "vm-home/.config/aiki/server.env") };
+		const result = await run(["bash", join(dir, "deploy/deploy.sh"), sha], env);
+		expect(result.code).toBe(0);
+		for (const home of [machine.home, join(machine.dir, "vm-home")]) {
+			const destination = join(home, ".config/aiki/server.env");
+			expect(readFileSync(destination, "utf8")).toBe(source);
+			expect(statSync(destination).mode & 0o777).toBe(0o600);
+		}
+		expect(readFileSync(join(machine.dir, "vm-home/.config/systemd/user/previous-worker.service"), "utf8")).toBe(readFileSync(unit, "utf8"));
+		expect(existsSync(join(remoteRoot, "current/deploy/local/server-vm.env"))).toBe(false);
+		expect(restarts(machine).length).toBe(2);
+	});
+
 	test("leaves a backend running when only the app, docs and deploy tooling changed, and restarts one it cannot compare", async () => {
 		const machine = makeMachine();
 		const sshLog = addSshStub(machine);
@@ -747,7 +796,7 @@ describe("deploy.sh", () => {
 
 		expect(result.code).toBe(0);
 		expect(result.stdout).toContain("host backend: nothing it runs changed");
-		expect(result.stdout).toContain("VM backend: it just received the VAPID key");
+		expect(result.stdout).toContain("VM backend: its notification key or server environment changed");
 		expect(restarts(machine)).toEqual([expect.stringMatching(/ user$/)]);
 		expect(readJson<RecordedStatus>(join(machine.root, "deploy-status.json")).backendUnchanged).toBe(true);
 	}, 30_000);

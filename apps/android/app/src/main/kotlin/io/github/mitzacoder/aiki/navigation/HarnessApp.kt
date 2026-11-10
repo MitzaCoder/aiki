@@ -162,7 +162,7 @@ fun HarnessApp(
                                 if (current is Destination.Settings) Text("Settings")
                                 else if (current is Destination.ProjectSettings) Text("Project settings")
                                 else if (context != null) ProjectHeaderTitle(context, chatWidth)
-                                else Text(if (current == Destination.Usage) "Usage" else "Harness")
+                                else Text(if (current == Destination.Usage) "Usage" else "Aiki")
                             },
                             navigationIcon = {
                                 if (!wide) JarvisIconButton(Lucide.Menu, "Open projects", onClick = { scope.launch { drawer.open() } })
@@ -222,7 +222,7 @@ fun HarnessApp(
 }
 
 /** SharedPreferences holding the projects sidebar's rail state (web `aiki.projects-nav.v1`). */
-private const val PROJECTS_NAV_PREFERENCES = "aiki.projects-nav.v1"
+private const val PROJECTS_NAV_PREFERENCES = io.github.mitzacoder.aiki.BuildConfig.PREFERENCES_PREFIX + ".projects-nav.v1"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

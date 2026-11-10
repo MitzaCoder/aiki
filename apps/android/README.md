@@ -27,10 +27,11 @@ apps/android/verification/device.sh install ~/scratch/android-screens/harness-de
 apps/android/verification/device.sh adb reverse tcp:4790 tcp:4790
 ```
 
-Parallel work gets its own device: `HARNESS_ANDROID_DEVICE=a` … `f` on every `device.sh` call selects
-`emulator-5582` … `5592` with its own state under `~/scratch/android-cache/device-<x>`, backend port `4800` … `4850`
+Parallel work gets its own device: `HARNESS_ANDROID_DEVICE=a` … `z` on every `device.sh` call selects
+`emulator-5582` … `5632` with its own state under `~/scratch/android-cache/device-<x>`, backend port `4800` … `5050`
 (reversed at start, `device.sh env` prints them) and captures under `~/scratch/android-screens/track-<x>`. All share
-the read-only system image and the adb server on 5038. Unset is the original `emulator-5580` / 4790.
+the read-only system image and the adb server on 5038. The wrapper reads the local application ID (or
+`HARNESS_ANDROID_PACKAGE`) for launch and demo commands. Unset is the original `emulator-5580` / 4790.
 
 Round-two independent rendered review **passed**, including the final five exact
 refinements; V1–V5 are closed. Runtime source is frozen at **64152b6**. The freshly

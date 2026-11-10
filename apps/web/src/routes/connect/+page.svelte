@@ -39,7 +39,7 @@
 </script>
 
 <svelte:head>
-	<title>Connect · aiki</title>
+	<title>Connect · Aiki</title>
 </svelte:head>
 
 <div class="relative mx-auto h-full w-full max-w-xl">

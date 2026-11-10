@@ -7,7 +7,9 @@ import { dirname, join, resolve } from "node:path";
 
 export function publicFileProblems(path: string, bytes: Uint8Array, privateTerms: string[]): string[] {
 	const text = new TextDecoder().decode(bytes);
-	const lower = `${path}\n${text}`.toLowerCase();
+	// The license's single copyright notice is the sole personal-name exception. No other line is exempt.
+	const checkedText = path === "LICENSE" ? text.replace(/^Copyright \(c\) 2026 [\p{L} .'-]+$/mu, "Copyright notice") : text;
+	const lower = `${path}\n${checkedText}`.toLowerCase();
 	const problems: string[] = [];
 	for (const [index, term] of privateTerms.entries()) {
 		const value = term.trim().toLowerCase();

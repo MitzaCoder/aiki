@@ -1,3 +1,4 @@
+import { stateKind } from "./state-identity.ts";
 /**
  * Gives `read`, `edit` and `write` the AGENTS.md (or CLAUDE.md, pi's own fallback) of the folders they actually work
  * in, not only the ones the system prompt already carries from the filesystem root down to the conversation's cwd
@@ -28,7 +29,7 @@ export type AttachedFoldersState = { attached: string[] };
 
 /** The folder context files already attached to this conversation, by the context file's own absolute path. */
 export const AttachedFoldersDoc = defineDoc<AttachedFoldersState>({
-	kind: "aiki.attached-folders",
+	kind: stateKind("attached-folders"),
 	version: 1,
 	scope: "conversation",
 	history: "latest",

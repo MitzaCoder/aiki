@@ -45,6 +45,8 @@ describe("private deployment configuration", () => {
 	test("deploy passes a stable published list into archive builds and prefers the private user unit", () => {
 		const source = readFileSync(join(import.meta.dir, "../deploy.sh"), "utf8");
 		expect(source.indexOf("export AIKI_PUBLISHED_BACKENDS_FILE=")).toBeLessThan(source.indexOf("git archive --format=tar"));
-		expect(source).toContain('if [[ -f $DEPLOY_CONFIG_DIR/aiki.service ]]; then unit_dir=$DEPLOY_CONFIG_DIR; fi');
+		expect(source).toContain('local unit_source=${DEPLOY_USER_UNIT_FILE:-$DEPLOY_CONFIG_DIR/aiki.service}');
+		expect(source).toContain('install_target_env');
+		expect(source).toContain('install_host_env');
 	});
 });

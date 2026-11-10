@@ -1,3 +1,4 @@
+import { stateKind } from "./state-identity.ts";
 import { cacheWarmAuthFingerprint, cacheWarmHeaders, supportsCacheWarm } from "./cache-warm-transport.ts";
 import { CoordinatorCacheWarm, type WarmRequest } from "./cache-keep-warm.ts";
 /**
@@ -39,7 +40,7 @@ import {
 } from "./prompt-fingerprint.ts";
 import { type ConversationIdentity, REQUEST_LOG_KEEP_DAYS, type RequestLogStore, type RequestRow } from "./request-log-store.ts";
 
-export const REQUEST_LOG_EXTENSION_NAME = "aiki.request-log";
+export const REQUEST_LOG_EXTENSION_NAME = stateKind("request-log");
 
 const UNKNOWN_IDENTITY: ConversationIdentity = {
 	kind: "other",

@@ -1,4 +1,5 @@
 import { markdownText } from "@aiki/protocol";
+import { migrateNotificationCache } from '../lib/storage-migration.ts';
 /// <reference lib="webworker" />
 /**
  * The app's service worker: an app shell that follows a deploy quickly, the push notifications themselves, and the
@@ -75,6 +76,7 @@ worker.addEventListener("install", (event) => {
 worker.addEventListener("activate", (event) => {
 	event.waitUntil(
 		(async () => {
+			await migrateNotificationCache(caches, worker.location.origin);
 			for (const key of await caches.keys()) {
 				if (!key.startsWith("aiki-")) continue;
 				if (key === ASSET_CACHE || key === RUNTIME_CACHE || key === DATA_CACHE) continue;
@@ -158,7 +160,7 @@ worker.addEventListener("push", (event) => {
 		(async () => {
 			const payload = readPushPayload(event.data);
 			const url = payload === null ? "/" : notificationUrl(payload);
-			const title = payload?.title ?? "aiki";
+			const title = payload?.title ?? "Aiki";
 			const options: NotificationOptions & { renotify?: boolean; timestamp?: number } = {
 				body: payload?.kind === "board_question" ? markdownText(payload.body) : payload?.body ?? "Open the app to see what happened.",
 				icon: ICON,

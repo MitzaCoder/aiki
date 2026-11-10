@@ -1,6 +1,30 @@
 # Design
 
-Name: aiki (command and data directory).
+Name: Aiki (command and data directory: `aiki`).
+
+## Installation identity and private compatibility
+
+Public packages use `@aiki/*`, server settings use `AIKI_*`, and new installations use XDG `aiki` data/config
+folders. Existing installations need not move data or replace their service: the entry point loads an optional
+`${XDG_CONFIG_HOME:-~/.config}/aiki/server.env` (or `AIKI_ENV_FILE`) before importing server modules. Explicit process
+settings win over file values; a missing default file is fine, but an explicit missing file is an error.
+`--print-config` resolves paths, binding and origins without opening data or starting a listener.
+
+Durable document/task kinds use `AIKI_STATE_NAMESPACE` (default `aiki`); the context extension and project context
+folder can also be configured. These are storage identities, not display names. Set them before the first restart of
+an existing installation and keep them stable. This avoids rewriting sessions and keeps rollback possible.
+
+Deployment receives per-target env files from private `deploy/local/server-<target>.env` (`host` for this machine),
+installs them atomically in the target's XDG config directory before restart, and never includes them in release
+archives. Roots, service identities and private unit sources remain local overrides. Health/drain negotiate protocol
+features, never the server's display name. The watcher unit and state directory need not change.
+
+Hosted builds can supply `deploy/local/web.env` with `AIKI_LEGACY_STORAGE_PREFIX`: before stores load, browser state
+is copied to empty `aiki.*` keys without removing the source. Service-worker registration state is copied too; old
+shell caches are not reused. Public builds configure no legacy prefix. Native builds can override application ID,
+preference prefix and notification intent prefix from private Android properties. DataStore and channel names stay
+stable, as do the existing `harness://connect` links; `aiki://connect` is also accepted. Signing identity must stay
+unchanged to update an installed app. None of this grants backend access or changes the authentication contract.
 
 Decisions so far. Why each was made is noted where it isn't obvious.
 

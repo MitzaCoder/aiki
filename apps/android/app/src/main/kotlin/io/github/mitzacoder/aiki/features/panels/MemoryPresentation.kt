@@ -26,7 +26,7 @@ import kotlin.math.roundToLong
 val MEMORY_SCOPES = listOf("global", "project")
 
 /** Where the remembered scope is kept, per device (web localStorage `aiki.memory-scope.v1`). */
-const val MEMORY_SCOPE_PREFERENCES = "aiki.memory-scope.v1"
+const val MEMORY_SCOPE_PREFERENCES = io.github.mitzacoder.aiki.BuildConfig.PREFERENCES_PREFIX + ".memory-scope.v1"
 private const val MEMORY_SCOPE_KEY = "scope"
 
 /** A conversation is about its project, so memory opens on the project's scope until the reader picks another. */

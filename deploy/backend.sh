@@ -55,7 +55,7 @@ PORT=${AIKI_PORT:-7317}
 # The tooling that travels with this script into tools/ and runs next to it, so a copy from the release that is being
 # deployed never lags behind the deploy that calls it.
 SELF_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-ROOT=$HOME/.local/share/aiki-deploy
+ROOT=${DEPLOY_BACKEND_ROOT:-${DEPLOY_HOST_ROOT:-$HOME/.local/share/aiki-deploy}}
 RELEASES=$ROOT/releases
 INCOMING=$ROOT/incoming
 CURRENT=$ROOT/current
@@ -74,13 +74,13 @@ CGROUP_FILE=${DEPLOY_CGROUP_FILE:-/proc/self/cgroup}
 HEALTH_TIMEOUT_MS=${DEPLOY_HEALTH_TIMEOUT_MS:-20000}
 
 if [[ $MODE == user ]]; then
-	SERVICE=aiki
-	BUN=$HOME/.local/bin/bun
+	SERVICE=${DEPLOY_BACKEND_SERVICE:-aiki.service}
+	BUN=${BUN:-$HOME/.local/bin/bun}
 	UNIT_DIR=$HOME/.config/systemd/user
-	UNIT=$UNIT_DIR/aiki.service
+	UNIT=$UNIT_DIR/${SERVICE%.service}.service
 	UNIT_SOURCE=$TOOLS/aiki.service
 else
-	SERVICE=${AIKI_SERVICE:-aiki.service}
+	SERVICE=${DEPLOY_BACKEND_SERVICE:-${DEPLOY_HOST_SERVICE:-${AIKI_SERVICE:-aiki.service}}}
 	BUN=${BUN:-bun}
 fi
 
@@ -111,8 +111,8 @@ function refuse_inside_server_unit() {
 	[[ -r $CGROUP_FILE ]] || return 0
 	cgroup=$(<"$CGROUP_FILE")
 	case $cgroup in
-	*aiki.service*)
-		log "REFUSING to deploy from inside the aiki server's cgroup ($CGROUP_FILE names aiki.service)."
+	*"${SERVICE%.service}.service"*)
+		log "REFUSING to deploy from inside the aiki server's cgroup ($CGROUP_FILE names $SERVICE)."
 		log "The restart would kill this script after current moved, before the health check and the rollback."
 		log "Move the main bookmark instead: deploy/watch.sh deploys when it moves (README, Deploy)."
 		exit 2

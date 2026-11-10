@@ -12,7 +12,7 @@
 #   remote_bun               the `bun` the current target's remote shell runs
 #
 # Kept single-quoted on purpose: $HOME belongs to the remote shell.
-REMOTE_ROOT='$HOME/.local/share/aiki-deploy'
+REMOTE_ROOT=${DEPLOY_REMOTE_ROOT:-'$HOME/.local/share/aiki-deploy'}
 # How long the probe waits for a laptop to answer, and how long an ssh to an intermittent target may sit silent.
 PROBE_TIMEOUT_SECONDS=${DEPLOY_PROBE_TIMEOUT_SECONDS:-6}
 
@@ -65,6 +65,11 @@ function use_target() { # <index>
 	T_OPTIONAL=${TARGET_OPTIONALS[index]}
 	T_PORT=${TARGET_PORTS[index]:-${PORT:-7317}}
 	T_SHELL=${TARGET_SHELLS[index]}
+	local prefix=DEPLOY_${T_NAME^^}
+	prefix=${prefix//-/_}
+	local root_variable=${prefix}_ROOT service_variable=${prefix}_SERVICE
+	REMOTE_ROOT=${!root_variable:-${DEPLOY_REMOTE_ROOT:-'$HOME/.local/share/aiki-deploy'}}
+	T_SERVICE=${!service_variable:-${DEPLOY_REMOTE_SERVICE:-aiki.service}}
 	# A target that is not optional gets exactly `ssh <target> <command>`, as before targets were a list.
 	SSH_OPTS=()
 	if [[ -n $T_IDENTITY ]]; then SSH_OPTS+=(-i "$T_IDENTITY" -o IdentitiesOnly=yes); fi
@@ -112,8 +117,8 @@ function remote_bun() {
 # The environment a remote backend.sh gets besides the port: the system unit's bun, and for an intermittent target that
 # the script outlives a dropped connection (backend.sh DEPLOY_SURVIVE_DISCONNECT). Empty for the VM.
 function remote_backend_env() {
-	local text=""
-	if [[ $T_UNIT == system && -n $T_BUN ]]; then text="BUN=$T_BUN "; fi
+	local text="DEPLOY_BACKEND_ROOT=$REMOTE_ROOT DEPLOY_BACKEND_SERVICE=$(printf '%q' "$T_SERVICE") "
+	if [[ $T_UNIT == system && -n $T_BUN ]]; then text+="BUN=$T_BUN "; fi
 	if [[ -n $T_OPTIONAL ]]; then text+="DEPLOY_SURVIVE_DISCONNECT=1 "; fi
 	printf '%s' "$text"
 }

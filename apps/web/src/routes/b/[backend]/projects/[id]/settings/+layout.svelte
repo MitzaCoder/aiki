@@ -53,7 +53,7 @@
 </script>
 
 <svelte:head>
-	<title>Project settings · aiki</title>
+	<title>Project settings · Aiki</title>
 </svelte:head>
 
 {#if backend === undefined}

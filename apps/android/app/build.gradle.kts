@@ -16,6 +16,9 @@ val localBuildProperties = Properties().apply {
 fun privateBuildProperty(name: String, environment: String, fallback: String = ""): String =
     providers.gradleProperty(name).orElse(providers.environmentVariable(environment)).orNull
         ?: localBuildProperties.getProperty(name, fallback)
+val installedApplicationId = privateBuildProperty("harness.applicationId", "AIKI_ANDROID_APPLICATION_ID", "io.github.mitzacoder.aiki")
+val preferencesPrefix = privateBuildProperty("harness.preferencesPrefix", "AIKI_ANDROID_PREFERENCES_PREFIX", "aiki")
+val notificationIntentPrefix = privateBuildProperty("harness.notificationIntentPrefix", "AIKI_ANDROID_NOTIFICATION_INTENT_PREFIX", installedApplicationId)
 val appOrigin = privateBuildProperty("harness.appOrigin", "HARNESS_APP_ORIGIN", "https://app.example.invalid")
 val appUri = URI(appOrigin)
 require(appUri.scheme == "https" && appUri.host != null && appUri.rawUserInfo == null &&
@@ -41,8 +44,8 @@ val firebaseConfig: Map<String, String> = run {
     val project = json["project_info"] as Map<String, Any?>
     @Suppress("UNCHECKED_CAST")
     val client = (json["client"] as List<Map<String, Any?>>).firstOrNull {
-        ((it["client_info"] as Map<String, Any?>)["android_client_info"] as Map<String, Any?>)["package_name"] == "io.github.mitzacoder.aiki"
-    } ?: throw GradleException("$path has no Android client for io.github.mitzacoder.aiki")
+        ((it["client_info"] as Map<String, Any?>)["android_client_info"] as Map<String, Any?>)["package_name"] == installedApplicationId
+    } ?: throw GradleException("Firebase configuration has no Android client for the configured application ID")
     @Suppress("UNCHECKED_CAST")
     mapOf(
         "FIREBASE_APP_ID" to (client["client_info"] as Map<String, Any?>)["mobilesdk_app_id"].toString(),
@@ -57,13 +60,17 @@ android {
     compileSdk = 37
     buildToolsVersion = "37.0.0"
     defaultConfig {
-        applicationId = "io.github.mitzacoder.aiki"
+        applicationId = installedApplicationId
         minSdk = 31
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["appLinkHost"] = appUri.host
+        manifestPlaceholders["previousActivityAlias"] = if (installedApplicationId != "io.github.mitzacoder.aiki") "$installedApplicationId.MainActivity" else "io.github.mitzacoder.aiki.PreviousActivity"
+        manifestPlaceholders["previousActivityEnabled"] = (installedApplicationId != "io.github.mitzacoder.aiki").toString()
+        buildConfigField("String", "PREFERENCES_PREFIX", buildString(preferencesPrefix))
+        buildConfigField("String", "NOTIFICATION_INTENT_PREFIX", buildString(notificationIntentPrefix))
         buildConfigField("String", "APP_ORIGIN", buildString(appOrigin.trimEnd('/')))
         buildConfigField("String", "APP_LINK_HOST", buildString(appUri.host))
         buildConfigField("String", "PUBLISHED_BACKENDS_URL", buildString(publishedBackendsUrl))

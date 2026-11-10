@@ -20,7 +20,7 @@ private fun ChatVisualFixture(palette: ThemePalette, mode: ThemeMode) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     AssistantOrb(active = true)
-                    Text("Harness", style = MaterialTheme.typography.titleMedium)
+                    Text("Aiki", style = MaterialTheme.typography.titleMedium)
                 }
                 UserMessageSurface(Modifier.fillMaxWidth()) { Text("Polish the native chat experience.") }
                 Text("I'll check the components and preserve the existing behavior.", style = MaterialTheme.typography.bodyMedium)

@@ -1,6 +1,6 @@
 # Aiki
 
-Aiki (working name `aiki` in the code) is an early personal, cross-device agent harness built on
+Aiki is an early personal, cross-device agent harness built on
 [pi durable](https://github.com/earendil-works/pi/tree/main/packages/durable).
 **It is not ready for others to install yet.**
 
@@ -26,15 +26,39 @@ absolute `DEPLOY_CONFIG_DIR`). Start from `deploy/targets.example.json`, `deploy
 - `config.env`: optional trusted shell configuration for deploy tooling, such as `DEPLOY_STATE_DIR` and
   `DEPLOY_WATCH_SERVICE`. This preserves existing state/lock/service identities during a source cleanup.
 - `aiki.service`: optional private user-mode backend unit, copied to remote tooling instead of the public
-  origin-free template. Configure `AIKI_ALLOWED_ORIGINS` there. Host-managed system units are unchanged.
+  origin-free template. `DEPLOY_USER_UNIT_FILE` may select a differently named file. Host-managed system units are unchanged.
+- `server-host.env`, `server-<target>.env`: optional per-installation `AIKI_*` settings. Deploy installs these atomically
+  as mode 0600 at `${XDG_CONFIG_HOME:-~/.config}/aiki/server.env` on each target, outside releases. Override a source
+  with `DEPLOY_HOST_ENV_FILE` / `DEPLOY_<TARGET>_ENV_FILE`, or destination with the corresponding `_ENV_DEST` variable.
+  A changed file forces a backend restart even when the source commit did not change. The server loads it before
+  registering durable state; explicit `AIKI_*` process settings win. `AIKI_ENV_FILE` selects another path (an explicit
+  missing file is an error). Keep destination and unit environment aligned when overriding the default path.
+- `web.env`: optional `AIKI_LEGACY_STORAGE_PREFIX`, injected as a Vite define into hosted builds. Missing/empty
+  `aiki.*` localStorage keys and absent/empty IndexedDB databases are copied from that namespace before stores load.
+  Notification registration cache data is copied as well; original state stays intact. Public builds omit it.
+  `AIKI_WEB_ENV_FILE` selects another build-time env file.
 - `android.properties`: private `harness.appOrigin`, `harness.publishedBackendsUrl` and optional external
-  `harness.googleServicesJson`. The Android build wrapper loads it automatically. `HARNESS_ANDROID_PROPERTIES` can
+  `harness.googleServicesJson`. Optional `harness.applicationId` preserves the installed application identity;
+  `harness.preferencesPrefix` and `harness.notificationIntentPrefix` preserve existing device state and intents.
+  Firebase client selection follows that application ID. The namespace stays `io.github.mitzacoder.aiki`, and a local
+  application-ID override also enables an activity alias so existing shortcuts/notification taps still resolve.
+  Keep the same signing key. The Android build wrapper loads the properties file automatically. `HARNESS_ANDROID_PROPERTIES` can
   select another file; Gradle properties and corresponding environment variables override file values.
   Direct Gradle invocations can instead use ignored `apps/android/local.properties`. A generic build has no published
   backend suggestions and an inert example app-link origin; no personal endpoint is built into public source.
 - `denylist.txt`: one private term per line, matched case-insensitively by the publication guard. Prefix a term with
   `word:` for whole-word matching (avoids matching part of an unrelated code identifier). Do not put the protected
   terms in committed tests, documentation or the guard implementation itself.
+
+Existing installations can retain all paths and unit names in `config.env`: `DEPLOY_HOST_ROOT`, `DEPLOY_HOST_SERVICE`,
+`DEPLOY_APP_ROOT`, `DEPLOY_REMOTE_ROOT`, `DEPLOY_REMOTE_SERVICE`, or per-target `DEPLOY_<TARGET>_ROOT` / `_SERVICE`.
+`DEPLOY_STATE_DIR` and `DEPLOY_WATCH_SERVICE` retain watcher state and identity without reinstalling its unit.
+Set `DEPLOY_HOST_DATA_DIR` and `DEPLOY_VM_DATA_DIR` for VAPID sharing when existing notification keys live elsewhere.
+
+Use `bun packages/server/src/main.ts --print-config` to inspect effective paths, binding, origins and storage identity
+without opening or changing any data. For an existing store, set `AIKI_STATE_NAMESPACE` to its original document/task
+namespace, `AIKI_PROJECT_CONTEXT_DIR` to its project prompt directory, and `AIKI_CONTEXT_EXTENSION` to its context
+extension identity. Keep those values stable across releases and rollbacks. New installations need none of them.
 
 Before **every push to a public remote**, run `bun scripts/check-public.ts` (use `--require-scanner` when Nix/Gitleaks
 must be available). It checks only the intended current tracked tree, not the old private history, and invokes a

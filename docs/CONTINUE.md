@@ -1,5 +1,26 @@
 # Continue
 
+## Aiki identity and existing installations (T70)
+
+Public packages/settings/storage now use Aiki identifiers. The mechanical rename is a separate commit; its replay
+script stays in private local configuration. The server loads an optional XDG `aiki/server.env` before registering
+durable kinds; `--print-config` is read-only. Per-target private env sources preserve existing data/config paths,
+bindings, origins, document/task namespaces and project context identities. Deploy roots/services, user unit source,
+watcher state and identity remain locally configurable; no installed unit, live data, bookmark or remote was changed.
+
+Hosted browser builds opt into namespace migration through private `web.env`; localStorage, IndexedDB and push
+registration caches retain originals. Native properties retain application ID, preference and notification intent
+prefixes; an activity alias retains existing explicit intents. DataStore and notification channels are unchanged.
+Three running-target config simulations match; hosted output retains the exact three suggestions. Emulator update
+retained preference bytes and old activity intents. T70 has synthetic browser/native screenshots and recordings.
+
+Root: 1,698 tests pass normally and with deployment configuration; typecheck passes. Web: 805 tests, zero check
+errors/warnings, build passes. Generator: 299 DTOs / 78 overloads, exit 0. Android local and public builds both pass
+unit tests, assembly and lint: 584 tests, two existing skips, no failures/errors; public lint has 37 warnings.
+Publication guard and Gitleaks pass; the copyright notice is the only protected-name match. Private configuration,
+three baseline snapshots, a read-only simulation and an unapplied host-config patch are prepared in the stable
+checkout's ignored local directory. No manual data move, reinstall or host rebuild is needed for this release.
+
 ## Pi 1.5.1 upgrade (T73)
 
 All six direct pi dependency pins moved from 1.4.0 to npm's latest 1.5.x, 1.5.1; telemetry and schema
@@ -46,9 +67,9 @@ protocol generation is unchanged (299 DTOs / 78 overloads). Synthetic UI proof i
 
 ## Current state
 
-Aiki is an early personal cross-device agent harness built on pi durable. The code still uses `aiki` and
-`io.github.mitzacoder.aiki` identifiers; a public-name migration is separate. Bun only for TypeScript; see `DESIGN.md` and
-the root README for architecture and setup. Original project code is MIT; bundled third-party licences still apply.
+Aiki is an early personal cross-device agent harness built on pi durable. Packages use `@aiki/*`; native sources use
+`io.github.mitzacoder.aiki`. Bun only for TypeScript; see `DESIGN.md` and the root README for architecture and setup.
+Original project code is MIT; bundled third-party licences still apply.
 
 ## Publication preparation
 

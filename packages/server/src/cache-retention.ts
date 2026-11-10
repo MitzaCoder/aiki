@@ -1,3 +1,4 @@
+import { stateKind } from "./state-identity.ts";
 /**
  * How long each conversation asks the provider to keep its prompt cached (pi-ai's `cacheRetention`), from the project's
  * `longPromptCache` setting: coordinators (main and background threads) wait for workers longer than the default five
@@ -14,7 +15,7 @@ import type { LongPromptCache } from "@aiki/protocol";
 import type { CacheRetention, Models } from "@earendil-works/pi-ai";
 import { defineExtension, type Extension, GenerationTask, hook } from "@earendil-works/pi-durable";
 
-export const CACHE_RETENTION_EXTENSION_NAME = "aiki.cache-retention";
+export const CACHE_RETENTION_EXTENSION_NAME = stateKind("cache-retention");
 
 /** The retention a conversation asks for under a project's setting; undefined leaves pi-ai's default ("short"). */
 export function cacheRetentionFor(setting: LongPromptCache, isCoordinator: boolean): CacheRetention | undefined {

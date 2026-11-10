@@ -1,3 +1,4 @@
+import { stateKind } from "./state-identity.ts";
 /**
  * The board: the coordinator's tasks, questions for the user and decisions, kept as a durable document on the
  * coordinator conversation (`aiki.board`) so it never has to be recalled from a summary. The contract is
@@ -90,7 +91,7 @@ export type BoardState = {
 };
 
 export const BoardDoc = defineDoc<BoardState>({
-	kind: "aiki.board",
+	kind: stateKind("board"),
 	version: 1,
 	scope: "conversation",
 	history: "latest",
@@ -168,7 +169,7 @@ const KEPT_FEEDBACK = 300;
 const KEPT_FEEDBACK_KEYS = 100;
 
 export const TaskHistoryDoc = defineDocFamily<TaskHistoryState, null>({
-	kind: "aiki.board-history",
+	kind: stateKind("board-history"),
 	version: 1,
 	scope: "conversation",
 	history: "latest",

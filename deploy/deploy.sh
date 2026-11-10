@@ -46,6 +46,7 @@ REPO_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 export DEPLOY_CONFIG_DIR="${DEPLOY_CONFIG_DIR:-$REPO_DIR/deploy/local}"
 if [[ -f $DEPLOY_CONFIG_DIR/config.env ]]; then source "$DEPLOY_CONFIG_DIR/config.env"; fi
 # The web build runs inside an archive; retain the deploying checkout's optional published list.
+export AIKI_WEB_ENV_FILE="${AIKI_WEB_ENV_FILE:-$DEPLOY_CONFIG_DIR/web.env}"
 export AIKI_PUBLISHED_BACKENDS_FILE="${AIKI_PUBLISHED_BACKENDS_FILE:-$DEPLOY_CONFIG_DIR/backends.json}"
 PORT=${DEPLOY_PORT:-7317}
 BUN=${BUN:-bun}
@@ -68,6 +69,7 @@ function die() { QUIET=0; log "ERROR: $*"; exit 1; }
 
 # shellcheck source=deploy/targets.sh
 source "$REPO_DIR/deploy/targets.sh"
+source "$REPO_DIR/deploy/server-env.sh"
 
 CATCH_UP=0
 ONLY=()
@@ -90,8 +92,8 @@ REV=${REV:-refs/heads/main}
 # The harness server runs its tools inside its own cgroup, and `systemctl restart` takes that cgroup down: a deploy
 # started from there dies after `current` moved, with no health check and no rollback. The watcher is not in the cgroup,
 # so moving `main` is the road that works.
-if [[ -r $CGROUP_FILE ]] && grep -q aiki.service "$CGROUP_FILE"; then
-	log "REFUSING to deploy from inside the aiki server's cgroup ($CGROUP_FILE names aiki.service)."
+if [[ -r $CGROUP_FILE ]] && grep -Fq "${HOST_SERVICE%.service}.service" "$CGROUP_FILE"; then
+	log "REFUSING to deploy from inside the aiki server's cgroup ($CGROUP_FILE names $HOST_SERVICE)."
 	log "The restart would kill this deploy after current moved, before the health check and the rollback."
 	log "Move the main bookmark instead: deploy/watch.sh deploys when it moves (README, Deploy)."
 	exit 2
@@ -400,8 +402,9 @@ else
 	# The tooling is updated whether or not the release changes, so the next rollback or status uses this deploy's copy.
 	tar -c -C "$REPO_DIR/deploy" backend.sh health-check.ts deploy-status.ts | tar -x -C "$HOST_ROOT/tools" ||
 		log "WARNING: host backend: could not update the tooling in $HOST_ROOT/tools"
+	if ! install_host_env; then die "cannot install host server environment"; fi
 	HOST_RUNNING=$(release_commit 2>/dev/null <"$HOST_ROOT/current/RELEASE.json") || HOST_RUNNING=""
-	if backend_unchanged "host backend" "$HOST_RUNNING" &&
+	if ((HOST_ENV_CHANGED == 0)) && backend_unchanged "host backend" "$HOST_RUNNING" &&
 		AIKI_PORT=$PORT bash "$REPO_DIR/deploy/backend.sh" system unchanged "$SHA" "$SUBJECT"; then
 		log "host backend: still runs ${HOST_RUNNING:0:12}; recorded ${SHA:0:12} as deployed without a restart"
 	else
@@ -474,20 +477,20 @@ function deploy_target() {
 	# The tooling travels flat into tools/: the unit (a user unit's) and the health check must be there even for a commit
 	# that does not contain deploy/, and whether or not the release changes.
 	local tooling_ok=0
-	if [[ $T_UNIT == user ]]; then
-		local unit_dir="$REPO_DIR/deploy/systemd"
-		if [[ -f $DEPLOY_CONFIG_DIR/aiki.service ]]; then unit_dir=$DEPLOY_CONFIG_DIR; fi
-		tar -c -C "$REPO_DIR/deploy" "${tools[@]}" -C "$unit_dir" aiki.service | tssh "tar -x -C $REMOTE_ROOT/tools" && tooling_ok=1
-	else
-		tar -c -C "$REPO_DIR/deploy" "${tools[@]}" | tssh "tar -x -C $REMOTE_ROOT/tools" && tooling_ok=1
+	if tar -c -C "$REPO_DIR/deploy" "${tools[@]}" | tssh "tar -x -C $REMOTE_ROOT/tools"; then tooling_ok=1; fi
+	if [[ $T_UNIT == user && $tooling_ok == 1 ]]; then
+		local unit_source=${DEPLOY_USER_UNIT_FILE:-$DEPLOY_CONFIG_DIR/aiki.service}
+		if [[ ! -f $unit_source ]]; then unit_source=$REPO_DIR/deploy/systemd/aiki.service; fi
+		tssh "cat > $REMOTE_ROOT/tools/aiki.service" <"$unit_source" || tooling_ok=0
 	fi
+	if ! install_target_env; then tooling_ok=0; fi
 	if ((!tooling_ok)); then
 		failed_target "sending tooling to $T_SSH failed"
 		return 0
 	fi
 	running=$(tssh "cat $REMOTE_ROOT/current/RELEASE.json 2>/dev/null" | release_commit) || running=""
-	if ((VAPID_CHANGED)); then
-		log "$T_LABEL backend: it just received the VAPID key and reads it at start; publishing and restarting"
+	if ((VAPID_CHANGED || TARGET_ENV_CHANGED)); then
+		log "$T_LABEL backend: its notification key or server environment changed; publishing and restarting"
 		publish_target
 	elif backend_unchanged "$T_LABEL backend" "$running" &&
 		tssh "$(remote_backend_env)AIKI_PORT=$T_PORT bash $REMOTE_ROOT/tools/backend.sh $T_UNIT unchanged $SHA $(printf '%q' "$SUBJECT")"; then
@@ -515,13 +518,13 @@ for index in "${ACTIVE[@]}"; do
 done
 
 # Where to read what each server says.
-LOGS="journalctl --user -u aiki-deploy-watch"
+LOGS="journalctl --user -u ${DEPLOY_WATCH_SERVICE:-aiki-deploy-watch.service}"
 for index in "${ACTIVE[@]}"; do
 	use_target "$index"
 	if [[ $T_UNIT == user ]]; then
-		LOGS+="; $T_LABEL server: ssh $T_SSH journalctl --user -u aiki"
+		LOGS+="; $T_LABEL server: ssh $T_SSH journalctl --user -u $T_SERVICE"
 	else
-		LOGS+="; $T_LABEL server: ssh $T_SSH journalctl -u aiki"
+		LOGS+="; $T_LABEL server: ssh $T_SSH journalctl -u $T_SERVICE"
 	fi
 done
 if ((!PARTIAL)); then LOGS+="; host server: journalctl -u $HOST_SERVICE"; fi

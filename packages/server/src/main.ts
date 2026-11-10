@@ -1,7 +1,14 @@
 import { resolveDataDir, resolveHostname, resolvePort } from "./data-dir.ts";
 import { ALLOWED_ORIGINS_ENV } from "./origins.ts";
-import { startServer } from "./server.ts";
+import { loadServerEnv, resolvedServerConfig } from "./server-env.ts";
 
+loadServerEnv();
+if (process.argv.includes("--print-config")) {
+	console.log(JSON.stringify(resolvedServerConfig(), null, 2));
+	process.exit(0);
+}
+// Import only after the private env file: persistent identities are registered at module initialization.
+const { startServer } = await import("./server.ts");
 const server = await startServer({
 	dataDir: resolveDataDir(),
 	hostname: resolveHostname(),
@@ -13,19 +20,19 @@ const origins =
 		? `none from a browser (${ALLOWED_ORIGINS_ENV} unset); non-browser clients are allowed`
 		: server.allowedOrigins.join(", ");
 console.log(
-	`aiki listening on ${server.url} (data: ${server.dataDir}; browser origins: ${origins})`,
+	`Aiki listening on ${server.url} (data: ${server.dataDir}; browser origins: ${origins})`,
 );
 
 let stopping = false;
 async function stop(signal: string): Promise<void> {
 	if (stopping) return;
 	stopping = true;
-	console.log(`aiki: ${signal}, closing`);
+	console.log(`Aiki: ${signal}, closing`);
 	try {
 		await server.stop();
 		process.exit(0);
 	} catch (error) {
-		console.error("aiki: shutdown failed", error);
+		console.error("Aiki: shutdown failed", error);
 		process.exit(1);
 	}
 }

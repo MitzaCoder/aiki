@@ -21,8 +21,8 @@ import io.github.mitzacoder.aiki.data.wireJson
 import io.github.mitzacoder.aiki.protocol.NotificationPayload
 
 /** The intent a notification tap sends to [MainActivity], with the payload it should open. */
-const val ACTION_OPEN_NOTIFICATION = "io.github.mitzacoder.aiki.OPEN_NOTIFICATION"
-const val EXTRA_NOTIFICATION_PAYLOAD = "io.github.mitzacoder.aiki.NOTIFICATION_PAYLOAD"
+const val ACTION_OPEN_NOTIFICATION = io.github.mitzacoder.aiki.BuildConfig.NOTIFICATION_INTENT_PREFIX + ".OPEN_NOTIFICATION"
+const val EXTRA_NOTIFICATION_PAYLOAD = io.github.mitzacoder.aiki.BuildConfig.NOTIFICATION_INTENT_PREFIX + ".NOTIFICATION_PAYLOAD"
 
 /** Kinds that want the user now: they pop up; the rest arrive quietly in the shade. */
 private val URGENT_KINDS = setOf("board_question", "login_prompt", "task_review")
@@ -32,7 +32,7 @@ fun notificationChannelId(kind: String) = "kind-$kind"
 /** One channel per kind, named like the preferences, so the system settings can tune each on its own. */
 fun ensureNotificationChannels(context: Context) {
     val manager = context.getSystemService(NotificationManager::class.java) ?: return
-    manager.createNotificationChannelGroup(NotificationChannelGroup("events", "Harness events"))
+    manager.createNotificationChannelGroup(NotificationChannelGroup("events", "Aiki events"))
     val channels = NOTIFICATION_KIND_INFO.map { info ->
         val importance = if (info.failure || info.kind in URGENT_KINDS) NotificationManager.IMPORTANCE_HIGH else NotificationManager.IMPORTANCE_DEFAULT
         NotificationChannel(notificationChannelId(info.kind), info.label, importance).apply { description = info.description; group = "events" }

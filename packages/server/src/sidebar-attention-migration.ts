@@ -1,3 +1,4 @@
+import { stateKind } from "./state-identity.ts";
 /** One-time upgrade of pre-attention projects, before the server accepts connections. No Harness or agent starts. */
 import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite/node";
 import type { ConversationId } from "@earendil-works/pi-durable";
@@ -19,11 +20,11 @@ export async function readStoredAttention(file: string): Promise<ProjectAttentio
 			const record = await storage.findDocument({ kind, scope: { kind: "conversation", conversationId } }, "current", BACKGROUND_CONTEXT);
 			return record === undefined ? undefined : (await storage.document(record.id, "current", BACKGROUND_CONTEXT))?.value as T | undefined;
 		}
-		const board = await doc<BoardState>(main.id, "aiki.board");
-		const threads = Object.values((await doc<ThreadsState>(main.id, "aiki.threads"))?.threads ?? {});
+		const board = await doc<BoardState>(main.id, stateKind("board"));
+		const threads = Object.values((await doc<ThreadsState>(main.id, stateKind("threads")))?.threads ?? {});
 		const workers = [];
 		for (const conversationId of [main.id, ...threads.map((thread) => thread.conversationId as ConversationId)]) {
-			workers.push(...Object.values((await doc<WorkersState>(conversationId, "aiki.workers"))?.workers ?? {}));
+			workers.push(...Object.values((await doc<WorkersState>(conversationId, stateKind("workers")))?.workers ?? {}));
 		}
 		return {
 			...EMPTY_ATTENTION,

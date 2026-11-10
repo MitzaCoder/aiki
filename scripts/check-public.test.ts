@@ -3,6 +3,12 @@ import { publicFileProblems } from "./check-public.ts";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 describe("public snapshot guard", () => {
+	test("exempts only the license copyright line, never the same name elsewhere", () => {
+		const notice = "Copyright (c) 2026 Example Person";
+		expect(publicFileProblems("LICENSE", bytes(notice), ["Example Person"])).toEqual([]);
+		expect(publicFileProblems("LICENSE", bytes(`${notice}\nExample Person`), ["Example Person"])).toEqual(["private denylist entry 1"]);
+		expect(publicFileProblems("README.md", bytes(notice), ["Example Person"])).toEqual(["private denylist entry 1"]);
+	});
 	test("matches private terms case-insensitively in paths and contents without echoing values", () => {
 		const term = "private-example.example.invalid";
 		expect(publicFileProblems("README.md", bytes(term.toUpperCase()), [term])).toEqual(["private denylist entry 1"]);

@@ -47,7 +47,7 @@ import kotlinx.coroutines.isActive
 object VideoMemoryStore {
     private const val PREFERENCES = "video-player"
     /** The web's localStorage key; bumped when the stored shape changes. */
-    const val KEY = "aiki.video.v1"
+    const val KEY = io.github.mitzacoder.aiki.BuildConfig.PREFERENCES_PREFIX + ".video.v1"
     private val state = MutableStateFlow<VideoMemory?>(null)
 
     fun memory(context: Context): StateFlow<VideoMemory?> {

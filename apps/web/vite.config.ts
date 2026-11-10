@@ -3,12 +3,14 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { publishedBackends } from './vite-plugin-published-backends.ts';
+import { legacyStoragePrefix } from './vite-legacy-storage.ts';
 
 // The app is a static SPA, deployed separately from every backend. It connects to the
 // backends the user configures, so there is no proxy: `vite dev` serves the app and
 // the browser opens each backend's socket directly.
 export default defineConfig(() => {
 	return {
+		define: { __AIKI_LEGACY_STORAGE_PREFIX__: JSON.stringify(legacyStoragePrefix()) },
 		plugins: [
 			tailwindcss(),
 			// Untracked `deploy/local/backends.json` becomes `/backends.json` beside the app (see the plugin).

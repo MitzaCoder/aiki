@@ -1,19 +1,29 @@
 #!/usr/bin/env bash
 # Reusable, headless KVM devices. Never downloads an SDK or another image.
-# HARNESS_ANDROID_DEVICE=a..f picks one of six parallel devices, each with its own state, emulator port and backend
+# HARNESS_ANDROID_DEVICE=a..z picks a parallel device, each with its own state, emulator port and backend
 # port; unset is the original single device (emulator-5580, backend 4790). All share the read-only system image and
 # the isolated adb server on 5038.
 set -euo pipefail
 REPO=$(cd "$(dirname "$0")/../../.." && pwd)
 OWNER_HOME=$HOME
+# Read only the non-secret installation ID, before redirecting HOME to emulator state.
+PROPERTIES=${HARNESS_ANDROID_PROPERTIES:-${DEPLOY_CONFIG_DIR:-$REPO/deploy/local}/android.properties}
+if [[ -z ${HARNESS_ANDROID_PROPERTIES:-} && ! -f $PROPERTIES ]]; then PROPERTIES=$REPO/apps/android/local.properties; fi
+PACKAGE=${HARNESS_ANDROID_PACKAGE:-${AIKI_ANDROID_APPLICATION_ID:-}}
+if [[ -z $PACKAGE && -f $PROPERTIES ]]; then
+    PACKAGE=$(sed -n 's/^[[:space:]]*harness\.applicationId[[:space:]]*=[[:space:]]*//p' "$PROPERTIES" | tail -n 1 | tr -d '\r')
+fi
+PACKAGE=${PACKAGE:-io.github.mitzacoder.aiki}
+[[ $PACKAGE =~ ^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$ ]] || { echo 'Invalid Android application ID' >&2; exit 2; }
+ACTIVITY=$PACKAGE/io.github.mitzacoder.aiki.MainActivity
 TRACK=${HARNESS_ANDROID_DEVICE:-}
 case "$TRACK" in
     "") EMULATOR_PORT=5580; BACKEND_PORT=4790; DEFAULT_ROOT=$OWNER_HOME/scratch/android-cache/device ;;
-    [a-f])
+    [a-z])
         INDEX=$(( $(printf '%d' "'$TRACK") - 97 ))
         EMULATOR_PORT=$(( 5582 + 2 * INDEX )); BACKEND_PORT=$(( 4800 + 10 * INDEX ))
         DEFAULT_ROOT=$OWNER_HOME/scratch/android-cache/device-$TRACK ;;
-    *) echo "HARNESS_ANDROID_DEVICE must be a..f or unset" >&2; exit 2 ;;
+    *) echo "HARNESS_ANDROID_DEVICE must be a..z or unset" >&2; exit 2 ;;
 esac
 ROOT=${HARNESS_ANDROID_DEVICE_ROOT:-$DEFAULT_ROOT}
 ROOT=$(realpath -m "$ROOT")
@@ -31,7 +41,7 @@ export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Duser.home=$HOME -Djava.io.tmp
 export ADB_SERVER_PORT=5038 ANDROID_ADB_SERVER_PORT=5038
 export ADB_SERVER_SOCKET=tcp:localhost:5038
 # adb looks for emulators up to 5585 by itself; the parallel devices sit above that.
-export ADB_LOCAL_TRANSPORT_MAX_PORT=5605
+export ADB_LOCAL_TRANSPORT_MAX_PORT=5640
 SERIAL=emulator-$EMULATOR_PORT
 AVD=harness-api37
 ADB=$SDK/platform-tools/adb
@@ -39,7 +49,15 @@ EMU=$SDK/emulator/emulator
 mkdir -p "$HOME" "$ANDROID_USER_HOME" "$ANDROID_AVD_HOME" "$ANDROID_EMULATOR_HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME" "$XDG_CONFIG_HOME" "$TMPDIR" "$ROOT/logs" "$CAPTURES"
 # adb may daemonize; never let that child retain our startup flock descriptor.
 adb() { "$ADB" -P 5038 "$@" 9>&-; }
-device() { adb -s "$SERIAL" "$@"; }
+device() {
+    # Historical demo scripts name the public package; local APKs can retain a different installation ID.
+    local argument arguments=()
+    for argument in "$@"; do
+        if [[ $argument == io.github.mitzacoder.aiki ]]; then argument=$PACKAGE; fi
+        arguments+=("$argument")
+    done
+    adb -s "$SERIAL" "${arguments[@]}"
+}
 prepare() {
     "$EMU" -accel-check
     if [[ ! -f "$ANDROID_AVD_HOME/$AVD.avd/config.ini" ]]; then
@@ -62,6 +80,8 @@ start() {
         echo "$!" > "$ROOT/emulator.pid"
     fi
     for ((i=0; i<120; i++)); do
+        # A running isolated adb server may not scan higher track ports automatically.
+        if ((EMULATOR_PORT > 5585)); then adb connect "localhost:$((EMULATOR_PORT + 1))" >/dev/null 2>&1; fi
         if [[ $(device shell getprop sys.boot_completed 2>/dev/null | tr -d '\r') == 1 ]]; then
             device shell settings put global window_animation_scale 0
             device shell settings put global transition_animation_scale 0
@@ -92,14 +112,14 @@ case ${1:-status} in
     install)
         APK=${2:-$REPO/apps/android/app/build/outputs/apk/debug/app-debug.apk}
         device install -r "$APK"
-        device shell am start -W -n io.github.mitzacoder.aiki/.MainActivity
+        device shell am start -W -n "$ACTIVITY"
         ;;
-    launch) device shell am start -W -n io.github.mitzacoder.aiki/.MainActivity ;;
+    launch) device shell am start -W -n "$ACTIVITY" ;;
     open)
         [[ $# == 2 ]] || { echo 'Usage: device.sh open <https://app/connect#v1... or harness://connect#v1...>' >&2; exit 2; }
         # Package constrains this to our app AND still exercises manifest intent resolution.
         device shell am start -W -a android.intent.action.VIEW -c android.intent.category.BROWSABLE \
-            -p io.github.mitzacoder.aiki -d "'${2//\'/\'\\\'\'}'"
+            -p "$PACKAGE" -d "'${2//\'/\'\\\'\'}'"
         ;;
     phone) device shell wm size 1080x2400; device shell wm density 420 ;;
     tablet) device shell wm size 2560x1600; device shell wm density 240 ;;

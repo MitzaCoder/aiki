@@ -14,5 +14,5 @@
 </script>
 
 <svelte:head>
-	<title>Usage · aiki</title>
+	<title>Usage · Aiki</title>
 </svelte:head>

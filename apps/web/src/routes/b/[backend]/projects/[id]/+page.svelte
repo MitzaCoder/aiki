@@ -18,7 +18,7 @@
 </script>
 
 <svelte:head>
-	<title>{project?.name ?? 'Chat'} · aiki</title>
+	<title>{project?.name ?? 'Chat'} · Aiki</title>
 </svelte:head>
 
 {#if backend}

@@ -1,3 +1,4 @@
+import { stateKind } from "./state-identity.ts";
 /**
  * Background threads: full coordinators of a project, started by main (or a schedule) for big, long work. The contract
  * is `packages/protocol/src/threads.ts`; the design is DESIGN.md "Threads".
@@ -135,7 +136,7 @@ export type ThreadsState = {
 };
 
 export const ThreadsDoc = defineDoc<ThreadsState>({
-	kind: "aiki.threads",
+	kind: stateKind("threads"),
 	version: 1,
 	scope: "conversation",
 	history: "latest",
@@ -171,7 +172,7 @@ function isLive(status: ThreadStatus): boolean {
 
 /** Owns one thread's conversation and finishes at once, like a worker's anchor. */
 const ThreadAnchor = defineTask<null, { phase: "done" }, null>({
-	name: "aiki.thread-anchor",
+	name: stateKind("thread-anchor"),
 	version: 1,
 	initial: () => ({ phase: "done" }),
 	phases: {
@@ -186,7 +187,7 @@ type KickoffInput = { conversationId: number; content: string; requestId: string
 
 /** Delivers a thread's brief once, under a request ID derived from what started it; never waits for the answer. */
 const ThreadKickoff = defineTask<KickoffInput, { phase: "deliver" }, null>({
-	name: "aiki.thread-kickoff",
+	name: stateKind("thread-kickoff"),
 	version: 1,
 	initial: () => ({ phase: "deliver" }),
 	phases: {

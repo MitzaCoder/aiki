@@ -610,7 +610,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					(response) => response ?? new Response("Not found", { status: 404 }),
 				);
 			}
-			return new Response("aiki is an API-only backend; the app is deployed separately.", {
+			return new Response("Aiki is an API-only backend; the app is deployed separately.", {
 				status: 404,
 				headers: { "content-type": "text/plain; charset=utf-8" },
 			});

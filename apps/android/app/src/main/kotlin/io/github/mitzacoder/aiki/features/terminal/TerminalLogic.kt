@@ -13,7 +13,7 @@ import kotlinx.serialization.json.*
  */
 
 /** SharedPreferences file and key for the tabs each backend's terminal screen has open (the web's key, per device). */
-const val TERMINAL_TABS_PREFERENCES = "aiki.terminal-tabs.v1"
+const val TERMINAL_TABS_PREFERENCES = io.github.mitzacoder.aiki.BuildConfig.PREFERENCES_PREFIX + ".terminal-tabs.v1"
 /** Tabs one screen keeps attached; the backend allows eight per connection. */
 const val MAX_TERMINAL_TABS = 6
 

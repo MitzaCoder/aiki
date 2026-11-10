@@ -14,5 +14,6 @@
 		"noEmit": true,
 		"types": ["bun"]
 	},
-	"include": ["packages/**/*.ts", "deploy/**/*.ts", "scripts/**/*.ts"]
+	"include": ["packages/**/*.ts", "deploy/**/*.ts", "scripts/**/*.ts"],
+	"exclude": ["deploy/local"]
 }

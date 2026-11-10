@@ -1,3 +1,4 @@
+import { stateKind } from "./state-identity.ts";
 /**
  * Workers: background, restart-safe child conversations the project's coordinator delegates work to.
  *
@@ -127,7 +128,7 @@ export type WorkersState = {
  * system prompt section: it changes too often, and the coordinator reads it through `worker_list` instead.
  */
 export const WorkersDoc = defineDoc<WorkersState>({
-	kind: "aiki.workers",
+	kind: stateKind("workers"),
 	version: 2,
 	scope: "conversation",
 	history: "latest",
@@ -181,7 +182,7 @@ function defaultsOf(state: WorkersState | Readonly<WorkersState> | undefined): W
  * and its idle waits; only `conversation.abort({ background: true })` reaches it.
  */
 const WorkerAnchor = defineTask<null, { phase: "done" }, null>({
-	name: "aiki.worker-anchor",
+	name: stateKind("worker-anchor"),
 	version: 1,
 	initial: () => ({ phase: "done" }),
 	phases: {
@@ -223,7 +224,7 @@ type ReporterState =
  */
 function createWorkerReporter(service: WorkerService): Task<ReporterInput, ReporterState, null, object> {
 	return defineTask<ReporterInput, ReporterState, null>({
-		name: "aiki.worker-reporter",
+		name: stateKind("worker-reporter"),
 		version: 1,
 		initial: () => ({ phase: "deliver" }),
 		phases: {
@@ -913,7 +914,7 @@ function createCheckInTask(service: WorkerService): Task<null, CheckInState, nul
 	};
 
 	return defineTask<null, CheckInState, null>({
-		name: "aiki.worker-checkin",
+		name: stateKind("worker-checkin"),
 		version: 1,
 		initial: () => ({ phase: "wait" }),
 		phases: {

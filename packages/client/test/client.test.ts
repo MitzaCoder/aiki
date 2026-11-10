@@ -117,7 +117,7 @@ describe("client requests", () => {
 		const test = await setup();
 		const client = await connect(test.server);
 		expect(client.state.status).toBe("ready");
-		expect(client.state.server?.name).toBe("aiki");
+		expect(client.state.server?.name).toBe("Aiki");
 
 		expect(await client.listProjects()).toEqual([]);
 		const project = await client.addProject(test.projectDir);

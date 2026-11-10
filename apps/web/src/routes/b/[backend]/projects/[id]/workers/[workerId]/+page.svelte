@@ -18,7 +18,7 @@
 </script>
 
 <svelte:head>
-	<title>Worker {workerId} · aiki</title>
+	<title>Worker {workerId} · Aiki</title>
 </svelte:head>
 
 {#if backend}
