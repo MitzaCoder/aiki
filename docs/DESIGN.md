@@ -2929,7 +2929,9 @@ apps/<native>/      later; technology not chosen
 
 D51 keeps the relay account optional. Only the explicit switch in Settings → Notifications may construct Firebase
 Auth or start a relay request. First run, pairing, projects and direct notifications do not ask for an account.
-The default-off row explains the account requirement and has a Learn more disclosure. Opt-in explains email/profile
+When no relay endpoint is configured, notification settings render exactly the existing direct-notification page,
+with no relay row or unavailable notice. Configured builds put the default-off relay row below This device; it
+explains the account requirement and has a Learn more disclosure. Opt-in explains email/profile
 storage, encrypted content, visible metadata, limits/operator control and deletion before Google or email sign-in.
 Email links use the configured Hosting host and exact `/__/auth/links` path; paste recovery rejects other hosts,
 credentials, fragments and non-HTTPS links. The email is remembered locally, never placed in a continuation URL.
@@ -2947,8 +2949,9 @@ Only the explicit in-memory phone check accepts challenges before the persisted 
 settings stops that receive authority. A server-issued challenge deadline is compared to its stored receipt exactly,
 not rejected merely because the phone clock lags the relay by a fraction of a second. Foreground maintenance checks
 account status, handles terminal disable/deletion and sets `relayRecoveryRequired` without showing prompts elsewhere.
-Quota labels are fixed local words. Daily account/network/service rows show remaining counts and reset times, with
-other budgets behind More limits. The API does not return configured maxima, so the app does not invent a total.
+Quota labels are fixed local words. Today's use shows only Your account today: N left and a local reset time;
+network, whole-service and shorter-window budgets are behind More limits. Consent uses short everyday sentences;
+retention/cleanup caveats live behind the settings row's Learn more instead of the turn-on screen. The API does not return configured maxima, so the app does not invent a total.
 
 Private properties are `harness.relayGoogleClientId`, `harness.relayEmailLinkDomain` and
 `harness.relayPrivacyContact`; their `HARNESS_RELAY_*` environment forms are documented in the Android README.

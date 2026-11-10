@@ -27,6 +27,7 @@ import kotlinx.coroutines.delay
 /** Optional relay row. Nothing outside notification settings calls this sign-in UI. */
 @Composable
 internal fun RelaySettingsSection(repository: HarnessRepository) {
+    if (!relaySettingsVisible(BuildConfig.PUSH_RELAY_URL)) return
     val context = LocalContext.current
     val app = context.applicationContext as? HarnessApplication ?: return
     val activity = LocalActivity.current
@@ -55,7 +56,10 @@ internal fun RelaySettingsSection(repository: HarnessRepository) {
             "Phone notifications through the relay",
             hint = session.unavailableReason ?: "Encrypted notifications from your backends. Needs an optional relay account.",
             control = RowControl.Inline,
-            learn = { RelayPrivacyText(session.googleSignInEnabled) },
+            learn = {
+                RelayPrivacyText(session.googleSignInEnabled)
+                Text(relayPrivacyDetails())
+            },
             below = {
                 if (settings.notifications.relayRecoveryRequired) {
                     Text("Relay notifications need a refresh. Turn them on again. Backend sign-in is unchanged.")
@@ -101,7 +105,7 @@ internal fun RelaySettingsSection(repository: HarnessRepository) {
 internal fun RelayPrivacyText(googleSignInEnabled: Boolean) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         relayConsentPoints(googleSignInEnabled).forEach { Text("• $it") }
-        Text("The rest of Aiki works without a relay account.")
+        Text("The rest of Aiki works without this.")
         if (BuildConfig.RELAY_PRIVACY_CONTACT.isNotBlank()) Text("Privacy contact: ${BuildConfig.RELAY_PRIVACY_CONTACT}")
     }
 }
@@ -187,7 +191,7 @@ private fun RelaySignInContent(session: RelaySettingsSession, view: RelaySetting
         AlertDialog(onDismissRequest = {}, title = { Text("Delete relay account on every phone?") },
             text = {
                 Text("This removes your relay account and all phones' relay notifications. " +
-                    "Backend projects and sign-ins stay unchanged. Sent messages and provider logs cannot be recalled.")
+                    "Backend projects and sign-ins stay unchanged. Already-sent messages cannot be recalled.")
             },
             confirmButton = {
                 TextButton(onClick = session::confirmDeletion, enabled = !view.busy) { Text("Delete relay account") }

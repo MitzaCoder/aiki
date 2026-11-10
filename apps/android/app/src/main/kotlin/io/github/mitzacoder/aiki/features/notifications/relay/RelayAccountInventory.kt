@@ -57,10 +57,10 @@ internal fun RelayAccountInventory(view: RelaySettingsView, session: RelaySettin
         val quotas = view.phone?.accountStatus?.quotas.orEmpty()
         if (quotas.isEmpty()) GroupNote("No usage snapshot available. Limits still apply.")
         var moreLimits by remember { mutableStateOf(false) }
-        quotas.filter { moreLimits || it.budget in setOf("accountDay", "ipDay", "relaySendDay") }.forEach { quota ->
+        relayVisibleQuotas(quotas, moreLimits).forEach { quota ->
             GroupRow {
-                Text(relayQuotaLabel(quota.budget), style = MaterialTheme.typography.titleSmall)
-                Text("${quota.remaining} remaining • resets ${relayDate(quota.resetAt)}")
+                Text("${relayQuotaLabel(quota.budget)}: ${quota.remaining} left")
+                Text(relayQuotaResetText(quota.resetAt), style = MaterialTheme.typography.bodySmall)
             }
         }
         if (quotas.isNotEmpty()) TextButton(onClick = { moreLimits = !moreLimits }) {

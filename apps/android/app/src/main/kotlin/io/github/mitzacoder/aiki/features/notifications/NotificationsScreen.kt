@@ -98,7 +98,6 @@ internal fun NotificationsSection(repository: HarnessRepository) {
     }
     val unavailable = center?.pushUnavailableReason
     SettingsSectionPage("Notifications", "Each backend tells this device about its own projects. What you choose here applies to every backend.", SettingsIcon.Bell) {
-        io.github.mitzacoder.aiki.features.notifications.relay.RelaySettingsSection(repository)
         SettingsGroup(title = "This device", actions = { StatusChip(if (settings.enabled) "On" else "Off", if (settings.enabled) ChipTone.Ok else ChipTone.Muted) }) {
             SettingsRow(
                 "Notifications on this device", hint = unavailable ?: "With the app open, a notification waits 15 seconds and is dropped if you use the app.", control = RowControl.Inline,
@@ -121,6 +120,8 @@ internal fun NotificationsSection(repository: HarnessRepository) {
                 }, "Notifications on this device", enabled = center != null && (unavailable == null || settings.enabled))
             }
         }
+
+        io.github.mitzacoder.aiki.features.notifications.relay.RelaySettingsSection(repository)
 
         SettingsGroup(title = "Backends", description = "Whether each backend can reach this device, and what its last push did.") {
             if (sessions.isEmpty()) GroupNote("No backends yet.")
