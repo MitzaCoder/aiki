@@ -232,9 +232,9 @@ describe("maintenance", () => {
 		test.faux.setResponses(Array.from({ length: 20 }, () => maintenanceReply));
 		await seedTopic(test, projectId, { fileId: "testing", text: "Use `bun test`." });
 
-		// Not yet: the slot is far away and the write count is under the threshold.
-		test.server.maintenanceClock.wake();
-		await sleep(400);
+		// Finish the initial evaluation before moving fake time. A sleep can expire before the debounced wake
+		// has discovered the scope on a loaded machine; first discovering it after 03:00 intentionally skips that night.
+		await test.server.maintenanceClock.start();
 		expect((await history(test, "project", projectId)).length).toBe(1);
 
 		// Past 03:00: the scope changed since its last run, so it is maintained.
@@ -252,11 +252,9 @@ describe("maintenance", () => {
 
 		// The same night does not run again; the next night with no changes does not either.
 		const after = (await history(test, "project", projectId)).length;
-		test.server.maintenanceClock.wake();
-		await sleep(400);
+		await test.server.maintenanceClock.start();
 		clock.advance(24 * 60 * 60_000);
-		test.server.maintenanceClock.wake();
-		await sleep(600);
+		await test.server.maintenanceClock.start();
 		expect((await history(test, "project", projectId)).length).toBe(after);
 	}, 30_000);
 
