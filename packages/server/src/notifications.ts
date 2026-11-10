@@ -194,7 +194,7 @@ function parseVapidFile(raw: unknown): VapidKeys | undefined {
 }
 
 /**
- * The key pair every backend signs with, read from `file` or generated and written there (mode 0600) on first start. A
+ * This backend's signing key pair, read from `file` or generated and written there (mode 0600) on first start. A
  * file that does not hold a working pair is a configuration error, not something to overwrite: replacing it would
  * silently invalidate every subscription the user already has.
  */

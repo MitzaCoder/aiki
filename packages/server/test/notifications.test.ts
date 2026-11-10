@@ -11,7 +11,7 @@ import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/provid
 import type { Conversation, JsonObject } from "@earendil-works/pi-durable";
 import type { ConversationView, ModelRef, NotificationPreferences } from "@aiki/protocol";
 import { DEFAULT_NOTIFICATION_KINDS } from "@aiki/protocol";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -33,6 +33,7 @@ import {
 	notificationPayload,
 	notificationTag,
 	replyNotification,
+	resolveVapidKeyFile,
 	resolveVapidSubject,
 	vapidKeysWork,
 } from "../src/notifications.ts";
@@ -336,6 +337,58 @@ async function registerDevice(
 	if (response.type !== "notifications.register") throw errorOf(response);
 	return { deviceId, endpoint: subscription.endpoint };
 }
+
+describe("backend-local VAPID persistence", () => {
+	it("creates the first pair at <data>/notifications/vapid.json, mode 0600, and keeps it across restarts", async () => {
+		const dataDir = await tempDir();
+		const file = resolveVapidKeyFile(dataDir, {});
+		expect(file).toBe(join(dataDir, "notifications", "vapid.json"));
+		const first = await loadOrCreateVapidKeys(file);
+		expect(await vapidKeysWork(first)).toBe(true);
+		expect((await stat(file)).mode & 0o777).toBe(0o600);
+		const bytes = await readFile(file, "utf8");
+		expect(await loadOrCreateVapidKeys(file)).toEqual(first);
+		expect(await readFile(file, "utf8")).toBe(bytes);
+		await chmod(file, 0o644);
+		expect(await loadOrCreateVapidKeys(file)).toEqual(first);
+		expect((await stat(file)).mode & 0o777).toBe(0o600);
+	});
+	it("fails on malformed JSON, malformed key shape and a mismatched pair without overwriting", async () => {
+		const file = join(await tempDir(), "vapid.json");
+		const a = await createVapidKeys();
+		const b = await createVapidKeys();
+		for (const malformed of [
+			"{broken",
+			"null",
+			"{}",
+			JSON.stringify({ publicKey: a.publicKey, privateKey: b.privateKey }),
+		]) {
+			await writeFile(file, malformed);
+			await expect(loadOrCreateVapidKeys(file)).rejects.toThrow();
+			expect(await readFile(file, "utf8")).toBe(malformed);
+		}
+	});
+	it("retains AIKI_VAPID_KEY_FILE and AIKI_VAPID_SUBJECT overrides", async () => {
+		const root = await tempDir();
+		const file = join(root, "private-override.json");
+		expect(resolveVapidKeyFile(root, { AIKI_VAPID_KEY_FILE: file })).toBe(file);
+		expect(resolveVapidSubject([], { AIKI_VAPID_SUBJECT: "mailto:push@example.test" })).toBe(
+			"mailto:push@example.test",
+		);
+		expect(resolveVapidSubject([], { AIKI_VAPID_SUBJECT: "https://backend.example.test/contact" })).toBe(
+			"https://backend.example.test/contact",
+		);
+		const setup = await createSetup({
+			notifications: { vapidKeyFile: file, subject: "mailto:push@example.test", fcmKeyFile: null },
+		});
+		cleanups.push(setup.cleanup);
+		const first = setup.server.notifications.vapid;
+		expect(await loadOrCreateVapidKeys(file)).toEqual(first);
+		expect(setup.server.notifications.subject).toBe("mailto:push@example.test");
+		await setup.restart();
+		expect(setup.server.notifications.vapid).toEqual(first);
+	});
+});
 
 // --- crypto against a fake push endpoint -------------------------------------------------------------------------
 
