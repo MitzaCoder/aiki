@@ -2939,7 +2939,10 @@ relay sign-in with a plain reason, without affecting the rest of the app. Debug-
 configuration, synthetic Google credentials and fake FCM tokens. Release builds have no emulator settings or fake
 providers. Demo configurations are synthetic and stay outside the checkout; FCM auto-init remains disabled.
 
-The flow is consent → Google/email → phone check → on. Cancelling any unfinished step keeps relay off.
+D54 starts with email-link sign-in only. If the Web client ID is empty, there is no Google button (not a disabled
+button or an error), and consent omits the Google name/photo point. A configured Web client ID offers both methods;
+the debug-only fake Google switch counts as configured. Missing Google configuration never disables email sign-in.
+The flow is consent → the available sign-in method → phone check → on. Cancelling any unfinished step keeps relay off.
 Only the explicit in-memory phone check accepts challenges before the persisted switch becomes on; closing or leaving
 settings stops that receive authority. A server-issued challenge deadline is compared to its stored receipt exactly,
 not rejected merely because the phone clock lags the relay by a fraction of a second. Foreground maintenance checks

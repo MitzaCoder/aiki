@@ -34,6 +34,8 @@ class RelaySettingsSession(private val app: HarnessApplication, private val scop
     private val account get() = app.relayAccount
     private val relay get() = app.relayNotifications
     val unavailableReason: String? get() = account.unavailableReason
+    val googleSignInEnabled: Boolean get() = relayGoogleSignInEnabled(
+        io.github.mitzacoder.aiki.BuildConfig.RELAY_GOOGLE_CLIENT_ID, RelayAuthPlatform.fakeGoogleCredentialEnabled)
 
     private fun update(transform: (RelaySettingsView) -> RelaySettingsView) { mutableView.value = transform(mutableView.value) }
 

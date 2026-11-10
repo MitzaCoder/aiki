@@ -6,6 +6,8 @@ import java.util.Base64
 
 /** Emulator-only controls; not compiled into a release APK. Refuses synthetic credentials without the emulator. */
 internal object RelayAuthPlatform {
+    val fakeGoogleCredentialEnabled: Boolean get() = BuildConfig.RELAY_FAKE_GOOGLE
+
     private fun checkDemo() {
         check(BuildConfig.FIREBASE_PROJECT_ID == "demo-aiki-relay")
         val host = BuildConfig.RELAY_AUTH_EMULATOR.substringBeforeLast(':')

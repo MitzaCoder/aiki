@@ -1,5 +1,19 @@
 # Continue
 
+## Email-only pilot sign-in (D54 / T97)
+
+An empty Google Web client ID now leaves relay email sign-in available, hides Continue with Google entirely and
+removes only the Google name/photo privacy point. Configured Google builds keep both methods and all six points.
+The debug-only fake Google credential switch also counts as configured; release source sets always report no fake.
+Pure unit tests cover email-only, configured Google and fake Google with an empty client ID. Consent still explains
+Google's Auth/FCM delivery metadata when using email; that privacy boundary did not disappear with the Google button.
+The additional emulator proof is a dark email-only turn-on screen and interaction recording, saved alongside the
+both-method consent proof on T97. No Firebase stack or backend is needed just to prove this consent screen.
+D54 gates pass: 802 JVM tests / 105 suites / 2 opt-in skips / 0 failures, debug assemble, lint (41 warnings / 0 errors),
+release seam/auth packaging checks, and a separate no-private-values assemble/test run. The owned emulator was stopped
+again after capturing the email-only proof; backend, relay and bridge processes remain stopped. Public checks pass.
+
+
 ## Optional Android relay account screens (T97)
 
 Settings → Notifications now has the default-off optional relay row and Learn more. Only that switch opens privacy

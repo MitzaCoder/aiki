@@ -55,7 +55,7 @@ internal fun RelaySettingsSection(repository: HarnessRepository) {
             "Phone notifications through the relay",
             hint = session.unavailableReason ?: "Encrypted notifications from your backends. Needs an optional relay account.",
             control = RowControl.Inline,
-            learn = { RelayPrivacyText() },
+            learn = { RelayPrivacyText(session.googleSignInEnabled) },
             below = {
                 if (settings.notifications.relayRecoveryRequired) {
                     Text("Relay notifications need a refresh. Turn them on again. Backend sign-in is unchanged.")
@@ -98,16 +98,9 @@ internal fun RelaySettingsSection(repository: HarnessRepository) {
 
 /** Consent is shown before any sign-in, not hidden in a policy link after account creation. */
 @Composable
-internal fun RelayPrivacyText() {
+internal fun RelayPrivacyText(googleSignInEnabled: Boolean) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("• The operator's Firebase project stores your email and account identity.")
-        Text("• Google sign-in may share your name and photo. Aiki does not use them.")
-        Text("• Your backend encrypts notification content for this phone. The relay and Google cannot read it.")
-        Text("• The relay and Google see network addresses, timing and message sizes. " +
-            "The operator can link your phones and activity.")
-        Text("• There are limits. The operator can disable an account or pause the service.")
-        Text("• You can delete the account here. Turning notifications off or signing out keeps the account. " +
-            "Cleanup may be pending; sent messages and provider logs cannot be recalled.")
+        relayConsentPoints(googleSignInEnabled).forEach { Text("• $it") }
         Text("The rest of Aiki works without a relay account.")
         if (BuildConfig.RELAY_PRIVACY_CONTACT.isNotBlank()) Text("Privacy contact: ${BuildConfig.RELAY_PRIVACY_CONTACT}")
     }
@@ -136,8 +129,12 @@ private fun RelaySignInContent(session: RelaySettingsSession, view: RelaySetting
     view.message?.let { Text(it) }
     when (view.signIn.page) {
         RelaySignInPage.Consent -> {
-            RelayPrivacyText()
-            Button(onClick = onGoogle, enabled = !view.busy, modifier = Modifier.fillMaxWidth()) { Text("Continue with Google") }
+            RelayPrivacyText(session.googleSignInEnabled)
+            if (session.googleSignInEnabled) {
+                Button(onClick = onGoogle, enabled = !view.busy, modifier = Modifier.fillMaxWidth()) {
+                    Text("Continue with Google")
+                }
+            }
             OutlinedButton(onClick = onEmail, enabled = !view.busy, modifier = Modifier.fillMaxWidth()) {
                 Text("Continue with email")
             }

@@ -46,6 +46,11 @@ run/backend/project/direct-receive interactions. Links in the paste field are ma
 The clock-lag regression uses a server-issued possession deadline, not a stricter comparison to an imperfect phone
 wall clock. Existing strict identity, nonce, exact-receipt and expiry checks remain.
 
+For D54's email-only consent proof, leave the Web client ID empty and set the debug fake Google switch false.
+Keep the synthetic Firebase config, relay endpoint, email domain and fake FCM source configured. The turn-on screen
+then offers only email and Not now, with no Google name/photo point. Merely opening consent needs no running relay
+stack or Firebase Auth object. The fake Google switch counts as configured only when explicitly true.
+
 This cannot prove real Google sign-in, real email delivery, verified App Links, FCM delivery, Play services behavior
 or release-signed sideloading. The release APK seam/auth checks are static packaging gates, not real-service acceptance.
 

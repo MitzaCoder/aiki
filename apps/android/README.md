@@ -144,7 +144,10 @@ Alongside `harness.pushRelayUrl` / `HARNESS_PUSH_RELAY_URL` and the existing ext
 | `harness.relayEmailLinkDomain` | `HARNESS_RELAY_EMAIL_LINK_DOMAIN` | Hosting host only; HTTPS App Link with exact `/__/auth/links` path |
 | `harness.relayPrivacyContact` | `HARNESS_RELAY_PRIVACY_CONTACT` | Operator contact shown in consent |
 
-All default to empty. The email host's release SHA-256 App Links association and Google package/certificate setup
+All default to empty. D54 starts the pilot with email links only: an empty Google Web client ID hides the Google
+button and its name/photo privacy point, without disabling email sign-in. A configured Web client ID offers both
+methods. The debug fake Google credential switch also counts as configured, but never in a release build.
+The email host's release SHA-256 App Links association and Google package/certificate setup
 are operator responsibilities. Email uses current Hosting links, not Dynamic Links. Paste recovery checks the exact
 host/path before Firebase checks the code. The address is kept locally until completion; links/codes are never logged.
 Sign-out and turn-off are distinct from deletion; backend sign-ins remain independent.

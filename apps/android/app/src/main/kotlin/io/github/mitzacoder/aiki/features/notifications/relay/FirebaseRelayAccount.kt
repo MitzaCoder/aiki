@@ -52,7 +52,7 @@ class FirebaseRelayAccount(
         RelayEndpoint(BuildConfig.PUSH_RELAY_URL, BuildConfig.DEBUG).unavailableReason != null ->
             RelayEndpoint(BuildConfig.PUSH_RELAY_URL, BuildConfig.DEBUG).unavailableReason
         BuildConfig.FIREBASE_APP_ID.isEmpty() -> "Relay notifications are not available in this build. Firebase is not configured."
-        BuildConfig.RELAY_GOOGLE_CLIENT_ID.isBlank() || BuildConfig.RELAY_EMAIL_LINK_DOMAIN.isBlank() ->
+        BuildConfig.RELAY_EMAIL_LINK_DOMAIN.isBlank() ->
             "Relay notifications are not available in this build. Sign-in is not configured."
         else -> null
     }
