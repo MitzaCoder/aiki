@@ -23,9 +23,11 @@ const VM_ONLY_TARGETS = JSON.stringify({
 const SAFE_CGROUP = "0::/user.slice/user-1000.slice/session-3.scope";
 
 const backends: FakeBackend[] = [];
+const machines: Machine[] = [];
 
 afterEach(() => {
 	for (const backend of backends.splice(0)) backend.stop();
+	for (const machine of machines.splice(0)) expect(existsSync(join(machine.dir, "network-attempted"))).toBe(false);
 });
 
 function startBackend(overrides: Parameters<typeof startFakeBackend>[0] = {}): FakeBackend {
@@ -316,6 +318,13 @@ function writeScript(path: string, body: string): void {
 	chmodSync(path, 0o755);
 }
 
+/** User-mode backend.sh checks this exact private path before downloading the optional terminal binary. */
+function installTerminalStub(home: string): void {
+	const bin = join(home, ".local", "bin");
+	mkdirSync(bin, { recursive: true });
+	writeScript(join(bin, "zellij"), 'printf "zellij %s\\n" "$DEPLOY_ZELLIJ_VERSION"');
+}
+
 function makeMachine(): Machine {
 	const dir = mkdtempSync(join(tmpdir(), "aiki-deploy-test."));
 	const home = join(dir, "home");
@@ -337,7 +346,10 @@ function makeMachine(): Machine {
 		].join("\n"),
 	);
 	writeScript(join(bin, "journalctl"), "exit 0");
-	// `bun install` in a release is the only step that would reach the network here.
+	// No downloader in these deploy-control tests may reach the network, including optional zellij provisioning.
+	writeScript(join(bin, "curl"), `touch ${JSON.stringify(join(dir, "network-attempted"))}; exit 99`);
+	installTerminalStub(home);
+	// Dependency installation is exercised elsewhere.
 	const bun = join(bin, "bun");
 	writeScript(bun, `if [[ \${1:-} == install ]]; then exit 0; fi\nexec ${BUN} "$@"`);
 
@@ -346,7 +358,9 @@ function makeMachine(): Machine {
 	const cgroupFile = join(dir, "cgroup");
 	writeFileSync(cgroupFile, `${SAFE_CGROUP}\n`);
 
-	return { dir, home, root, bin, restartsFile, cgroupFile };
+	const machine = { dir, home, root, bin, restartsFile, cgroupFile };
+	machines.push(machine);
+	return machine;
 }
 
 function backendEnvironment(machine: Machine, port: number): Record<string, string> {
@@ -355,6 +369,7 @@ function backendEnvironment(machine: Machine, port: number): Record<string, stri
 		PATH: `${machine.bin}:${process.env.PATH ?? ""}`,
 		BUN: join(machine.bin, "bun"),
 		AIKI_PORT: String(port),
+		DEPLOY_ZELLIJ_VERSION: "test",
 		DEPLOY_IDLE_POLL_SECONDS: "1",
 		DEPLOY_IDLE_TIMEOUT_SECONDS: "5",
 		DEPLOY_HEALTH_TIMEOUT_MS: "1500",
@@ -682,7 +697,7 @@ describe("deploy.sh", () => {
 	/** ssh for the VM: run the command locally, with a HOME of its own so its files are easy to find. */
 	function addSshStub(machine: Machine): string {
 		const vmHome = join(machine.dir, "vm-home");
-		mkdirSync(vmHome, { recursive: true });
+		installTerminalStub(vmHome);
 		writeScript(join(machine.bin, "ssh"), 'printf "%s\\n" "$2" >> "$STUB_SSH_LOG"\nexec env HOME="$STUB_VM_HOME" bash -c "$2"');
 		const log = join(machine.dir, "ssh.log");
 		writeFileSync(log, "");
@@ -779,6 +794,7 @@ describe("deploy.sh", () => {
 			DEPLOY_HOST_ROOT: machine.root,
 			DEPLOY_PORT: String(port(backend)),
 			DEPLOY_BUN_VERSION: Bun.version,
+			DEPLOY_ZELLIJ_VERSION: "test",
 			DEPLOY_IDLE_POLL_SECONDS: "1",
 			DEPLOY_IDLE_TIMEOUT_SECONDS: "5",
 			DEPLOY_HEALTH_TIMEOUT_MS: "3000",
@@ -941,8 +957,8 @@ describe("deploy.sh", () => {
 		 * there), then the connection reports failure and the target stays down.
 		 */
 		function addTargetsSshStub(machine: Machine): string {
-			mkdirSync(join(machine.dir, "vm-home"), { recursive: true });
-			mkdirSync(laptopHome(machine), { recursive: true });
+			installTerminalStub(join(machine.dir, "vm-home"));
+			installTerminalStub(laptopHome(machine));
 			writeScript(
 				join(machine.bin, "ssh"),
 				[
