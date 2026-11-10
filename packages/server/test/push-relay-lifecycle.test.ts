@@ -144,3 +144,40 @@ test("legacy client on a relay-capable backend can continue direct FCM without a
 	expect(f.setup.server.features).toContain("fcm-relay-v1");
 	expect(HARNESS_FEATURES).toContain("fcm-relay-v1");
 });
+
+test("token repair resumes only future events without unnecessary rekey or replaying the failed outbox", async () => {
+	const f = await relaySetup();
+	const phone = await simulatedPhone();
+	const staged = await phone.stage(f.client);
+	await phone.activate(f.client);
+	f.relay.replies.push({ status: 410, code: "token_invalid" });
+	await f.setup.server.notifications.deliver(event);
+	expect(f.setup.server.notifications.relay!.status(f.credentials.sessionId).state).toBe("paused");
+	await f.setup.server.notifications.deliver(event);
+	expect(f.relay.sends()).toHaveLength(1);
+	// A duplicate confirmation is only a receipt, not permission to resume a paused route.
+	await f.client.request({ type: "notifications.confirmRelay", operationId: phone.registration.operationId,
+		confirmation: staged.confirmation });
+	expect(f.setup.server.notifications.relay!.status(f.credentials.sessionId).state).toBe("paused");
+	expect(await f.client.request({ type: "notifications.syncRelay", routeId: phone.registration.routeId, resume: true }))
+		.toMatchObject({ type: "notifications.syncRelay", relay: { state: "active" } });
+	await f.tick(60_000);
+	expect(f.relay.sends()).toHaveLength(1);
+	await f.setup.server.notifications.deliver(event);
+	expect(f.relay.sends()).toHaveLength(2);
+	expect((await phone.admit(f.relay.sends()[1]!, f.clock.now)).sequence).toBe("1");
+});
+
+test("repeated activation of the predecessor never deletes a staged successor", async () => {
+	const f = await relaySetup();
+	const phone = await simulatedPhone();
+	const staged = await phone.stage(f.client);
+	await phone.activate(f.client);
+	const successor = await simulatedPhone(phone.registration.routeId);
+	await successor.stage(f.client);
+	await f.client.request({ type: "notifications.confirmRelay", operationId: phone.registration.operationId,
+		confirmation: staged.confirmation });
+	expect(f.setup.server.notifications.relay!.store.snapshot().routes).toHaveLength(2);
+	await successor.activate(f.client);
+	expect(f.setup.server.notifications.relay!.store.snapshot().routes).toHaveLength(1);
+});

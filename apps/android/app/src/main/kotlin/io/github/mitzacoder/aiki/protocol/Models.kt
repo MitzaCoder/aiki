@@ -116,7 +116,8 @@ data class NotificationsSyncRelayRequest(
     val `routeId`: String,
     val `leaseExpiresAt`: Long? = null,
     val `preferences`: NotificationPreferences? = null,
-    val `unregister`: Boolean? = null
+    val `unregister`: Boolean? = null,
+    val `resume`: Boolean? = null
 )
 
 @Serializable

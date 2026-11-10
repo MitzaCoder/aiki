@@ -109,7 +109,7 @@ export const NotificationRelayStatusSchema = Type.Object({
 	available: Type.Boolean(),
 	state: Type.Union([
 		Type.Literal("unregistered"), Type.Literal("pending"), Type.Literal("active"),
-		Type.Literal("needs_new_keys"), Type.Literal("revoked"),
+		Type.Literal("needs_new_keys"), Type.Literal("paused"), Type.Literal("revoked"),
 	]),
 	leaseExpiresAt: Type.Union([Type.Integer(), Type.Null()]),
 	absoluteExpiresAt: Type.Union([Type.Integer(), Type.Null()]),

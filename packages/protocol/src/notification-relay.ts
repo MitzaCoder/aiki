@@ -60,6 +60,7 @@ export const NotificationsSyncRelayRequestSchema = Type.Object({
 	leaseExpiresAt: Type.Optional(Time),
 	preferences: Type.Optional(NotificationPreferencesSchema),
 	unregister: Type.Optional(Type.Boolean()),
+	resume: Type.Optional(Type.Boolean()),
 });
 export type NotificationsSyncRelayRequest = Static<typeof NotificationsSyncRelayRequestSchema>;
 

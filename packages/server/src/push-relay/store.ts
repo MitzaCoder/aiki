@@ -33,7 +33,7 @@ export type RelayRoute = {
 	answer: RelayRegistrationAnswer;
 	transcript: string;
 	keys: { notification: string; "phone-confirm": string; "backend-confirm": string };
-	state: "pending" | "active" | "needs_new_keys";
+	state: "pending" | "active" | "paused" | "needs_new_keys";
 	nextSequence: string;
 	device: NotificationDevice;
 };
@@ -230,6 +230,7 @@ export class PushRelayStore {
 			const route = draft.routes.find((r) => r.context.sessionId === sessionId && r.operationId === operationId);
 			if (!route || route.state === "needs_new_keys" || route.registration.leaseExpiresAt <= now) invalid();
 			await verifyRelayConfirmation(relayUnbase64(route.keys["phone-confirm"], 32), route.transcript, confirmation);
+			if (route.state !== "pending") return;
 			for (const old of [...draft.routes])
 				if (old.context.sessionId === sessionId && old !== route) this.removeRoute(draft, old, now);
 			route.state = "active";

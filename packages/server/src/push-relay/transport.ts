@@ -138,6 +138,11 @@ export class PushRelayTransport {
 				route.registration.leaseExpiresAt = input.leaseExpiresAt;
 			}
 			if (input.preferences) route.device.preferences = structuredClone(input.preferences);
+			if (input.resume) {
+				if (route.state === "needs_new_keys" || route.state === "pending")
+					throw new ServerError("bad_request", "Relay route requires key confirmation");
+				route.state = "active";
+			}
 		});
 		this.#arm();
 		return this.status(sessionId);
@@ -172,6 +177,7 @@ export class PushRelayTransport {
 			if (!current || this.#locallyRevoked.has(current.context.routeId) ||
 				!this.#options.sessionActive(current.context.sessionId)) return outcome("auth_revoked");
 			if (current.state === "needs_new_keys") return outcome("needs_new_keys");
+			if (current.state === "paused") return outcome(current.device.lastDelivery?.message ?? "rejected");
 			const now = this.#now();
 			const expiresAt = Math.min(Date.parse(at) + 43_200_000, current.registration.leaseExpiresAt,
 				current.registration.absoluteExpiresAt);
@@ -292,7 +298,7 @@ export class PushRelayTransport {
 					draft.sends = draft.sends.filter((s) => s.messageId !== entry.messageId);
 					if (terminalRouteCodes.has(message)) {
 						// Keep the selection/status, but stop new sends until the phone explicitly repairs the route.
-						current.state = "needs_new_keys";
+						current.state = "paused";
 						draft.sends = draft.sends.filter((s) => s.routeId !== entry.routeId);
 					}
 				}
