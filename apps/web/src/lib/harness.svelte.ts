@@ -57,6 +57,9 @@ import {
 	saveBackends,
 	type BackendConfig,
 } from "./backends.ts";
+import { BackendDeviceAuth, authRequest, AuthHttpError, renewIn, browserDeviceLabel, type ClaimResult } from "./device-auth.ts";
+import { STORAGE_WARNING } from "./device-credentials.ts";
+import type { AuthPairing } from "@aiki/protocol";
 import { contextAnswerIsCurrent } from "./context.ts";
 import { ProjectBoard } from "./board.svelte.ts";
 import { ProjectThreads } from "./threads.svelte.ts";
@@ -119,6 +122,21 @@ export class BackendConnection {
 	memoryMaintenanceError = $state<string | undefined>(undefined);
 	lastError = $state<string | undefined>(undefined);
 
+	readonly #deviceAuth: BackendDeviceAuth;
+	authBackendId = $state<string | undefined>(undefined);
+	authMode = $state<string | undefined>(undefined);
+	authSessionId = $state<string | undefined>(undefined);
+	authNotice = $state<string | undefined>(undefined);
+	storageWarning = $state<string | undefined>(undefined);
+	pairingRequest = $state<AuthPairing | undefined>(undefined);
+	readonly #pairingQueue: AuthPairing[] = [];
+	devicesVersion = $state(0);
+	#renewTimer: ReturnType<typeof setTimeout> | undefined;
+	#migrationTimer: ReturnType<typeof setTimeout> | undefined;
+	#migrationRunning = false;
+	#migrationRegistered = false;
+	#migrationNotBefore = 0;
+	#migrationFailures = 0;
 	#started = false;
 	#lastStatus: ClientState["status"] = "idle";
 	/** The newest settings a save has to send, so a burst lands in order. */
@@ -129,19 +147,49 @@ export class BackendConnection {
 		this.id = config.id;
 		this.name = config.name;
 		this.url = config.url;
+		this.#deviceAuth = new BackendDeviceAuth(config.url);
 		this.client = new HarnessClient({
 			url: backendWebSocketUrl(config.url),
 			clientName: "aiki-web",
+			prepareHello: async () => {
+				try { return await this.#deviceAuth.prepare(); }
+				finally {
+					this.authBackendId = this.#deviceAuth.backendId;
+					this.authMode = this.#deviceAuth.mode;
+					this.storageWarning = this.#deviceAuth.store.memoryOnly ? STORAGE_WARNING : undefined;
+				}
+			},
 			reconnect: { initialDelayMs: 300, maxDelayMs: 10_000, jitter: 0.2 },
 		});
 		this.client.subscribe((state) => {
 			const wasReady = this.#lastStatus === "ready";
 			this.connection = state;
 			this.#lastStatus = state.status;
+			if (state.status === "closed") {
+				clearTimeout(this.#renewTimer);
+				clearTimeout(this.#migrationTimer);
+				this.authSessionId = undefined;
+			}
 			if (state.status === "ready") {
+				if (state.features?.includes("device-auth-v1") && state.backendId) {
+					void this.#deviceAuth.pinHello(state.backendId).catch(error => {
+						this.client.close(); this.authNotice = messageOf(error);
+					});
+				}
+				this.authSessionId = state.auth?.sessionId ?? undefined;
+				if (this.authSessionId) { this.authNotice = undefined; this.#scheduleRenewal(); }
+				else if (this.authMode === "optional") void this.pollMigration();
 				this.features = state.features ?? [...HARNESS_FEATURES];
 				if (!wasReady && this.#started) void this.refreshAll();
 				if (state.error === undefined) this.lastError = undefined;
+			}
+		});
+		this.client.onDeviceAuth(event => {
+			if (event.type === "auth.pairingRequested") this.reviewPairing(event.pairing);
+			if (event.type === "auth.devicesChanged") this.devicesVersion += 1;
+			if (event.type === "auth.sessionRevoked") {
+				this.authNotice = "This device was signed out";
+				clearTimeout(this.#renewTimer);
 			}
 		});
 		this.client.onProjectState((project) => this.upsertProject(project));
@@ -162,7 +210,73 @@ export class BackendConnection {
 	}
 
 	stop(): void {
+		clearTimeout(this.#renewTimer); clearTimeout(this.#migrationTimer);
 		this.client.close();
+	}
+
+	#scheduleRenewal(): void {
+		clearTimeout(this.#renewTimer);
+		const expires = this.#deviceAuth.accessExpiresAt;
+		if (!expires) return;
+		this.#renewTimer = setTimeout(() => void this.#renew(), renewIn(expires));
+	}
+	async #renew(): Promise<void> {
+		if (!this.ready || !this.authSessionId) return;
+		try {
+			const access = await this.#deviceAuth.refresh();
+			const response = await this.client.request({ type: "auth.renew", accessToken: access.accessToken });
+			if (response.type === "error") throw new Error(response.error.message);
+			this.#scheduleRenewal();
+		} catch (error) {
+			if (this.#deviceAuth.store.memoryOnly) this.storageWarning = STORAGE_WARNING;
+			if (error instanceof AuthHttpError && [401, 403].includes(error.status)) {
+				this.client.close(); this.authNotice = error.message; this.connection = { ...this.connection, error: error.message };
+			} else {
+				this.#renewTimer = setTimeout(() => void this.#renew(), error instanceof AuthHttpError ? error.retryAfter * 1000 : 10_000);
+			}
+		}
+	}
+	/** Optional-mode enrollment is quiet and never blocks the anonymous socket. */
+	async pollMigration(): Promise<void> {
+		if (this.#migrationRunning || Date.now() < this.#migrationNotBefore || this.authMode !== "optional" || this.authSessionId || !this.ready) return;
+		this.#migrationRunning = true; clearTimeout(this.#migrationTimer);
+		let delay = 20_000;
+		try {
+			const proof = await this.#deviceAuth.proof("migration");
+			const result = await authRequest<ClaimResult>(this.url, this.#migrationRegistered ? "/auth/claims/poll" : "/auth/migration/claims", this.#migrationRegistered ? proof : { ...proof, label: browserDeviceLabel(), platform: "web" });
+			this.#migrationRegistered = true; this.#migrationFailures = 0;
+			this.#migrationNotBefore = Date.now() + 1000;
+			this.storageWarning = this.#deviceAuth.store.memoryOnly ? STORAGE_WARNING : undefined;
+			if (await this.#deviceAuth.acceptClaim(result, proof)) {
+				this.authNotice = undefined; this.client.close(); this.client.connect(); return;
+			}
+			this.authNotice = result.state === "pending" ? `Waiting for approval · code ${result.comparisonCode}` : `Device enrollment ${result.state}. Reopen to request approval again.`;
+		} catch (error) {
+			delay = Math.min(120_000, delay * 2 ** Math.min(3, ++this.#migrationFailures));
+			if (error instanceof AuthHttpError && error.status === 429) delay = Math.max(delay, error.retryAfter * 1000);
+			this.#migrationNotBefore = Date.now() + delay;
+			// Registration errors must never interrupt ordinary work on an optional backend.
+		} finally {
+			this.#migrationRunning = false;
+			if (!this.authSessionId && this.ready) this.#migrationTimer = setTimeout(() => void this.pollMigration(), delay);
+		}
+	}
+	async requestMigrationApproval(): Promise<void> {
+		if (this.authSessionId) return;
+		this.#migrationRegistered = false; this.#migrationNotBefore = 0;
+		const record = await this.#deviceAuth.record(); delete record.migration;
+		await this.#deviceAuth.store.write(record); await this.pollMigration();
+	}
+	reviewPairing(pairing: AuthPairing): void {
+		if (!this.pairingRequest) this.pairingRequest = pairing;
+		else if (this.pairingRequest.id !== pairing.id && !this.#pairingQueue.some(queued => queued.id === pairing.id)) this.#pairingQueue.push(pairing);
+	}
+	async answerPairing(approve: boolean): Promise<void> {
+		const pairing = this.pairingRequest;
+		if (!pairing?.claimId) return;
+		const response = await this.client.request({ type: approve ? "auth.pairings.approve" : "auth.pairings.deny", grantId: pairing.id, claimId: pairing.claimId });
+		if (response.type === "error") throw new Error(response.error.message);
+		this.pairingRequest = this.#pairingQueue.shift();
 	}
 
 	get ready(): boolean {

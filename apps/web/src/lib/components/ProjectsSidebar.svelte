@@ -169,6 +169,7 @@
 								{backend.name}
 							</span>
 							{#if !backend.ready}<ConnectionBadge {backend} />{/if}
+							{#if backend.authNotice}<a class="max-w-52 truncate text-[0.65rem] text-muted-foreground" href={`/settings/backends/${backend.id}`} title={backend.authNotice}>{backend.authNotice}</a>{/if}
 							{#if backend.supports('filesystem') && backend.ready}
 								<Button
 									variant="ghost"

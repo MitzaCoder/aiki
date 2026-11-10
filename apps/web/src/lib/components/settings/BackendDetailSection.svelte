@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DevicesSection from './DevicesSection.svelte';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { goto } from '$app/navigation';
 	import Banner from '#lib/components/Banner.svelte';
@@ -91,6 +92,8 @@
 	{#if backend.supports('memory-maintenance')}
 		<MemoryMaintenanceGroup {backend} />
 	{/if}
+
+	{#if backend.authBackendId || backend.connection.error?.includes('Pair') || backend.connection.error?.includes('signed out')}<DevicesSection {backend} />{/if}
 
 	<SettingsGroup title="Remove" tone="danger">
 		<SettingsRow

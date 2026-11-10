@@ -156,6 +156,8 @@ type WithOptionalId<T> = T extends unknown ? Omit<T, "id"> & { id?: string } : n
 /** A request without an ID; the client assigns one and the server echoes it. */
 export type ClientRequest = WithOptionalId<ClientMessage>;
 
+export type DeviceAuthEvent = Extract<ServerMessage, { type: "auth.devicesChanged" | "auth.pairingRequested" | "auth.sessionRevoked" }>;
+
 export type ClientState = {
 	status: ClientConnectionStatus;
 	/** Reconnect attempt number; zero while connected. */
@@ -163,12 +165,16 @@ export type ClientState = {
 	server?: { name: string; version: string };
 	/** What the server implements. An older server that does not list features supports the original set. */
 	features?: readonly string[];
+	backendId?: string;
+	auth?: { mode: "off" | "optional" | "required"; sessionId: string | null; accessExpiresAt: string | null };
 	error?: string;
 };
 
 export type HarnessClientOptions = {
 	/** WebSocket URL, including the `/ws` path. */
 	url: string;
+	/** Runs before opening each socket. Tokens never enter client state. */
+	prepareHello?: () => Promise<string | undefined>;
 	webSocketFactory?: WebSocketFactory;
 	clientName?: string;
 	clientVersion?: string;
@@ -266,6 +272,9 @@ type Pending = {
 export class HarnessClient {
 	readonly url: string;
 
+	readonly #prepareHello: HarnessClientOptions["prepareHello"];
+	#preparing = false;
+	readonly #deviceAuthListeners = new Set<(event: DeviceAuthEvent) => void>();
 	readonly #webSocketFactory: WebSocketFactory;
 	readonly #clientName: string;
 	readonly #clientVersion: string | undefined;
@@ -303,6 +312,7 @@ export class HarnessClient {
 
 	constructor(options: HarnessClientOptions) {
 		this.url = options.url;
+		this.#prepareHello = options.prepareHello;
 		this.#webSocketFactory = options.webSocketFactory ?? defaultWebSocketFactory;
 		this.#clientName = options.clientName ?? "aiki-client";
 		this.#clientVersion = options.clientVersion;
@@ -438,6 +448,11 @@ export class HarnessClient {
 		return () => this.#loginListeners.delete(listener);
 	}
 
+	onDeviceAuth(listener: (event: DeviceAuthEvent) => void): () => void {
+		this.#deviceAuthListeners.add(listener);
+		return () => this.#deviceAuthListeners.delete(listener);
+	}
+
 	/** Start connecting. Idempotent; requests also call this. */
 	connect(): void {
 		if (this.#state.status === "ready" || this.#state.status === "connecting" || this.#state.status === "reconnecting") {
@@ -452,6 +467,7 @@ export class HarnessClient {
 	/** Wait until the handshake has completed, or reject on timeout or a closed client. */
 	whenReady(timeoutMs = this.#requestTimeoutMs): Promise<void> {
 		if (this.#state.status === "ready") return Promise.resolve();
+		if (this.#fatal) return Promise.reject(new ClientError("closed", this.#state.error ?? "Connection closed"));
 		this.connect();
 		return new Promise((resolve, reject) => {
 			const finish = (): void => {
@@ -501,6 +517,7 @@ export class HarnessClient {
 
 	/** Send one request (an ID is added when absent) and return its response, errors included. */
 	async request<T extends Response = Response>(message: ClientRequest, timeoutMs = this.#requestTimeoutMs): Promise<T | ErrorResponse> {
+		if (this.#fatal) throw new ClientError("closed", this.#state.error ?? "Connection closed");
 		this.connect();
 		await this.whenReady(timeoutMs);
 		const socket = this.#socket;
@@ -1431,7 +1448,11 @@ export class HarnessClient {
 	}
 
 	#openSocket(): void {
-		if (this.#socket !== undefined || this.#closedByUser || this.#fatal) return;
+		void this.#prepareSocket();
+	}
+
+	async #prepareSocket(): Promise<void> {
+		if (this.#socket !== undefined || this.#closedByUser || this.#fatal || this.#preparing) return;
 		const attempt = this.#attempt;
 		this.#setState({
 			status: attempt === 0 ? "connecting" : "reconnecting",
@@ -1439,6 +1460,20 @@ export class HarnessClient {
 			...(this.#state.error === undefined ? {} : { error: this.#state.error }),
 		});
 
+		let accessToken: string | undefined;
+		if (this.#prepareHello) {
+			this.#preparing = true;
+			try { accessToken = await this.#prepareHello(); }
+			catch (error) {
+				const status = (error as { status?: number } | null)?.status;
+				const transient = error instanceof TypeError || (error instanceof DOMException && ["TimeoutError", "AbortError"].includes(error.name)) || status === 429 || (status !== undefined && status >= 500);
+				this.#fatal = !transient;
+				this.#setState({ status: transient ? "reconnecting" : "closed", attempt, error: errorMessage(error) });
+				if (transient) this.#scheduleReconnect(status === 429 ? ((error as { retryAfter?: number }).retryAfter ?? 1) * 1000 : 0);
+				return;
+			} finally { this.#preparing = false; }
+			if (this.#closedByUser) return;
+		}
 		let socket: HarnessWebSocket;
 		try {
 			socket = this.#webSocketFactory(this.url);
@@ -1451,7 +1486,7 @@ export class HarnessClient {
 		this.#socket = socket;
 		socket.onopen = () => {
 			if (this.#socket !== socket) return;
-			void this.#handshake(socket);
+			void this.#handshake(socket, accessToken);
 		};
 		socket.onmessage = (event) => {
 			if (this.#socket !== socket) return;
@@ -1463,12 +1498,13 @@ export class HarnessClient {
 		};
 	}
 
-	async #handshake(socket: HarnessWebSocket): Promise<void> {
+	async #handshake(socket: HarnessWebSocket, accessToken?: string): Promise<void> {
 		try {
 			const response = await this.#sendOn(
 				socket,
 				{
 					type: "hello",
+					...(accessToken ? { auth: { accessToken } } : {}),
 					protocolVersion: this.#protocolVersion,
 					client: {
 						name: this.#clientName,
@@ -1480,7 +1516,7 @@ export class HarnessClient {
 			if (this.#socket !== socket) return;
 			if (response.type === "error") {
 				const error = errorFromResponse(response);
-				if (error.code === "unsupported_protocol") {
+				if (error.code === "unsupported_protocol" || error.code.startsWith("auth_")) {
 					this.#fatal = true;
 					this.#clearReconnect();
 					this.#setState({ status: "closed", attempt: this.#attempt, error: error.message });
@@ -1502,6 +1538,8 @@ export class HarnessClient {
 				status: "ready",
 				attempt: 0,
 				server: response.server,
+				backendId: response.backendId,
+				auth: response.auth,
 				features: response.features ?? [...LEGACY_HARNESS_FEATURES],
 				error: undefined,
 			});
@@ -1725,6 +1763,14 @@ export class HarnessClient {
 				}
 				return;
 			}
+			case "auth.devicesChanged":
+			case "auth.pairingRequested":
+			case "auth.sessionRevoked": {
+				for (const listener of this.#deviceAuthListeners) {
+					try { listener(message); } catch { /* Consumer isolation. */ }
+				}
+				return;
+			}
 			case "error": {
 				const error = errorFromResponse(message);
 				for (const listener of this.#errorListeners) {
@@ -1751,6 +1797,11 @@ export class HarnessClient {
 	#handleClose(socket: HarnessWebSocket, event: { code?: number; reason?: string }): void {
 		if (this.#socket !== socket) return;
 		this.#socket = undefined;
+		if (event.code === 4401 || event.code === 4403) {
+			this.#fatal = true;
+			this.#clearReconnect();
+			this.#setState({ status: "closed", attempt: this.#attempt, error: event.code === 4403 ? "This device was signed out" : "Session expired" });
+		}
 		// The server detached every terminal of this socket; a handle attaches again when the client is ready.
 		this.#terminalsById.clear();
 		const reason = event.reason !== undefined && event.reason.length > 0 ? event.reason : "Connection lost";
@@ -1767,7 +1818,7 @@ export class HarnessClient {
 		this.#scheduleReconnect();
 	}
 
-	#scheduleReconnect(): void {
+	#scheduleReconnect(minDelayMs = 0): void {
 		if (!this.#reconnect || this.#closedByUser || this.#fatal || this.#reconnectTimer !== undefined) return;
 		if (!canRetry(this.#attempt, this.#backoff)) {
 			this.#setState({
@@ -1777,7 +1828,7 @@ export class HarnessClient {
 			});
 			return;
 		}
-		const delay = backoffDelay(this.#attempt, this.#backoff);
+		const delay = Math.max(minDelayMs, backoffDelay(this.#attempt, this.#backoff));
 		this.#attempt += 1;
 		this.#setState({ status: "reconnecting", attempt: this.#attempt, ...(this.#state.error === undefined ? {} : { error: this.#state.error }) });
 		this.#reconnectTimer = setTimeout(() => {

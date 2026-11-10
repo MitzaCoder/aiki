@@ -49,11 +49,10 @@
 >
 	<Card.Root>
 		<Card.Header>
-			<Card.Title>{decoded.ok ? 'Connect this device' : 'This link cannot be used'}</Card.Title>
+			<Card.Title>{decoded.ok ? 'Import backend addresses' : 'This link cannot be used'}</Card.Title>
 			<Card.Description>
 				{#if decoded.ok}
-					This link carries {offered.length === 1 ? 'a backend' : `${offered.length} backends`}. Add them here and
-					this browser connects at once.
+					This import-only link carries {offered.length === 1 ? 'a backend address' : `${offered.length} backend addresses`}, not access credentials. Backends that require sign-in still need a separate pairing link.
 				{:else}
 					{decoded.reason} Ask for a fresh link from the Backends page of a device that is already set up.
 				{/if}

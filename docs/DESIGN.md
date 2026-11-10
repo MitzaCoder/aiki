@@ -231,6 +231,46 @@ push, including offline phones. Required closes migration; do not silently grand
 bundle generator or cross-backend approval UI is included in this server contract.
 
 
+### Web client storage and device screens
+
+The web client keeps retained session tokens, staged rotation successors, migration/claim proofs and the auth-support
+pin in IndexedDB `aiki-device-auth`, keyed by stable backend ID plus the exact canonical origin. Address-list persistence
+whitelists ID/name/URL; exports and v1 connect links remain address-only imports, never sign-in. Access tokens stay in
+private memory and are not included in reactive connection/debug state. Failed storage falls back to memory with a
+visible warning that reopening requires pairing. An edited origin never inherits another origin's credentials.
+
+Discovery precedes each socket. Only an unpinned explicit 404 permits legacy discovery; network errors, a changed backend
+ID and a pinned 404 cannot downgrade authentication. An explicit auth hello also pins support. Optional/off anonymous
+hello is deliberate mode negotiation, not a fallback after refresh failure. Auth close codes stop reconnects and show
+Pair this backend / This device was signed out / Session expired independently per backend. Network and rate-limit
+failures back off. Access refresh and `auth.renew` run one minute before expiry without replacing healthy sockets.
+Web Locks serialize retained read-stage-rotate-commit across tabs; the staged identical successor is resumed after a
+crash. Browsers without Web Locks may refresh but refuse unsafe rotation rather than race another tab.
+
+`/pair` clears its fragment before startup/discovery, has no referrer or analytics, and supports v2 invitation links,
+headless v1 bootstrap links and same-backend-origin local bootstrap secrets. The static hosted app does not itself
+serve the backend's loopback UI. The page confirms the address/ID and full-owner access, persists the claim proof before
+redemption, shows the comparison code and polls no faster than once per second with Retry-After/backoff. It stores
+credentials before ack; interrupted delivery can resume from IndexedDB on `/pair` without retaining the invitation
+secret. Interrupted ack is retried on connection. Adding an address happens only after the receiving user's Pair choice.
+
+Backend settings embed Devices: this-device labels, rename, platform, connected count, creation/last-seen/expiry,
+revoke/sign-out with last-active-device recovery warning, pending grants and cancellation. Add a device defaults to
+confirmation and displays a QR, private copyable link and countdown. Disabling confirmation warns about full access.
+The app-wide approval dialog traps focus, compares the code and approves/denies the exact claim. Requests queue per
+backend; claimed grants can also be reviewed from Settings after a reload.
+
+Optional-mode migration never waits on or interrupts ordinary work. Persisted proofs are registered once per page
+lifetime (idempotently after reload), then polled every 20 seconds, or 10 seconds with Devices open. Errors back off;
+429 prevents page-driven polling before Retry-After. A quiet per-backend notice and Devices show the comparison code;
+expired/denied enrollment offers a fresh explicit request. Approval stores/acks and reconnects authenticated. Push sync
+includes the authenticated session ID in its signature, re-registering an existing subscription under that session.
+Keep the backend optional until known browsers and offline clients have been approved and have re-registered push.
+
+Existing shared artifact URL leases already remint before expiry and on image/video errors, and preserve video position
+when swapping sources. Failed remints retry without refreshing the rest of the page; downloads mint at click time.
+This works with ten-minute session-bound URLs without sending device tokens into media/download URLs.
+
 ## Projects sidebar: Needs you
 
 Feature `sidebar-attention` adds optional `ProjectSummary.attention`: separate open question/warning counts,

@@ -113,7 +113,7 @@ export function saveBackends(
 ): void {
 	if (storage === undefined) return;
 	try {
-		storage.setItem(BACKENDS_STORAGE_KEY, JSON.stringify(backends));
+		storage.setItem(BACKENDS_STORAGE_KEY, JSON.stringify(backends.map(({ id, name, url }) => ({ id, name, url }))));
 	} catch {
 		// Storage can be full or disabled; the app keeps working for this session.
 	}

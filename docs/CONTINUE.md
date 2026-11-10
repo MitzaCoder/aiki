@@ -1,5 +1,21 @@
 # Continue
 
+## Web device sign-in (T66)
+
+Web now implements the Device sign-in contract: isolated IndexedDB retained credentials and proofs, exact-origin/auth
+pinning, Web Locks staged rotation/crash recovery, live access renewal, `/pair` (v2 and bootstrap), app-wide comparison
+approval, backend Devices/QR/rename/revoke, and quiet optional-mode migration notices/polling. Address exports stay
+import-only. Push sync rebinds an existing subscription after authentication; artifact leases retain their existing
+remint/video-position behavior and retry failed remints. DESIGN records web storage and rollout details. No server or
+protocol changes were needed in this web change; it builds on the committed Aiki-prefix server contract.
+
+Checks: root 1,750 tests and typecheck; web 819 tests (18 auth tests), zero check errors/warnings and build pass.
+Android generation check exits 0 (324 DTOs / 87 overloads); public guard passes. T66 has synthetic desktop/phone,
+light/dark before/after screenshots plus a two-context Chromium pairing/approval/authenticated-connect/revoke recording.
+No live data or backends were used; nothing was pushed or deployed. Keep optional mode until known clients are approved
+and have rebound push. Browsers without Web Locks refuse unsafe retained-token rotation; local bootstrap still expects
+the web UI on the backend loopback origin (the server does not yet bundle it).
+
 ## Device sign-in security acceptance (T68)
 
 Independent server tests add 18 HTTP/WS/owner-socket cases to the existing 46 auth cases. Fixed three reproduced bugs:

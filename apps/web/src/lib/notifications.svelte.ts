@@ -225,7 +225,7 @@ export class NotificationCenter {
 		this.load();
 		this.#backends = backends;
 		for (const backend of backends) {
-			const signature = `${backend.ready ? "ready" : backend.connection.status}|${(backend.features ?? []).join(",")}`;
+			const signature = `${backend.authSessionId ?? "anonymous"}|${backend.ready ? "ready" : backend.connection.status}|${(backend.features ?? []).join(",")}`;
 			if (!options.force && this.#synced.get(backend.id) === signature) continue;
 			this.#synced.set(backend.id, signature);
 			if (!backend.ready) continue;

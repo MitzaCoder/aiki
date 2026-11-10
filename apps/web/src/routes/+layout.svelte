@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { clearPairFragment } from '#lib/pair-inbox.js';
+	import PairingApproval from '#lib/components/PairingApproval.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { harness } from '#lib/harness.svelte.js';
@@ -16,6 +18,7 @@
 	let { children }: LayoutProps = $props();
 
 	// Read the browser's backend list and sidebar state before children render; connected in onMount.
+	clearPairFragment();
 	harness.load();
 	theme.load();
 	projectsNav.load();
@@ -47,7 +50,7 @@
 	$effect(() => {
 		const backends = harness.backends;
 		const signature = backends
-			.map((backend) => `${backend.id}:${backend.connection.status}:${(backend.features ?? []).length}`)
+			.map((backend) => `${backend.id}:${backend.authSessionId ?? "anonymous"}:${backend.connection.status}:${(backend.features ?? []).length}`)
 			.join('|');
 		void signature;
 		if (backends.some((backend) => backend.ready)) void notifications.sync(backends);
@@ -76,6 +79,7 @@
 	});
 
 	onMount(() => {
+		if (page.url.pathname === '/pair') return;
 		harness.start();
 		// The worker is what makes the app installable and what shows a push; registering it early keeps it current.
 		void notifications.start();
@@ -96,6 +100,9 @@
 	});
 </script>
 
+{#if page.url.pathname === '/pair'}
+	{@render children()}
+{:else}
 <div class="flex h-dvh w-full overflow-hidden">
 	<ProjectsSidebar />
 	<div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -103,3 +110,5 @@
 	</div>
 </div>
 <UsageModal />
+<PairingApproval />
+{/if}

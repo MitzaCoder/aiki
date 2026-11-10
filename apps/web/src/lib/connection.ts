@@ -29,7 +29,7 @@ export function connectionView(state: Pick<ClientState, "status" | "attempt" | "
 				title,
 			};
 		case "closed":
-			return { label: "Offline", tone: "err", title };
+			return { label: state.error === "This device was signed out" || state.error === "Session expired" || state.error === "Pair this backend" ? state.error : "Offline", tone: "err", title };
 		default:
 			return { label: "Starting…", tone: "muted", title };
 	}

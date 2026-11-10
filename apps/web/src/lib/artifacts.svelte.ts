@@ -174,7 +174,11 @@ export class ArtifactSource {
 			this.#timer = setTimeout(() => void this.refresh(), artifactUrlRefreshIn(answer.expiresAt, Date.now()));
 			return true;
 		} catch (error) {
-			if (!this.#stopped) this.error = messageOf(error);
+			if (!this.#stopped) {
+				this.error = messageOf(error);
+				clearTimeout(this.#timer);
+				this.#timer = setTimeout(() => void this.refresh(), 10_000);
+			}
 			return false;
 		}
 	}
