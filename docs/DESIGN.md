@@ -2927,6 +2927,8 @@ apps/<native>/      later; technology not chosen
 
 ### Android relay plumbing (T96)
 
+The emulator-first gate and remaining provider checks are tracked in [push relay acceptance](push-relay-acceptance.md).
+
 D51: relay accounts and relay notifications are optional. The persisted Android relay switch defaults off,
 including upgraded installs. Off keeps direct FCM registration and plaintext reception unchanged, without opening
 relay storage, making relay requests or asking for an account. This task adds no UI or Firebase Auth dependency.

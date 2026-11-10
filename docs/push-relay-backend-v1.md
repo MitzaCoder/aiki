@@ -170,6 +170,6 @@ routes and agree fresh keys; a stronger automatic guarantee needs an independent
 the approved design does not specify. Similarly, atomic rename/fsync follows existing stores and is not a new
 cross-file/power-loss transaction system. No exactly-once HTTP/FCM/display guarantee is claimed.
 
-All 50 relay integration tests run through `createSetup`; no real relay/Firebase credentials, endpoints, emulator,
+Backend relay integration tests run through `createSetup`; no real relay/Firebase credentials, endpoints, emulator,
 phone or Android UI are needed. Existing direct-FCM/Web-Push suites plus the explicit relay-off regression prove the
 default behavior. Backend configuration changes do not enroll existing clients or replay old project events.

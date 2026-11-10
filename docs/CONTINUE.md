@@ -14,6 +14,36 @@ ports remain 19371–19377; the standalone HTTP enrollment smoke check uses 1967
 work follows in a separate commit; this demo never grants real-project access. Offline standalone gate: 2 pass / 51
 assertions / 26.51s, including clean SIGTERM/port shutdown. Relay typecheck/build and public/Gitleaks pass.
 
+## Push relay end-to-end emulator gate (T99)
+
+The real Functions HTTP adapter, Auth/Firestore emulators, isolated `createSetup` backends and TypeScript simulated
+phone now run together in `relay/checks/e2e/`. From `relay/`, `bun run test:e2e` fixes ports 19471–19477, seeds an
+explicit enabled control and uses the scrubbed launcher. Offline:
+`unshare -Urn sh -c 'ip link set lo up && bun run test:e2e'`. Install root dependencies first: integration typechecking
+uses the root TypeScript compiler for the server imports; relay's production build still uses pinned TypeScript 5.9.
+No frozen protocol, shared vectors, relay HTTP contract, Android UI or production data changed.
+
+The backend now reads real `{error:"code"}` responses, preserving named 410 reasons and pausing on account-disabled
+403. Its fake uses the real shape. Known quota scopes/operator 503 codes remain visible; all README status/code
+classes have parameterized server assertions. Local cleanup expiry is not a physical Firestore purge guarantee.
+Nested operator checks needed all overridden ports propagated through the scrubbed environment. Both launchers now
+disable cloud metadata detection; the operator subprocess check no longer has an outer five-second test timeout.
+These small launcher/config changes are required alongside the harness and may overlap the operator-tool worker.
+
+Commits so far: `wmqnkmvw` / `e280e33f` parser and retry scopes; `xtpqvxyp` / `417d612c` harness and launcher fixes.
+Acceptance inventory: [push-relay-acceptance.md](push-relay-acceptance.md), 103 single items: 76 locally proven,
+24 need authorized real-project/release-device acceptance, 3 remain open (mock provider shutdown/mail-quota/MAU
+alarm integrations are not implemented). Emulator success is not permission for an open pilot. Completed account
+deletion erases routes, so a backend observes generic `not_found`, not necessarily `account_deleted`.
+
+Final tests: root 2,136 / 24,467 assertions / 197.38s, typecheck 1.21s; relay existing suite 84 / 1,275 online
+48.13s and offline 48.92s; end-to-end 19 / 256 online 16.61s and offline 17.09s. Relay typecheck/build/format pass
+online and offline. Web check has zero errors/warnings, 918 / 13,722 tests/assertions in 2.60s, production build
+passes. Generated Android DTO check passes (337 DTOs, 91 requests). No Android build needed or performed; no
+protocol/client changes. Public-source checks pass. No root flaky-test retries. All task-owned processes stopped;
+no phone, Android emulator, main move, push, deploy or real Firebase/Google Cloud action.
+
+
 ## D53 relay format parity and backend audit
 
 Based on rebased T94 `ynzrrnts` / `819b4841`. This supersedes T94's credential-framing and deletion-polling warnings.
