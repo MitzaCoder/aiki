@@ -1,5 +1,20 @@
 # Continue
 
+## Android session-expiry investigation (T90)
+
+Investigation only; no runtime or UI change. See `docs/research/android-session-expiry.md` for storage/signing,
+installer-startup review, error mapping and recovery. Android maps every 4401 close to session expiry, then deletes
+its retained credential without trying refresh; auth HTTP 401/403 also clear it (including forbidden Host). Short-lived
+access expiry can therefore permanently lose a still-valid retained session. Two isolated JVM diagnostics reproduce
+4401 and Host-403 deletion; kept as task artifacts, not permanent tests that would encode the bug as intended behavior.
+Existing Android auth tests: 25 pass; server auth suites: 48 pass / 2,031 assertions. Typecheck and public/Gitleaks
+checks pass. Full suites were not rerun for documentation-only changes. Exact incident trigger remains
+unconfirmed without phone auth logs; no speculative fix. Live observations are only in private task evidence.
+The auth store, encryption alias, signing setup and origin normalization did not change in the installer/task-row stack;
+server platform is metadata, not a different token lifetime. Other Android clients share the destructive close path;
+web stops on 4401 too but retains its credential for reload. Re-pair per backend from browser Settings → backend → Devices
+(or explicit-target owner CLI); projects, conversations and drafts remain. No live mutations, main move, push or deploy.
+
 ## Compact task rows (T87)
 
 Android and web at every width now use subtask progress as the disclosure; parent/plain content keeps identical
