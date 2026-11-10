@@ -18,8 +18,7 @@ class DeviceAuthHttpException(val status: Int, val authCode: String, val retryAf
     authCode.contains("denied") -> "Pairing was denied. Create a new link."
     status == 409 -> "This link was already used. Create a new link."
     authCode.contains("expired") -> "This link or session expired. Pair again."
-    status == 403 -> "This device was signed out."
-    status == 401 -> "Session expired. Pair this backend."
+    status == 403 || status == 401 -> "Authentication request failed ($status)."
     else -> "Pairing request failed ($status)."
 })
 
@@ -47,6 +46,12 @@ class DeviceAuthHttp(http: OkHttpClient = OkHttpClient()) {
         }
     }
 }
+
+/** Only retained-token endpoints can establish that the durable credential is no longer usable. */
+internal class RetainedCredentialRejected(code: String) : Exception(if (code == "auth_revoked") "This device was signed out" else "Session expired")
+
+private fun DeviceAuthHttpException.rejectsRetainedCredential(): Boolean =
+    (status == 401 && authCode in setOf("auth_invalid", "auth_expired")) || (status == 403 && authCode == "auth_revoked")
 
 internal fun JsonObject.string(name: String): String = getValue(name).jsonPrimitive.content
 internal fun JsonObject.optionalString(name: String): String? = get(name)?.jsonPrimitive?.contentOrNull
@@ -107,7 +112,14 @@ class DeviceAuth(val origin: String, private val store: DeviceAuthStorage, val h
         mutableState.value = state.value.copy(backendId = backendId ?: saved?.backendId, mode = authMode ?: mode)
     }
 
-    private suspend fun refreshLocked(initial: SavedDeviceAuth): String {
+    private suspend fun refreshLocked(initial: SavedDeviceAuth): String = try {
+        refreshRetainedLocked(initial)
+    } catch (error: DeviceAuthHttpException) {
+        if (error.rejectsRetainedCredential()) throw RetainedCredentialRejected(error.authCode)
+        throw error
+    }
+
+    private suspend fun refreshRetainedLocked(initial: SavedDeviceAuth): String {
         var saved = initial
         var token = saved.sessionToken ?: throw ClientException("auth_required", "Pair this backend")
         var recoveredRefresh: JsonObject? = null
@@ -193,6 +205,8 @@ class DeviceAuth(val origin: String, private val store: DeviceAuthStorage, val h
     }
 
     suspend fun redeem(link: DevicePairingLink, code: String, onWaiting: (String) -> Unit, onStaged: suspend () -> Unit = {}) = mutex.withLock {
+        require(link.origin == origin)
+        store.recoverForExplicitPairing(origin, link.backendId)
         redeemLocked(link, code, onWaiting, onStaged)
     }
 

@@ -36,13 +36,10 @@ class DeviceAuthTest {
         encrypted[encrypted.lastIndex] = (encrypted.last().toInt() xor 1).toByte()
         assertThrows(Exception::class.java) { cipher.decrypt(encrypted, "https://a.example.test") }
     }
-    @Test fun missingKeyAndCorruptRecordKeepDowngradePinButDiscardSecrets() {
+    @Test fun missingKeyAndCorruptRecordFailWithoutSynthesizingReplacementRecords() {
         val encrypted = cipher().encrypt(wireJson.encodeToString(SavedDeviceAuth.serializer(), SavedDeviceAuth(sessionToken = "secret")).toByteArray(), "https://backend.example.test")
-        val recovered = decodeDeviceAuth(Base64.getEncoder().encodeToString(encrypted), "https://backend.example.test", cipher())
-        assertTrue(recovered.advertised)
-        assertNull(recovered.sessionToken)
-        assertEquals("Pair this backend", recovered.signedOut)
-        assertNull(decodeDeviceAuth("invalid", "https://backend.example.test", cipher()).pending)
+        assertThrows(DeviceAuthStorageException::class.java) { decodeDeviceAuth(Base64.getEncoder().encodeToString(encrypted), "https://backend.example.test", cipher()) }
+        assertThrows(DeviceAuthStorageException::class.java) { decodeDeviceAuth("invalid", "https://backend.example.test", cipher()) }
     }
     @Test fun encryptedRecordRetainsRotationAndClaimButNeverAccessTokens() {
         val record = SavedDeviceAuth("backend", sessionId = "session", sessionToken = "old", successorToken = "new", pending = PendingDeviceClaim("claim", "proof", "migration"))

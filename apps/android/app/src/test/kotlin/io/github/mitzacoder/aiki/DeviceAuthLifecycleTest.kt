@@ -166,7 +166,8 @@ class DeviceAuthLifecycleTest {
                 withTimeout(5000) { client.state.first { it.status == ConnectionStatus.Closed } }
                 delay(1100)
                 assertEquals(1, server.requestCount)
-                assertEquals("Pair this backend", store.saved!!.signedOut)
+                assertNull(store.saved!!.signedOut)
+                assertTrue(store.saved!!.advertised)
                 assertNull(server.takeRequest().headers["Authorization"])
             } finally { client.close() }
         }

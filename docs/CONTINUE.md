@@ -1,5 +1,35 @@
 # Continue
 
+## Preserve Android sessions through access expiry (T90)
+
+Android now backs off and refreshes its retained credential before reconnecting after access rejection, including 4401.
+Only structured retained refresh/rotation rejection (401 auth_invalid/auth_expired or 403 auth_revoked), explicit session
+revocation or user sign-out clears it. Discovery/Host errors, bare HTTP status and transient failures preserve it.
+Short successful hellos no longer reset reconnect backoff. Unreadable storage surfaces a sanitized error and retries;
+no synthetic signed-out record, automatic key replacement on invalidation or key creation while decrypting. Existing
+ciphertext must be readable before an ordinary write. Review caught the permanent-key pairing trap: explicit new pairing
+alone can now replace a confirmed permanently invalidated/unrecoverable key. A durable marker preserves every affected
+ciphertext/auth pin before replacing the shared alias; only the explicitly paired origin is overwritten. Other backends
+remain separately pairable after the key replacement, and interrupted resets remain explicitly retryable. Temporary
+failures and ordinary corruption never permit reset. The new enrollment regression failed before this amendment. DESIGN was updated before implementation; findings now separate the fix from the
+unknown incident trigger. Normal renewal is one minute before access expiry; clean app starts/restarts already refresh,
+and deploy drain does not hold auth calls, so neither APK replacement nor deployment alone explains the incident.
+
+Tests first: five of six initial recovery tests failed; all eight access-recovery tests pass. Four additional review
+regressions cover permanent-key enrollment (both exception types), multiple backends, interrupted recovery, and refusing
+reset for temporary/corrupt storage. Full Android: 644 tests, two existing skips, zero failures/errors; assembly and lint
+pass (36 warnings, zero errors). First foreground check hit
+the tool timeout during lint; the same command completed successfully in the background retry. Track-w synthetic
+createSetup demo proves before/after with screenshots and short recordings on T90: old build loses its session after
+forced access expiry; fixed build reconnects automatically. All demo paths were under a fresh temporary root and the
+server was stopped by PID. No physical phone or live backend changed. Public/Gitleaks checks pass.
+
+No server/protocol/web code change. Existing server codes suffice when interpreted in retained-endpoint context.
+Root/web checks were not rerun for this Android-only fix. Automatic web recovery remains a coordinated shared-client
+transport/browser-renewal follow-up; web retains its credential for reload. Already-deleted Android credentials cannot
+be restored by an update: re-pair each backend from Settings → backend → Devices or explicit-target owner CLI, without
+losing projects, conversations or drafts. No main movement, push or deployment.
+
 ## Android session-expiry investigation (T90)
 
 Investigation only; no runtime or UI change. See `docs/research/android-session-expiry.md` for storage/signing,

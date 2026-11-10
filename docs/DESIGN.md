@@ -243,7 +243,19 @@ Required-mode pre-auth first frame must be textual hello <=8 KiB within five sec
 JSON/binary-JSON hello handling without the new timeout or hello-size cap. No binary/ordinary activity before required auth.
 Identity is immutable per socket. `auth.renew {accessToken}` → `{accessExpiresAt}`; same session only, 60-second renewal
 grace after access expiry (ordinary dispatch remains blocked after expiry). Error envelope `auth_required|auth_invalid|
-auth_expired` and close 4401; `auth_revoked` and 4403. Reasons contain only the code. Device expiry/sign-out stops reconnect.
+auth_expired` and close 4401; `auth_revoked` and 4403. Reasons contain only the code.
+Android treats access rejection (including 4401) as reconnectable: preserve the retained credential, back off, refresh it
+once before opening the next socket, and retry transient refresh failures with backoff. Only a structured
+`auth_invalid`/`auth_expired` 401 or `auth_revoked` 403 from a retained-session refresh/rotation exchange clears the
+retained credential and stops reconnecting (an explicit session-revocation event or user sign-out also clears it).
+Bare HTTP status, Host rejection, network failures and 5xx never revoke local credentials. Unreadable encrypted storage
+or unavailable Keystore keys remain untouched and surface a storage error, not expiry; retries must not replace keys
+or overwrite unreadable records. Only an explicit new pairing may recover a key definitively reported permanently
+invalidated/unrecoverable. Before replacing that shared key, durably mark its existing ciphertext records unreadable;
+replace only the explicitly paired origin's record. Other origins keep their ciphertext/pins until separately paired.
+Temporary key/storage failures and ordinary ciphertext corruption never authorize replacement, even during pairing. Proactive renewal normally refreshes one minute before access expiry; delayed renewal
+must not turn the 15-minute access lifetime into a device sign-out. Web still stops on access rejection while keeping
+its retained credential; automatic web recovery is a follow-up in the shared transport and browser renewal controller.
 
 Every RPC includes normal `type,id`, response echoes both. Management requires authenticated session even optional/off:
 

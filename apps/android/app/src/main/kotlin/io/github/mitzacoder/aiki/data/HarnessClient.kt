@@ -136,16 +136,19 @@ class HarnessClient(
                     override fun onClosing(webSocket: WebSocket, code: Int, reason: String) { webSocket.close(code, reason) }
                     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                         val error = ClientException(if (code == 4403) "auth_revoked" else if (code == 4401) "auth_expired" else "disconnected",
-                            if (code == 4403) "This device was signed out" else if (code == 4401) "Session expired" else "Socket closed ($code)")
+                            if (code == 4403) "This device was signed out" else if (code == 4401) "Authentication renewal needed" else "Socket closed ($code)")
                         opened.completeExceptionally(error); ended.complete(error)
                         if (webSocket === socket) failPending(error)
                     }
                 }
                 var failure: Throwable? = null
+                var readyAt: Long? = null
+                var attemptedWithAccess = false
                 var renewing: Job? = null
                 var migrating: Job? = null
                 try {
                     val accessToken = deviceAuth?.prepare()
+                    attemptedWithAccess = accessToken != null
                     val origin = normalizeBackendOrigin(backend.url)
                     // OkHttp converts HTTP(S) to WS(S) for WebSocket upgrades. No browser Origin is spoofed.
                     socket = socketHttp.newWebSocket(Request.Builder().url("$origin/ws").build(), listener)
@@ -154,7 +157,7 @@ class HarnessClient(
                     val hello = exchange(helloRequest.id, wireJson.encodeToJsonElement(HelloRequest.serializer(), helloRequest).jsonObject, HelloResponse.serializer(), allowBeforeReady = true)
                     if (hello.protocolVersion != 1L) throw ClientException("unsupported_protocol", "Unsupported protocol ${hello.protocolVersion}")
                     if (hello.features?.contains("device-auth-v1") == true) deviceAuth?.advertised(hello.backendId, hello.auth?.mode)
-                    attempt = 0
+                    readyAt = System.nanoTime()
                     publishState(ConnectionState(ConnectionStatus.Ready, hello = hello, generation = ++generation))
                     if (deviceAuth != null) {
                         migrating = scope.launch { deviceAuth.migrate { socket?.close(1000, "Authenticated reconnect") } }
@@ -183,15 +186,17 @@ class HarnessClient(
                 }
                 if (closed) break
                 val failureCode = (failure as? ClientException)?.code
-                val authFailure = failureCode in setOf("auth_required", "auth_invalid", "auth_expired", "auth_revoked", "auth_downgrade", "auth_origin_changed", "auth_update_required") ||
-                    (failure is DeviceAuthHttpException && failure.status in setOf(401, 403))
-                if (authFailure && failureCode !in setOf("auth_downgrade", "auth_origin_changed", "auth_update_required")) {
-                    deviceAuth?.signedOut(if (failureCode == "auth_required") "Pair this backend" else if (failureCode == "auth_revoked" || (failure is DeviceAuthHttpException && failure.status == 403)) "This device was signed out" else "Session expired")
-                }
-                if (authFailure) deviceAuth?.blocked(failure.message ?: "Pair this backend")
-                val permanent = failureCode == "unsupported_protocol" || authFailure
+                val retainedRejected = failure is RetainedCredentialRejected
+                val authBlocked = failureCode in setOf("auth_downgrade", "auth_origin_changed", "auth_update_required") ||
+                    (failureCode == "auth_required" && !attemptedWithAccess)
+                if (retainedRejected) deviceAuth?.signedOut(requireNotNull(failure?.message))
+                if (retainedRejected || authBlocked) deviceAuth?.blocked(failure?.message ?: "Pair this backend")
+                val permanent = failureCode == "unsupported_protocol" || authBlocked || retainedRejected
                 publishState(ConnectionState(if (permanent) ConnectionStatus.Closed else ConnectionStatus.Reconnecting, attempt, hello = state.value.hello, error = failure.message, generation = generation))
                 if (permanent) break
+                // Access rejection is not retained-session rejection. The next prepare refreshes exactly once
+                // before opening a fresh socket. Short-lived successful hellos must not reset a rejection loop.
+                if (readyAt?.let { System.nanoTime() - it >= 60_000_000_000L } == true) attempt = 0
                 delay(maxOf(reconnectDelay(attempt++), (failure as? DeviceAuthHttpException)?.takeIf { it.status == 429 }?.retryAfterMs ?: 0))
             }
         }
