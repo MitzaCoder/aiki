@@ -13,10 +13,11 @@ async function setup() {
 	const config = join(root, "config");
 	const launcher = join(home, ".local/bin/aiki");
 	await mkdir(root, { recursive: true });
+	await mkdir(join(home, "bin"));
 	await writeFile(join(root, ".aiki-managed"), "aiki-installer-v1\n");
 	async function run(...args: string[]) {
 		const child = Bun.spawn([process.execPath, cli, ...args], {
-			env: { HOME: home, PATH: process.env.PATH, AIKI_INSTALL_DIR: root, AIKI_DATA_DIR: join(home, "foreign-data"), AIKI_CONFIG_DIR: join(home, "foreign-config"), AIKI_ENV_FILE: join(home, "foreign.env") },
+			env: { HOME: home, PATH: `${join(home, "bin")}:${process.env.PATH}`, AIKI_INSTALL_DIR: root, AIKI_DATA_DIR: join(home, "foreign-data"), AIKI_CONFIG_DIR: join(home, "foreign-config"), AIKI_ENV_FILE: join(home, "foreign.env") },
 			stdout: "pipe", stderr: "pipe",
 		});
 		const [code, out, err] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
@@ -60,6 +61,17 @@ test("running process blocks activation and rollback without changing selected c
 	expect((await fixture.release("v0.2.0")).err).toContain("Aiki is running");
 	expect((await fixture.run("rollback")).code).toBe(1);
 	expect((await fixture.run("version")).out).toContain("v0.1.0");
+});
+
+test("an unavailable user service session leaves no unit and does not block uninstall", async () => {
+	if (process.platform !== "linux") return;
+	const fixture = await setup(); await fixture.release("v0.1.0");
+	// A fixture command only: never contact the host's service manager.
+	await writeFile(join(fixture.home, "bin/systemctl"), "#!/bin/sh\necho 'synthetic unavailable user session' >&2\nexit 1\n", { mode: 0o755 });
+	expect((await fixture.run("service", "install")).code).toBe(1);
+	expect(existsSync(join(fixture.home, ".config/systemd/user/aiki-local.service"))).toBe(false);
+	expect(existsSync(join(fixture.root, ".service-path"))).toBe(false);
+	expect((await fixture.run("uninstall", fixture.root, "0")).code).toBe(0);
 });
 
 test("uninstall preserves data/config, then reinstall and purge remove only installation state", async () => {

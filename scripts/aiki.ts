@@ -80,17 +80,27 @@ async function service(installation: Installation, action: string, print: boolea
 	if (existsSync(path) && !ownFile) throw new Error("Another local Aiki service exists; refusing to overwrite/remove it");
 	if (action === "remove" && !ownFile) { console.log("No service installed by this installation."); return; }
 	if (action === "install") {
+		const manager = process.platform === "darwin" ? "launchctl" : "systemctl";
+		if (!Bun.which(manager)) throw new Error(`No ${manager} user service manager. Continue with aiki start.`);
 		requireStopped(installation.root);
 		mkdirSync(dirname(path), { recursive: true });
 		writeFileSync(path, serviceDefinition(installation, process.platform, process.env.PATH || "/usr/bin:/bin"), { mode: 0o600 });
 		writeFileSync(join(installation.root, ".service-path"), path);
 	}
-	if (process.platform === "darwin") {
-		await run(["launchctl", action === "install" ? "bootstrap" : "bootout", `gui/${process.getuid!()}`, path]);
-	} else {
-		if (!Bun.which("systemctl")) throw new Error("No user systemd. Use aiki start; generated unit can be removed with aiki service remove.");
-		if (action === "install") await run(["systemctl", "--user", "daemon-reload"]);
-		await run(["systemctl", "--user", action === "install" ? "enable" : "disable", "--now", "aiki-local.service"]);
+	try {
+		if (process.platform === "darwin") {
+			await run(["launchctl", action === "install" ? "bootstrap" : "bootout", `gui/${process.getuid!()}`, path]);
+		} else {
+			if (action === "install") await run(["systemctl", "--user", "daemon-reload"]);
+			await run(["systemctl", "--user", action === "install" ? "enable" : "disable", "--now", "aiki-local.service"]);
+		}
+	} catch (error) {
+		// No session bus / no GUI login is common. Do not strand a failed unit or block uninstall of a stopped app.
+		if (running(installation.root)) throw error;
+		rmSync(path, { force: true }); rmSync(join(installation.root, ".service-path"), { force: true });
+		if (action === "install") throw error;
+		console.log("Service manager unavailable; removed this stopped installation's service definition.");
+		return;
 	}
 	if (action === "remove") {
 		rmSync(path, { force: true }); rmSync(join(installation.root, ".service-path"), { force: true });
