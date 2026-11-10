@@ -1,5 +1,22 @@
 # Continue
 
+## Firebase-only push relay design (T63)
+
+`docs/research/push-relay-design.md` records D38/D47/D49: Firebase-only relay, thin Google/email-link accounts and open
+sign-up within limits, not an implementation. Only phones sign in; backends keep route capabilities, never account
+credentials. Separate account UID/installation IDs, FCM possession challenge, per-session ECDH/HKDF/AES-GCM routes,
+leases, durable delete-only revoke retries, staged three-backend rollout and per-backend web VAPID remain.
+Recommended pilot: 3 phones/account, 8 routes/phone (24/account), 2,000 sends/account/day; global 5,000 sends/day,
+100 challenges/day, 20 new relay accounts/day and 100 active accounts, plus IP limits. Direct Auth signup bypasses
+relay caps: email-link mail is 5/day without billing, 25,000/day billed; Identity Platform adds MAU exposure above
+50,000 free Tier-1 MAU. Do not enable it solely for the relay; neither Functions caps nor relay quotas cap Auth bills.
+Both sign-in methods work from a configured sideloaded release APK. Required private facts now include OAuth consent/
+clients, release SHA-1/SHA-256, Hosting App Links domain/sender and Identity Platform status/effective quotas. Privacy
+text precedes sign-in; no copied profile, required in-app account deletion, durable cascades and disabled-account state
+cover all phones. Remaining setup/limit/retention choices are in sections 11/13. Revised emulator-first scope: 22–33
+engineering days plus external waits/observation. Public-source guard and Gitleaks pass; no runtime tests (docs only).
+No Firebase credentials/config inspected, dependencies installed, services/emulators started, main moved or push/deploy.
+
 ## Reliable root tests (T83)
 
 Five separate causes: activity deduplication was asserted on whole-project pushes that also carry attention/links;
