@@ -11,6 +11,7 @@ import {
 	relayBase64,
 	relayConfirmation,
 	relaySharedSecret,
+	relaySequence,
 	relayTranscript,
 	relayUnbase64,
 	relayUtf8,
@@ -58,6 +59,7 @@ export type RelayFile = {
 	routes: RelayRoute[];
 	receipts: Record<string, Receipt>;
 	selected: Record<string, string | null>;
+	revoked: Record<string, Pick<NotificationRelayStatus, "leaseExpiresAt" | "absoluteExpiresAt" | "lastDelivery">>;
 	sends: RelaySendEntry[];
 	deletes: RelayDeleteEntry[];
 };
@@ -76,7 +78,7 @@ export function relayDeviceId(sessionId: string): string {
 export class PushRelayStore {
 	readonly file: string;
 	readonly countersFile: string;
-	#state: RelayFile = { version: 1, routes: [], receipts: {}, selected: {}, sends: [], deletes: [] };
+	#state: RelayFile = { version: 1, routes: [], receipts: {}, selected: {}, revoked: {}, sends: [], deletes: [] };
 	#counters: CounterFile = { version: 1, counters: {} };
 	#writes: Promise<unknown> = Promise.resolve();
 
@@ -96,7 +98,7 @@ export class PushRelayStore {
 		// Corrupt storage is an operator error, not permission to silently recover under old keys.
 		const state = raw as RelayFile;
 		if (state.version !== 1 || !Array.isArray(state.routes) || !Array.isArray(state.sends) ||
-			!Array.isArray(state.deletes) || !state.selected || !state.receipts) throw new Error("Invalid relay state");
+			!Array.isArray(state.deletes) || !state.selected || !state.receipts || !state.revoked) throw new Error("Invalid relay state");
 		this.#state = state;
 		if (counters !== undefined) {
 			const witness = counters as CounterFile;
@@ -107,7 +109,14 @@ export class PushRelayStore {
 		await chmod(this.file, 0o600);
 		for (const route of state.routes) {
 			const count = this.#counters.counters[route.context.keyId];
-			if (count !== route.nextSequence) route.state = "needs_new_keys";
+			let consistent = count === route.nextSequence;
+			try {
+				relaySequence(route.nextSequence);
+				for (const key of Object.values(route.keys)) relayUnbase64(key, 32);
+			} catch {
+				consistent = false;
+			}
+			if (!consistent) route.state = "needs_new_keys";
 		}
 		// Do not rewrite on read. Exact encrypted pending entries may still be retried without allocating a sequence.
 	}
@@ -144,13 +153,14 @@ export class PushRelayStore {
 	status(sessionId?: string): NotificationRelayStatus {
 		const route = this.#state.routes.find((r) => r.context.sessionId === sessionId && r.state === "pending") ??
 			this.#state.routes.find((r) => r.context.sessionId === sessionId);
+		const revoked = sessionId ? this.#state.revoked[sessionId] : undefined;
 		return {
 			available: true,
 			state: route?.state ?? (sessionId && this.selected(sessionId) ? "revoked" : "unregistered"),
-			leaseExpiresAt: route?.registration.leaseExpiresAt ?? null,
-			absoluteExpiresAt: route?.registration.absoluteExpiresAt ?? null,
+			leaseExpiresAt: route?.registration.leaseExpiresAt ?? revoked?.leaseExpiresAt ?? null,
+			absoluteExpiresAt: route?.registration.absoluteExpiresAt ?? revoked?.absoluteExpiresAt ?? null,
 			cleanup: this.#state.deletes.some((r) => r.sessionId === sessionId) ? "pending" : "done",
-			lastDelivery: route?.device.lastDelivery?.message ?? null,
+			lastDelivery: route?.device.lastDelivery?.message ?? revoked?.lastDelivery ?? null,
 		};
 	}
 
@@ -233,6 +243,10 @@ export class PushRelayStore {
 			routeId: route.context.routeId, sessionId: route.context.sessionId,
 			deleteBearer: route.registration.deleteBearer, attempts: 0, dueAt: now,
 		});
+		draft.revoked[route.context.sessionId] = {
+			leaseExpiresAt: route.registration.leaseExpiresAt, absoluteExpiresAt: route.registration.absoluteExpiresAt,
+			lastDelivery: route.registration.leaseExpiresAt <= now ? "route_expired" : route.device.lastDelivery?.message ?? null,
+		};
 		draft.sends = draft.sends.filter((s) => s.routeId !== route.context.routeId);
 		draft.routes = draft.routes.filter((r) => r !== route);
 		if (draft.selected[route.context.sessionId] === route.context.routeId) draft.selected[route.context.sessionId] = null;
@@ -240,16 +254,20 @@ export class PushRelayStore {
 
 	/** Allocate and persist before encryption; disagreement never silently resets a counter. */
 	async allocate(routeId: string): Promise<{ route: RelayRoute; sequence: string }> {
-		return await this.transaction(async (draft) => {
+		const allocated = await this.transaction(async (draft) => {
 			const route = draft.routes.find((r) => r.context.routeId === routeId);
 			if (!route || route.state !== "active") invalid();
 			const sequence = route.nextSequence;
-			if (this.#counters.counters[route.context.keyId] !== sequence || BigInt(sequence) >= 18446744073709551615n)
-				throw new ServerError("bad_request", "Relay route needs new keys");
+			if (this.#counters.counters[route.context.keyId] !== sequence || BigInt(sequence) >= 18446744073709551615n) {
+				route.state = "needs_new_keys";
+				return undefined;
+			}
 			route.nextSequence = (BigInt(sequence) + 1n).toString();
 			this.#counters.counters[route.context.keyId] = route.nextSequence;
 			await writeJsonFile(this.countersFile, this.#counters, 0o600);
 			return { route: structuredClone(route), sequence };
 		});
+		if (!allocated) throw new ServerError("bad_request", "Relay route needs new keys");
+		return allocated;
 	}
 }

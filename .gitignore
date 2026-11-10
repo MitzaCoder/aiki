@@ -21,6 +21,8 @@ service-account*.json
 google-services.json
 **/notifications/devices.json
 **/notifications/state.json
+**/notifications/push-relay.json
+**/notifications/push-relay-counters.json
 
 # Signing keys and SSH identities (including Android release keystores).
 *.pem

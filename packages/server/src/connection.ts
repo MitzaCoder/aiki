@@ -487,7 +487,7 @@ export class ClientConnection {
 						this.#respond({ type: request.type, id: request.id, device });
 					} else {
 						const status = await relay.sync(sessionId, request);
-						this.#respond({ type: request.type, id: request.id, relay: status });
+						this.#respond({ type: request.type, id: request.id, relay: status, serverTime: relay.serverTime() });
 					}
 					return;
 				}
@@ -531,7 +531,10 @@ export class ClientConnection {
 				case "notifications.unregister": {
 					const removed = await this.#notifications.unregister(request.deviceId);
 					this.#log(`notifications: ${removed ? "forgot" : "had no"} device ${request.deviceId}`);
-					this.#respond({ type: "notifications.unregister", id: request.id });
+					this.#respond({ type: "notifications.unregister", id: request.id,
+						...(request.deviceId.startsWith("relay:") && this.#notifications.relay
+							? { relay: this.#notifications.relay.status(this.#deviceAuth?.identity?.sessionId) } : {}),
+					});
 					return;
 				}
 				case "notifications.device": {
@@ -539,6 +542,8 @@ export class ClientConnection {
 						type: "notifications.device",
 						id: request.id,
 						device: this.#notifications.device(request.deviceId),
+						...(request.deviceId.startsWith("relay:") && this.#notifications.relay
+							? { relay: this.#notifications.relay.status(this.#deviceAuth?.identity?.sessionId) } : {}),
 					});
 					return;
 				}

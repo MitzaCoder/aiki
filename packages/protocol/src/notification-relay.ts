@@ -67,5 +67,6 @@ export const NotificationsSyncRelayResponseSchema = Type.Object({
 	type: Type.Literal("notifications.syncRelay"),
 	id: RequestIdSchema,
 	relay: NotificationRelayStatusSchema,
+	serverTime: Time,
 });
 export type NotificationsSyncRelayResponse = Static<typeof NotificationsSyncRelayResponseSchema>;

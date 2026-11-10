@@ -107,7 +107,7 @@ export async function createSetup(options?: {
 			...(options?.boardEditDebounceMs === undefined ? {} : { boardEditDebounceMs: options.boardEditDebounceMs }),
 			...(options?.timezone === undefined ? {} : { timezone: options.timezone }),
 			...(options?.status === undefined ? {} : { status: options.status }),
-			notifications: { relayEndpoint: null, ...options?.notifications },
+			notifications: { fcmKeyFile: null, relayEndpoint: null, ...options?.notifications },
 			...(options?.toolCallCapMs === undefined ? {} : { toolCallCapMs: options.toolCallCapMs }),
 			...(options?.workFinished === undefined ? {} : { workFinished: options.workFinished }),
 			...(options?.disks === undefined ? {} : { disks: options.disks }),

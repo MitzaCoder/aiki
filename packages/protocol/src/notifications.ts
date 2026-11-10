@@ -289,6 +289,7 @@ export type NotificationsRegisterFcmResponse = Static<typeof NotificationsRegist
 export const NotificationsUnregisterResponseSchema = Type.Object({
 	type: Type.Literal("notifications.unregister"),
 	id: RequestIdSchema,
+	relay: Type.Optional(NotificationRelayStatusSchema),
 });
 export type NotificationsUnregisterResponse = Static<typeof NotificationsUnregisterResponseSchema>;
 
@@ -296,6 +297,7 @@ export const NotificationsDeviceResponseSchema = Type.Object({
 	type: Type.Literal("notifications.device"),
 	id: RequestIdSchema,
 	device: Type.Union([NotificationDeviceSchema, Type.Null()]),
+	relay: Type.Optional(NotificationRelayStatusSchema),
 });
 export type NotificationsDeviceResponse = Static<typeof NotificationsDeviceResponseSchema>;
 

@@ -123,7 +123,8 @@ data class NotificationsSyncRelayRequest(
 data class NotificationsSyncRelayResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "notifications.syncRelay",
     val `id`: String,
-    val `relay`: NotificationRelayStatus
+    val `relay`: NotificationRelayStatus,
+    val `serverTime`: Long
 )
 
 @Serializable
@@ -2435,14 +2436,16 @@ data class NotificationsRegisterFcmResponse(
 @Serializable
 data class NotificationsUnregisterResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "notifications.unregister",
-    val `id`: String
+    val `id`: String,
+    val `relay`: NotificationRelayStatus? = null
 )
 
 @Serializable
 data class NotificationsDeviceResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "notifications.device",
     val `id`: String,
-    val `device`: NotificationDevice?
+    val `device`: NotificationDevice?,
+    val `relay`: NotificationRelayStatus? = null
 )
 
 @Serializable

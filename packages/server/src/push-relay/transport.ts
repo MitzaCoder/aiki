@@ -44,6 +44,7 @@ export class PushRelayTransport {
 	#stopped = false;
 	readonly #sending = new Set<string>();
 	readonly #deleting = new Set<string>();
+	readonly #locallyRevoked = new Set<string>();
 	readonly #work = new Set<Promise<unknown>>();
 
 	constructor(options: PushRelayOptions) {
@@ -62,6 +63,11 @@ export class PushRelayTransport {
 		this.#allowed = allowed;
 	}
 
+	/** Current backend clock for a fresh monotonic phone anchor, including idempotent registration retries. */
+	serverTime(): number {
+		return this.#now();
+	}
+
 	/** Safe status is session-local and contains no capabilities or key material. */
 	status(sessionId?: string): NotificationRelayStatus {
 		return this.store.status(sessionId);
@@ -69,7 +75,9 @@ export class PushRelayTransport {
 
 	/** Return public active devices only; pending agreements never send. */
 	devices(): Array<NotificationDevice & { sessionId: string }> {
-		return this.store.snapshot().routes.filter((r) => r.state !== "pending").map((r) => ({
+		const snapshot = this.store.snapshot();
+		return snapshot.routes.filter((r) => r.state !== "pending" &&
+			snapshot.selected[r.context.sessionId] === r.context.routeId).map((r) => ({
 			...r.device, relay: this.status(r.context.sessionId), sessionId: r.context.sessionId,
 		}));
 	}
@@ -113,6 +121,7 @@ export class PushRelayTransport {
 	/** Apply phone-authorized lease/preferences; unregister is immediate locally and never waits for HTTP. */
 	async sync(sessionId: string, input: Omit<NotificationsSyncRelayRequest, "type" | "id">): Promise<NotificationRelayStatus> {
 		this.#checkSession(sessionId);
+		if (input.unregister) this.#locallyRevoked.add(input.routeId);
 		await this.store.transaction((draft) => {
 			const route = draft.routes.find((r) => r.context.routeId === input.routeId && r.context.sessionId === sessionId);
 			if (!route) {
@@ -136,7 +145,9 @@ export class PushRelayTransport {
 
 	/** Replace every route of a session with delete-only work in a single local commit; no relay wait. */
 	async revoke(sessionId: string): Promise<void> {
-		if (!this.store.snapshot().routes.some((r) => r.context.sessionId === sessionId)) return;
+		const routes = this.store.snapshot().routes.filter((r) => r.context.sessionId === sessionId);
+		if (!routes.length) return;
+		for (const route of routes) this.#locallyRevoked.add(route.context.routeId);
 		await this.store.transaction((draft) => {
 			for (const route of [...draft.routes])
 				if (route.context.sessionId === sessionId) this.store.removeRoute(draft, route, this.#now());
@@ -146,7 +157,10 @@ export class PushRelayTransport {
 
 	/** Explicit direct registration is the only way to clear a relay selection; never an automatic fallback. */
 	async selectDirect(sessionId: string): Promise<void> {
-		await this.store.transaction((draft) => { delete draft.selected[sessionId]; });
+		await this.store.transaction((draft) => {
+			delete draft.selected[sessionId];
+			delete draft.revoked[sessionId];
+		});
 	}
 
 	/** Consume a durable sequence, encrypt once, persist exact bytes, then submit; newest events drop at capacity. */
@@ -155,7 +169,8 @@ export class PushRelayTransport {
 		const outcome = (message: string): DeliveryOutcome => ({ deviceId, ok: false, status: null, message });
 		try {
 			const current = this.store.snapshot().routes.find((r) => r.device.deviceId === deviceId && r.state !== "pending");
-			if (!current || !this.#options.sessionActive(current.context.sessionId)) return outcome("auth_revoked");
+			if (!current || this.#locallyRevoked.has(current.context.routeId) ||
+				!this.#options.sessionActive(current.context.sessionId)) return outcome("auth_revoked");
 			if (current.state === "needs_new_keys") return outcome("needs_new_keys");
 			const now = this.#now();
 			const expiresAt = Math.min(Date.parse(at) + 43_200_000, current.registration.leaseExpiresAt,
@@ -183,7 +198,8 @@ export class PushRelayTransport {
 			if (!queued) return outcome("queue_full");
 			return await this.#attempt(entry);
 		} catch {
-			return outcome("relay_unavailable");
+			const route = this.store.snapshot().routes.find((r) => r.device.deviceId === deviceId && r.state !== "pending");
+			return outcome(route?.state === "needs_new_keys" ? "needs_new_keys" : "relay_unavailable");
 		} finally {
 			this.#arm();
 		}
@@ -238,16 +254,22 @@ export class PushRelayTransport {
 		if (!route || this.#sending.has(entry.messageId) || this.#stopped) return outcome("retrying");
 		this.#sending.add(entry.messageId);
 		try {
-			const allowed = this.#options.sessionActive(route.context.sessionId) &&
+			const allowed = !this.#locallyRevoked.has(entry.routeId) && this.#options.sessionActive(route.context.sessionId) &&
 				await this.#allowed(route.device, entry.event);
 			// Re-read after async policy: unregister/rotation/mute can have committed while archive state was read.
 			const latest = this.store.snapshot();
 			const active = latest.routes.find((r) => r.context.routeId === entry.routeId);
-			if (!allowed || !active || !latest.sends.some((s) => s.messageId === entry.messageId) ||
+			if (!allowed || !active || this.#locallyRevoked.has(entry.routeId) || !latest.sends.some((s) => s.messageId === entry.messageId) ||
 				!this.#options.sessionActive(route.context.sessionId) ||
 				JSON.stringify(active.device.preferences) !== JSON.stringify(route.device.preferences) ||
 				entry.expiresAt <= this.#now() || active.registration.leaseExpiresAt <= this.#now()) {
-				await this.store.transaction((draft) => { draft.sends = draft.sends.filter((s) => s.messageId !== entry.messageId); });
+				await this.store.transaction((draft) => {
+					draft.sends = draft.sends.filter((s) => s.messageId !== entry.messageId);
+					const current = draft.routes.find((r) => r.context.routeId === entry.routeId);
+					if (current && entry.expiresAt <= this.#now()) current.device.lastDelivery = {
+						at: new Date(this.#now()).toISOString(), ok: false, status: null, message: "message_expired",
+					};
+				});
 				return outcome("message_expired");
 			}
 			const result = await this.#http("send", route.registration.sendBearer, entry.body);

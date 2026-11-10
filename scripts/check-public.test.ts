@@ -26,7 +26,7 @@ describe("public snapshot guard", () => {
 		expect(publicFileProblems("file.txt", bytes("https://backend.example.test /home/user/source/"), [])).toEqual([]);
 	});
 	test("rejects credential file paths but allows env templates and source fixtures", () => {
-		for (const path of [".env", ".env.production", "private.pem", "app/google-services.json", "notifications/vapid.json"]) {
+		for (const path of [".env", ".env.production", "private.pem", "app/google-services.json", "notifications/vapid.json", "notifications/push-relay.json", "notifications/push-relay-counters.json"]) {
 			expect(publicFileProblems(path, bytes(""), [])).toContain("secret-bearing filename");
 		}
 		for (const path of [".env.example", ".env.production.example", "packages/server/src/credentials.ts"]) {

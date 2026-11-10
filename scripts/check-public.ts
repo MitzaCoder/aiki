@@ -22,7 +22,7 @@ export function publicFileProblems(path: string, bytes: Uint8Array, privateTerms
 	if (/\/(?:home|Users)\/(?!user(?:[\/\s"'`]|$)|me(?:[\/\s"'`]|$)|you(?:[\/\s"'`]|$)|someone(?:[\/\s"'`]|$)|u(?:[\/\s"'`]|$)|meme(?:[\/\s"'`]|$)|example(?:[\/\s"'`]|$))[a-zA-Z][\w.-]+\//.test(text)) {
 		problems.push("personal absolute home path");
 	}
-	if (/(?:^|\/)(?:credentials\.json|vapid\.json|fcm-service-account\.json|google-services\.json|cookies\.(?:json|txt)|\.netrc|\.npmrc)$/.test(path)
+	if (/(?:^|\/)(?:credentials\.json|vapid\.json|fcm-service-account\.json|google-services\.json|cookies\.(?:json|txt)|push-relay(?:-counters)?\.json|\.netrc|\.npmrc)$/.test(path)
 		|| /\.(?:pem|key|keystore|jks|p12|pfx)$/.test(path)
 		|| /(?:^|\/)\.env(?:\.[^/]*)?$/.test(path) && !/\.example$/.test(path)) problems.push("secret-bearing filename");
 	return problems;
