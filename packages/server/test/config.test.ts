@@ -56,7 +56,7 @@ describe("allowed origins", () => {
 		expect(normalizeOrigin("null")).toBeUndefined();
 		expect(isOriginAllowed(null, [])).toBe(true);
 		expect(isOriginAllowed("https://app.example", ["https://app.example"])).toBe(true);
-		expect(isOriginAllowed("https://app.example/", ["https://app.example"])).toBe(true);
+		expect(isOriginAllowed("https://app.example/", ["https://app.example"])).toBe(false);
 		expect(isOriginAllowed("https://evil.example", ["https://app.example"])).toBe(false);
 		expect(isOriginAllowed("https://app.example", [])).toBe(false);
 	});

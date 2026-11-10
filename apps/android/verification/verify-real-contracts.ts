@@ -127,7 +127,7 @@ export async function verifyRealContracts(url: string, projectId: string, root: 
 			const full = await fetchArtifact(inline.url);
 			assert.equal(full.status, 200);
 			assert(full.headers.get("content-disposition")?.startsWith("inline;"));
-			assert.equal(full.headers.get("cache-control"), "private, max-age=3600");
+			assert.equal(full.headers.get("cache-control"), "private, no-store");
 			const body = new Uint8Array(await full.arrayBuffer());
 			assert.equal(body.length, artifact.size);
 			if (artifact.name === "report.md") assert.equal(new TextDecoder().decode(body), SOURCE_TEXT);

@@ -36,6 +36,7 @@ for (const [source, target] of [["fixture.png", "proof.png"], ["fixture.mp4", "p
 	await copyFile(join(import.meta.dir, "media", source!), join(root, "project", target!));
 await writeFile(join(root, "project", "proof.bin"), Uint8Array.from({ length: 256 }, (_, i) => i));
 const server = await startServer({
+ auth: { mode: "off" },
 	dataDir: join(root, "data"),
 	hostname: "127.0.0.1",
 	port: Number(process.env.AIKI_PORT),

@@ -173,13 +173,9 @@ export async function vapidKeysWork(keys: VapidKeys): Promise<boolean> {
 			false,
 			["sign"],
 		);
-		const publicKey = await crypto.subtle.importKey(
-			"raw",
-			publicBytes,
-			{ name: "ECDSA", namedCurve: "P-256" },
-			false,
-			["verify"],
-		);
+		const publicKey = await crypto.subtle.importKey("raw", publicBytes, { name: "ECDSA", namedCurve: "P-256" }, false, [
+			"verify",
+		]);
 		const probe = new TextEncoder().encode("aiki vapid key check");
 		const signature = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, privateKey, probe);
 		return await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, publicKey, signature, probe);
@@ -229,8 +225,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * A device as this backend keeps it: what the protocol shows (`NotificationDevice`) plus where it is pushed to, a browser's
  * Web Push subscription or an Android app's FCM token. Either stays on the server: the app that registered it holds it.
  */
-export type StoredDevice = NotificationDevice &
-	({ subscription: PushSubscription; fcmToken?: undefined } | { fcmToken: string; subscription?: undefined });
+export type StoredDevice = NotificationDevice & { sessionId?: string } & (
+		{ subscription: PushSubscription; fcmToken?: undefined } | { fcmToken: string; subscription?: undefined }
+	);
 
 /** Where a device is reached, as `register` and `registerFcm` take it. */
 export type DeviceAddress = { subscription: PushSubscription } | { fcmToken: string };
@@ -320,6 +317,7 @@ function parseDevice(raw: unknown): StoredDevice | undefined {
 		: null;
 	return {
 		deviceId: raw.deviceId,
+		...(typeof raw.sessionId === "string" ? { sessionId: raw.sessionId } : {}),
 		label: typeof raw.label === "string" ? raw.label : "",
 		backendKey: raw.backendKey,
 		...address,
@@ -331,7 +329,13 @@ function parseDevice(raw: unknown): StoredDevice | undefined {
 
 /** The device as the protocol shows it: its address is between the device and its push service, not the app. */
 export function publicDevice(device: StoredDevice): NotificationDevice {
-	const { subscription: _subscription, fcmToken: _fcmToken, transport: _transport, ...rest } = device;
+	const {
+		subscription: _subscription,
+		fcmToken: _fcmToken,
+		transport: _transport,
+		sessionId: _sessionId,
+		...rest
+	} = device;
 	return { ...rest, transport: transportOf(device) };
 }
 
@@ -388,6 +392,7 @@ export class NotificationStore {
 	async register(
 		input: {
 			deviceId: string;
+			sessionId?: string;
 			label: string;
 			backendKey: string;
 			preferences: NotificationPreferences;
@@ -395,6 +400,15 @@ export class NotificationStore {
 		} & DeviceAddress,
 	): Promise<StoredDevice> {
 		const existing = this.#devices.get(input.deviceId);
+		if (existing?.sessionId && !input.sessionId) throw new ServerError("auth_required", "auth_required");
+		if (input.sessionId)
+			for (const device of this.#devices.values())
+				if (
+					device.deviceId !== input.deviceId &&
+					(("fcmToken" in input && device.fcmToken === input.fcmToken) ||
+						("subscription" in input && device.subscription?.endpoint === input.subscription.endpoint))
+				)
+					this.#devices.delete(device.deviceId);
 		const address: DeviceAddress =
 			"fcmToken" in input
 				? { fcmToken: input.fcmToken }
@@ -409,6 +423,7 @@ export class NotificationStore {
 					};
 		const device: StoredDevice = {
 			deviceId: input.deviceId,
+			...(input.sessionId ? { sessionId: input.sessionId } : {}),
 			label: input.label,
 			backendKey: input.backendKey,
 			...address,
@@ -678,7 +693,9 @@ export type NotificationEvent = {
 	key?: string;
 };
 
-export function notificationTag(event: Pick<NotificationEvent, "kind" | "projectId" | "workerId" | "scheduleId">): string {
+export function notificationTag(
+	event: Pick<NotificationEvent, "kind" | "projectId" | "workerId" | "scheduleId">,
+): string {
 	const parts: string[] = [event.kind];
 	if (event.projectId !== null && event.projectId !== undefined) parts.push(event.projectId);
 	if (event.workerId !== null && event.workerId !== undefined) parts.push(event.workerId);
@@ -894,7 +911,9 @@ export function scheduleProblemNotification(input: {
 	const skipped = input.run.outcome === "skipped";
 	return {
 		kind: "schedule_problem",
-		title: skipped ? `Scheduled task skipped · ${input.scheduleTitle}` : `Scheduled task failed · ${input.scheduleTitle}`,
+		title: skipped
+			? `Scheduled task skipped · ${input.scheduleTitle}`
+			: `Scheduled task failed · ${input.scheduleTitle}`,
 		body: notificationLine(input.run.message) || (skipped ? "It was skipped." : "It could not start."),
 		projectId: input.projectId,
 		scheduleId: input.scheduleId,
@@ -1028,7 +1047,13 @@ export function maintenanceFailureNotification(input: {
 
 /** What `notifications.test` pushes: it says nothing about the backend's work, only that this device hears it. */
 export function testNotification(): NotificationEvent {
-	return { kind: "test", title: "Test notification", body: "Notifications reach this device.", projectId: null, tag: "test" };
+	return {
+		kind: "test",
+		title: "Test notification",
+		body: "Notifications reach this device.",
+		projectId: null,
+		tag: "test",
+	};
 }
 
 // --- sending ------------------------------------------------------------------------------------------------------
@@ -1067,6 +1092,7 @@ export type NotifyResult = {
 };
 
 export type NotifierOptions = {
+	sessionActive?: (sessionId: string) => boolean;
 	store: NotificationStore;
 	state: NotificationStateStore;
 	vapid: VapidKeys;
@@ -1105,6 +1131,7 @@ export const FCM_OFF_MESSAGE = "FCM is off on this backend (no service-account k
 export class Notifier {
 	readonly presence: NotificationPresence;
 	readonly #store: NotificationStore;
+	readonly #sessionActive: ((sessionId: string) => boolean) | undefined;
 	readonly #state: NotificationStateStore;
 	readonly #vapid: VapidKeys;
 	readonly #subject: string;
@@ -1121,6 +1148,7 @@ export class Notifier {
 	readonly #holdTimers = new Map<string, () => void>();
 
 	constructor(options: NotifierOptions) {
+		this.#sessionActive = options.sessionActive;
 		this.#store = options.store;
 		this.#state = options.state;
 		this.#vapid = options.vapid;
@@ -1146,14 +1174,34 @@ export class Notifier {
 	async register(
 		input: {
 			deviceId: string;
+			sessionId?: string;
 			label: string;
 			backendKey: string;
 			preferences: NotificationPreferences;
 		} & DeviceAddress,
 	): Promise<NotificationDevice> {
+		if (input.sessionId && !this.#sessionActive?.(input.sessionId))
+			throw new ServerError("auth_revoked", "auth_revoked");
 		const device = await this.#store.register({ ...input, now: this.#now });
+		if (input.sessionId && !this.#sessionActive?.(input.sessionId)) {
+			await this.#store.unregister(input.deviceId);
+			throw new ServerError("auth_revoked", "auth_revoked");
+		}
 		await this.#store.flush();
 		return publicDevice(device);
+	}
+
+	checkSessionDevice(deviceId: string, sessionId: string | undefined) {
+		const device = this.#store.get(deviceId);
+		if (device && device.sessionId !== sessionId)
+			throw new ServerError("permission_denied", "Notification registration belongs to another session");
+	}
+	async revokeSession(sessionId: string) {
+		for (const device of this.#store.list())
+			if (device.sessionId === sessionId) await this.#store.unregister(device.deviceId);
+		if (!this.#store.list().length) this.interaction();
+		await this.#store.flush();
+		await this.#state.flush();
 	}
 
 	/** Forget a device; false when it was not registered. */
@@ -1198,7 +1246,11 @@ export class Notifier {
 	async deliver(event: NotificationEvent): Promise<NotifyResult> {
 		if (event.key !== undefined && !this.#state.claim(event.key)) return { skipped: "duplicate", deliveries: [] };
 		// An archived project is silent. The key was claimed above, so nothing replays when it comes back.
-		if (event.projectId !== null && event.projectId !== undefined && (await this.#isArchived?.(event.projectId)) === true) {
+		if (
+			event.projectId !== null &&
+			event.projectId !== undefined &&
+			(await this.#isArchived?.(event.projectId)) === true
+		) {
 			return { skipped: "filtered", deliveries: [] };
 		}
 		const at = new Date(this.#now());
@@ -1231,15 +1283,18 @@ export class Notifier {
 	}
 
 	#armHold(held: HeldEvent): void {
-		const cancel = this.#schedule(() => {
-			this.#holdTimers.delete(held.id);
-			if (this.#state.release([held.id]) === 0) return;
-			const run = this.#deliverNow(held.event, held.at).catch((error: unknown) => {
-				this.#log(`notifications: ${held.event.kind} could not be sent: ${errorMessage(error)}`);
-			});
-			this.#pending.add(run);
-			void run.finally(() => this.#pending.delete(run));
-		}, Math.max(0, held.dueAt - this.#now()));
+		const cancel = this.#schedule(
+			() => {
+				this.#holdTimers.delete(held.id);
+				if (this.#state.release([held.id]) === 0) return;
+				const run = this.#deliverNow(held.event, held.at).catch((error: unknown) => {
+					this.#log(`notifications: ${held.event.kind} could not be sent: ${errorMessage(error)}`);
+				});
+				this.#pending.add(run);
+				void run.finally(() => this.#pending.delete(run));
+			},
+			Math.max(0, held.dueAt - this.#now()),
+		);
 		this.#holdTimers.set(held.id, cancel);
 	}
 
@@ -1304,6 +1359,11 @@ export class Notifier {
 	}
 
 	async #push(device: StoredDevice, event: NotificationEvent, at: string): Promise<DeliveryOutcome> {
+		if (
+			this.#store.get(device.deviceId)?.sessionId !== device.sessionId ||
+			(device.sessionId && !this.#sessionActive?.(device.sessionId))
+		)
+			return { deviceId: device.deviceId, ok: false, status: null, message: "auth_revoked" };
 		const payload = notificationPayload(device, event, at);
 		if (device.fcmToken !== undefined) return await this.#pushFcm(device, device.fcmToken, event, payload, at);
 		const subscription = device.subscription!;
@@ -1330,7 +1390,7 @@ export class Notifier {
 			);
 		} catch (error) {
 			// A subscription the library cannot encrypt for is this device's problem, not the caller's.
-			const message = errorMessage(error);
+			const message = "Invalid push subscription";
 			this.#log(`notifications: ${device.deviceId} has an unusable subscription: ${message}`);
 			await this.#store.setLastDelivery(device.deviceId, { at, ok: false, status: null, message });
 			return { deviceId: device.deviceId, ok: false, status: null, message };
@@ -1359,6 +1419,9 @@ export class Notifier {
 		}
 		const result = await this.#fcm.send({
 			token,
+			authorized: () =>
+				this.#store.get(device.deviceId)?.sessionId === device.sessionId &&
+				(!device.sessionId || this.#sessionActive?.(device.sessionId) === true),
 			data: { payload: JSON.stringify(payload) },
 			ttlSeconds: this.#ttlSeconds,
 		});
@@ -1373,6 +1436,7 @@ export class Notifier {
 		response: PushResponse,
 		gone: boolean,
 	): Promise<DeliveryOutcome> {
+		if (response.message) response = { ...response, message: "Push delivery failed" };
 		const ok = response.status !== null && response.status >= 200 && response.status < 300;
 		if (gone) {
 			await this.#store.unregister(device.deviceId);
@@ -1387,7 +1451,7 @@ export class Notifier {
 			});
 			if (!ok) {
 				this.#log(
-					`notifications: ${event.kind} to ${device.deviceId} failed (${response.status ?? "no answer"}): ${response.message ?? "no message"}`,
+					`notifications: ${event.kind} to ${device.deviceId} failed (${response.status ?? "no answer"}): push service rejected delivery`,
 				);
 			}
 		}

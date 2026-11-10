@@ -362,12 +362,12 @@ describe("serving and deleting", () => {
 		await beyond.arrayBuffer();
 
 		const other = await fetch(url, { headers: { origin: "https://evil.example" } });
-		expect(other.status).toBe(200);
+		expect(other.status).toBe(403);
 		expect(other.headers.get("access-control-allow-origin")).toBeNull();
 		await other.arrayBuffer();
 		const preflight = await fetch(url, { method: "OPTIONS", headers: { origin: APP_ORIGIN, "access-control-request-headers": "range" } });
 		expect(preflight.status).toBe(204);
-		expect(preflight.headers.get("access-control-allow-headers")).toBe("Range");
+		expect(preflight.headers.get("access-control-allow-headers")).toContain("Range");
 
 		const download = await fetch(await urlOf(client, projectId, artifact.id, true));
 		expect(download.headers.get("content-disposition")?.startsWith("attachment;")).toBe(true);

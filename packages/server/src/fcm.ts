@@ -88,7 +88,12 @@ export async function loadFcmServiceAccount(
 		log(`notifications: FCM off; ${file} is not a service-account key: ${account}`);
 		return undefined;
 	}
-	if (!(await importSigningKey(account.privateKey).then(() => true, () => false))) {
+	if (
+		!(await importSigningKey(account.privateKey).then(
+			() => true,
+			() => false,
+		))
+	) {
 		log(`notifications: FCM off; the private key in ${file} cannot be read`);
 		return undefined;
 	}
@@ -107,7 +112,9 @@ function pemBody(pem: string): Uint8Array<ArrayBuffer> {
 }
 
 function importSigningKey(pem: string): Promise<CryptoKey> {
-	return crypto.subtle.importKey("pkcs8", pemBody(pem), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+	return crypto.subtle.importKey("pkcs8", pemBody(pem), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, [
+		"sign",
+	]);
 }
 
 function base64urlJson(value: unknown): string {
@@ -131,6 +138,7 @@ export async function serviceAccountAssertion(account: FcmServiceAccount, nowMs:
 
 /** One data message to one app instance. */
 export type FcmMessage = {
+	authorized?: () => boolean;
 	token: string;
 	data: Record<string, string>;
 	ttlSeconds: number;
@@ -159,13 +167,21 @@ function fcmError(text: string): { message: string | null; errorCode: string | n
 	try {
 		const parsed = JSON.parse(text) as { error?: { message?: unknown; status?: unknown; details?: unknown } };
 		const error = parsed.error;
-		if (error === undefined || error === null) return { message: text.length === 0 ? null : text.slice(0, 300), errorCode: null };
+		if (error === undefined || error === null)
+			return { message: text.length === 0 ? null : text.slice(0, 300), errorCode: null };
 		const details = Array.isArray(error.details) ? (error.details as { errorCode?: unknown }[]) : [];
 		const errorCode =
 			details.map((detail) => detail.errorCode).find((code): code is string => typeof code === "string") ??
 			(typeof error.status === "string" ? error.status : null);
 		const message = typeof error.message === "string" ? error.message : null;
-		return { message: [errorCode, message].filter((part) => part !== null).join(": ").slice(0, 300) || null, errorCode };
+		return {
+			message:
+				[errorCode, message]
+					.filter((part) => part !== null)
+					.join(": ")
+					.slice(0, 300) || null,
+			errorCode,
+		};
 	} catch {
 		return { message: text.length === 0 ? null : text.slice(0, 300), errorCode: null };
 	}
@@ -201,7 +217,7 @@ export class FcmSender {
 		try {
 			token = await this.#accessToken();
 		} catch (error) {
-			const text = errorMessage(error);
+			const text = "Token exchange failed";
 			this.#log(`notifications: FCM sign-in failed: ${text}`);
 			return { status: null, message: `FCM sign-in failed: ${text}`, unregistered: false };
 		}
@@ -212,13 +228,15 @@ export class FcmSender {
 			try {
 				result = await this.#post(message, await this.#accessToken());
 			} catch (error) {
-				return { status: null, message: `FCM sign-in failed: ${errorMessage(error)}`, unregistered: false };
+				return { status: null, message: "FCM sign-in failed", unregistered: false };
 			}
 		}
 		return result;
 	}
 
 	async #post(message: FcmMessage, accessToken: string): Promise<FcmResult> {
+		if (message.authorized && !message.authorized())
+			return { status: null, message: "auth_revoked", unregistered: false };
 		const body = {
 			message: {
 				token: message.token,
@@ -244,7 +262,11 @@ export class FcmSender {
 				response.status === 404 ||
 				// A token FCM cannot parse will never work; the app registers a fresh one on its next start.
 				(response.status === 400 && /registration token/i.test(error.message ?? ""));
-			return { status: response.status, message: error.message, unregistered };
+			return {
+				status: response.status,
+				message: error.message?.replaceAll(message.token, "[redacted]").replaceAll(accessToken, "[redacted]") ?? null,
+				unregistered,
+			};
 		} catch (error) {
 			return { status: null, message: errorMessage(error), unregistered: false };
 		}
@@ -268,7 +290,7 @@ export class FcmSender {
 			body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion }).toString(),
 		});
 		const text = await response.text().catch(() => "");
-		if (!response.ok) throw new Error(`the token endpoint answered ${response.status}: ${text.slice(0, 200)}`);
+		if (!response.ok) throw new Error(`the token endpoint answered ${response.status}`);
 		const parsed = JSON.parse(text) as { access_token?: unknown; expires_in?: unknown };
 		if (typeof parsed.access_token !== "string" || parsed.access_token.length === 0) {
 			throw new Error("the token endpoint answered without an access_token");

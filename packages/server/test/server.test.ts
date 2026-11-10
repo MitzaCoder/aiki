@@ -657,7 +657,7 @@ describe("browser origin allow-list", () => {
 			headers: { origin: "https://evil.example" },
 		});
 		expect(denied.status).toBe(403);
-		expect(await denied.text()).toContain("Forbidden origin");
+		expect(await denied.json()).toEqual({ error: { code: "forbidden_origin" } });
 
 		// Non-browser clients send no Origin; tests and the health check rely on this.
 		const noOrigin = await fetch(`${test.server.url}/ws`);

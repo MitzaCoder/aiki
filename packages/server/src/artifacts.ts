@@ -28,7 +28,7 @@ export const ARTIFACTS_SECRET_FILE = "artifacts-secret";
 export const DEFAULT_ARTIFACT_MAX_BYTES = 2 * 1024 * 1024 * 1024;
 export const ARTIFACT_MAX_BYTES_ENV = "AIKI_ARTIFACT_MAX_BYTES";
 /** How long an `artifacts.url` answer stays valid. */
-export const DEFAULT_ARTIFACT_URL_TTL_MS = 4 * 60 * 60 * 1000;
+export const DEFAULT_ARTIFACT_URL_TTL_MS = 10 * 60 * 1000;
 export const DEFAULT_ARTIFACT_LIST_LIMIT = 100;
 /** `ffprobe` gets this long to read a duration before the save goes on without one. */
 const DURATION_PROBE_TIMEOUT_MS = 10_000;
@@ -146,7 +146,9 @@ export function detectMimeType(name: string, head: Uint8Array): string {
 	const sniffed = sniffMimeType(head);
 	if (sniffed !== undefined) {
 		const isMedia = (type: string): boolean => type.startsWith("audio/") || type.startsWith("video/");
-		return byExtension !== undefined && AMBIGUOUS_CONTAINERS.has(sniffed) && isMedia(byExtension) ? byExtension : sniffed;
+		return byExtension !== undefined && AMBIGUOUS_CONTAINERS.has(sniffed) && isMedia(byExtension)
+			? byExtension
+			: sniffed;
 	}
 	if (byExtension !== undefined) return byExtension;
 	return head.includes(0) ? "application/octet-stream" : "text/plain";
@@ -166,13 +168,18 @@ export async function probeDurationSeconds(path: string): Promise<number | null>
 	const ffprobe = Bun.which("ffprobe");
 	if (ffprobe === null) return null;
 	try {
-		const child = Bun.spawn([ffprobe, "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", path], {
-			stdout: "pipe",
-			stderr: "ignore",
-			stdin: "ignore",
-		});
+		const child = Bun.spawn(
+			[ffprobe, "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", path],
+			{
+				stdout: "pipe",
+				stderr: "ignore",
+				stdin: "ignore",
+			},
+		);
 		const timer = setTimeout(() => child.kill(), DURATION_PROBE_TIMEOUT_MS);
-		const [text, code] = await Promise.all([new Response(child.stdout).text(), child.exited]).finally(() => clearTimeout(timer));
+		const [text, code] = await Promise.all([new Response(child.stdout).text(), child.exited]).finally(() =>
+			clearTimeout(timer),
+		);
 		const seconds = Number(text.trim());
 		return code === 0 && Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
 	} catch {
@@ -449,18 +456,38 @@ export class ArtifactUrlSigner {
 	readonly #secret: Buffer;
 	readonly #now: () => number;
 	readonly ttlMs: number;
+	readonly #sessionActive: ((sessionId: string) => boolean) | undefined;
+	readonly #required: (() => boolean) | undefined;
+	readonly #streams = new Map<string, Set<() => void>>();
 
-	constructor(options: { secret: Buffer; now?: () => number; ttlMs?: number }) {
+	constructor(options: {
+		secret: Buffer;
+		now?: () => number;
+		ttlMs?: number;
+		sessionActive?: (sessionId: string) => boolean;
+		required?: () => boolean;
+	}) {
+		this.#sessionActive = options.sessionActive;
+		this.#required = options.required;
 		this.#secret = options.secret;
 		this.#now = options.now ?? Date.now;
 		this.ttlMs = options.ttlMs ?? DEFAULT_ARTIFACT_URL_TTL_MS;
 	}
 
 	/** A path with its token, to put after the backend's origin, and when it stops working. */
-	sign(projectId: string, artifactId: string, disposition: ArtifactDisposition): { path: string; expiresAt: string } {
+	sign(
+		projectId: string,
+		artifactId: string,
+		disposition: ArtifactDisposition,
+		sessionId?: string,
+	): { path: string; expiresAt: string } {
 		const expires = Math.floor((this.#now() + this.ttlMs) / 1000);
 		const flag = disposition === "attachment" ? "a" : "i";
-		const token = `${expires}.${flag}.${this.#mac(projectId, artifactId, expires, flag).toString("base64url")}`;
+		if (sessionId && !this.#sessionActive?.(sessionId)) throw new ServerError("auth_revoked", "auth_revoked");
+		if (!sessionId && this.#required?.()) throw new ServerError("auth_required", "auth_required");
+		const token = sessionId
+			? `v2.${expires}.${flag}.${sessionId}.${this.#mac(projectId, artifactId, expires, flag, sessionId).toString("base64url")}`
+			: `${expires}.${flag}.${this.#mac(projectId, artifactId, expires, flag).toString("base64url")}`;
 		return {
 			path: `/artifacts/${encodeURIComponent(projectId)}/${encodeURIComponent(artifactId)}?token=${token}`,
 			expiresAt: new Date(expires * 1000).toISOString(),
@@ -470,7 +497,12 @@ export class ArtifactUrlSigner {
 	/** The disposition a valid, unexpired token grants for this artifact, or undefined. */
 	verify(projectId: string, artifactId: string, token: string | null): ArtifactDisposition | undefined {
 		if (token === null) return undefined;
-		const match = /^(\d{1,12})\.([ia])\.([A-Za-z0-9_-]{43})$/.exec(token);
+		const sessionId = this.sessionId(token);
+		if (sessionId && !this.#sessionActive?.(sessionId)) return undefined;
+		if (!sessionId && this.#required?.()) return undefined;
+		const match = sessionId
+			? /^v2\.(\d{1,12})\.([ia])\.[a-f0-9]{32}\.([A-Za-z0-9_-]{43})$/.exec(token)
+			: /^(\d{1,12})\.([ia])\.([A-Za-z0-9_-]{43})$/.exec(token);
 		if (match === null) return undefined;
 		const expires = Number(match[1]);
 		const flag = match[2] as "i" | "a";
@@ -478,31 +510,66 @@ export class ArtifactUrlSigner {
 		// The last of 43 base64url characters carries only 4 bits of the 32-byte MAC, so decoding alone would accept
 		// several spellings of one token: insist on the canonical one.
 		if (given.toString("base64url") !== match[3]) return undefined;
-		const expected = this.#mac(projectId, artifactId, expires, flag);
+		const expected = this.#mac(projectId, artifactId, expires, flag, sessionId);
 		if (given.length !== expected.length || !timingSafeEqual(given, expected)) return undefined;
 		if (expires * 1000 <= this.#now()) return undefined;
 		return flag === "a" ? "attachment" : "inline";
 	}
 
-	#mac(projectId: string, artifactId: string, expires: number, flag: string): Buffer {
-		return createHmac("sha256", this.#secret).update(`artifact\n${projectId}\n${artifactId}\n${expires}\n${flag}`).digest();
+	sessionId(token: string | null): string | undefined {
+		return token?.match(/^v2\.\d{1,12}\.[ia]\.([a-f0-9]{32})\.[A-Za-z0-9_-]{43}$/)?.[1];
 	}
-}
-
-/**
- * The origin the browser reached this backend at, for absolute artifact URLs: `AIKI_PUBLIC_URL` when set,
- * else the proxy's `X-Forwarded-Proto`/`X-Forwarded-Host` (Caddy sets both), else the request's own.
- */
-export function requestOrigin(request: Request, env: Readonly<Record<string, string | undefined>> = process.env): string {
-	const configured = env.AIKI_PUBLIC_URL?.trim();
-	if (configured !== undefined && configured.length > 0) {
-		const origin = normalizeOrigin(configured);
-		if (origin !== undefined) return origin;
+	revoke(sessionId: string) {
+		for (const abort of this.#streams.get(sessionId) ?? []) abort();
+		this.#streams.delete(sessionId);
 	}
-	const url = new URL(request.url);
-	const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-	const host = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ?? request.headers.get("host") ?? url.host;
-	return normalizeOrigin(`${proto === "https" || proto === "http" ? proto : url.protocol.slice(0, -1)}://${host}`) ?? url.origin;
+	stream(file: Blob, sessionId: string | undefined): ReadableStream<Uint8Array> {
+		if (!sessionId) return file.stream();
+		const reader = file.stream().getReader();
+		const streams = this.#streams.get(sessionId) ?? new Set<() => void>();
+		this.#streams.set(sessionId, streams);
+		let abort: () => void;
+		const cleanup = () => {
+			streams.delete(abort);
+			if (!streams.size) this.#streams.delete(sessionId);
+		};
+		return new ReadableStream<Uint8Array>({
+			start: (controller) => {
+				abort = () => {
+					void reader.cancel().catch(() => {});
+					controller.error(new Error("auth_revoked"));
+					cleanup();
+				};
+				streams.add(abort);
+			},
+			pull: async (controller) => {
+				try {
+					if (!this.#sessionActive?.(sessionId)) {
+						abort();
+						return;
+					}
+					const { done, value } = await reader.read();
+					if (done) {
+						controller.close();
+						cleanup();
+					} else controller.enqueue(value);
+				} catch {
+					cleanup();
+					controller.error(new Error("artifact_stream_closed"));
+				}
+			},
+			cancel: async () => {
+				cleanup();
+				await reader.cancel();
+			},
+		});
+	}
+	#mac(projectId: string, artifactId: string, expires: number, flag: string, sessionId?: string): Buffer {
+		const payload = sessionId
+			? `artifact-v2\n${projectId}\n${artifactId}\n${expires}\n${flag}\n${sessionId}`
+			: `artifact\n${projectId}\n${artifactId}\n${expires}\n${flag}`;
+		return createHmac("sha256", this.#secret).update(payload).digest();
+	}
 }
 
 // --- HTTP ----------------------------------------------------------------------------------------------------------
@@ -512,7 +579,12 @@ export const ARTIFACT_PATH_PREFIX = "/artifacts/";
 /** CORS headers for an allowed browser origin; none for a request without one or from another origin. */
 function corsHeaders(request: Request, allowedOrigins: readonly string[]): Record<string, string> {
 	const origin = request.headers.get("origin");
-	const headers: Record<string, string> = { vary: "Origin" };
+	const headers: Record<string, string> = {
+		vary: "Origin",
+		"cache-control": "private, no-store",
+		"referrer-policy": "no-referrer",
+		"x-content-type-options": "nosniff",
+	};
 	if (origin === null || !isOriginAllowed(origin, allowedOrigins)) return headers;
 	return {
 		...headers,
@@ -575,7 +647,8 @@ export async function serveArtifact(
 			},
 		});
 	}
-	if (request.method !== "GET" && request.method !== "HEAD") return text(405, "Method not allowed", { allow: "GET, HEAD, OPTIONS" });
+	if (request.method !== "GET" && request.method !== "HEAD")
+		return text(405, "Method not allowed", { allow: "GET, HEAD, OPTIONS" });
 
 	const parts = url.pathname.slice(ARTIFACT_PATH_PREFIX.length).split("/");
 	if (parts.length !== 2) return text(404, "Not found");
@@ -594,24 +667,38 @@ export async function serveArtifact(
 	const file = artifact === undefined ? undefined : Bun.file(options.store.filePath(artifact));
 	if (artifact === undefined || file === undefined || !(await file.exists())) return text(404, "No such artifact");
 
+	if (options.signer.verify(projectId, artifactId, url.searchParams.get("token")) === undefined)
+		return text(403, "Invalid or expired artifact token");
+	const sessionId = options.signer.sessionId(url.searchParams.get("token"));
 	const size = file.size;
 	const headers: Record<string, string> = {
 		...cors,
 		"content-type": artifact.mimeType.startsWith("text/") ? `${artifact.mimeType}; charset=utf-8` : artifact.mimeType,
-		"content-disposition": contentDisposition(disposition, artifact.name),
+		"content-disposition": contentDisposition(
+			["text/html", "image/svg+xml"].includes(artifact.mimeType) ? "attachment" : disposition,
+			artifact.name,
+		),
 		"accept-ranges": "bytes",
-		"cache-control": "private, max-age=3600",
+		"cache-control": "private, no-store",
+		"referrer-policy": "no-referrer",
 		"x-content-type-options": "nosniff",
 		// An HTML or SVG artifact must not run script on the backend's origin.
-		"content-security-policy": "sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'",
+		"content-security-policy":
+			"sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'",
 	};
 	const range = parseRange(request.headers.get("range"), size);
 	if (range === null) return text(416, "Range not satisfiable", { "content-range": `bytes */${size}` });
 	if (range === undefined) {
 		headers["content-length"] = String(size);
-		return new Response(request.method === "HEAD" ? null : file, { status: 200, headers });
+		return new Response(request.method === "HEAD" ? null : options.signer.stream(file, sessionId), {
+			status: 200,
+			headers,
+		});
 	}
 	headers["content-range"] = `bytes ${range.start}-${range.end}/${size}`;
 	headers["content-length"] = String(range.end - range.start + 1);
-	return new Response(request.method === "HEAD" ? null : file.slice(range.start, range.end + 1), { status: 206, headers });
+	return new Response(
+		request.method === "HEAD" ? null : options.signer.stream(file.slice(range.start, range.end + 1), sessionId),
+		{ status: 206, headers },
+	);
 }

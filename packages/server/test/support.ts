@@ -53,7 +53,8 @@ export async function createSetup(options?: {
 	/** Where the release and the deploy status are read from; defaults to what the running code discovers. */
 	status?: StartServerOptions["status"];
 	/** Web Push: the fake push service a test points the transport at, and the VAPID subject. */
-	notifications?: StartServerOptions["notifications"];
+	auth?: StartServerOptions["auth"];
+ notifications?: StartServerOptions["notifications"];
 	/** How long the coordinator's own bash/powershell calls may run; defaults to the server's own default. */
 	toolCallCapMs?: StartServerOptions["toolCallCapMs"];
 	/** Free disk space: a fake reader, the threshold and the poll interval. */
@@ -90,6 +91,7 @@ export async function createSetup(options?: {
 	const start = (): Promise<HarnessServer> =>
 		startServer({
 			dataDir,
+   auth: options?.auth ?? { mode: "off" },
 			port: 0,
 			models,
 			credentials,

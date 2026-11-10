@@ -1,9 +1,15 @@
+import { DeviceAuth, DeviceAuthError, type Identity } from "./device-auth.ts";
 /**
  * One WebSocket connection: handshake, request dispatch, and the watches that push conversation views.
  */
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { CredentialStore } from "@earendil-works/pi-ai";
-import { ConversationBusy, type ConversationWatch, type EntryId as DurableEntryId, type Cursor as DurableCursor } from "@earendil-works/pi-durable";
+import {
+	ConversationBusy,
+	type ConversationWatch,
+	type EntryId as DurableEntryId,
+	type Cursor as DurableCursor,
+} from "@earendil-works/pi-durable";
 import type { WatchEnd } from "@earendil-works/pi-durable";
 import {
 	type AuthLogin,
@@ -69,6 +75,7 @@ export type ConnectionIO = {
 };
 
 export type ClientConnectionOptions = {
+	deviceAuth?: { store: DeviceAuth; identity: Identity | undefined };
 	manager: ProjectManager;
 	credentials: CredentialStore;
 	logins: OAuthLoginManager;
@@ -85,8 +92,8 @@ export type ClientConnectionOptions = {
 	/** The request log `cache.stats` sums; without it the request fails. */
 	requestLog?: RequestLog;
 	/**
-	 * Signs `artifacts.url` answers, which are absolute on `origin`: where the browser reached this backend (see
-	 * `requestOrigin`). Without it the `artifacts.url` request fails.
+	 * Signs `artifacts.url` answers on the validated, configured backend origin.
+	 * Without it the `artifacts.url` request fails.
 	 */
 	artifactUrls?: { signer: ArtifactUrlSigner; origin: string };
 	/** The backend's terminals; without it (turned off) every `terminal.*` request is unknown. */
@@ -119,6 +126,7 @@ function endMessage(end: WatchEnd): string | undefined {
 
 export class ClientConnection {
 	readonly #manager: ProjectManager;
+	readonly #deviceAuth: ClientConnectionOptions["deviceAuth"];
 	readonly #credentials: CredentialStore;
 	readonly #logins: OAuthLoginManager;
 	readonly #notifications: Notifier;
@@ -139,8 +147,11 @@ export class ClientConnection {
 	#ready = false;
 	#closed = false;
 	#watchSequence = 0;
+	#revoked = false;
+	readonly #queuedSubmissions = new Map<string, () => Promise<unknown>>();
 
 	constructor(options: ClientConnectionOptions) {
+		this.#deviceAuth = options.deviceAuth;
 		this.#manager = options.manager;
 		this.#credentials = options.credentials;
 		this.#logins = options.logins;
@@ -219,9 +230,10 @@ export class ClientConnection {
 	/** Handle one raw WebSocket message. Never throws. */
 	async handle(raw: string | Uint8Array): Promise<void> {
 		if (this.#closed) return;
+		if (!this.#authorized(60_000)) return;
 		// A binary frame is terminal input or an ack (`{` is not a frame kind, so JSON sent as bytes still parses).
 		if (typeof raw !== "string" && raw.length > 0 && raw[0] !== 0x7b) {
-			this.#terminalFrame(raw);
+			if (this.#authorized()) this.#terminalFrame(raw);
 			return;
 		}
 		let parsed: unknown;
@@ -237,7 +249,11 @@ export class ClientConnection {
 		const type = (parsed as { type?: unknown }).type;
 		if (typeof type === "string" && !CLIENT_MESSAGE_TYPES.has(type)) {
 			// Usually a web app newer than this server: say so, rather than "Invalid message".
-			this.#error(id, "unknown_request", `This server does not know "${type}"; it may be older than the app, so restart it`);
+			this.#error(
+				id,
+				"unknown_request",
+				`This server does not know "${type}"; it may be older than the app, so restart it`,
+			);
 			return;
 		}
 		if (!Value.Check(ClientMessageSchema, parsed)) {
@@ -247,6 +263,14 @@ export class ClientConnection {
 		}
 
 		await this.#dispatch(parsed as ClientMessage);
+	}
+
+	/** Withdraw only not-yet-placed device inputs; host agent turns already running are left alone. */
+	revoke(): void {
+		this.#revoked = true;
+		for (const abort of this.#queuedSubmissions.values()) void abort().catch(() => undefined);
+		this.#queuedSubmissions.clear();
+		this.close();
 	}
 
 	/** Stop every watch; called when the socket closes. A closed connection is no longer looking at a project. */
@@ -268,6 +292,7 @@ export class ClientConnection {
 	}
 
 	async #dispatch(request: ClientMessage): Promise<void> {
+		if (!this.#authorized(request.type === "auth.renew" ? 60_000 : 0, request.id)) return;
 		if (request.type === "hello") {
 			await this.#hello(request);
 			return;
@@ -278,6 +303,61 @@ export class ClientConnection {
 		}
 
 		try {
+			if (
+				request.type.startsWith("notifications.") &&
+				"deviceId" in request &&
+				request.type !== "notifications.register" &&
+				request.type !== "notifications.registerFcm" &&
+				this.#deviceAuth
+			) {
+				this.#notifications.checkSessionDevice(request.deviceId, this.#deviceAuth.identity?.sessionId);
+			}
+			if (request.type.startsWith("auth.")) {
+				const authority = this.#deviceAuth,
+					identity = authority?.identity;
+				if (!authority || !identity) throw new DeviceAuthError("auth_required");
+				const auth = authority.store,
+					sid = identity.sessionId;
+				switch (request.type) {
+					case "auth.renew": {
+						const next = auth.authenticate(request.accessToken);
+						if (next.sessionId !== sid) throw new DeviceAuthError("auth_invalid");
+						identity.accessExpiresAt = next.accessExpiresAt;
+						this.#respond({
+							type: request.type,
+							id: request.id,
+							accessExpiresAt: new Date(next.accessExpiresAt).toISOString(),
+						});
+						return;
+					}
+					case "auth.devices.list":
+						this.#respond({ type: request.type, id: request.id, devices: auth.devices(sid) });
+						return;
+					case "auth.devices.rename":
+						auth.rename(request.sessionId, request.label);
+						break;
+					case "auth.devices.revoke":
+						await auth.revoke(request.sessionId);
+						break;
+					case "auth.pairings.create":
+						this.#respond({ type: request.type, id: request.id, ...auth.createPairing(sid, request.confirm) });
+						return;
+					case "auth.pairings.list":
+						this.#respond({ type: request.type, id: request.id, pairings: auth.pairings(sid) });
+						return;
+					case "auth.pairings.cancel":
+						auth.cancel(sid, request.grantId);
+						break;
+					case "auth.pairings.approve":
+						auth.decide(sid, request.grantId, request.claimId, true);
+						break;
+					case "auth.pairings.deny":
+						auth.decide(sid, request.grantId, request.claimId, false);
+						break;
+				}
+				this.#respond({ type: request.type, id: request.id } as ServerMessage);
+				return;
+			}
 			switch (request.type) {
 				case "projects.list": {
 					const projects = await this.#manager.list();
@@ -292,9 +372,7 @@ export class ClientConnection {
 				case "projects.configure": {
 					const project = await this.#manager.configure(request.projectId, {
 						...(request.name === undefined ? {} : { name: request.name }),
-						...(request.coordinatorModel === undefined
-							? {}
-							: { coordinatorModel: request.coordinatorModel }),
+						...(request.coordinatorModel === undefined ? {} : { coordinatorModel: request.coordinatorModel }),
 						...(request.coordinatorThinkingLevel === undefined
 							? {}
 							: { coordinatorThinkingLevel: request.coordinatorThinkingLevel }),
@@ -302,7 +380,9 @@ export class ClientConnection {
 						...(request.checkIns === undefined ? {} : { checkIns: request.checkIns }),
 						...(request.longPromptCache === undefined ? {} : { longPromptCache: request.longPromptCache }),
 						...(request.keepPromptCacheWarm === undefined ? {} : { keepPromptCacheWarm: request.keepPromptCacheWarm }),
-						...(request.promptCacheWarmHours === undefined ? {} : { promptCacheWarmHours: request.promptCacheWarmHours }),
+						...(request.promptCacheWarmHours === undefined
+							? {}
+							: { promptCacheWarmHours: request.promptCacheWarmHours }),
 						...(request.uiProof === undefined ? {} : { uiProof: request.uiProof }),
 						...(request.links === undefined ? {} : { links: request.links }),
 						...(request.archived === undefined ? {} : { archived: request.archived }),
@@ -395,14 +475,14 @@ export class ClientConnection {
 						type: "notifications.config",
 						id: request.id,
 						publicKey: this.#notifications.publicKey,
-						fcm:
-							this.#notifications.fcmProjectId === null ? null : { projectId: this.#notifications.fcmProjectId },
+						fcm: this.#notifications.fcmProjectId === null ? null : { projectId: this.#notifications.fcmProjectId },
 					});
 					return;
 				}
 				case "notifications.register": {
 					const device = await this.#notifications.register({
 						deviceId: request.deviceId,
+						...(this.#deviceAuth?.identity ? { sessionId: this.#deviceAuth.identity.sessionId } : {}),
 						label: request.label,
 						backendKey: request.backendKey,
 						subscription: request.subscription,
@@ -414,6 +494,7 @@ export class ClientConnection {
 				case "notifications.registerFcm": {
 					const device = await this.#notifications.register({
 						deviceId: request.deviceId,
+						...(this.#deviceAuth?.identity ? { sessionId: this.#deviceAuth.identity.sessionId } : {}),
 						label: request.label,
 						backendKey: request.backendKey,
 						fcmToken: request.token,
@@ -450,6 +531,7 @@ export class ClientConnection {
 				case "notifications.presence": {
 					this.#notifications.presence.set(this, {
 						deviceId: request.deviceId,
+						...(this.#deviceAuth?.identity ? { sessionId: this.#deviceAuth.identity.sessionId } : {}),
 						visible: request.visible,
 						projectId: request.projectId,
 					});
@@ -509,6 +591,7 @@ export class ClientConnection {
 				}
 				case "artifacts.list": {
 					await this.#manager.requireProject(request.projectId);
+					if (!this.#authorized()) return;
 					const artifacts = await this.#manager.artifacts.list(request.projectId, {
 						...(request.threadId === undefined ? {} : { threadId: request.threadId }),
 						...(request.workerId === undefined ? {} : { workerId: request.workerId }),
@@ -520,24 +603,37 @@ export class ClientConnection {
 				}
 				case "artifacts.url": {
 					await this.#manager.requireProject(request.projectId);
+					if (!this.#authorized()) return;
 					const artifact = await this.#manager.artifacts.require(request.projectId, request.artifactId);
 					if (this.#artifactUrls === undefined) throw new ServerError("internal", "Artifact URLs are not available");
 					const { path, expiresAt } = this.#artifactUrls.signer.sign(
 						artifact.projectId,
 						artifact.id,
 						request.download === true ? "attachment" : "inline",
+						this.#deviceAuth?.identity?.sessionId,
 					);
-					this.#respond({ type: "artifacts.url", id: request.id, url: `${this.#artifactUrls.origin}${path}`, expiresAt });
+					this.#respond({
+						type: "artifacts.url",
+						id: request.id,
+						url: `${this.#artifactUrls.origin}${path}`,
+						expiresAt,
+					});
 					return;
 				}
 				case "artifacts.update": {
 					await this.#manager.requireProject(request.projectId);
-					const artifact = await this.#manager.artifacts.updateTags(request.projectId, request.artifactId, request.tags);
+					if (!this.#authorized()) return;
+					const artifact = await this.#manager.artifacts.updateTags(
+						request.projectId,
+						request.artifactId,
+						request.tags,
+					);
 					this.#respond({ type: "artifacts.update", id: request.id, artifact });
 					return;
 				}
 				case "artifacts.delete": {
 					await this.#manager.requireProject(request.projectId);
+					if (!this.#authorized()) return;
 					await this.#manager.artifacts.delete(request.projectId, request.artifactId);
 					this.#respond({ type: "artifacts.delete", id: request.id });
 					return;
@@ -598,7 +694,11 @@ export class ClientConnection {
 				}
 				case "board.task.timeline": {
 					if (!this.#features.includes("task-links")) return this.#unknownRequest(request);
-					const { entries, feedback } = await this.#manager.boardTaskTimeline(request.projectId, request.taskId, request.kinds);
+					const { entries, feedback } = await this.#manager.boardTaskTimeline(
+						request.projectId,
+						request.taskId,
+						request.kinds,
+					);
 					this.#respond({ type: "board.task.timeline", id: request.id, taskId: request.taskId, entries, feedback });
 					return;
 				}
@@ -643,11 +743,7 @@ export class ClientConnection {
 					return;
 				}
 				case "schedules.save": {
-					const schedule = await this.#manager.saveSchedule(
-						request.projectId,
-						request.schedule,
-						request.scheduleId,
-					);
+					const schedule = await this.#manager.saveSchedule(request.projectId, request.schedule, request.scheduleId);
 					this.#respond({ type: "schedules.save", id: request.id, schedule });
 					return;
 				}
@@ -681,20 +777,14 @@ export class ClientConnection {
 						scope: request.scope,
 						...(request.projectId === undefined ? {} : { projectId: request.projectId }),
 						...(request.tags === undefined ? {} : { tags: request.tags }),
-						...(request.includeArchived === undefined
-							? {}
-							: { includeArchived: request.includeArchived }),
+						...(request.includeArchived === undefined ? {} : { includeArchived: request.includeArchived }),
 						limit: request.limit ?? 20,
 					});
 					this.#respond({ type: "memory.search", id: request.id, hits });
 					return;
 				}
 				case "memory.history": {
-					const changes = await this.#manager.memoryHistory(
-						request.scope,
-						request.projectId,
-						request.limit ?? 50,
-					);
+					const changes = await this.#manager.memoryHistory(request.scope, request.projectId, request.limit ?? 50);
 					this.#respond({ type: "memory.history", id: request.id, changes });
 					return;
 				}
@@ -704,10 +794,7 @@ export class ClientConnection {
 					return;
 				}
 				case "memory.status": {
-					const { status, maintenance, timezone } = await this.#manager.memoryStatus(
-						request.scope,
-						request.projectId,
-					);
+					const { status, maintenance, timezone } = await this.#manager.memoryStatus(request.scope, request.projectId);
 					this.#respond({ type: "memory.status", id: request.id, status, maintenance, timezone });
 					return;
 				}
@@ -743,6 +830,7 @@ export class ClientConnection {
 					const imagesError = inputImagesError(request.content);
 					if (imagesError !== undefined) throw new ServerError("bad_request", imagesError);
 					const project = await this.#manager.requireProject(request.projectId);
+					if (!this.#authorized()) return;
 					if (project.coordinator.model === null) {
 						throw new ServerError(
 							"no_coordinator_model",
@@ -754,14 +842,13 @@ export class ClientConnection {
 					if (request.workerModel !== undefined || request.workerThinkingLevel !== undefined) {
 						await this.#manager.rememberWorkerDefaults(request.projectId, {
 							...(request.workerModel === undefined ? {} : { model: request.workerModel }),
-							...(request.workerThinkingLevel === undefined
-								? {}
-								: { thinkingLevel: request.workerThinkingLevel }),
+							...(request.workerThinkingLevel === undefined ? {} : { thinkingLevel: request.workerThinkingLevel }),
 						});
 					}
 					// A message about a task names it in front of its text, so every coordinator reads which task it is about.
 					if (request.taskId !== undefined) await this.#manager.requireBoardTask(request.projectId, request.taskId);
 					const { conversation, runtime } = await this.#manager.conversation(request.projectId, request.threadId);
+					if (!this.#authorized(0, request.id)) return;
 					// The message becomes a feedback entry on the task, and its ID goes into the reference the coordinator reads.
 					// A re-sent request ID finds its entry. Only what the user typed is recorded, never the harness's own inputs.
 					const feedback =
@@ -775,10 +862,14 @@ export class ClientConnection {
 								});
 					// The user typed into a finished or stopped background thread: it works again.
 					await this.#manager.reviveThread(request.projectId, request.threadId);
+					if (!this.#authorized(0, request.id)) return;
 					const submission = await conversation.submit(
 						{
 							type: "input",
-							content: request.taskId === undefined ? request.content : withTaskReference(request.content, request.taskId, feedback?.id),
+							content:
+								request.taskId === undefined
+									? request.content
+									: withTaskReference(request.content, request.taskId, feedback?.id),
 							requestId: request.requestId,
 							...(request.whenBusy === undefined ? {} : { whenBusy: request.whenBusy }),
 						},
@@ -786,19 +877,30 @@ export class ClientConnection {
 					);
 					// Whether the run took it at once or it waits for a boundary; a re-sent request ID answers the same way.
 					const status = (await submission.status(BACKGROUND_CONTEXT).catch(() => undefined))?.status;
-					if (status === "queued") queueClock(runtime.harness).stamp(conversation.id, submission.id);
+					if (status === "queued") {
+						const abort = () => runtime.harness.abortSubmission(submission.id, BACKGROUND_CONTEXT, conversation.id);
+						if (this.#revoked) await abort();
+						else this.#queuedSubmissions.set(String(submission.id), abort);
+						queueClock(runtime.harness).stamp(conversation.id, submission.id);
+					}
 					// The message is on its way, so what was typed for it is spent, on every device. A draft written after the message
 					// arrived is something typed since, and stays.
 					if (request.keepDraft !== true) {
-						await this.#drafts?.clear(request.projectId, draftThreadId(request.threadId), receivedAt).catch((error: unknown) => {
-							this.#log(`project ${request.projectId}: could not clear the draft: ${errorMessage(error)}`);
-						});
+						await this.#drafts
+							?.clear(request.projectId, draftThreadId(request.threadId), receivedAt)
+							.catch((error: unknown) => {
+								this.#log(`project ${request.projectId}: could not clear the draft: ${errorMessage(error)}`);
+							});
 					}
 					this.#respond({
 						type: "conversation.submit",
 						id: request.id,
 						submissionId: submission.id,
-						...(status === "queued" ? { status } : status === "placed" || status === "done" ? { status: "placed" } : {}),
+						...(status === "queued"
+							? { status }
+							: status === "placed" || status === "done"
+								? { status: "placed" }
+								: {}),
 					});
 					return;
 				}
@@ -812,7 +914,9 @@ export class ClientConnection {
 					// A submission that is settled without an answer was withdrawn (or never ran): nothing to take back.
 					const record =
 						result === "settled" || result === "already_placed"
-							? await (await runtime.harness.submission(request.submissionId as never, BACKGROUND_CONTEXT))
+							? await (
+									await runtime.harness.submission(request.submissionId as never, BACKGROUND_CONTEXT)
+								)
 									?.status(BACKGROUND_CONTEXT)
 									.catch(() => undefined)
 							: undefined;
@@ -827,10 +931,7 @@ export class ClientConnection {
 				}
 				case "conversation.abort": {
 					const { conversation } = await this.#manager.conversation(request.projectId, request.threadId);
-					await conversation.abort(
-						BACKGROUND_CONTEXT,
-						request.background === true ? { background: true } : undefined,
-					);
+					await conversation.abort(BACKGROUND_CONTEXT, request.background === true ? { background: true } : undefined);
 					this.#respond({ type: "conversation.abort", id: request.id });
 					return;
 				}
@@ -905,6 +1006,10 @@ export class ClientConnection {
 							},
 						},
 					);
+					if (!this.#authorized()) {
+						await terminal.detach();
+						return;
+					}
 					this.#terminals.set(terminalId, terminal);
 					this.#respond({
 						type: "terminal.open",
@@ -941,6 +1046,7 @@ export class ClientConnection {
 					const drafts = this.#drafts;
 					if (drafts === undefined) return this.#unknownRequest(request);
 					await this.#manager.requireProject(request.projectId);
+					if (!this.#authorized()) return;
 					this.#respond({
 						type: "drafts.get",
 						id: request.id,
@@ -952,6 +1058,7 @@ export class ClientConnection {
 					const drafts = this.#drafts;
 					if (drafts === undefined) return this.#unknownRequest(request);
 					await this.#manager.requireProject(request.projectId);
+					if (!this.#authorized()) return;
 					const result = await drafts.set(
 						request.projectId,
 						request.threadId,
@@ -967,7 +1074,13 @@ export class ClientConnection {
 					const drafts = this.#drafts;
 					if (drafts === undefined) return this.#unknownRequest(request);
 					await this.#manager.requireProject(request.projectId);
-					const attachment = await drafts.putAttachment(request.projectId, request.mimeType, request.data, request.name);
+					if (!this.#authorized()) return;
+					const attachment = await drafts.putAttachment(
+						request.projectId,
+						request.mimeType,
+						request.data,
+						request.name,
+					);
 					this.#respond({ type: "drafts.attachment.put", id: request.id, attachment });
 					return;
 				}
@@ -975,6 +1088,7 @@ export class ClientConnection {
 					const drafts = this.#drafts;
 					if (drafts === undefined) return this.#unknownRequest(request);
 					await this.#manager.requireProject(request.projectId);
+					if (!this.#authorized()) return;
 					const found = await drafts.getAttachment(request.projectId, request.attachmentId);
 					this.#respond({ type: "drafts.attachment.get", id: request.id, ...found });
 					return;
@@ -985,6 +1099,17 @@ export class ClientConnection {
 				}
 			}
 		} catch (error) {
+			if (error instanceof DeviceAuthError) {
+				this.#error(
+					request.id,
+					error.code as ErrorCode,
+					error.code,
+					error.retryAfter ? { retryAfter: error.retryAfter } : undefined,
+				);
+				if (this.#deviceAuth?.identity && error.code.startsWith("auth_"))
+					this.#io.close(error.code === "auth_revoked" ? 4403 : 4401, error.code);
+				return;
+			}
 			this.#fail(request.id, error);
 		}
 	}
@@ -999,18 +1124,37 @@ export class ClientConnection {
 		return { projects: await this.#projectPaths(), dataDir: this.#manager.store.dataDir };
 	}
 
+	#authorized(grace = 0, requestId?: string): boolean {
+		const auth = this.#deviceAuth;
+		if (!auth) return !this.#closed;
+		try {
+			if (auth.identity) auth.store.check(auth.identity, grace);
+			else if (auth.store.mode === "required") throw new DeviceAuthError("auth_required");
+			return !this.#closed;
+		} catch (error) {
+			const code = error instanceof DeviceAuthError ? error.code : "auth_invalid";
+			this.#error(requestId, code as ErrorCode, code);
+			if (
+				code === "auth_expired" &&
+				auth.identity &&
+				auth.store.now() < auth.identity.accessExpiresAt + 60_000 &&
+				auth.store.active(auth.identity.sessionId)
+			)
+				return false;
+			this.close();
+			this.#io.close(code === "auth_revoked" ? 4403 : 4401, code);
+			return false;
+		}
+	}
 	async #hello(request: Extract<ClientMessage, { type: "hello" }>): Promise<void> {
 		if (this.#ready) {
 			this.#error(request.id, "bad_request", "Already greeted on this connection");
 			return;
 		}
 		if (request.protocolVersion !== PROTOCOL_VERSION) {
-			this.#error(
-				request.id,
-				"unsupported_protocol",
-				`This server speaks protocol version ${PROTOCOL_VERSION}`,
-				{ protocolVersion: PROTOCOL_VERSION },
-			);
+			this.#error(request.id, "unsupported_protocol", `This server speaks protocol version ${PROTOCOL_VERSION}`, {
+				protocolVersion: PROTOCOL_VERSION,
+			});
 			this.#io.close(1002, "unsupported protocol version");
 			return;
 		}
@@ -1021,6 +1165,18 @@ export class ClientConnection {
 			protocolVersion: PROTOCOL_VERSION,
 			server: { name: SERVER_NAME, version: SERVER_VERSION },
 			features: [...this.#features],
+			...(this.#deviceAuth
+				? {
+						backendId: this.#deviceAuth.store.backendId,
+						auth: {
+							mode: this.#deviceAuth.store.mode,
+							sessionId: this.#deviceAuth.identity?.sessionId ?? null,
+							accessExpiresAt: this.#deviceAuth.identity
+								? new Date(this.#deviceAuth.identity.accessExpiresAt).toISOString()
+								: null,
+						},
+					}
+				: {}),
 		});
 	}
 
@@ -1056,11 +1212,19 @@ export class ClientConnection {
 			request.workerId === undefined
 				? await this.#manager.conversation(request.projectId, request.threadId)
 				: await this.#manager.workerConversation(request.projectId, request.workerId, request.threadId);
+		if (!this.#authorized()) return;
 		const handle = await conversation.watch(BACKGROUND_CONTEXT);
+		if (!this.#authorized()) {
+			await handle.stop();
+			return;
+		}
 		const tracker = new WatchWindow(bounds);
 		// A worker's conversation takes no input from the app, so it has no waiting messages to show.
 		const queue = request.workerId === undefined ? new QueuedInputs(runtime.harness, conversation.id) : undefined;
-		const warm = () => request.workerId === undefined ? this.#requestLog?.warmStretches(request.projectId, Number(conversation.id)) : undefined;
+		const warm = () =>
+			request.workerId === undefined
+				? this.#requestLog?.warmStretches(request.projectId, Number(conversation.id))
+				: undefined;
 		const view = tracker.initial(handle.value, request.from, await queue?.decorate(handle.value), warm());
 		const watchId = `watch-${++this.#watchSequence}`;
 		const state: WatchState = { handle, tracker, explicitStop: false };
@@ -1095,15 +1259,18 @@ export class ClientConnection {
 				return async () => undefined;
 			});
 
-        const stopWarm = this.#requestLog?.store.onWarmChange(() => {
-            if (this.#closed || state.explicitStop) return;
-            void (async () => {
-                const update = tracker.update(handle.value, await queue?.decorate(handle.value), warm());
-                if (update.ops.length > 0) this.#respond({ type: "conversation.view", watchId, ops: update.ops });
-            })().catch(error => this.#log(`cache warm history: ${errorMessage(error)}`));
-        });
-        const stopContext = state.stopContext;
-        state.stopContext = async () => { stopWarm?.(); await stopContext?.(); };
+		const stopWarm = this.#requestLog?.store.onWarmChange(() => {
+			if (this.#closed || state.explicitStop) return;
+			void (async () => {
+				const update = tracker.update(handle.value, await queue?.decorate(handle.value), warm());
+				if (update.ops.length > 0) this.#respond({ type: "conversation.view", watchId, ops: update.ops });
+			})().catch((error) => this.#log(`cache warm history: ${errorMessage(error)}`));
+		});
+		const stopContext = state.stopContext;
+		state.stopContext = async () => {
+			stopWarm?.();
+			await stopContext?.();
+		};
 		void handle.closed.then((end) => {
 			stopWarm?.();
 			this.#watches.delete(watchId);
@@ -1140,9 +1307,7 @@ export class ClientConnection {
 		}
 		const page = await conversation.entries(
 			{
-				...(request.minEntryId === undefined
-					? {}
-					: { minEntryId: request.minEntryId as DurableEntryId }),
+				...(request.minEntryId === undefined ? {} : { minEntryId: request.minEntryId as DurableEntryId }),
 				...(maxEntryId === undefined ? {} : { maxEntryId }),
 				...(request.order === undefined ? {} : { order: request.order }),
 			},
@@ -1165,7 +1330,8 @@ export class ClientConnection {
 
 	#terminalFor(terminalId: number): TerminalAttachment {
 		const terminal = this.#terminals.get(terminalId);
-		if (terminal === undefined) throw new ServerError("unknown_terminal", `No terminal ${terminalId} on this connection`);
+		if (terminal === undefined)
+			throw new ServerError("unknown_terminal", `No terminal ${terminalId} on this connection`);
 		return terminal;
 	}
 
@@ -1208,6 +1374,13 @@ export class ClientConnection {
 	}
 
 	#respond(message: ServerMessage): void {
+		if (message.type !== "error" && this.#deviceAuth?.identity) {
+			try {
+				this.#deviceAuth.store.check(this.#deviceAuth.identity);
+			} catch {
+				return;
+			}
+		}
 		if (this.#closed) return;
 		try {
 			this.#io.send(message);

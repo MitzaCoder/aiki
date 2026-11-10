@@ -46,5 +46,5 @@ export function resolveAllowedOrigins(env: Environment = process.env): string[] 
 export function isOriginAllowed(origin: string | null, allowed: readonly string[]): boolean {
 	if (origin === null) return true;
 	const normalized = normalizeOrigin(origin);
-	return normalized !== undefined && allowed.includes(normalized);
+	return normalized !== undefined && origin === normalized && allowed.includes(normalized);
 }

@@ -1,5 +1,20 @@
 # Continue
 
+## Device sign-in server/protocol (T65)
+
+Server device authentication now has durable owner sessions, protected hello/renew, bootstrap/pairing claims, refresh/
+rotation, migration batch approval, revocation, session-bound ten-minute artifact URLs and session-bound push rows.
+New directories start required; pre-existing data defaults optional; tests explicitly use off unless testing auth.
+Owner commands run through `bun packages/server/src/main.ts auth ...` and the owner-only `<data>/auth.sock`, not network
+management endpoints. Configure/allow backend origins before remote migration (optional only observes unknown hosts).
+The full client contract, link encoding and comparison fixture are at the top of DESIGN. Auth support is explicit:
+`LEGACY_HARNESS_FEATURES` excludes the three new auth flags, including generated Android defaults. Protocol generation:
+324 DTOs / 87 overloads. Added 35 server auth tests. Root suite: 1,721 tests; web: 801 tests, zero check errors/warnings
+and build; Android: 584 tests (two existing skips), assembly and lint (zero errors, 35 warnings). Typecheck, generation
+and public-source guard pass. No UI, relay, deployment or cross-backend migration bundle was built; do not switch existing
+backends to required until updated clients have claimed, been approved, acknowledged and rebound push.
+
+
 ## Usage analysis and subscription resets (T78)
 
 Phase-one web prototype adds role/model/project/task usage over the 90-day log. `usage-breakdown` adds optional

@@ -1,3 +1,8 @@
+import { isIP } from "node:net";
+import type { ServerWebSocket } from "bun";
+import { DeviceAuth, DeviceAuthError, type AuthOptions, type Identity } from "./device-auth.ts";
+import { authFailure, authJson, handleAuthHttp, bearer } from "./device-auth-http.ts";
+import { startAuthControl } from "./device-auth-cli.ts";
 /**
  * The Bun server: `Bun.serve` on the configured interface (loopback by default) and the WebSocket protocol at `/ws`.
  * This is a backend only; the web app is deployed separately and talks to it over the socket.
@@ -12,7 +17,6 @@ import {
 	type ArtifactStoreOptions,
 	ArtifactUrlSigner,
 	loadOrCreateArtifactSecret,
-	requestOrigin,
 	serveArtifact,
 } from "./artifacts.ts";
 import { DraftStore } from "./drafts.ts";
@@ -67,13 +71,14 @@ import { resolveToolCallCapMs } from "./tool-caps.ts";
 export type StartServerOptions = {
 	/** Usually `resolveDataDir()`; tests use a temp directory. */
 	dataDir: string;
+	auth?: AuthOptions;
 	/** Default: `AIKI_PORT`, else 7317. `0` picks a free port (the handle reports it). */
 	port?: number;
 	/** Default: `AIKI_HOST`, else 127.0.0.1. `0.0.0.0` listens on every interface. */
 	hostname?: string;
 	/**
 	 * Browser origins allowed to open `/ws`. Default: `AIKI_ALLOWED_ORIGINS`, else none. Requests without an
-	 * Origin header are always allowed, so native clients, tests and health checks work without an allow-list.
+	 * Origin header still need token authentication when auth is required.
 	 */
 	allowedOrigins?: readonly string[];
 	/** Features advertised in `hello`. Default: every feature this server implements. */
@@ -141,7 +146,7 @@ export type StartServerOptions = {
 		"fetch" | "anthropicBaseUrl" | "chatgptBaseUrl" | "pollIntervalMs" | "afterTurnQuietMs" | "minReadGapMs"
 	>;
 	/**
-	 * Artifacts. Defaults: `AIKI_ARTIFACT_MAX_BYTES` (else 2 GiB) per file, URLs valid 4 hours, durations from
+	 * Artifacts. Defaults: `AIKI_ARTIFACT_MAX_BYTES` (else 2 GiB) per file, URLs valid 10 minutes, durations from
 	 * `ffprobe` when it is on PATH.
 	 */
 	artifacts?: Pick<ArtifactStoreOptions, "maxFileBytes" | "probeDuration"> & { urlTtlMs?: number };
@@ -198,6 +203,7 @@ export type HarnessServer = {
 	readonly port: number;
 	readonly url: string;
 	readonly dataDir: string;
+	readonly auth: DeviceAuth;
 	/** The directory whose AGENTS.md and skills the projects read. */
 	readonly agentDir: string;
 	/** The harness's own config directory, whose SYSTEM.md and APPEND_SYSTEM.md the projects read. */
@@ -241,16 +247,24 @@ type SocketData = {
 	connection?: ClientConnection;
 	/** Where the browser reached this backend, for the absolute URLs `artifacts.url` answers. */
 	origin: string;
+	source: string;
+	identity?: Identity;
+	timer?: ReturnType<typeof setTimeout>;
+	preAuth?: boolean;
 };
 
 export async function startServer(options: StartServerOptions): Promise<HarnessServer> {
 	const log = options.log ?? ((message: string) => console.log(message));
 	const dataDir = options.dataDir;
+	const auth = new DeviceAuth(dataDir, options.auth, options.now);
+	auth.onAudit = (event, identifier) => log(`auth: ${event} ${identifier} minute=${Math.floor(auth.now() / 60_000)}`);
 	await ensureDataDir(dataDir);
 
 	const store = new ProjectStore(dataDir);
 	const credentials = options.credentials ?? new FileCredentialStore(join(dataDir, "credentials.json"));
 	const connections = new Set<ClientConnection>();
+	const sockets = new Set<ServerWebSocket<SocketData>>();
+	let pendingHandshakes = 0;
 	const unobservedModels = options.models ?? createHarnessModels({ credentials });
 	const subscriptionUsage = new SubscriptionUsageService({
 		models: unobservedModels,
@@ -286,9 +300,16 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	const terminals =
 		options.terminals === false || (options.terminals === undefined && !terminalsEnabled())
 			? undefined
-			: new TerminalHost({ configFile: join(dataDir, "terminals", "zellij-config.kdl"), ...(options.terminals ?? {}), log });
+			: new TerminalHost({
+					configFile: join(dataDir, "terminals", "zellij-config.kdl"),
+					...(options.terminals ?? {}),
+					log,
+				});
 	const features = (options.features ?? HARNESS_FEATURES).filter(
-		(feature) => ((feature !== "cache-stats" && feature !== "cache-keep-warm" && feature !== "usage-breakdown") || requestLog !== undefined) && (feature !== "terminal" || terminals !== undefined),
+		(feature) =>
+			((feature !== "cache-stats" && feature !== "cache-keep-warm" && feature !== "usage-breakdown") ||
+				requestLog !== undefined) &&
+			(feature !== "terminal" || terminals !== undefined),
 	);
 	// One VAPID key pair for every backend: a browser holds one subscription, so the key cannot belong to one process.
 	const notificationsDir = join(dataDir, "notifications");
@@ -312,6 +333,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					log,
 				});
 	const notifications = new NotificationSender({
+		sessionActive: (sessionId) => auth.active(sessionId),
 		store: notificationStore,
 		state: notificationState,
 		vapid,
@@ -330,7 +352,9 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	});
 	// Events that were in their hold when the last process ended carry on with the rest of their time.
 	notifications.restore();
-	log(`aiki: notifications ${notificationStore.file} (VAPID key ${vapidKeyFile}, sub ${notifications.subject})`);
+	log(
+		`aiki: notifications ${notificationStore.file} (VAPID key ${vapidKeyFile}, sub ${notifications.subject})`,
+	);
 	const agentDir = options.agentDir ?? resolveAgentDir();
 	const configDir = options.configDir ?? resolveConfigDir();
 	const claudeDir = options.claudeDir ?? resolveClaudeDir();
@@ -458,6 +482,8 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		},
 	});
 	const artifactSigner = new ArtifactUrlSigner({
+		sessionActive: (sessionId) => auth.active(sessionId),
+		required: () => auth.mode === "required",
 		secret: await loadOrCreateArtifactSecret(dataDir),
 		...(options.now === undefined ? {} : { now: options.now }),
 		...(options.artifacts?.urlTtlMs === undefined ? {} : { ttlMs: options.artifacts.urlTtlMs }),
@@ -522,8 +548,11 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			...(options.now === undefined ? {} : { now: options.now }),
 		}),
 		projectRepos: async (projectId) => (await manager.links(projectId)).githubRepos,
-		fire: (projectId, scheduleId, request, fireOptions) => manager.fireScheduleEvent(projectId, scheduleId, request, fireOptions),
-		...(options.githubReviews?.pollIntervalMs === undefined ? {} : { intervalMs: options.githubReviews.pollIntervalMs }),
+		fire: (projectId, scheduleId, request, fireOptions) =>
+			manager.fireScheduleEvent(projectId, scheduleId, request, fireOptions),
+		...(options.githubReviews?.pollIntervalMs === undefined
+			? {}
+			: { intervalMs: options.githubReviews.pollIntervalMs }),
 		...(options.now === undefined ? {} : { now: options.now }),
 		...(options.setTimer === undefined ? {} : { setTimer: options.setTimer }),
 		log,
@@ -552,9 +581,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		busy: () => manager.busy(),
 		disks: () => diskMonitor?.disks ?? [],
 		...(options.status?.releaseRoot === undefined ? {} : { releaseRoot: options.status.releaseRoot }),
-		...(options.status?.deployStatusFile === undefined
-			? {}
-			: { deployStatusFile: options.status.deployStatusFile }),
+		...(options.status?.deployStatusFile === undefined ? {} : { deployStatusFile: options.status.deployStatusFile }),
 		log,
 		onChange: (status) => {
 			for (const connection of connections) connection.notifyServerStatus(status);
@@ -579,17 +606,112 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	log(`aiki: release ${release === null ? "none (running from a checkout)" : release.name}`);
 	log(
 		`aiki: deploy status ${
-			serverStatus.deployStatusFile === null ? `none (no deploy root for ${serverStatus.releaseRoot})` : serverStatus.deployStatusFile
+			serverStatus.deployStatusFile === null
+				? `none (no deploy root for ${serverStatus.releaseRoot})`
+				: serverStatus.deployStatusFile
 		}`,
 	);
 
 	// One-time compact summary upgrade before any socket can open the same project storage.
 	await manager.prepareAttention();
+	const activate = (ws: ServerWebSocket<SocketData>): void => {
+		const connection = new ClientConnection({
+			deviceAuth: { store: auth, identity: ws.data.identity },
+			manager,
+			credentials,
+			logins,
+			notifications,
+			features,
+			serverStatus: () => serverStatus.status(),
+			drain: (timeoutMs) => {
+				manager.drain.drain(timeoutMs);
+				const until = manager.drain.drainingUntil;
+				return {
+					drainingUntil: until === undefined ? null : new Date(until).toISOString(),
+					toolCalls: manager.drain.toolCalls,
+				};
+			},
+			subscriptionUsage,
+			...(requestLog === undefined ? {} : { requestLog }),
+			artifactUrls: { signer: artifactSigner, origin: ws.data.origin },
+			...(terminals === undefined ? {} : { terminals }),
+			drafts,
+			log,
+			io: {
+				send: (message) => {
+					ws.send(JSON.stringify(message));
+				},
+				sendBinary: (bytes) => {
+					ws.sendBinary(bytes);
+				},
+				close: (code, reason) => {
+					ws.close(code, reason);
+				},
+			},
+		});
+		ws.data.connection = connection;
+		connections.add(connection);
+		subscriptionUsage.clientConnected();
+	};
 	const server = Bun.serve<SocketData>({
 		hostname,
 		port,
-		fetch(request, bunServer) {
+		async fetch(request, bunServer) {
 			const url = new URL(request.url);
+			const peer = bunServer.requestIP(request)?.address ?? "unknown";
+			const trusted = (
+				options.auth?.trustedProxies ??
+				process.env.AIKI_TRUSTED_PROXIES?.split(",") ??
+				[]
+			).includes(peer);
+			const forwardedSource = trusted ? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() : undefined;
+			const source = forwardedSource && isIP(forwardedSource) ? forwardedSource : peer;
+			const forwardedHost = trusted ? request.headers.get("x-forwarded-host") : null;
+			const forwardedProto = trusted ? request.headers.get("x-forwarded-proto") : null;
+			const backendOrigin = `${forwardedProto ?? url.protocol.slice(0, -1)}://${forwardedHost ?? request.headers.get("host") ?? url.host}`;
+			const loopback = [
+				`http://127.0.0.1:${bunServer.port}`,
+				`http://localhost:${bunServer.port}`,
+				`http://[::1]:${bunServer.port}`,
+			];
+			const hostAllowed = auth.hostAllowed(backendOrigin, loopback);
+			if (!hostAllowed) {
+				if (auth.mode === "required") return authJson({ error: { code: "forbidden_host" } }, 403);
+				if (auth.mode === "optional" && auth.observeHost(backendOrigin))
+					log("auth: observed unapproved backend host (see owner CLI)");
+			}
+			const origin = request.headers.get("origin");
+			if (!isOriginAllowed(origin, allowedOrigins)) return authJson({ error: { code: "forbidden_origin" } }, 403);
+			const cors: Record<string, string> = { "cache-control": "no-store", vary: "Origin" };
+			if (origin !== null) cors["access-control-allow-origin"] = origin;
+			if (request.method === "OPTIONS")
+				return new Response(null, {
+					status: 204,
+					headers: {
+						...cors,
+						"access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+						"access-control-allow-headers": "Authorization, Content-Type, Range",
+						"access-control-expose-headers": "Retry-After",
+					},
+				});
+			if (url.pathname.startsWith("/auth/")) {
+				const local =
+					!trusted &&
+					["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(peer) &&
+					loopback.includes(backendOrigin) &&
+					!request.headers.has("forwarded") &&
+					!request.headers.has("x-forwarded-for") &&
+					!request.headers.has("x-forwarded-host");
+				const response = await handleAuthHttp(
+					request,
+					auth,
+					source === "127.0.0.1" || source === "::1" ? "loopback" : source,
+					local,
+				);
+				for (const [name, value] of Object.entries(cors)) response.headers.set(name, value);
+				response.headers.set("access-control-expose-headers", "Retry-After");
+				return response;
+			}
 			if (url.pathname === "/ws") {
 				const origin = request.headers.get("origin");
 				if (!isOriginAllowed(origin, allowedOrigins)) {
@@ -598,8 +720,22 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 						headers: { "content-type": "text/plain; charset=utf-8" },
 					});
 				}
-				const data: SocketData = { origin: requestOrigin(request) };
-				if (bunServer.upgrade(request, { data })) return undefined;
+				try {
+					auth.limit(`handshake:${source}`, 30);
+					auth.limit("handshake-global", 120);
+					if (pendingHandshakes >= 100) throw new DeviceAuthError("rate_limited", 429, 5);
+				} catch (error) {
+					return authFailure(error);
+				}
+				const data: SocketData = {
+					origin: hostAllowed ? backendOrigin : (auth.hosts[0] ?? loopback[0]!),
+					source: peer,
+					preAuth: true,
+				};
+				if (bunServer.upgrade(request, { data })) {
+					pendingHandshakes++;
+					return undefined;
+				}
 				return new Response("Expected a WebSocket upgrade at /ws", {
 					status: 426,
 					headers: { upgrade: "websocket" },
@@ -610,6 +746,13 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					(response) => response ?? new Response("Not found", { status: 404 }),
 				);
 			}
+			if (auth.mode === "required") {
+				try {
+					auth.authenticate(bearer(request));
+				} catch (error) {
+					return authFailure(error);
+				}
+			}
 			return new Response("Aiki is an API-only backend; the app is deployed separately.", {
 				status: 404,
 				headers: { "content-type": "text/plain; charset=utf-8" },
@@ -617,48 +760,71 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		},
 		websocket: {
 			open(ws) {
-				const connection = new ClientConnection({
-					manager,
-					credentials,
-					logins,
-					notifications,
-					features,
-					serverStatus: () => serverStatus.status(),
-					drain: (timeoutMs) => {
-						manager.drain.drain(timeoutMs);
-						const until = manager.drain.drainingUntil;
-						return {
-							drainingUntil: until === undefined ? null : new Date(until).toISOString(),
-							toolCalls: manager.drain.toolCalls,
-						};
-					},
-					subscriptionUsage,
-					...(requestLog === undefined ? {} : { requestLog }),
-					artifactUrls: { signer: artifactSigner, origin: ws.data.origin },
-					...(terminals === undefined ? {} : { terminals }),
-					drafts,
-					log,
-					io: {
-						send: (message) => {
-							ws.send(JSON.stringify(message));
-						},
-						sendBinary: (bytes) => {
-							ws.sendBinary(bytes);
-						},
-						close: (code, reason) => {
-							ws.close(code, reason);
-						},
-					},
-				});
-				ws.data.connection = connection;
-				connections.add(connection);
-				subscriptionUsage.clientConnected();
+				sockets.add(ws);
+				ws.data.timer = setTimeout(() => {
+					if (!ws.data.connection) ws.close(4401, "auth_required");
+				}, 5000);
 			},
 			message(ws, message) {
-				const connection = ws.data.connection;
+				let connection = ws.data.connection;
+				if (!connection) {
+					let request: { type?: string; id?: string; auth?: { accessToken?: string } } = {};
+					try {
+						if (typeof message !== "string" || Buffer.byteLength(message) > 8192)
+							throw new DeviceAuthError("auth_required");
+						request = JSON.parse(message);
+						if (request === null || request.type !== "hello") {
+							if (auth.mode !== "required") {
+								ws.send(
+									JSON.stringify({
+										type: "error",
+										id: request?.id,
+										error: { code: "not_ready", message: "Send hello before any other request" },
+									}),
+								);
+								return;
+							}
+							throw new DeviceAuthError("auth_required");
+						}
+						if (request.auth !== undefined) {
+							if (typeof request.auth?.accessToken !== "string") throw new DeviceAuthError("auth_invalid");
+							ws.data.identity = auth.authenticate(request.auth.accessToken);
+						} else if (auth.mode === "required") throw new DeviceAuthError("auth_required");
+						clearTimeout(ws.data.timer);
+						if (ws.data.preAuth) {
+							pendingHandshakes--;
+							ws.data.preAuth = false;
+						}
+						if (ws.data.identity) {
+							const sid = ws.data.identity.sessionId;
+							auth.connected.set(sid, (auth.connected.get(sid) ?? 0) + 1);
+						}
+						activate(ws);
+						connection = ws.data.connection;
+					} catch (error) {
+						const code = error instanceof DeviceAuthError ? error.code : "auth_invalid";
+						ws.send(
+							JSON.stringify({
+								type: "error",
+								...(typeof request?.id === "string" ? { id: request.id } : {}),
+								error: { code, message: code },
+							}),
+						);
+						ws.close(code === "auth_revoked" ? 4403 : 4401, code);
+						return;
+					}
+				}
 				if (connection !== undefined) void connection.handle(message);
 			},
 			close(ws) {
+				sockets.delete(ws);
+				if (ws.data.preAuth) {
+					pendingHandshakes--;
+					ws.data.preAuth = false;
+				}
+				clearTimeout(ws.data.timer);
+				const sid = ws.data.identity?.sessionId;
+				if (sid) auth.connected.set(sid, Math.max(0, (auth.connected.get(sid) ?? 1) - 1));
 				const connection = ws.data.connection;
 				ws.data.connection = undefined;
 				if (connection === undefined) return;
@@ -670,10 +836,58 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			maxPayloadLength: 32 * 1024 * 1024,
 		},
 		error(error) {
-			log(`http error: ${errorMessage(error)}`);
+			log("http error: request failed");
 			return new Response("Internal server error", { status: 500 });
 		},
 	});
+
+	auth.onRevoke = async (sessionId) => {
+		for (const ws of sockets)
+			if (ws.data.identity?.sessionId === sessionId) {
+				ws.send(JSON.stringify({ type: "auth.sessionRevoked", sessionId }));
+				ws.data.connection?.revoke();
+				ws.close(4403, "auth_revoked");
+			}
+		artifactSigner.revoke(sessionId);
+		await notifications.revokeSession(sessionId);
+	};
+	auth.onMode = (mode) => {
+		if (mode === "required")
+			for (const ws of sockets)
+				if (!ws.data.identity) {
+					ws.data.connection?.close();
+					ws.close(4401, "auth_required");
+				}
+	};
+	auth.onChange = () => {
+		for (const ws of sockets)
+			if (ws.data.identity && ws.data.connection?.ready) ws.send(JSON.stringify({ type: "auth.devicesChanged" }));
+	};
+	auth.onPairing = (owner, pairing) => {
+		for (const ws of sockets)
+			if (ws.data.identity?.sessionId === owner) ws.send(JSON.stringify({ type: "auth.pairingRequested", pairing }));
+	};
+	let authSweepAt = auth.now();
+	const authTimer = setInterval(() => {
+		if (auth.now() - authSweepAt >= 60_000) {
+			auth.sweep();
+			authSweepAt = auth.now();
+		}
+		for (const ws of sockets)
+			if (ws.data.identity)
+				try {
+					auth.check(ws.data.identity, 60_000);
+				} catch (error) {
+					const code = error instanceof DeviceAuthError ? error.code : "auth_invalid";
+					ws.data.connection?.close();
+					ws.close(code === "auth_revoked" ? 4403 : 4401, code);
+				}
+	}, 1000);
+	authTimer.unref();
+	const stopAuthControl =
+		options.auth?.controlSocket === false
+			? () => {}
+			: await startAuthControl(auth, { loopbackOrigin: `http://127.0.0.1:${server.port}`, allowedOrigins });
 
 	const actualPort = server.port ?? port;
 	log(`aiki: schedules run in ${schedules.timezone}`);
@@ -711,6 +925,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		port: actualPort,
 		url: `http://${hostname}:${actualPort}`,
 		dataDir,
+		auth,
 		agentDir,
 		configDir,
 		claudeDir,
@@ -733,6 +948,8 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		async stop() {
 			if (stopped) return;
 			stopped = true;
+			clearInterval(authTimer);
+			stopAuthControl();
 			scheduleScheduler.stop();
 			scheduleEvents.stop();
 			maintenanceClock.stop();
@@ -753,6 +970,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			await requestLogBackfill;
 			await requestLog?.close().catch(() => undefined);
 			server.stop(true);
+			auth.close();
 		},
 	};
 	return handle;
