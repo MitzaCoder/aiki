@@ -1,5 +1,12 @@
 # Continue
 
+## Compact task header (T62)
+
+Web removes the task summary and its divider. Waiting note/since/return date and subtask done/total now wrap in header
+metadata; section navigation keeps question/warning counts, stored open+handling feedback totals and total/running
+worker counts. Existing blocked callouts remain. No new backend reads. DESIGN records the shared web/native contract.
+Web: 801 tests pass, check has zero errors/warnings, build passes. Synthetic desktop/phone light/dark proof is on T62.
+
 ## Board Markdown (T60)
 
 Web board prose uses `CardMarkdown`, a compact variant of the safe chat renderer, including warnings, decisions,

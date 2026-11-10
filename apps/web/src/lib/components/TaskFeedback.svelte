@@ -16,12 +16,15 @@
 	 */
 	let {
 		entries,
+		openCount,
 		busy = false,
 		problem,
 		onset,
 		threadName
 	}: {
 		entries: readonly BoardFeedback[];
+		/** Stored totals stay available before the timeline read completes. */
+		openCount?: number;
 		busy?: boolean;
 		problem?: string | undefined;
 		onset: (entry: BoardFeedback, state: 'dismissed' | 'open') => void;
@@ -30,11 +33,12 @@
 	} = $props();
 
 	const sorted = $derived(sortedFeedback(entries));
-	const waiting = $derived(sorted.filter((entry) => entry.state === 'open' || entry.state === 'handling').length);
+	const waiting = $derived(openCount ?? sorted.filter((entry) => entry.state === 'open' || entry.state === 'handling').length);
 </script>
 
-{#if sorted.length > 0}
+{#if sorted.length > 0 || waiting > 0}
 	<TaskSection title="Feedback" kind="feedback" count={`${waiting} open`} class="flex flex-col gap-1.5" data-feedback>
+		{#if sorted.length === 0}<p class="text-task text-(--chat-fg-subtle)" role="status">Loading feedback…</p>{/if}
 		<ul class="flex flex-col gap-1.5">
 			{#each sorted as entry (entry.id)}
 				{@const settled = entry.state === 'addressed' || entry.state === 'dismissed'}

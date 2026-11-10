@@ -719,7 +719,7 @@ is where they talk.
   coordinator a deduplicated `[board]` follow-up. Undated waits do not wake up.
 - Lists place a collapsed `Waiting · N` group immediately after Review; rows show the note, elapsed waiting time
   and optional return date. The kanban has a Waiting column after Review, including the legacy board panel.
-- The Dashboard summary includes “Waiting for … · since … · back on …”. Its header replaces Done/Drop/Reopen
+- The task header metadata includes “Waiting for … · since … · back on …” (T62; previously the Dashboard summary). Its header replaces Done/Drop/Reopen
   actions with a compact bordered status button: colour dot, status name and a chevron that rotates when open.
   It is the header's only status display. Web has hover/pressed surfaces, a keyboard focus ring and “Change status”
   tooltip; Android uses an outlined button with native pressed feedback and an accent focus border. Disabled/read-only
@@ -2003,16 +2003,18 @@ follows the same visual hierarchy in D28, using its existing Jarvis theme and sh
 - **Frame.** A right-hand sheet, up to 74rem wide with a small outside gutter; full screen on a phone. The header keeps
   the task ID, status menu, title, refs, update time and holder. D29 replaces Done/Drop/Reopen with the status menu and inline waiting form. Header and reply stay available while
   the body scrolls. Safe-area padding is retained.
-- **Summary.** A semantic description list at the start of the scrollable body: status; subtasks done/total; Needs you
-  (open questions/warnings plus open and handling feedback); workers currently running. Status always shows. Each other
-  cell disappears when it has nothing to count; zero done out of a nonzero total still shows. Cells reflow without empty
-  slots. Counting uses stored feedback totals, so it does not wait for the expanded timeline read.
-- **One column at every width (T43).** Questions comes immediately after the summary, then Report, Feedback and Files.
+- **Compact task context (T62).** No summary strip or its divider below the header. Status stays in the header menu;
+  Questions (including warnings) and Feedback keep their open counts in section navigation. Feedback uses stored open
+  plus handling totals even before the timeline read completes. Waiting note, since time and optional return date move
+  into the wrapping header metadata; subtask done/total also lives there, including zero done and archived/absent links.
+  Workers' section/nav count includes both total and currently running workers when nonzero. Blocked reasons and
+  dependency links remain in the existing blocked callout. No information depends on expanding History or Timeline.
+- **One column at every width (T43).** Questions comes immediately after the header/navigation, then Report, Feedback and Files.
   Related, Workers, Decisions, Timeline, History and Brief follow. Existing visibility rules remain; empty reference
   sections do not leave blank cards. History, Timeline and Brief retain their existing folding behaviour.
 - **Section navigation (T43).** At 54rem of sheet width (a container query, not window width), a slim sticky rail sits
   left of the single card column. Below that width it becomes a horizontally scrolling chip row, sticky below the
-  header once the summary scrolls away. It lists the rendered sections only, with shared icons, labels and count
+  header from the start of the body. It lists the rendered sections only, with shared icons, labels and count
   chips. Links are keyboard accessible in a `nav` landmark with `aria-current="location"`. Clicking selects and pins
   that section immediately, scrolls its card below the header/chips (accounting for the chips' negative sticky top),
   and clamps to the available scroll limit. The pin survives `scrollend` (debounced timeout fallback) until the user
@@ -2041,9 +2043,9 @@ follows the same visual hierarchy in D28, using its existing Jarvis theme and sh
   forwards to a holding thread. Composer clears/restores the task draft on success/failure and announces a successful
   send politely. A close/reopen or reload retains text and images on a drafts-capable backend.
 
-Code: `TaskSheet.svelte`, `TaskSection.svelte`, `TaskSectionHeader.svelte`, `TaskSummary.svelte`, `TaskReply.svelte`,
-`TaskSectionNav.svelte`, `lib/task-sheet.css`, `lib/task-sections.ts`, `lib/task-section-icons.ts`, `lib/task-summary.ts`,
-and the existing feedback/relations/timeline/media components. Summary rules are tested in `task-summary.test.ts`;
+Code: `TaskSheet.svelte`, `TaskSection.svelte`, `TaskSectionHeader.svelte`, `TaskReply.svelte`,
+`TaskSectionNav.svelte`, `lib/task-sheet.css`, `lib/task-sections.ts`, `lib/task-section-icons.ts`, `lib/task-sheet-meta.ts`,
+and the existing feedback/relations/timeline/media components. Compact context rules are tested in `task-sheet-meta.test.ts`;
 report order and scroll-spy selection in `task-sections.test.ts`.
 
 **Android Dashboard (D28, 2026-11-09).** `features/tasks/TaskSection.kt` provides the corresponding bordered theme surface,
@@ -2052,13 +2054,13 @@ foreground as the surface content colour, so nested Markdown retains its previou
 never weighted: a free-form metadata slot is constrained to the remaining width, with the report's existing two-line
 ellipsis treatment (T31). Foldable sections retain heading/button semantics and an announced open/folded state.
 
-- `TaskSummary.kt` derives exactly the same optional summary cells as the web. It reflows into two cells per phone row,
-  up to four on a wide window, and omits counters with nothing to show. It does not add or change backend reads.
+- **T62 removes `TaskSummary.kt`.** `TaskSheetMeta.kt` keeps the same compact context as web: waiting and subtask
+  progress in wrapping header metadata, open question/feedback and running-worker counts on section chips. It adds no reads.
 - **T43 removes the 840dp two-column layout.** Every window uses the same Questions, Report, Feedback, Files,
   Related, Workers, Decisions, Timeline, History, Brief order. The side sheet still starts at 600dp, has a maximum
-  1184dp width and a 48dp outside gutter. The summary retains its original two/four-cell reflow.
+  1184dp width and a 48dp outside gutter.
 - A horizontal sticky chip row stays above the scrolling body, below the unchanged header. A keyed LazyColumn
-  holds the summary and one item per present section. Tapping a chip pins its key immediately and calls
+  holds one item per present section, starting at index zero (T62). Tapping a chip pins its key immediately and calls
   `animateScrollToItem` (or `scrollToItem` with the existing Android reduced-motion preference); item offset zero
   already clears the header/chips outside the viewport, and the list clamps short end sections to its scroll limit.
   The pin survives animation completion; only a body `DragInteraction.Start` releases it for the ensuing drag/fling.
@@ -2074,9 +2076,9 @@ ellipsis treatment (T31). Foldable sections retain heading/button semantics and 
   paste intake and sending rules. This visual port does not add web-style task draft sync or change Android keyboard
   behaviour. Those would be separate functional changes.
 
-Android code: `TaskSheet.kt`, `TaskSection.kt`, `TaskSummary.kt`, `TaskRelationsSection.kt`, `TaskFeedback.kt`,
-`TaskTimeline.kt`, `TaskSectionNav.kt` and `media/MediaCarousel.kt`. JVM tests cover summary presentation in
-`tasks/TaskSummaryTest.kt` and section presence/order/counts in `tasks/TaskSectionNavTest.kt`.
+Android code: `TaskSheet.kt`, `TaskSection.kt`, `TaskSheetMeta.kt`, `TaskRelationsSection.kt`, `TaskFeedback.kt`,
+`TaskTimeline.kt`, `TaskSectionNav.kt` and `media/MediaCarousel.kt`. JVM tests cover compact context in
+`tasks/TaskSheetMetaTest.kt` and section presence/order/counts in `tasks/TaskSectionNavTest.kt`.
 
 ### Themes
 

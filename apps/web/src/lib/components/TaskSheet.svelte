@@ -10,7 +10,8 @@
 	import { page } from '$app/state';
 	import '#lib/task-sheet.css';
 	import { TASK_SHEET_REPORT_SECTIONS } from '#lib/task-sections.js';
-	import TaskSummary from '#lib/components/TaskSummary.svelte';
+	import { taskSheetMeta, taskWorkerCount } from '#lib/task-sheet-meta.js';
+	import { openFeedbackCount } from '#lib/task-relations.js';
 	import TaskReply from '#lib/components/TaskReply.svelte';
 	import TaskSectionNav from '#lib/components/TaskSectionNav.svelte';
 	import TaskSection from '#lib/components/TaskSection.svelte';
@@ -372,6 +373,9 @@
 						<span aria-hidden="true">·</span>
 						<span class="inline-flex items-center gap-1"><LayersIcon class="size-3" aria-hidden="true" />{owner.label}</span>
 					{/if}
+					{#each taskSheetMeta(task) as context (context)}
+						<span aria-hidden="true">·</span><span class="min-w-0 break-words" data-task-context>{context}</span>
+					{/each}
 					{#if task.archived}
 						<span aria-hidden="true">·</span><span>Archived</span>
 					{/if}
@@ -394,11 +398,6 @@
 					class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4"
 					data-task-body
 				>
-					{#if !editing}<TaskSummary
-							{task}
-							openQuestions={questions.length}
-							runningWorkers={taskWorkers.filter((entry) => entry.worker?.status === 'running').length}
-						/>{/if}
 					{#key task.id}
 						<div class="task-body-layout">
 							{#if !editing}<TaskSectionNav root={body} />{/if}
@@ -486,6 +485,7 @@
 									{#if supportsLinks}
 										<TaskFeedback
 											entries={feedbackEntries}
+											openCount={task.feedback === undefined ? undefined : openFeedbackCount(task)}
 											busy={feedbackBusy}
 											problem={feedbackProblem}
 											onset={setFeedback}
@@ -520,7 +520,7 @@
 								{/snippet}
 								{#snippet workersSection()}
 									{#if taskWorkers.length > 0}
-										<TaskSection title="Workers" kind="workers" count={taskWorkers.length} class="flex flex-col gap-1.5">
+										<TaskSection title="Workers" kind="workers" count={taskWorkerCount(taskWorkers.length, taskWorkers.filter((entry) => entry.worker?.status === 'running').length)} class="flex flex-col gap-1.5">
 											<ul class="flex flex-col gap-1">
 												{#each taskWorkers as entry (entry.id)}
 													<li class="min-w-0">
