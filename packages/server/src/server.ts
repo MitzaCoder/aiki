@@ -788,7 +788,9 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 						}
 						if (request.auth !== undefined) {
 							if (typeof request.auth?.accessToken !== "string") throw new DeviceAuthError("auth_invalid");
-							ws.data.identity = auth.authenticate(request.auth.accessToken);
+							const identity = auth.authenticate(request.auth.accessToken);
+							auth.limit(`handshake-session:${identity.sessionId}`, 60);
+							ws.data.identity = identity;
 						} else if (auth.mode === "required") throw new DeviceAuthError("auth_required");
 						clearTimeout(ws.data.timer);
 						if (ws.data.preAuth) {
@@ -807,7 +809,10 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 							JSON.stringify({
 								type: "error",
 								...(typeof request?.id === "string" ? { id: request.id } : {}),
-								error: { code, message: code },
+								error: {
+									code, message: code,
+									...(error instanceof DeviceAuthError && error.retryAfter ? { data: { retryAfter: error.retryAfter } } : {}),
+								},
 							}),
 						);
 						ws.close(code === "auth_revoked" ? 4403 : 4401, code);
