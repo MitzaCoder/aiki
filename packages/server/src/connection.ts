@@ -53,6 +53,7 @@ import type { SubscriptionUsageService } from "./subscription-usage.ts";
 import { readCacheStats } from "./cache-stats.ts";
 import type { RequestLog } from "./request-log.ts";
 import type { Notifier } from "./notifications.ts";
+import { PushRelayError } from "@aiki/protocol";
 import type { ProjectManager } from "./runtime.ts";
 import { QueuedInputs, describeContent, queueClock } from "./queued-inputs.ts";
 import { WatchWindow, resolveWindowBounds } from "./window.ts";
@@ -308,9 +309,9 @@ export class ClientConnection {
 				"deviceId" in request &&
 				request.type !== "notifications.register" &&
 				request.type !== "notifications.registerFcm" &&
-				this.#deviceAuth?.identity
+				(this.#deviceAuth?.identity || request.deviceId.startsWith("relay:"))
 			) {
-				this.#notifications.checkSessionDevice(request.deviceId, this.#deviceAuth.identity?.sessionId);
+				this.#notifications.checkSessionDevice(request.deviceId, this.#deviceAuth?.identity?.sessionId);
 			}
 			if (request.type.startsWith("auth.")) {
 				const authority = this.#deviceAuth,
@@ -470,11 +471,33 @@ export class ClientConnection {
 					});
 					return;
 				}
+				case "notifications.registerRelay":
+				case "notifications.confirmRelay":
+				case "notifications.syncRelay": {
+					if (!this.#features.includes("fcm-relay-v1")) return this.#unknownRequest(request);
+					const sessionId = this.#deviceAuth?.identity?.sessionId;
+					if (!sessionId) throw new DeviceAuthError("auth_required");
+					const relay = this.#notifications.relay!;
+					if (request.type === "notifications.registerRelay") {
+						const { type: _type, id: _id, ...input } = request;
+						const answer = await relay.register(sessionId, input);
+						this.#respond({ type: request.type, id: request.id, ...answer });
+					} else if (request.type === "notifications.confirmRelay") {
+						const device = await this.#notifications.confirmRelay(sessionId, request);
+						this.#respond({ type: request.type, id: request.id, device });
+					} else {
+						const status = await relay.sync(sessionId, request);
+						this.#respond({ type: request.type, id: request.id, relay: status });
+					}
+					return;
+				}
 				case "notifications.config": {
 					this.#respond({
 						type: "notifications.config",
 						id: request.id,
 						publicKey: this.#notifications.publicKey,
+						...(this.#features.includes("fcm-relay-v1")
+							? { relay: this.#notifications.relay!.status(this.#deviceAuth?.identity?.sessionId) } : {}),
 						fcm: this.#notifications.fcmProjectId === null ? null : { projectId: this.#notifications.fcmProjectId },
 					});
 					return;
@@ -1378,6 +1401,10 @@ export class ClientConnection {
 	}
 
 	#fail(id: string, error: unknown): void {
+		if (error instanceof PushRelayError) {
+			this.#error(id, "bad_request", `push_relay_${error.code}`);
+			return;
+		}
 		if (error instanceof ServerError) {
 			this.#error(id, error.code, error.message, error.data);
 			return;

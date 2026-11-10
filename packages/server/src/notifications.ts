@@ -1,4 +1,5 @@
-import { markdownText } from "@aiki/protocol";
+import { markdownText, newRelayId, type NotificationsConfirmRelayRequest } from "@aiki/protocol";
+import type { PushRelayTransport } from "./push-relay/transport.ts";
 /**
  * Web Push notifications: one VAPID key pair for every backend, devices registered per backend, and one `Notifier` the
  * rest of the server calls. Android devices register an FCM token instead of a subscription and are sent the same
@@ -67,7 +68,7 @@ type DevicesFile = { version: 1; devices: StoredDevice[] };
 type StateFile = { version: 1; deployAttempt: string | null; notified: string[]; held?: HeldEvent[] };
 
 /** An event waiting out its hold: what it was, when it happened (the payload's `at`) and when the hold ends. */
-export type HeldEvent = { id: string; event: NotificationEvent; at: string; dueAt: number };
+export type HeldEvent = { id: string; eventId?: string; event: NotificationEvent; at: string; dueAt: number };
 
 function parseHeldEvent(raw: unknown): HeldEvent | undefined {
 	if (!isRecord(raw) || typeof raw.id !== "string" || typeof raw.at !== "string" || typeof raw.dueAt !== "number") {
@@ -77,7 +78,8 @@ function parseHeldEvent(raw: unknown): HeldEvent | undefined {
 	if (!isRecord(event) || typeof event.kind !== "string" || typeof event.title !== "string") return undefined;
 	if (typeof event.body !== "string") return undefined;
 	if (event.kind !== "test" && !STORED_KINDS.has(event.kind)) return undefined;
-	return { id: raw.id, event: event as NotificationEvent, at: raw.at, dueAt: raw.dueAt };
+	return { id: raw.id, ...(typeof raw.eventId === "string" ? { eventId: raw.eventId } : {}),
+		event: event as NotificationEvent, at: raw.at, dueAt: raw.dueAt };
 }
 
 /** `~` is the service user's home, which is what a deploy script would write too. */
@@ -1095,6 +1097,7 @@ export type NotifyResult = {
 };
 
 export type NotifierOptions = {
+	relay?: PushRelayTransport;
 	sessionActive?: (sessionId: string) => boolean;
 	store: NotificationStore;
 	state: NotificationStateStore;
@@ -1132,6 +1135,7 @@ export const FCM_OFF_MESSAGE = "FCM is off on this backend (no service-account k
  * caller; `notify` is fire and forget, and `deliver` is the awaitable form tests and `notifications.test` use.
  */
 export class Notifier {
+	readonly relay: PushRelayTransport | undefined;
 	readonly presence: NotificationPresence;
 	readonly #store: NotificationStore;
 	readonly #sessionActive: ((sessionId: string) => boolean) | undefined;
@@ -1149,6 +1153,7 @@ export class Notifier {
 	readonly #schedule: HoldScheduler;
 	/** The timer of every held event, by the held event's ID. */
 	readonly #holdTimers = new Map<string, () => void>();
+	#registrations: Promise<unknown> = Promise.resolve();
 
 	constructor(options: NotifierOptions) {
 		this.#sessionActive = options.sessionActive;
@@ -1165,16 +1170,34 @@ export class Notifier {
 		this.#holdMs = options.holdMs ?? NOTIFICATION_HOLD_MS;
 		this.#schedule = options.schedule ?? timeoutScheduler;
 		this.presence = options.presence ?? new NotificationPresence();
+		this.relay = options.relay;
+		this.relay?.setPolicy(async (device, event) =>
+			notificationBlocked(device, event, { at: new Date(this.#now()) }) === undefined &&
+			(!event.projectId || await this.#isArchived?.(event.projectId) !== true));
 	}
 
 	/** The device's registration on this backend, or null. */
 	device(deviceId: string): NotificationDevice | null {
+		const relayDevice = this.relay?.store.device(deviceId);
+		if (relayDevice) return relayDevice;
 		const device = this.#store.get(deviceId);
 		return device === undefined ? null : publicDevice(device);
 	}
 
-	/** Register or update a device from `notifications.register` (a subscription) or `notifications.registerFcm` (a token). */
-	async register(
+	/** Serialize explicit transport selection so concurrent direct and relay confirmations cannot create dual sends. */
+	async #registration<T>(change: () => Promise<T>): Promise<T> {
+		const run = this.#registrations.then(change);
+		this.#registrations = run.catch(() => undefined);
+		return await run;
+	}
+
+	/** Register/update a direct transport; serialize against relay activation. */
+	async register(input: Parameters<Notifier["registerDirect"]>[0]): Promise<NotificationDevice> {
+		return await this.#registration(() => this.registerDirect(input));
+	}
+
+	/** Internal direct registration under the shared transport-selection transaction queue. */
+	private async registerDirect(
 		input: {
 			deviceId: string;
 			sessionId?: string;
@@ -1186,7 +1209,13 @@ export class Notifier {
 	): Promise<NotificationDevice> {
 		if (input.sessionId && !this.#sessionActive?.(input.sessionId))
 			throw new ServerError("auth_revoked", "auth_revoked");
+		if (input.sessionId && this.relay?.store.selected(input.sessionId)) {
+			await this.relay.revoke(input.sessionId);
+			for (const old of this.#store.list())
+				if (old.sessionId === input.sessionId) await this.#store.unregister(old.deviceId);
+		}
 		const device = await this.#store.register({ ...input, now: this.#now });
+		if (input.sessionId && this.relay?.store.selected(input.sessionId)) await this.relay.selectDirect(input.sessionId);
 		if (input.sessionId && !this.#sessionActive?.(input.sessionId)) {
 			await this.#store.unregister(input.deviceId);
 			throw new ServerError("auth_revoked", "auth_revoked");
@@ -1196,11 +1225,25 @@ export class Notifier {
 	}
 
 	checkSessionDevice(deviceId: string, sessionId: string | undefined) {
+		this.relay?.checkDevice(deviceId, sessionId);
 		const device = this.#store.get(deviceId);
 		if (device && device.sessionId !== sessionId)
 			throw new ServerError("permission_denied", "Notification registration belongs to another session");
 	}
+	/** Confirm and durably select a relay before removing stale direct rows; the selection suppresses crash leftovers. */
+	async confirmRelay(sessionId: string, request: NotificationsConfirmRelayRequest): Promise<NotificationDevice> {
+		if (!this.relay) throw new ServerError("bad_request", "Relay is unavailable");
+		return await this.#registration(async () => {
+			const device = await this.relay!.confirm(sessionId, request.operationId, request.confirmation);
+			for (const old of this.#store.list())
+				if (old.sessionId === sessionId) await this.#store.unregister(old.deviceId);
+			return device;
+		});
+	}
+
+	/** Local revoke never waits for remote cleanup, and removes every direct row after delete-only work is durable. */
 	async revokeSession(sessionId: string) {
+		await this.relay?.revoke(sessionId);
 		for (const device of this.#store.list())
 			if (device.sessionId === sessionId) await this.#store.unregister(device.deviceId);
 		if (!this.#store.list().length) this.interaction();
@@ -1210,6 +1253,12 @@ export class Notifier {
 
 	/** Forget a device; false when it was not registered. */
 	async unregister(deviceId: string): Promise<boolean> {
+		const relay = this.relay?.devices().find((d) => d.deviceId === deviceId);
+		const pending = this.relay?.store.snapshot().routes.find((r) => r.device.deviceId === deviceId);
+		if (relay || pending) {
+			await this.revokeSession(relay?.sessionId ?? pending!.context.sessionId);
+			return true;
+		}
 		const removed = await this.#store.unregister(deviceId);
 		await this.#store.flush();
 		return removed;
@@ -1259,7 +1308,8 @@ export class Notifier {
 		}
 		const at = new Date(this.#now());
 		if (this.presence.anyVisible() && this.#wanted(event, at)) {
-			this.#hold({ id: crypto.randomUUID(), event, at: at.toISOString(), dueAt: at.getTime() + this.#holdMs });
+			this.#hold({ id: crypto.randomUUID(), ...(this.relay ? { eventId: newRelayId() } : {}),
+				event, at: at.toISOString(), dueAt: at.getTime() + this.#holdMs });
 			return { skipped: "held", deliveries: [] };
 		}
 		return await this.#deliverNow(event, at.toISOString());
@@ -1267,16 +1317,24 @@ export class Notifier {
 
 	/** Some device would be pushed this event now; with none, holding it would only keep a record nobody reads. */
 	#wanted(event: NotificationEvent, at: Date): boolean {
-		return this.#store.list().some((device) => notificationBlocked(device, event, { at }) === undefined);
+		return [...this.#store.list().filter((d) => !d.sessionId || !this.relay?.store.selected(d.sessionId)),
+			...(this.relay?.devices() ?? [])].some((device) => notificationBlocked(device, event, { at }) === undefined);
 	}
 
 	/** Filter at the moment of sending (a mute or quiet hours changed during the hold count) and push to each device. */
-	async #deliverNow(event: NotificationEvent, atIso: string): Promise<NotifyResult> {
+	async #deliverNow(event: NotificationEvent, atIso: string, eventId = newRelayId()): Promise<NotifyResult> {
 		const at = new Date(this.#now());
 		const deliveries: DeliveryOutcome[] = [];
+		const relayDevices = this.relay?.devices() ?? [];
 		for (const device of this.#store.list()) {
+			if (device.sessionId && this.relay?.store.selected(device.sessionId)) continue;
 			if (notificationBlocked(device, event, { at }) !== undefined) continue;
 			deliveries.push(await this.#push(device, event, atIso));
+		}
+		for (const device of relayDevices) {
+			if (notificationBlocked(device, event, { at }) !== undefined) continue;
+			deliveries.push(await this.relay!.send(device.deviceId, notificationPayload(device, event, atIso),
+				event, atIso, eventId));
 		}
 		return { ...(deliveries.length === 0 ? { skipped: "filtered" as const } : {}), deliveries };
 	}
@@ -1291,7 +1349,7 @@ export class Notifier {
 			() => {
 				this.#holdTimers.delete(held.id);
 				if (this.#state.release([held.id]) === 0) return;
-				const run = this.#deliverNow(held.event, held.at).catch((error: unknown) => {
+				const run = this.#deliverNow(held.event, held.at, held.eventId).catch((error: unknown) => {
 					this.#log(`notifications: ${held.event.kind} could not be sent: ${errorMessage(error)}`);
 				});
 				this.#pending.add(run);
@@ -1325,17 +1383,25 @@ export class Notifier {
 	 * pushes at once; the others wait the rest of their time, so a client that reconnects can still drop them.
 	 */
 	restore(): void {
+		this.relay?.start();
 		for (const held of this.#state.held.values()) if (!this.#holdTimers.has(held.id)) this.#armHold(held);
 	}
 
 	/** Cancel the hold timers (a shutdown); held events stay in the state file for `restore`. */
 	stop(): void {
+		this.relay?.stop();
 		for (const cancel of this.#holdTimers.values()) cancel();
 		this.#holdTimers.clear();
 	}
 
 	/** Push a test notification to one device and report what the push service answered. */
 	async test(deviceId: string): Promise<DeliveryOutcome> {
+		const relayDevice = this.relay?.store.device(deviceId);
+		if (relayDevice) {
+			const event = testNotification();
+			const at = new Date(this.#now()).toISOString();
+			return await this.relay!.send(deviceId, notificationPayload(relayDevice, event, at), event, at);
+		}
 		const device = this.#store.get(deviceId);
 		if (device === undefined) {
 			throw new ServerError("bad_request", `No device "${deviceId}" is registered with this backend`);
@@ -1358,6 +1424,7 @@ export class Notifier {
 	/** Wait for everything `notify` started: a shutdown or a test can then read the devices' last deliveries. */
 	async flush(): Promise<void> {
 		while (this.#pending.size > 0) await Promise.allSettled([...this.#pending]);
+		await this.relay?.flush();
 		await this.#store.flush();
 		await this.#state.flush();
 	}
@@ -1368,6 +1435,8 @@ export class Notifier {
 			(device.sessionId && !this.#sessionActive?.(device.sessionId))
 		)
 			return { deviceId: device.deviceId, ok: false, status: null, message: "auth_revoked" };
+		if (device.sessionId && this.relay?.store.selected(device.sessionId))
+			return { deviceId: device.deviceId, ok: false, status: null, message: "relay_selected" };
 		const payload = notificationPayload(device, event, at);
 		if (device.fcmToken !== undefined) return await this.#pushFcm(device, device.fcmToken, event, payload, at);
 		const subscription = device.subscription!;
@@ -1425,6 +1494,7 @@ export class Notifier {
 			token,
 			authorized: () =>
 				this.#store.get(device.deviceId)?.sessionId === device.sessionId &&
+				(!device.sessionId || !this.relay?.store.selected(device.sessionId)) &&
 				(!device.sessionId || this.#sessionActive?.(device.sessionId) === true),
 			data: { payload: JSON.stringify(payload) },
 			ttlSeconds: this.#ttlSeconds,

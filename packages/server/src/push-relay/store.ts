@@ -169,8 +169,6 @@ export class PushRelayStore {
 		relayUnbase64(input.salt, 32);
 		if (parseRelayBearer(input.sendBearer, "send").routeId !== input.routeId ||
 			parseRelayBearer(input.deleteBearer, "delete").routeId !== input.routeId) invalid();
-		if (input.leaseExpiresAt <= now || input.leaseExpiresAt > input.absoluteExpiresAt ||
-			!Number.isSafeInteger(input.absoluteExpiresAt)) invalid();
 		// Hash a fixed field order, not caller JSON order; the receipt retains no duplicate bearer secrets.
 		const ordered = [sessionId, backendId, input.operationId, input.routeId, input.keyId, input.sendBearer,
 			input.deleteBearer, input.leaseExpiresAt, input.absoluteExpiresAt, input.phonePublicKey, input.salt,
@@ -183,6 +181,8 @@ export class PushRelayStore {
 				if (previous.sessionId !== sessionId || previous.fingerprint !== fingerprint) invalid();
 				return previous.answer;
 			}
+			if (input.leaseExpiresAt <= now || input.leaseExpiresAt > input.absoluteExpiresAt ||
+				!Number.isSafeInteger(input.absoluteExpiresAt)) invalid();
 			if (Object.values(draft.receipts).some((r) => r.routeId === input.routeId || r.keyId === input.keyId)) invalid();
 			if (draft.routes.some((r) => r.context.sessionId === sessionId && r.state === "pending")) invalid();
 			const predecessor = draft.selected[sessionId];

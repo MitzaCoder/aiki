@@ -68,6 +68,9 @@ import { type RunCommand } from "./host-commands.ts";
 import { ScheduleScheduler, ScheduleStore } from "./schedules.ts";
 import { ServerStatusService } from "./server-status.ts";
 import { FcmSender, loadFcmServiceAccount, resolveFcmKeyFile } from "./fcm.ts";
+import { resolvePushRelayEndpoint, validatePushRelayEndpoint } from "./push-relay/settings.ts";
+import { PushRelayStore } from "./push-relay/store.ts";
+import { PushRelayTransport } from "./push-relay/transport.ts";
 import { DiskMonitor, type DiskReader, type DiskThreshold, diskLowNotification } from "./disks.ts";
 import { TerminalHost, type TerminalHostOptions, terminalsEnabled } from "./terminals.ts";
 import { resolveToolCallCapMs } from "./tool-caps.ts";
@@ -198,6 +201,11 @@ export type StartServerOptions = {
 		 * `<data>/notifications/fcm-service-account.json`; a missing file (or `null`) turns FCM off.
 		 */
 		fcmKeyFile?: string | null;
+		/** Explicit test/operator override; null disables relay regardless of private settings. */
+		relayEndpoint?: string | null;
+		relayFetch?: typeof fetch;
+		relayRequestTimeoutMs?: number;
+		relayRandom?: () => number;
 		/** FCM's origin and `fetch`, which tests point at a fake. Default: `https://fcm.googleapis.com` and `fetch`. */
 		fcmEndpoint?: string;
 		fcmFetch?: (input: string, init: RequestInit) => Promise<Response>;
@@ -312,11 +320,16 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					...(options.terminals ?? {}),
 					log,
 				});
+	const relaySetting = options.notifications?.relayEndpoint === undefined
+		? resolvePushRelayEndpoint() : options.notifications.relayEndpoint;
+	const relayEndpoint = relaySetting ? validatePushRelayEndpoint(relaySetting) : undefined;
 	const features = (options.features ?? HARNESS_FEATURES).filter(
 		(feature) =>
 			((feature !== "cache-stats" && feature !== "cache-keep-warm" && feature !== "usage-breakdown") ||
 				requestLog !== undefined) &&
-			(feature !== "terminal" || terminals !== undefined),
+			(feature !== "terminal" || terminals !== undefined) &&
+			(feature !== "fcm-relay-v1" || (relayEndpoint !== undefined &&
+				(options.features ?? HARNESS_FEATURES).includes("device-auth-v1"))),
 	);
 	// One VAPID key pair for every backend: a browser holds one subscription, so the key cannot belong to one process.
 	const notificationsDir = join(dataDir, "notifications");
@@ -339,7 +352,23 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					...(options.notifications?.fcmFetch === undefined ? {} : { fetch: options.notifications.fcmFetch }),
 					log,
 				});
+	let relay: PushRelayTransport | undefined;
+	if (relayEndpoint) {
+		const relayStore = new PushRelayStore(notificationsDir);
+		await relayStore.read();
+		relay = new PushRelayTransport({
+			store: relayStore, endpoint: relayEndpoint, backendId: auth.backendId,
+			sessionActive: (sessionId) => auth.active(sessionId),
+			now: options.notifications?.now ?? options.now ?? Date.now,
+			...(options.notifications?.schedule ? { schedule: options.notifications.schedule } : {}),
+			...(options.notifications?.relayFetch ? { fetch: options.notifications.relayFetch } : {}),
+			...(options.notifications?.relayRandom ? { random: options.notifications.relayRandom } : {}),
+			...(options.notifications?.relayRequestTimeoutMs
+				? { requestTimeoutMs: options.notifications.relayRequestTimeoutMs } : {}),
+		});
+	}
 	const notifications = new NotificationSender({
+		...(relay ? { relay } : {}),
 		sessionActive: (sessionId) => auth.active(sessionId),
 		store: notificationStore,
 		state: notificationState,

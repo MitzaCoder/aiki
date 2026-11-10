@@ -73,7 +73,7 @@ describe("handshake", () => {
 		expect(response.protocolVersion).toBe(1);
 		expect(response.server.name).toBe("Aiki");
 		// hello advertises what this backend implements so the app can hide the rest.
-		expect(response.features).toEqual([...HARNESS_FEATURES]);
+		expect(response.features).toEqual(HARNESS_FEATURES.filter((feature) => feature !== "fcm-relay-v1"));
 	});
 
 	it("refuses another protocol version and closes the connection", async () => {
