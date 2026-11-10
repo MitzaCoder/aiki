@@ -32,7 +32,7 @@ export async function deleteByCapability(
 		if (!route) return;
 		requireCondition(constantTimeHashEqual(route.deleteHash, credential.digest), 404, "not_found");
 		const account = (await transaction.get(store.accounts.doc(route.uid))).data();
-		if (account) {
+		if (account?.state === "active") {
 			delete account.routes[credential.routeId];
 			transaction.set(store.accounts.doc(route.uid), account);
 		}

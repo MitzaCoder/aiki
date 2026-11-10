@@ -44,6 +44,9 @@ test("missing, anonymous, custom, unverified, wrong-project and revoked credenti
 	const revokedAuth: AuthPort = {
 		...auth,
 		getUser: (uid) => auth.getUser(uid),
+		updateUser: (uid, properties) => auth.updateUser(uid, properties),
+		revokeRefreshTokens: (uid) => auth.revokeRefreshTokens(uid),
+		deleteUser: (uid) => auth.deleteUser(uid),
 		verifyIdToken: async (_token, revoked) => {
 			expect(revoked).toBe(true);
 			throw new Error("synthetic revoked");

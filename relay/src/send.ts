@@ -1,3 +1,5 @@
+import { prepareBudgets, sendCharges } from "./budgets";
+import { requireRelayEnabled, requireExternalPermission } from "./control";
 import { Timestamp } from "firebase-admin/firestore";
 import { requireActiveAccount, requireLiveAuthUser } from "./admission";
 import type { InstallationDocument, RelayStore, RouteDocument, SendAttemptDocument } from "./documents";
@@ -154,6 +156,16 @@ async function reserveOrSend(
 			if (terminal || retryAt > deps.now()) return { kind: "reply", response: attemptResponse(previous) };
 		}
 		requireValidToken(installation);
+		const budgets = await prepareBudgets(
+			deps,
+			store,
+			transaction,
+			request.clientIp,
+			sendCharges(route.uid, parsed.routeId),
+			{ requireEnabled: true },
+		);
+		requireRelayEnabled(budgets.control);
+		budgets.commit();
 		transaction.set(attemptRef, {
 			uid: route.uid,
 			routeId: parsed.routeId,
@@ -173,6 +185,8 @@ async function reserveOrSend(
 		};
 	});
 	if (reservation.kind === "reply") return reservation.response;
+	await requireLiveAuthUser(deps, initial.uid);
+	await requireExternalPermission(deps, store, initial.uid);
 	let result: FcmResult;
 	try {
 		result = await deps.send(reservation.message);
@@ -180,10 +194,10 @@ async function reserveOrSend(
 		// Simulated process loss after acceptance: the persisted reservation remains ambiguous for 60 seconds.
 		const attempt = (await attemptRef.get()).data();
 		requireCondition(attempt, 503, "relay_unavailable");
-		return attemptResponse(attempt);
+		return { ...attemptResponse(attempt), externalAttempt: true };
 	}
 	/** Fence stale result writers and invalidate only the token generation actually sent, never a replacement. */
-	return deps.firestore.runTransaction(async (transaction) => {
+	const response = await deps.firestore.runTransaction(async (transaction) => {
 		const [attemptSnapshot, installationSnapshot] = await Promise.all([
 			transaction.get(attemptRef),
 			transaction.get(store.installations.doc(reservation.installationId)),
@@ -224,4 +238,5 @@ async function reserveOrSend(
 		transaction.set(attemptRef, attempt);
 		return attemptResponse(attempt);
 	});
+	return { ...response, externalAttempt: true };
 }

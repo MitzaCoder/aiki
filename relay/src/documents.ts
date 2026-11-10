@@ -5,6 +5,49 @@ import {
 	type WithFieldValue,
 	type DocumentData,
 } from "firebase-admin/firestore";
+import type { Limits } from "./limits";
+export interface ControlDocument {
+	enabled?: boolean;
+	enrollmentEnabled?: boolean;
+	limits?: Partial<Limits>;
+}
+export interface RuntimeDocument {
+	ipDay: number;
+	ipKey: string;
+	accounts: Record<string, boolean>;
+	phones: Record<string, { uid: string; deadline: number }>;
+}
+export interface RateWindow {
+	count: number;
+	startedAt: number;
+}
+export interface RateLimitDocument {
+	uid?: string;
+	day: number;
+	windows: Record<string, RateWindow>;
+	requests: { id: string; at: number }[];
+	purgeAt: Timestamp;
+}
+export type CleanupPhase =
+	| "auth_disable"
+	| "routes"
+	| "installations"
+	| "challenges"
+	| "operations"
+	| "attempts"
+	| "owners"
+	| "counters"
+	| "auth_delete"
+	| "finish";
+export interface CleanupDocument {
+	uid: string;
+	operationId: string;
+	mode: "disable" | "delete";
+	phase: CleanupPhase;
+	leaseOwner?: string;
+	leaseUntil?: number;
+	purgeAt: Timestamp;
+}
 export interface PhoneReservation {
 	deadline: number;
 	challengeDeadline: number;
@@ -14,9 +57,9 @@ export interface RouteReservation {
 	deadline: number;
 	predecessorId: string | null;
 }
-export interface AccountDocument {
+export interface ActiveAccountDocument {
 	uid: string;
-	state: "active" | "disabled" | "deleting";
+	state: "active";
 	createdAt: number;
 	lastManagementAt?: number;
 	phoneAllowance: number;
@@ -24,6 +67,18 @@ export interface AccountDocument {
 	phones: Record<string, PhoneReservation>;
 	routes: Record<string, RouteReservation>;
 }
+export interface BlockedAccountDocument {
+	uid: string;
+	state: "disabled" | "deleting";
+	cleanupComplete?: boolean;
+	createdAt?: number;
+	lastManagementAt?: number;
+	phoneAllowance?: number;
+	routeAllowance?: number;
+	phones?: Record<string, PhoneReservation>;
+	routes?: Record<string, RouteReservation>;
+}
+export type AccountDocument = ActiveAccountDocument | BlockedAccountDocument;
 export interface ConfirmationReceipt {
 	operationId: string;
 	challengeId: string;
@@ -50,6 +105,7 @@ export interface InstallationDocument {
 	deadline?: number;
 	challengeDeadline?: number;
 	pendingOperationId?: string;
+	hadRoutes?: boolean;
 	lastManagementAt?: number;
 	confirmation?: ConfirmationReceipt;
 	completedOperations?: string[];
@@ -157,7 +213,8 @@ function documentParser<T extends object>(fields: Fields<T>): Parser<T> {
 		return record as T;
 	};
 }
-function converter<T extends object>(parse: Parser<T>): FirestoreDataConverter<T> {
+/** Validate a server document at the SDK boundary rather than trusting an untyped Firestore row. */
+export function converter<T extends object>(parse: Parser<T>): FirestoreDataConverter<T> {
 	return {
 		toFirestore(document: WithFieldValue<T>): DocumentData {
 			return document as DocumentData;
@@ -180,9 +237,9 @@ const confirmation = documentParser<ConfirmationReceipt>({
 	replacing: storedBoolean,
 	generation: storedNumber,
 });
-const account = documentParser<AccountDocument>({
+const activeAccount = documentParser<ActiveAccountDocument>({
 	uid: storedString,
-	state: enumeration("active", "disabled", "deleting"),
+	state: enumeration("active"),
 	createdAt: storedNumber,
 	lastManagementAt: optional(storedNumber),
 	phoneAllowance: storedNumber,
@@ -190,6 +247,20 @@ const account = documentParser<AccountDocument>({
 	phones: map(phoneReservation),
 	routes: map(routeReservation),
 });
+const blockedAccount = documentParser<BlockedAccountDocument>({
+	uid: storedString,
+	state: enumeration("disabled", "deleting"),
+	cleanupComplete: optional(storedBoolean),
+	createdAt: optional(storedNumber),
+	lastManagementAt: optional(storedNumber),
+	phoneAllowance: optional(storedNumber),
+	routeAllowance: optional(storedNumber),
+	phones: optional(map(phoneReservation)),
+	routes: optional(map(routeReservation)),
+});
+function account(input: unknown): AccountDocument {
+	return storedRecord(input).state === "active" ? activeAccount(input) : blockedAccount(input);
+}
 const challengeOperation = documentParser<ChallengeOperationDocument>({
 	uid: storedString,
 	installationId: storedString,
@@ -209,6 +280,7 @@ const installation = documentParser<InstallationDocument>({
 	deadline: optional(storedNumber),
 	challengeDeadline: optional(storedNumber),
 	pendingOperationId: optional(storedString),
+	hadRoutes: optional(storedBoolean),
 	lastManagementAt: optional(storedNumber),
 	confirmation: optional(confirmation),
 	completedOperations: optional(array(storedString)),
@@ -272,9 +344,58 @@ function sendAttempt(input: unknown): SendAttemptDocument {
 	return attempt;
 }
 
+const control = documentParser<ControlDocument>({
+	enabled: optional(storedBoolean),
+	enrollmentEnabled: optional(storedBoolean),
+	limits: optional((input) => {
+		const record = storedRecord(input);
+		for (const value of Object.values(record)) {
+			if (storedNumber(value) < 0 || !Number.isSafeInteger(value)) throw new Error("Invalid stored limit");
+		}
+		return record as Partial<Limits>;
+	}),
+});
+const runtime = documentParser<RuntimeDocument>({
+	ipDay: storedNumber,
+	ipKey: storedString,
+	accounts: map(storedBoolean),
+	phones: map(documentParser({ uid: storedString, deadline: storedNumber })),
+});
+const rateLimit = documentParser<RateLimitDocument>({
+	uid: optional(storedString),
+	day: storedNumber,
+	windows: map(documentParser<RateWindow>({ count: storedNumber, startedAt: storedNumber })),
+	requests: array(documentParser({ id: storedString, at: storedNumber })),
+	purgeAt: storedTimestamp,
+});
+const cleanup = documentParser<CleanupDocument>({
+	uid: storedString,
+	operationId: storedString,
+	mode: enumeration("disable", "delete"),
+	phase: enumeration(
+		"auth_disable",
+		"routes",
+		"installations",
+		"challenges",
+		"operations",
+		"attempts",
+		"owners",
+		"counters",
+		"auth_delete",
+		"finish",
+	),
+	leaseOwner: optional(storedString),
+	leaseUntil: optional(storedNumber),
+	purgeAt: storedTimestamp,
+});
+
 /** Create typed Firestore collections whose converters validate every document read at the boundary. */
 export function createStore(firestore: Firestore) {
 	return {
+		control: firestore.collection("relayControl").withConverter(converter(control)),
+		runtime: firestore.collection("relayRuntime").withConverter(converter(runtime)),
+		rateLimits: firestore.collection("rateLimits").withConverter(converter(rateLimit)),
+		accountCleanup: firestore.collection("accountCleanup").withConverter(converter(cleanup)),
 		accounts: firestore.collection("accounts").withConverter(converter(account)),
 		installations: firestore.collection("installations").withConverter(converter(installation)),
 		challenges: firestore.collection("challenges").withConverter(converter(challenge)),

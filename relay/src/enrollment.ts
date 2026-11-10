@@ -1,5 +1,8 @@
+import { prepareBudgets, challengeCharges, windowStart } from "./budgets";
+import { requireRelayEnabled, requireExternalPermission } from "./control";
+import { RelayError } from "./validation";
 import { Timestamp } from "firebase-admin/firestore";
-import type { AccountDocument, InstallationDocument, RelayStore } from "./documents";
+import type { ActiveAccountDocument, InstallationDocument, RelayStore } from "./documents";
 import { pruneReservations, requireActiveAccount, requireLiveAuthUser, requireOwnedInstallation } from "./admission";
 import { DAY, MINUTE, type Dependencies, type RelayResponseBody } from "./ports";
 import {
@@ -18,6 +21,7 @@ export async function beginInstallation(
 	uid: string,
 	raw: unknown,
 	replacing: boolean,
+	clientIp: string,
 ): Promise<RelayResponseBody> {
 	const input = parseObject(raw, ["installationId", "operationId", "token"]);
 	requireId(input.installationId);
@@ -50,23 +54,67 @@ export async function beginInstallation(
 			return { challengeId: receipt.challengeId, deadline: receipt.deadline, send: false };
 		}
 		requireCondition(!installation?.completedOperations?.includes(operationId), 409, "operation_conflict");
-		if (replacing) {
-			requireCondition(
-				installation?.state === "active" || installation?.state === "token_invalid",
-				409,
-				"installation_inactive",
-			);
-		} else {
-			requireCondition(!installation || installation.state === "pending", 409, "installation_exists");
-		}
-		const pendingOthers = Object.entries(account.phones).filter(
-			([id, reservation]) => id !== installationId && reservation.challengeDeadline > now,
-		).length;
-		requireCondition(pendingOthers < 3, 409, "phone_limit");
-		if (!replacing && !account.phones[installationId]) {
-			requireCondition(Object.keys(account.phones).length < 3, 409, "phone_limit");
+		const budgets = await prepareBudgets(
+			deps,
+			store,
+			transaction,
+			clientIp,
+			challengeCharges(uid, !storedAccount, replacing),
+			{ deferValidation: true, requireEnabled: true },
+		);
+		requireRelayEnabled(budgets.control);
+		if ((!storedAccount || !replacing) && !budgets.control.enrollmentEnabled)
+			throw new RelayError(503, "enrollment_disabled");
+		try {
+			budgets.requireAvailable(["enrollmentDay"]);
+			if (replacing) {
+				requireCondition(
+					installation?.state === "active" || installation?.state === "token_invalid",
+					409,
+					"installation_inactive",
+				);
+			} else {
+				requireCondition(!installation || installation.state === "pending", 409, "installation_exists");
+			}
+			if (
+				!budgets.runtime.accounts[uid] &&
+				Object.keys(budgets.runtime.accounts).length >= budgets.control.limits.activeAccounts
+			) {
+				throw new RelayError(503, "enrollment_capacity", windowStart(now, DAY) + DAY);
+			}
+			if (
+				!replacing &&
+				!budgets.runtime.phones[installationId] &&
+				Object.keys(budgets.runtime.phones).length >= budgets.control.limits.activePhones
+			) {
+				throw new RelayError(503, "enrollment_capacity", windowStart(now, DAY) + DAY);
+			}
+			const pendingOthers = Object.entries(account.phones).filter(
+				([id, reservation]) => id !== installationId && reservation.challengeDeadline > now,
+			).length;
+			requireCondition(pendingOthers < budgets.control.limits.pendingChallenges, 409, "phone_limit");
+			if (!replacing && !account.phones[installationId]) {
+				requireCondition(Object.keys(account.phones).length < budgets.control.limits.accountPhones, 409, "phone_limit");
+			}
+			budgets.requireAvailable();
+		} catch (error) {
+			if (!(error instanceof RelayError)) throw error;
+			if (error.code !== "enrollment_rate") budgets.commitOnly(["enrollmentDay"]);
+			return {
+				challengeId,
+				deadline: now,
+				send: false,
+				failure: {
+					status: error.status,
+					code: error.code,
+					retryAt: error.retryAt,
+				},
+			};
 		}
 		const deadline = now + 5 * MINUTE;
+		budgets.runtime.accounts[uid] = true;
+		budgets.runtime.phones[installationId] = { uid, deadline: replacing ? 0 : deadline };
+		budgets.commit();
 		account.phones[installationId] = { deadline: replacing ? 0 : deadline, challengeDeadline: deadline };
 		if (installation?.pendingOperationId) {
 			transaction.delete(store.challenges.doc(installationId + "_" + installation.pendingOperationId));
@@ -103,8 +151,10 @@ export async function beginInstallation(
 		});
 		return { challengeId, deadline, send: true };
 	});
+	if (outcome.failure) throw new RelayError(outcome.failure.status, outcome.failure.code, outcome.failure.retryAt);
 	if (outcome.send) {
 		await requireLiveAuthUser(deps, uid);
+		await requireExternalPermission(deps, store, uid);
 		requireActiveAccount((await store.accounts.doc(uid).get()).data());
 		const installation = (await installationRef.get()).data();
 		requireCondition(installation && installation.state !== "deleted", 409, "installation_inactive");
@@ -138,6 +188,7 @@ export async function confirmInstallation(
 	uid: string,
 	raw: unknown,
 	replacing: boolean,
+	clientIp: string,
 ): Promise<RelayResponseBody> {
 	const input = parseObject(raw, ["installationId", "operationId", "challengeId", "nonce"]);
 	requireId(input.installationId);
@@ -191,6 +242,9 @@ export async function confirmInstallation(
 			transaction.update(challengeRef, { attempts: challenge.attempts + 1 });
 			return { error: true as const };
 		}
+		const budgets = await prepareBudgets(deps, store, transaction, clientIp, [], { requireEnabled: true });
+		requireRelayEnabled(budgets.control);
+		if (!replacing && !budgets.control.enrollmentEnabled) throw new RelayError(503, "enrollment_disabled");
 		const tokenOwnerRef = store.tokenOwners.doc(challenge.tokenHash);
 		const tokenOwner = (await transaction.get(tokenOwnerRef)).data();
 		const formerRef =
@@ -202,6 +256,8 @@ export async function confirmInstallation(
 		const oldOwner = oldOwnerRef ? (await transaction.get(oldOwnerRef)).data() : undefined;
 		requireCondition(account.phones[installationId], 409, "challenge_expired");
 		const generation = installation.generation + 1;
+		budgets.runtime.phones[installationId] = { uid, deadline: 0 };
+		budgets.commit();
 		if (
 			formerRef &&
 			former &&
@@ -235,6 +291,6 @@ export async function confirmInstallation(
 	requireCondition(!result.error, 409, "challenge_invalid");
 	return { installationId, generation: result.generation };
 }
-function newAccount(uid: string, now: number): AccountDocument {
+function newAccount(uid: string, now: number): ActiveAccountDocument {
 	return { uid, state: "active", phones: {}, routes: {}, createdAt: now, phoneAllowance: 3, routeAllowance: 24 };
 }

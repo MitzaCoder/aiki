@@ -1,3 +1,5 @@
+import { prepareBudgets } from "./budgets";
+import { requireRelayEnabled } from "./control";
 import { Timestamp } from "firebase-admin/firestore";
 import type { RelayStore, RouteDocument } from "./documents";
 import { pruneReservations, requireActiveAccount, requireOwnedInstallation, requireOwnedRoute } from "./admission";
@@ -48,6 +50,7 @@ export async function manageRoute(
 	uid: string,
 	action: "create" | "activate" | "renew",
 	raw: unknown,
+	clientIp: string,
 ): Promise<RelayResponseBody> {
 	const input = parseRouteInput(raw, action === "create");
 	const now = deps.now();
@@ -78,6 +81,8 @@ export async function manageRoute(
 			);
 			return routeResponse(input.routeId, route);
 		}
+		const budgets = await prepareBudgets(deps, store, transaction, clientIp, [], { requireEnabled: true });
+		requireRelayEnabled(budgets.control);
 		requireCondition(installation.state === "active", 409, "installation_inactive");
 		if (action === "create") {
 			requireCondition(!revocationSnapshot.exists, 410, "route_inactive");
@@ -93,11 +98,17 @@ export async function manageRoute(
 					409,
 					"route_limit",
 				);
-				requireCondition(entries.filter((entry) => entry.predecessorId).length < 24, 409, "route_limit");
+				requireCondition(
+					entries.filter((entry) => entry.predecessorId).length < budgets.control.limits.accountRoutes,
+					409,
+					"route_limit",
+				);
 			} else {
 				const reserved = entries.filter((entry) => !entry.predecessorId);
 				requireCondition(
-					reserved.length < 24 && reserved.filter((entry) => entry.installationId === input.installationId).length < 8,
+					reserved.length < budgets.control.limits.accountRoutes &&
+						reserved.filter((entry) => entry.installationId === input.installationId).length <
+							budgets.control.limits.phoneRoutes,
 					409,
 					"route_limit",
 				);
@@ -122,7 +133,9 @@ export async function manageRoute(
 				deadline: created.pendingUntil,
 				predecessorId: created.predecessorId,
 			};
+			budgets.commit();
 			transaction.set(routeRef, created);
+			transaction.update(store.installations.doc(input.installationId), { hadRoutes: true });
 			transaction.set(store.accounts.doc(uid), { ...account, lastManagementAt: now });
 			return routeResponse(input.routeId, created);
 		}
@@ -154,6 +167,7 @@ export async function manageRoute(
 				purgeAt: Timestamp.fromMillis(route.leaseExpiresAt + DAY),
 			});
 		}
+		budgets.commit();
 		account.routes[input.routeId] = {
 			installationId: input.installationId,
 			deadline: route.leaseExpiresAt,

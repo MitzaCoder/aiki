@@ -1,3 +1,6 @@
+import { onSchedule } from "firebase-functions/v2/scheduler";
+import { reconcileRelay } from "./reconciliation";
+import type { Dependencies } from "./ports";
 import { onRequest } from "firebase-functions/v2/https";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
@@ -63,7 +66,7 @@ async function sender(message: FcmMessage): Promise<FcmResult> {
 		clearTimeout(timer);
 	}
 }
-const handle = createRelay({
+const dependencies: Dependencies = {
 	firestore: getFirestore(app),
 	auth: getAuth(app),
 	projectId: mode.projectId,
@@ -78,7 +81,8 @@ const handle = createRelay({
 	monitor: (outcome) => {
 		console.info("app_check", outcome);
 	},
-});
+};
+const handle = createRelay(dependencies);
 /** One production v2 HTTPS export; protocol clients send JSON bytes as application/octet-stream. */
 export const relay = onRequest(
 	{ timeoutSeconds: 30, minInstances: 0, maxInstances: 2, memory: "256MiB", invoker: "public", cors: false },
@@ -89,7 +93,10 @@ export const relay = onRequest(
 			authorization: request.get("Authorization"),
 			appCheck: request.get("X-Firebase-AppCheck"),
 			body: request.rawBody?.toString("utf8") ?? "",
-			clientIp: trustedClientAddress(request.get("X-Forwarded-For"), request.socket.remoteAddress, mode.emulator),
+			// The loopback-only Functions emulator serializes requests without a real peer socket.
+			clientIp: mode.emulator
+				? "127.0.0.1"
+				: trustedClientAddress(request.get("X-Forwarded-For"), request.socket.remoteAddress, false),
 			contentType: request.get("Content-Type"),
 			contentEncoding: request.get("Content-Encoding"),
 		});
@@ -97,5 +104,13 @@ export const relay = onRequest(
 		response.status(result.status);
 		if (result.body) response.json(result.body);
 		else response.end();
+	},
+);
+
+/** Hourly repair uses the same plain durable reconciliation core exercised by the emulator checks. */
+export const reconcile = onSchedule(
+	{ schedule: "every 60 minutes", timeoutSeconds: 540, maxInstances: 1 },
+	async () => {
+		await reconcileRelay(dependencies);
 	},
 );

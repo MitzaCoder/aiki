@@ -4,12 +4,16 @@ export interface IdentityClaims {
 	aud: string;
 	iss: string;
 	email_verified?: boolean;
+	auth_time?: number;
 	firebase?: {
 		sign_in_provider?: string;
 	};
 }
 export interface AuthPort {
 	verifyIdToken(token: string, checkRevoked: true): Promise<IdentityClaims>;
+	updateUser(uid: string, properties: { disabled: boolean }): Promise<unknown>;
+	revokeRefreshTokens(uid: string): Promise<void>;
+	deleteUser(uid: string): Promise<void>;
 	getUser(uid: string): Promise<{
 		disabled: boolean;
 	}>;
@@ -29,6 +33,7 @@ export interface Dependencies {
 	now(): number;
 	random(bytes: number): string;
 	verifyAppCheck(token: string | undefined): Promise<boolean>;
+	checkpoint?(phase: import("./documents").CleanupPhase): Promise<void>;
 	monitor(outcome: "valid" | "invalid"): void;
 }
 export interface CoreRequest {
@@ -64,6 +69,10 @@ export interface RelayResponseBody {
 	phoneLimit?: number;
 	routeLimit?: number;
 	installations?: InventoryEntry[];
+	deletionPending?: boolean;
+	quotas?: { scope: string; budget: string; remaining: number; resetAt: number }[];
+	relayEnabled?: boolean;
+	enrollmentEnabled?: boolean;
 }
 export interface CoreResponse {
 	status: number;
@@ -71,6 +80,7 @@ export interface CoreResponse {
 	body?: RelayResponseBody;
 }
 export interface EndpointResult {
+	externalAttempt?: boolean;
 	status: number;
 	body: RelayResponseBody;
 	retryAt?: number;

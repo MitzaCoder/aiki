@@ -1,8 +1,8 @@
-import type { AccountDocument, InstallationDocument, RouteDocument } from "./documents";
+import type { AccountDocument, ActiveAccountDocument, InstallationDocument, RouteDocument } from "./documents";
 import type { CoreRequest, Dependencies, IdentityClaims } from "./ports";
 import { RelayError, requireCondition } from "./validation";
 /** Fail closed on missing, disabled or deleting relay account state. */
-export function requireActiveAccount(account: AccountDocument | undefined): asserts account is AccountDocument {
+export function requireActiveAccount(account: AccountDocument | undefined): asserts account is ActiveAccountDocument {
 	requireCondition(account, 403, "account_disabled");
 	requireCondition(
 		account.state === "active",
@@ -28,13 +28,15 @@ export async function requireLiveAuthUser(deps: Dependencies, uid: string): Prom
 	}
 }
 /** Verify this project's admitted, revocation-checked phone identity and monitor App Check without enforcing it. */
-export async function authenticatePhone(deps: Dependencies, request: CoreRequest): Promise<string> {
+export async function authenticatePhone(deps: Dependencies, request: CoreRequest): Promise<IdentityClaims> {
 	const credential = /^Bearer ([^ ]+)$/.exec(request.authorization ?? "");
 	requireCondition(credential, 401, "unauthorized");
 	let claims: IdentityClaims;
 	try {
 		claims = await deps.auth.verifyIdToken(credential[1], true);
-	} catch {
+	} catch (error) {
+		if ((error as { code?: string }).code === "auth/user-not-found") throw new RelayError(410, "account_deleted");
+		if ((error as { code?: string }).code === "auth/user-disabled") throw new RelayError(403, "account_disabled");
 		throw new RelayError(401, "unauthorized");
 	}
 	requireCondition(
@@ -53,7 +55,7 @@ export async function authenticatePhone(deps: Dependencies, request: CoreRequest
 		// App Check verification failures are observed, never an admission boundary in monitored mode.
 	}
 	deps.monitor(valid ? "valid" : "invalid");
-	return claims.uid;
+	return claims;
 }
 /** Require installation ownership without exposing another account's existence. */
 export function requireOwnedInstallation(
@@ -71,7 +73,7 @@ export function requireOwnedRoute(
 	requireCondition(route && route.uid === uid && route.installationId === installationId, 404, "not_found");
 }
 /** Release expired slot reservations synchronously; TTL deletion is never an authorization check. */
-export function pruneReservations(account: AccountDocument, now: number): AccountDocument {
+export function pruneReservations(account: ActiveAccountDocument, now: number): ActiveAccountDocument {
 	account.phones = Object.fromEntries(
 		Object.entries(account.phones).filter(([, reservation]) => !reservation.deadline || reservation.deadline > now),
 	);

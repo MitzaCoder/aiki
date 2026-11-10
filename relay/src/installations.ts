@@ -1,3 +1,4 @@
+import { readControl } from "./control";
 import { Timestamp } from "firebase-admin/firestore";
 import { pruneReservations, requireActiveAccount, requireOwnedInstallation } from "./admission";
 import { recordRouteRevocation } from "./delete";
@@ -13,10 +14,27 @@ export async function readAccountInventory(
 	list: boolean,
 ): Promise<RelayResponseBody> {
 	parseObject(raw, []);
+	const control = await readControl(store);
 	const storedAccount = (await store.accounts.doc(uid).get()).data();
+	if (storedAccount && storedAccount.state !== "active" && !list) {
+		return {
+			state: storedAccount.state,
+			phones: Object.keys(storedAccount.phones ?? {}).length,
+			routes: Object.keys(storedAccount.routes ?? {}).length,
+			deletionPending: storedAccount.state === "deleting",
+		};
+	}
 	if (storedAccount) requireActiveAccount(storedAccount);
 	if (!storedAccount) {
-		return list ? { installations: [] } : { state: "unenrolled", phones: 0, routes: 0, phoneLimit: 3, routeLimit: 24 };
+		return list
+			? { installations: [] }
+			: {
+					state: "unenrolled",
+					phones: 0,
+					routes: 0,
+					phoneLimit: control.limits.accountPhones,
+					routeLimit: control.limits.accountRoutes,
+				};
 	}
 	const account = pruneReservations(storedAccount, deps.now());
 	if (!list) {
@@ -24,8 +42,10 @@ export async function readAccountInventory(
 			state: account.state,
 			phones: Object.keys(account.phones).length,
 			routes: Object.keys(account.routes).length,
-			phoneLimit: 3,
-			routeLimit: 24,
+			phoneLimit: control.limits.accountPhones,
+			routeLimit: control.limits.accountRoutes,
+			relayEnabled: control.enabled,
+			enrollmentEnabled: control.enrollmentEnabled,
 		};
 	}
 	const snapshots = await Promise.all(Object.keys(account.phones).map((id) => store.installations.doc(id).get()));
@@ -56,9 +76,10 @@ export async function removeInstallation(
 	const { installationId } = input;
 	/** Serialize confirm/create against removal, erase token ownership and cascade the phone's bounded routes. */
 	await deps.firestore.runTransaction(async (transaction) => {
-		const [accountSnapshot, installationSnapshot] = await Promise.all([
+		const [accountSnapshot, installationSnapshot, runtimeSnapshot] = await Promise.all([
 			transaction.get(store.accounts.doc(uid)),
 			transaction.get(store.installations.doc(installationId)),
+			transaction.get(store.runtime.doc("state")),
 		]);
 		const account = accountSnapshot.data();
 		const installation = installationSnapshot.data();
@@ -79,6 +100,11 @@ export async function removeInstallation(
 		for (const operation of operations.docs) transaction.delete(operation.ref);
 		if (tokenOwnerRef && tokenOwner?.installationId === installationId) transaction.delete(tokenOwnerRef);
 		delete account.phones[installationId];
+		const runtime = runtimeSnapshot.data();
+		if (runtime) {
+			delete runtime.phones[installationId];
+			transaction.set(store.runtime.doc("state"), runtime);
+		}
 		transaction.set(store.accounts.doc(uid), account);
 		transaction.set(store.installations.doc(installationId), {
 			uid,

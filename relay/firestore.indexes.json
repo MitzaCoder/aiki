@@ -17,19 +17,23 @@
 			"collectionGroup": "sendAttempts",
 			"fieldPath": "purgeAt",
 			"ttl": true,
-			"indexes": []
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
 		},
 		{
 			"collectionGroup": "rateLimits",
 			"fieldPath": "purgeAt",
 			"ttl": true,
-			"indexes": []
-		},
-		{
-			"collectionGroup": "accountCleanup",
-			"fieldPath": "purgeAt",
-			"ttl": true,
-			"indexes": []
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
 		},
 		{
 			"collectionGroup": "accounts",
@@ -106,7 +110,12 @@
 			"collectionGroup": "routeRevocations",
 			"fieldPath": "purgeAt",
 			"ttl": true,
-			"indexes": []
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
 		},
 		{
 			"collectionGroup": "routeRevocations",
@@ -117,7 +126,12 @@
 			"collectionGroup": "challengeOperations",
 			"fieldPath": "purgeAt",
 			"ttl": true,
-			"indexes": []
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
 		},
 		{
 			"collectionGroup": "challengeOperations",
@@ -127,6 +141,91 @@
 		{
 			"collectionGroup": "challengeOperations",
 			"fieldPath": "installationId",
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "installations",
+			"fieldPath": "uid",
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "routes",
+			"fieldPath": "uid",
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "challenges",
+			"fieldPath": "uid",
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "challengeOperations",
+			"fieldPath": "uid",
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "sendAttempts",
+			"fieldPath": "uid",
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "tokenOwners",
+			"fieldPath": "uid",
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "rateLimits",
+			"fieldPath": "uid",
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				}
+			]
+		},
+		{
+			"collectionGroup": "relayRuntime",
+			"fieldPath": "*",
+			"indexes": []
+		},
+		{
+			"collectionGroup": "challenges",
+			"fieldPath": "deadline",
 			"indexes": [
 				{
 					"order": "ASCENDING",

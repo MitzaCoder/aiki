@@ -7,7 +7,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { createRelay } from "../src/core";
 import { createStore } from "../src/documents";
-import type { CoreRequest, CoreResponse, FcmMessage, FcmResult } from "../src/ports";
+import type { CoreRequest, CoreResponse, FcmMessage, FcmResult, Dependencies } from "../src/ports";
 import { requireCondition, sha256 } from "../src/validation";
 interface AuthFixture {
 	idToken: string;
@@ -75,6 +75,8 @@ async function signIn(path: string, body: unknown, host = authHost): Promise<Aut
 		string,
 		unknown
 	>;
+	// Auth REST uses real wall time; keep a frozen fake relay clock from preceding a freshly issued auth_time.
+	if (typeof claims.auth_time === "number") fixture.now = Math.max(fixture.now, claims.auth_time * 1000);
 	const localId = result.localId ?? claims.sub;
 	requireCondition(typeof localId === "string");
 	return { idToken: result.idToken, localId };
@@ -109,8 +111,7 @@ async function googleUser(host = authHost): Promise<AuthFixture> {
 	);
 }
 /** Obtain a verified email-link user's ID token from the official Auth emulator REST API. */
-export async function emailUser(): Promise<AuthFixture> {
-	const email = random().toLowerCase() + "@example.com";
+export async function emailUser(email = random().toLowerCase() + "@example.com"): Promise<AuthFixture> {
 	await rest("identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=synthetic", {
 		requestType: "EMAIL_SIGNIN",
 		email,
@@ -306,19 +307,21 @@ export function registerEmulatorChecks(): void {
 		fixture.monitors = [];
 		fixture.fcmBehavior = async () => "accepted";
 		fixture.httpFcmResult = "accepted";
-		handle = createRelay({
-			firestore: db,
-			auth,
-			projectId,
-			now: () => fixture.now,
-			random,
-			verifyAppCheck: async () => false,
-			monitor: (value) => fixture.monitors.push(value),
-			send: async (message) => {
-				fixture.captures.push(message);
-				return fixture.fcmBehavior(message);
+		// Legacy protocol checks exercise semantics independently of activity quotas. Dedicated T94 cases restore defaults.
+		await store.control.doc("settings").set({
+			limits: {
+				managementMinute: 10000,
+				managementDay: 10000,
+				requestMinute: 10000,
+				accountChallengeHour: 10000,
+				accountChallengeDay: 10000,
+				ipChallengeHour: 10000,
+				ipChallengeDay: 10000,
+				enrollmentDay: 10000,
+				newAccountIpDay: 10000,
 			},
 		});
+		restartHandler();
 	});
 	afterAll(async () => {
 		fakeServer?.stop(true);
@@ -328,5 +331,46 @@ export function registerEmulatorChecks(): void {
 		}
 		await db.terminate();
 		await deleteApp(app);
+	});
+}
+
+/** Construct real emulator ports with injectable clock/failure seams, never production environment bypasses. */
+export function checkDependencies(overrides: Partial<Dependencies> = {}): Dependencies {
+	return {
+		firestore: db,
+		auth,
+		projectId,
+		now: () => fixture.now,
+		random,
+		verifyAppCheck: async () => false,
+		monitor: (value) => fixture.monitors.push(value),
+		send: async (message) => {
+			fixture.captures.push(message);
+			return fixture.fcmBehavior(message);
+		},
+		...overrides,
+	};
+}
+/** Simulate an instance restart without deleting durable Firestore quotas, reservations or cleanup work. */
+export function restartHandler(overrides: Partial<Dependencies> = {}): void {
+	handle = createRelay(checkDependencies(overrides));
+}
+/** Link Google to an existing synthetic email user through Auth REST, preserving the original UID. */
+export async function linkGoogleIdentity(user: AuthFixture): Promise<AuthFixture> {
+	const email = (await auth.getUser(user.localId)).email!;
+	return signIn("identitytoolkit.googleapis.com/v1/accounts:signInWithIdp", {
+		idToken: user.idToken,
+		requestUri: "http://example.com",
+		returnSecureToken: true,
+		postBody: new URLSearchParams({
+			providerId: "google.com",
+			id_token: unsigned({
+				sub: random(),
+				email,
+				email_verified: true,
+				iss: "https://accounts.google.com",
+				aud: "synthetic-client",
+			}),
+		}).toString(),
 	});
 }

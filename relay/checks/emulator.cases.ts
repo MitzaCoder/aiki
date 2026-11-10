@@ -9,3 +9,7 @@ await import("./routes.cases");
 await import("./send.cases");
 await import("./delete.cases");
 await import("./http.cases");
+
+await import("./budgets.cases");
+await import("./lifecycle.cases");
+await import("./metering.cases");

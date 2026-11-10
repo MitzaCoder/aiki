@@ -1,3 +1,6 @@
+import { deleteAccount } from "./accounts";
+import { quotaStatus } from "./quota-status";
+import { reserveRequest, releaseRequest, chargeManagement, type RequestReservation } from "./budgets";
 import { authenticatePhone } from "./admission";
 import { deleteByCapability, deleteOwnedRoute } from "./delete";
 import { createStore } from "./documents";
@@ -12,6 +15,7 @@ export type { AuthPort, CoreRequest, CoreResponse, Dependencies, FcmMessage, Fcm
 export function createRelay(deps: Dependencies) {
 	const store = createStore(deps.firestore);
 	return async function handle(request: CoreRequest): Promise<CoreResponse> {
+		let requestReservation: RequestReservation | undefined;
 		const headers: Record<string, string> = {
 			"Cache-Control": "no-store",
 			"Content-Type": "application/json; charset=utf-8",
@@ -37,11 +41,29 @@ export function createRelay(deps: Dependencies) {
 				throw new RelayError(400, "invalid_request");
 			}
 			requireCondition(input !== null && typeof input === "object" && !Array.isArray(input));
+			const deletion = ["delete", "routes/delete", "installations/delete", "accounts/delete"].includes(path);
+			if (!deletion)
+				requestReservation = await reserveRequest(
+					deps,
+					store,
+					request.clientIp,
+					[
+						"send",
+						"installations/begin",
+						"installations/token/begin",
+						"installations/confirm",
+						"installations/token/confirm",
+						"routes/create",
+						"routes/renew",
+						"routes/activate",
+					].includes(path),
+				);
 			if (path === "send" || path === "send/status") {
 				const result =
 					path === "send"
 						? await sendNotification(deps, store, request, input)
 						: await readSendStatus(deps, store, request, input);
+				if (result.externalAttempt && requestReservation) await releaseRequest(deps, store, requestReservation);
 				setRetryAfter(result.retryAt);
 				return { status: result.status, headers, body: result.body };
 			}
@@ -51,6 +73,7 @@ export function createRelay(deps: Dependencies) {
 			}
 			const known = [
 				"accounts/status",
+				"accounts/delete",
 				"installations/list",
 				"installations/delete",
 				"installations/begin",
@@ -63,23 +86,31 @@ export function createRelay(deps: Dependencies) {
 				"routes/delete",
 			];
 			requireCondition(known.includes(path), 404, "not_found");
-			const uid = await authenticatePhone(deps, request);
+			const claims = await authenticatePhone(deps, request);
+			const uid = claims.uid;
+			if (path === "accounts/delete") {
+				const result = await deleteAccount(deps, claims, input);
+				setRetryAfter(result.retryAt);
+				return { status: result.status, headers, body: result.body };
+			}
+			if (!deletion) await chargeManagement(deps, store, request.clientIp);
 			let body: RelayResponseBody | undefined;
 			switch (path) {
 				case "accounts/status":
 				case "installations/list":
 					body = await readAccountInventory(deps, store, uid, input, path === "installations/list");
+					if (path === "accounts/status") body.quotas = await quotaStatus(deps, store, uid, request.clientIp);
 					break;
 				case "installations/delete":
 					await removeInstallation(deps, store, uid, input);
 					break;
 				case "installations/begin":
 				case "installations/token/begin":
-					body = await beginInstallation(deps, store, uid, input, path.includes("/token/"));
+					body = await beginInstallation(deps, store, uid, input, path.includes("/token/"), request.clientIp);
 					break;
 				case "installations/confirm":
 				case "installations/token/confirm":
-					body = await confirmInstallation(deps, store, uid, input, path.includes("/token/"));
+					body = await confirmInstallation(deps, store, uid, input, path.includes("/token/"), request.clientIp);
 					break;
 				case "routes/delete":
 					await deleteOwnedRoute(deps, store, uid, input);
@@ -93,14 +124,31 @@ export function createRelay(deps: Dependencies) {
 						uid,
 						path.slice("routes/".length) as "create" | "activate" | "renew",
 						input,
+						request.clientIp,
 					);
 					break;
+			}
+			if (
+				requestReservation &&
+				![
+					"accounts/status",
+					"installations/list",
+					"installations/begin",
+					"installations/token/begin",
+					"routes/create",
+				].includes(path)
+			) {
+				await releaseRequest(deps, store, requestReservation);
 			}
 			return { status: body ? 200 : 204, headers, ...(body ? { body } : {}) };
 		} catch (error) {
 			const failure = error instanceof RelayError ? error : new RelayError(503, "relay_unavailable");
 			setRetryAfter(failure.retryAt);
-			return { status: failure.status, headers, body: { error: failure.code } };
+			return {
+				status: failure.status,
+				headers,
+				body: { error: failure.code, ...(failure.retryAt !== undefined ? { retryAt: failure.retryAt } : {}) },
+			};
 		}
 	};
 }
