@@ -31,7 +31,9 @@ was used. Do not substitute a real Firebase endpoint to diagnose that failure.
 - `relay/fixtures.ts add-phone [synthetic@example.test]` enrolls another fake phone through the actual Auth and relay
   HTTP APIs and captured possession challenge. `google@example.test` uses the same unsigned demo Google identity
   as the debug provider. `pause`, `resume`, `phone-limit`, `rate-limit` and `restore-limits` change only the demo's
-  Firestore control document over loopback. No Admin credential lookup is used.
+  control settings through `bun --no-env-file tools/operator.ts --emulator … --yes`, with the assigned port set.
+  No fixture writes Firestore documents or chooses collection names. The operator tool scrubs its child environment;
+  the demo stack seeds the required control document because a missing document now means paused.
 - `launch-real.ts --fresh` accepts `ANDROID_VERIFY_AUTH_MODE=optional` and `ANDROID_VERIFY_RELAY_ENDPOINT` for one
   isolated real Aiki backend. Its child receives only the explicit scratch environment and prints effective paths
   before startup. Pair/approve only that backend's device; use its owner socket/CLI, never live backend data.

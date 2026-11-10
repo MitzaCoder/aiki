@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { resolve } from "node:path";
 
 /** Synthetic fixture operations, pinned to the owned loopback demo stack. Never accepts project/host overrides. */
 const auth = "http://127.0.0.1:19571";
@@ -43,13 +44,17 @@ async function fixtureAccountToken(): Promise<string> {
 	if (typeof user.idToken !== "string") throw new Error("Missing synthetic account token");
 	return user.idToken;
 }
-async function settings(field: string, value: unknown) {
-	const target = "http://127.0.0.1:19572/v1/projects/demo-aiki-relay/databases/(default)/documents/relayControl/settings";
-	const response = await fetch(`${target}?updateMask.fieldPaths=${field}`, {
-		method: "PATCH", headers: { "Content-Type": "application/json", Authorization: "Bearer owner" },
-		body: JSON.stringify({ fields: value }), signal: AbortSignal.timeout(5000),
+async function operator(...args: string[]) {
+	const child = Bun.spawn([process.execPath, "--no-env-file",
+		resolve(import.meta.dir, "../../../../relay/tools/operator.ts"), "--emulator", ...args, "--yes"], {
+		env: {
+			PATH: process.env.PATH!, RELAY_AUTH_PORT: "19571", RELAY_FIRESTORE_PORT: "19572",
+			RELAY_FUNCTIONS_PORT: "19573", RELAY_HUB_PORT: "19574", RELAY_LOGGING_PORT: "19575",
+			RELAY_WEBSOCKET_PORT: "19576", RELAY_FCM_PORT: "19577",
+		},
+		stdout: "inherit", stderr: "inherit", stdin: "ignore", timeout: 65000,
 	});
-	if (!response.ok) throw new Error(`Synthetic control update failed (${response.status})`);
+	if (await child.exited !== 0) throw new Error("Synthetic operator command failed");
 }
 if (action === "add-phone") {
 	const token = await fixtureAccountToken();
@@ -68,12 +73,12 @@ if (action === "add-phone") {
 	await call("installations/confirm", { installationId, operationId,
 		challengeId: challenge.challengeId, nonce: challenge.nonce });
 } else if (action === "pause" || action === "resume") {
-	await settings("enabled", { enabled: { booleanValue: action === "resume" } });
+	await operator(action);
 } else if (action === "restore-limits") {
-	await settings("limits.accountPhones", { limits: { mapValue: { fields: { accountPhones: { integerValue: "3" } } } } });
-	await settings("limits.requestMinute", { limits: { mapValue: { fields: { requestMinute: { integerValue: "30" } } } } });
+	await operator("limits", "set", "accountPhones", "3");
+	await operator("limits", "set", "requestMinute", "30");
 } else if (action === "phone-limit" || action === "rate-limit") {
 	const field = action === "phone-limit" ? "accountPhones" : "requestMinute";
-	await settings(`limits.${field}`, { limits: { mapValue: { fields: { [field]: { integerValue: "0" } } } } });
+	await operator("limits", "set", field, "0");
 } else throw new Error("Expected add-phone, pause, resume, phone-limit, rate-limit or restore-limits");
 console.log("Synthetic relay fixture updated");
