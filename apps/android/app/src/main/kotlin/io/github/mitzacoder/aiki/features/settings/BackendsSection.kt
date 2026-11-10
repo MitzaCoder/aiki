@@ -39,6 +39,8 @@ internal fun BackendsSection(repository: HarnessRepository, navigator: SettingsN
     var previewValue by rememberSaveable { mutableStateOf<String?>(null) }
     var suggestion by remember { mutableStateOf<BackendConfig?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var pairing by remember { mutableStateOf(false) }
+    if (pairing) PairDeviceDialog(repository, onDismiss = { pairing = false })
     fun preview(value: String) {
         decodeConnect(value.substringAfter('#', value)).onSuccess { previewValue = value; error = null }.onFailure { error = it.message }
     }
@@ -48,6 +50,11 @@ internal fun BackendsSection(repository: HarnessRepository, navigator: SettingsN
     val missing = suggestions.filter { row -> settings.backends.none { it.key == row.key } }
 
     SettingsSectionPage("Backends", "The servers this device talks to. Each keeps its own projects, agents and tools.", SettingsIcon.Server) {
+        SettingsGroup(title = "Pair a device") {
+            SettingsRow("Sign in with a pairing link", hint = "Full access, after you confirm the computer.") {
+                Button(onClick = { pairing = true }) { Text("Paste pairing link") }
+            }
+        }
         SettingsGroup(title = "Your backends") {
             if (sessions.isEmpty()) GroupNote("No backends yet. Add one below.")
             sessions.forEach { backend -> key(backend.config.key) {
@@ -58,6 +65,11 @@ internal fun BackendsSection(repository: HarnessRepository, navigator: SettingsN
                     leading = { BackendTile() },
                     chip = { ConnectionBadge(connection.status, connection.attempt) },
                 )
+                backend.client.deviceAuth?.let { controller ->
+                    val auth by controller.state.collectAsStateWithLifecycle()
+                    auth.notice?.let { Text(if (auth.comparisonCode != null) "$it · code ${auth.comparisonCode}" else it,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = Jarvis.colors.fgMuted) }
+                }
             } }
         }
         if (missing.isNotEmpty()) SettingsGroup(title = "Suggested backends", description = "Published beside the app. One tap adds one and connects.") {

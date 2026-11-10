@@ -17,6 +17,24 @@ and explicit auth feature flags; clients must pin advertised support and reject 
 from the legacy baseline list. Tests simulate missing flags, not a malicious replacement server or real proxy/TLS network.
 Nothing deployed or pushed.
 
+## Android device sign-in (T67)
+
+Android now discovers/pins auth per origin, stores retained sessions and staged claim/rotation proofs in a separate
+Keystore AES-GCM DataStore excluded from backup/transfer, authenticates hello, renews live sockets and stops on sign-out.
+Settings has pairing-link paste, Devices, one-time QR/share grants, global matching-code approval and optional-mode
+migration notices/polling. Claims survive process death; credentials precede ack. Rotation can recover a committed
+successor beyond the old-token retry window. Existing image/video renewal is reused; downloads re-mint once on failure.
+FCM registration already runs on every new ready connection, including authenticated reconnects. No relay is added.
+
+Root: 1,732 tests and typecheck pass; web: 801 tests, check zero errors/warnings and build pass. Android XML: 608 tests,
+zero failures/errors, two existing skips; debug assembly and lint pass (34 warnings, zero errors). Generator --check exits
+0: 324 DTOs / 87 overloads. Verification: 7 tests / 49 assertions and its TypeScript check pass. Public guard passes.
+T67 holds emulator-only before/after light/dark settings, Devices/QR, pairing/comparison, approval, waiting and revoked
+screens plus pairing/approval recordings. Real scratch bootstrap/pair/approve/revoke and migration registration ran;
+the same migration claim survived an in-place APK upgrade. No physical camera, live FCM or hardware-key invalidation
+claim. Install the normal configured APK in place, keep backends optional, approve each phone claim through the owner
+CLI, verify authenticated Devices and push re-registration before required cutover. Never uninstall to migrate.
+
 ## Stage-1 auth compatibility and Aiki wire prefixes (T65 follow-up)
 
 Optional/off keeps the old artifact origin derivation (explicit public URL, otherwise forwarded proto/host or Host),

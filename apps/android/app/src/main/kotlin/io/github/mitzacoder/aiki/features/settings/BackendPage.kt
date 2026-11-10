@@ -37,6 +37,7 @@ internal fun BackendPage(repository: HarnessRepository, backend: BackendSession,
                 style = MaterialTheme.typography.bodySmall,
             )
         }
+        BackendDeviceAccess(repository, backend, navigator)
         if (connection.supports(SERVER_STATUS_FEATURE)) {
             val status by backend.serverStatus.status.collectAsStateWithLifecycle()
             DeployBanner(repository, backend)

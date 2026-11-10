@@ -47,8 +47,9 @@ private val downloadHttp = OkHttpClient.Builder().build()
                     checkNotNull(project)
                     checkNotNull(id)
                     // Mint only after destination confirmation: expiry during the picker cannot break the save.
-                    val signed = context.backend.client.request(ArtifactsUrlRequest(projectId = project,artifactId = id,download = true))
-                    val count = saveArtifactBytes(downloadHttp,signed.url) {
+                    val count = saveArtifactWithRemint(downloadHttp, mint = {
+                        context.backend.client.request(ArtifactsUrlRequest(projectId = project, artifactId = id, download = true)).url
+                    }) {
                         checkNotNull(resolver.openOutputStream(uri,"wt")) { "Destination unavailable" }
                     }
                     completed = true

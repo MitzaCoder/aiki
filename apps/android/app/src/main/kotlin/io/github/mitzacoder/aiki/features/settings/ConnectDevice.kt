@@ -38,9 +38,9 @@ internal fun ConnectDeviceGroup(backends: List<BackendConfig>) {
     val shareable = backends.filter { isConnectUrl(it.url) }
     val unshareable = backends.filterNot { isConnectUrl(it.url) }
     val chosen = shareable.filter { it.key !in excluded }
-    SettingsGroup(title = "Connect another device") {
+    SettingsGroup(title = "Import backend addresses") {
     SettingsRow(
-        "Link or QR code", hint = "Opens this list on a phone or another computer.", control = RowControl.Full,
+        "Link or QR code", hint = "Addresses only. Does not grant access or sign in.", control = RowControl.Full,
         learn = { Text("Choose the backends to pass on. The link keeps them in its fragment, so it never reaches a server log; opening it on the other device shows them, and one tap adds them there.") },
     ) {
         shareable.forEach { backend ->
@@ -90,7 +90,7 @@ internal fun ConnectDeviceGroup(backends: List<BackendConfig>) {
 
 /** A QR code drawn black on white with its quiet zone, whatever the theme, so every scanner reads it. */
 @Composable
-private fun QrCode(modules: List<BooleanArray>, modifier: Modifier = Modifier) {
+internal fun QrCode(modules: List<BooleanArray>, modifier: Modifier = Modifier) {
     Canvas(modifier.size(200.dp).background(Color.White, RoundedCornerShape(8.dp))) {
         val quiet = 4
         val count = modules.size + 2 * quiet

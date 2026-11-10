@@ -79,10 +79,21 @@ class BackendSession(val config: BackendConfig, val client: HarnessClient) : Clo
 }
 
 /** Application-scoped. Settings mutations are durable before the UI/list of sockets changes. */
-class HarnessRepository(private val store: DeviceStore) : Closeable {
+class HarnessRepository(private val store: DeviceStore, private val authStore: DeviceAuthStorage? = null) : Closeable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Mutex()
     private val http = OkHttpClient.Builder().pingInterval(30, java.util.concurrent.TimeUnit.SECONDS).build()
+    private val authControllers = java.util.concurrent.ConcurrentHashMap<String, DeviceAuth>()
+    fun deviceAuth(origin: String): DeviceAuth = authControllers.computeIfAbsent(normalizeBackendOrigin(origin)) {
+        DeviceAuth(it, requireNotNull(authStore) { "Secure authentication storage unavailable" }, DeviceAuthHttp(http))
+    }
+    private fun client(config: BackendConfig) = HarnessClient(config, http, deviceAuth = authStore?.let { deviceAuth(config.url) })
+    suspend fun pairBackend(link: DevicePairingLink, name: String, code: String, waiting: (String) -> Unit) {
+        deviceAuth(link.origin).redeem(link, code, waiting, onStaged = {
+            addBackends(listOf(BackendConfig(name.ifBlank { java.net.URI(link.origin).host }.take(48), link.origin)))
+        })
+        session(link.origin)?.client?.reconnectAuthenticated()
+    }
     private val mutableSessions = MutableStateFlow<List<BackendSession>>(emptyList())
     val sessions = mutableSessions.asStateFlow()
     private val mutableSettings = MutableStateFlow(DeviceSettings())
@@ -129,8 +140,8 @@ class HarnessRepository(private val store: DeviceStore) : Closeable {
         val old = sessions.value.associateBy { it.config.key }.toMutableMap()
         mutableSessions.value = configs.map { config ->
             old.remove(config.key)?.let { previous ->
-                if (previous.config == config) previous else { previous.close(); BackendSession(config, HarnessClient(config, http)) }
-            } ?: BackendSession(config, HarnessClient(config, http))
+                if (previous.config == config) previous else { previous.close(); BackendSession(config, client(config)) }
+            } ?: BackendSession(config, client(config))
         }
         old.values.forEach { it.close() }
     }

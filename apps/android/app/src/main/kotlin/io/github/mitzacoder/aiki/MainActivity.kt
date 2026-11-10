@@ -5,6 +5,8 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
+import androidx.lifecycle.ViewModel
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -21,8 +23,16 @@ import io.github.mitzacoder.aiki.navigation.LocalProjectMute
 import io.github.mitzacoder.aiki.navigation.connectPayloadFromUri
 import io.github.mitzacoder.aiki.ui.theme.HarnessTheme
 
+class PairingIntentState : ViewModel() {
+    var link by mutableStateOf<String?>(null)
+}
+
 class MainActivity : ComponentActivity() {
     private var connectPayload by mutableStateOf<String?>(null)
+    private val pairingIntent by viewModels<PairingIntentState>()
+    private var pairingLink: String?
+        get() = pairingIntent.link
+        set(value) { pairingIntent.link = value }
     /** A project link or a notification tap, opened once the backends have loaded. */
     private var pendingLink by mutableStateOf<PendingAppLink?>(null)
     private val notifications get() = (application as HarnessApplication).notifications
@@ -52,6 +62,8 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
                 val codeWrap = remember(settings.codeWrap) { CodeWrapChoice(settings.codeWrap) { stored -> scope.launch { repository.setCodeWrap(stored) } } }
                 CompositionLocalProvider(LocalNotificationCenter provides notifications, LocalProjectMute provides projectMute, LocalCodeWrap provides codeWrap) {
+                    io.github.mitzacoder.aiki.features.settings.DeviceApprovalDialogs(repository)
+                    pairingLink?.let { link -> io.github.mitzacoder.aiki.features.settings.PairDeviceDialog(repository, link) { pairingLink = null; intent?.data = null } }
                     HarnessApp(repository, connectPayload, onConnectHandled = {
                         connectPayload = null
                         intent?.data = null // Rotation/process recreation must not reopen a consumed import.
@@ -97,6 +109,8 @@ class MainActivity : ComponentActivity() {
     private fun readIntent(intent: Intent?) {
         if (intent == null) return
         val data = intent.dataString
+        pairingLink = data?.takeIf { runCatching { java.net.URI(it).path == "/pair" }.getOrDefault(false) }
+        if (pairingLink != null) intent.data = null // Never retain a secret-bearing deep link in the activity Intent.
         connectPayload = data?.let(::connectPayloadFromUri)
         pendingLink = when {
             intent.action == ACTION_OPEN_NOTIFICATION -> intent.getStringExtra(EXTRA_NOTIFICATION_PAYLOAD)?.let { PendingAppLink.Notification(it) }

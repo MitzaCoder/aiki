@@ -56,7 +56,9 @@ class HarnessClient(
     private val http: OkHttpClient = OkHttpClient.Builder().pingInterval(30, java.util.concurrent.TimeUnit.SECONDS).build(),
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val requestTimeoutMs: Long = 30_000,
+    val deviceAuth: DeviceAuth? = null,
 ) : Closeable {
+    private val socketHttp = if (deviceAuth != null) http.newBuilder().followRedirects(false).followSslRedirects(false).build() else http
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val mutableState = MutableStateFlow(ConnectionState())
     val state: StateFlow<ConnectionState> = mutableState.asStateFlow()
@@ -97,7 +99,13 @@ class HarnessClient(
                         terminalsById.remove(event.terminalId)?.onClosed(event)
                     } else if (type == "terminal.resync") {
                         raw["terminalId"]?.jsonPrimitive?.longOrNull?.let { terminalsById[it]?.onResync() }
-                    } else mutableEvents.emit(decodeProtocolEvent(raw, wireJson))
+                    } else {
+                        if (type == "auth.sessionRevoked") {
+                            deviceAuth?.signedOut("This device was signed out")
+                            source.close(4403, "auth_revoked")
+                        }
+                        mutableEvents.emit(decodeProtocolEvent(raw, wireJson))
+                    }
                 } catch (error: CancellationException) { throw error }
                 catch (error: Exception) {
                     // A malformed delta/event is a connection fault, not a dropped update.
@@ -127,37 +135,74 @@ class HarnessClient(
                     }
                     override fun onClosing(webSocket: WebSocket, code: Int, reason: String) { webSocket.close(code, reason) }
                     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                        val error = ClientException("disconnected", "Socket closed ($code): $reason")
+                        val error = ClientException(if (code == 4403) "auth_revoked" else if (code == 4401) "auth_expired" else "disconnected",
+                            if (code == 4403) "This device was signed out" else if (code == 4401) "Session expired" else "Socket closed ($code)")
                         opened.completeExceptionally(error); ended.complete(error)
                         if (webSocket === socket) failPending(error)
                     }
                 }
                 var failure: Throwable? = null
+                var renewing: Job? = null
+                var migrating: Job? = null
                 try {
+                    val accessToken = deviceAuth?.prepare()
                     val origin = normalizeBackendOrigin(backend.url)
                     // OkHttp converts HTTP(S) to WS(S) for WebSocket upgrades. No browser Origin is spoofed.
-                    socket = http.newWebSocket(Request.Builder().url("$origin/ws").build(), listener)
+                    socket = socketHttp.newWebSocket(Request.Builder().url("$origin/ws").build(), listener)
                     transportTimeout("WebSocket upgrade") { opened.await() }
-                    val helloRequest = HelloRequest(protocolVersion = 1, client = HelloRequestClient(name = "harness-android", version = "0.1.0"))
+                    val helloRequest = HelloRequest(protocolVersion = 1, client = HelloRequestClient(name = "harness-android", version = "0.1.0"), auth = accessToken?.let { HelloRequestAuth(accessToken = it) })
                     val hello = exchange(helloRequest.id, wireJson.encodeToJsonElement(HelloRequest.serializer(), helloRequest).jsonObject, HelloResponse.serializer(), allowBeforeReady = true)
                     if (hello.protocolVersion != 1L) throw ClientException("unsupported_protocol", "Unsupported protocol ${hello.protocolVersion}")
+                    if (hello.features?.contains("device-auth-v1") == true) deviceAuth?.advertised(hello.backendId, hello.auth?.mode)
                     attempt = 0
                     publishState(ConnectionState(ConnectionStatus.Ready, hello = hello, generation = ++generation))
+                    if (deviceAuth != null) {
+                        migrating = scope.launch { deviceAuth.migrate { socket?.close(1000, "Authenticated reconnect") } }
+                        if (accessToken != null) renewing = scope.launch {
+                            runCatching { deviceAuth.acknowledgeStored() }
+                            while (isActive) {
+                                delay(deviceAuth.renewalDelay())
+                                try { request(AuthRenewRequest(accessToken = deviceAuth.refresh())) }
+                                catch (error: CancellationException) { throw error }
+                                catch (error: Exception) {
+                                    ended.complete(error)
+                                    socket?.close(1000, "Authentication renewal failed")
+                                    return@launch
+                                }
+                            }
+                        }
+                    }
                     failure = ended.await()
                 } catch (error: CancellationException) { throw error }
                 catch (error: Exception) { failure = error }
                 finally {
+                    renewing?.cancel(); migrating?.cancel()
                     socket?.cancel(); socket = null
                     failPending(failure ?: ClientException("disconnected", "Connection closed"))
                     dropTerminals()
                 }
                 if (closed) break
-                val permanent = (failure as? ClientException)?.code == "unsupported_protocol"
+                val failureCode = (failure as? ClientException)?.code
+                val authFailure = failureCode in setOf("auth_required", "auth_invalid", "auth_expired", "auth_revoked", "auth_downgrade", "auth_origin_changed", "auth_update_required") ||
+                    (failure is DeviceAuthHttpException && failure.status in setOf(401, 403))
+                if (authFailure && failureCode !in setOf("auth_downgrade", "auth_origin_changed", "auth_update_required")) {
+                    deviceAuth?.signedOut(if (failureCode == "auth_required") "Pair this backend" else if (failureCode == "auth_revoked" || (failure is DeviceAuthHttpException && failure.status == 403)) "This device was signed out" else "Session expired")
+                }
+                if (authFailure) deviceAuth?.blocked(failure.message ?: "Pair this backend")
+                val permanent = failureCode == "unsupported_protocol" || authFailure
                 publishState(ConnectionState(if (permanent) ConnectionStatus.Closed else ConnectionStatus.Reconnecting, attempt, hello = state.value.hello, error = failure.message, generation = generation))
                 if (permanent) break
-                delay(reconnectDelay(attempt++))
+                delay(maxOf(reconnectDelay(attempt++), (failure as? DeviceAuthHttpException)?.takeIf { it.status == 429 }?.retryAfterMs ?: 0))
             }
         }
+    }
+
+    /** Pairing changes identity only on a fresh socket. */
+    fun reconnectAuthenticated() {
+        val previous = connecting
+        previous?.cancel()
+        socket?.cancel()
+        scope.launch { previous?.join(); connect() }
     }
 
     /** Typed overloads generated in Requests.kt call this. Mutations are NEVER replayed after a drop. */

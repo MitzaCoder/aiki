@@ -175,6 +175,41 @@ including deep and saved-open-project checks. Required cutover needs the checker
 session and send its access token in hello (or use an owner-only control operation for equivalent private checks).
 `GET /auth/status` alone is discovery/liveness, not a replacement for release/commit/project integrity checks.
 
+### Android device sign-in
+
+Android keeps each origin's retained token, staged rotation successor, auth-advertisement pin and pending claim proof in
+`aiki-device-auth.preferences_pb`, a separate DataStore encrypted using an Android Keystore AES-256-GCM key. The exact
+origin is authenticated additional data. Backup and device-transfer rules exclude that file. Missing/invalid keys discard
+credentials but keep the downgrade pin: show Pair, never fall back anonymously. In-place APK upgrades preserve auth;
+access tokens and generated outgoing grant links remain memory-only. Neither address exports nor saved UI state contain
+session tokens. Never follow redirects for auth HTTP or authenticated WebSocket upgrades.
+
+Each backend discovers status before hello, pins identity/origin, refreshes its retained credential and authenticates hello.
+It renews on the live socket one minute before access expiry. Rotation stages the same-session successor durably before
+sending it; crash recovery retries that successor and can prove a committed rotation with the successor after the old-token
+retry window. Auth failures/4401/4403/revocation stop reconnect loops and show per-backend sign-in state. Legacy servers
+without advertised auth retain their existing handshake. A successful reconnect re-registers enabled FCM subscriptions.
+
+Settings → Backends offers Paste pairing link; HTTPS `/pair` is an unverified, user-choice intent handler like `/connect`.
+The receiver confirms the exact address/backend ID and Full access to this computer before storing a claim, redeeming,
+adding the address and connecting. Headless bootstrap also asks for the separate 12-character code. Incoming-link state
+survives configuration changes in memory, not a secret-bearing Bundle. A staged claim resumes after process death;
+approved credentials are durable before acknowledgement. Polling waits at least one second and honors Retry-After.
+Old address-link exports explicitly say they do not grant access.
+
+A backend's Devices page lists this-device identity, labels/platforms, creation/last-seen/expiry, connected counts, rename
+and confirmed revoke/sign-out (including last-device recovery warning). Add a device defaults to matching-code approval,
+warns if disabled, and shows a one-time QR/share link, countdown and Cancel. Pending grants can be cancelled independently.
+Approval dialogs appear anywhere in the app and bind the exact backend/grant/claim, not labels. Device-change events reload
+lists. An optional anonymous connection stages a migration claim without interrupting ordinary use, displays its comparison
+code in Backends and Devices, and polls with backoff. Denial/expiry leaves optional anonymous use intact. Approval stores,
+acknowledges and reconnects authenticated. Each backend migrates separately.
+
+Existing image/video URL renewal remains in use: renew before expiry and on bounded load failures; Media3 retains playback
+position/play state when changing URLs. Downloads mint after destination confirmation and re-mint once on failure, reopening
+the new destination in truncate mode. No signed URLs are persisted. Emulator verification does not establish physical camera,
+Keystore invalidation hardware behavior or live FCM delivery; crypto failure paths use an injectable cipher in JVM tests.
+
 ### Owner CLI and migration
 
 `bun packages/server/src/main.ts auth ...` reaches the **running** backend over `<data>/auth.sock` (0600, directory 0700).

@@ -5,6 +5,15 @@ scratch-only and loopback-only. No server/protocol/client/web source or lockfile
 change is required. Installed-workspace dependencies are reused deliberately;
 Android has no additional Bun workspace/package.
 
+## Device sign-in verification
+
+`ANDROID_VERIFY_AUTH_MODE=optional` on `launch-real.ts --fresh` selects a migration-capable scratch backend;
+its default remains `off` for existing tool fixtures. Each track reverses its own backend port and the next port.
+Use owner CLI grants/migration approval against that scratch data directory, never a real backend. After enrolling a device,
+the owner CLI can switch it to required; initial fixture seeding deliberately uses an anonymous connection. Pairing proof uses
+the real HTTP exchanges and app socket, not the synthetic fixture. Keep generated grant links, codes and claim/session
+proofs in temporary files, never logs or committed fixtures. Install with `install -r`; never uninstall to change auth state.
+
 ## Backends are not interchangeable
 
 | Backend | What it establishes |

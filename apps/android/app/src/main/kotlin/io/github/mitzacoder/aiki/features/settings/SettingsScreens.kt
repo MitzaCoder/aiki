@@ -67,6 +67,7 @@ fun GeneralSettingsScreen(
                     page.backendKey == null -> BackendsSection(repository, navigator, connectPayload, onConnectHandled)
                     backend == null -> NotFound("Unknown backend", "This device has no backend with that address. Add it under Backends.")
                     page.accounts -> AccountsPage(backend)
+                    page.devices -> DevicesPage(repository, backend)
                     else -> BackendPage(repository, backend, navigator)
                 }
             }

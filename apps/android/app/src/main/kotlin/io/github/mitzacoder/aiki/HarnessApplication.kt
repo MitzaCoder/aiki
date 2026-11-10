@@ -9,7 +9,7 @@ import io.github.mitzacoder.aiki.features.notifications.NotificationCenter
 import io.github.mitzacoder.aiki.features.notifications.ensureNotificationChannels
 
 class HarnessApplication : Application() {
-    val repository by lazy { HarnessRepository(DeviceStore(this)) }
+    val repository by lazy { HarnessRepository(DeviceStore(this), io.github.mitzacoder.aiki.data.DeviceAuthStore(this)) }
     /** Started by the activity (or a token change), not by every push: a push alone must not open every backend's socket. */
     val notifications by lazy { NotificationCenter(repository, FirebasePush, "${Build.MODEL} · Android app").also { started = it } }
     @Volatile private var started: NotificationCenter? = null

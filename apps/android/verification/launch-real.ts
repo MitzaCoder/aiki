@@ -49,6 +49,7 @@ const env = {
 	AIKI_TIMEZONE: "UTC",
 	ANDROID_VERIFY_ROOT: root,
 	ANDROID_VERIFY_LONG_MODEL: process.env.ANDROID_VERIFY_LONG_MODEL ?? "",
+    ANDROID_VERIFY_AUTH_MODE: process.env.ANDROID_VERIFY_AUTH_MODE ?? "off",
 };
 console.log(
 	`REAL CHECKOUT SERVER (${normal ? "normal main.ts, no injected model" : "injected faux model, no credentials"}); root ${root}; port ${env.AIKI_PORT}`,
