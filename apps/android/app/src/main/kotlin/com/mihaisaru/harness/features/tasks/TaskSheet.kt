@@ -67,7 +67,7 @@ import kotlinx.serialization.json.JsonPrimitive
 /**
  * A task as a sheet over the chat it was opened from ([com.mihaisaru.harness.navigation.Destination.Task]; web
  * `TaskSheet.svelte`): the whole screen on a phone, a wide panel from the side on a tablet. The Dashboard leads with
- * summary, questions, report, feedback and files in one column, with sticky section navigation,
+ * questions, report, feedback and files in one column, with sticky section navigation,
  * followed by folded history and brief. The user closes the task from here (Done, Drop, Reopen)
  * and talks about it in the reply box, which sends to main's conversation with the task's ID, also from a thread's
  * page. HarnessApp shows it; dismissing goes back.
@@ -92,7 +92,6 @@ fun TaskSheet(context: ProjectScreenContext, taskId: String, onDismiss: () -> Un
         BoxWithConstraints(Modifier.fillMaxSize()) {
             // From a tablet's width the sheet is a panel from the end with the chat dimmed beside it; a tap there closes it.
             val wide = maxWidth >= 600.dp
-            val summaryWide = maxWidth >= 840.dp
             if (wide) {
                 Box(Modifier.fillMaxSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = "Close the task", onClick = onDismiss))
                 Surface(
@@ -101,15 +100,15 @@ fun TaskSheet(context: ProjectScreenContext, taskId: String, onDismiss: () -> Un
                     color = Jarvis.colors.bg,
                     shadowElevation = 12.dp,
                     border = androidx.compose.foundation.BorderStroke(1.dp, Jarvis.colors.border),
-                ) { key(taskId) { TaskSheetContent(context, taskId, wide = true, summaryWide = summaryWide, onDismiss = onDismiss) } }
-            } else Surface(Modifier.fillMaxSize(), color = Jarvis.colors.bg) { key(taskId) { TaskSheetContent(context, taskId, wide = false, summaryWide = false, onDismiss = onDismiss) } }
+                ) { key(taskId) { TaskSheetContent(context, taskId, wide = true, onDismiss = onDismiss) } }
+            } else Surface(Modifier.fillMaxSize(), color = Jarvis.colors.bg) { key(taskId) { TaskSheetContent(context, taskId, wide = false, onDismiss = onDismiss) } }
         }
         }
     }
 }
 
 @Composable
-private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide: Boolean, summaryWide: Boolean, onDismiss: () -> Unit) {
+private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide: Boolean, onDismiss: () -> Unit) {
     val deviceSettings by context.repository.settings.collectAsStateWithLifecycle()
     val colors = Jarvis.colors
     val board = context.board
@@ -233,7 +232,7 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
                         "Updated ${relativeTime(task.updatedAt, now)}",
                         owner.label.takeIf { owner.claimed && !owner.main },
                         "Archived".takeIf { task.archived },
-                    ).joinToString(" · "),
+                    ).plus(taskSheetMeta(task, now)).joinToString(" · "),
                     style = TaskType.xs, color = colors.fgSubtle,
                 )
                 if (waitingForm) TaskWaitingForm(task.waiting, closing, deviceSettings.workDayStart, { note, until -> setStatus("waiting", note, until) }, { waitingForm = false })
@@ -253,8 +252,10 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
             task, questions.size, artifacts.size,
             linkGroups(task, view.tasks, view.board?.archivedLinks.orEmpty()).sumOf { it.items.size },
             decisions.size, linksEnabled,
-            timeline?.feedback.orEmpty().count { it.state == "open" || it.state == "handling" },
+            if (task.feedback != null) openFeedbackCount(task).toInt()
+            else timeline?.feedback.orEmpty().count { it.state == "open" || it.state == "handling" },
             timeline?.entries.orEmpty().size,
+            workers.count { it.id in task.workerIds && it.status == "running" },
         )
         var sectionSelection by remember(task.id) { mutableStateOf(TaskSectionSelection()) }
         var navigationJob by remember(task.id) { mutableStateOf<Job?>(null) }
@@ -282,7 +283,7 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
                 sectionSelection = sectionSelection.select(kind)
                 navigationJob?.cancel()
                 navigationJob = scope.launch {
-                    val index = sections.indexOfFirst { it.kind == kind } + 1 // Summary is item zero.
+                    val index = sections.indexOfFirst { it.kind == kind }
                     // Header/chips are outside this viewport: item offset zero is already below both.
                     if (reducedMotion) bodyState.scrollToItem(index) else bodyState.animateScrollToItem(index)
                 }
@@ -293,7 +294,6 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
             ) {
                 if (editing) item(key = "editor") { TaskEditor(context, task, view.tasks, onBack = { editing = false }, scrolls = false) }
                 else {
-                    item(key = "summary") { TaskSummary(task, questions.size, workers.count { it.id in task.workerIds && it.status == "running" }, summaryWide) }
                     items(sections, key = { it.kind.name }) { section ->
                         when (section.kind) {
                             TaskSectionKind.Questions -> {
@@ -341,7 +341,7 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
                                 }
                             }
                             TaskSectionKind.Workers -> {
-                                if (task.workerIds.isNotEmpty()) TaskSection(TaskSectionKind.Workers, count = task.workerIds.size.toString()) {
+                                if (task.workerIds.isNotEmpty()) TaskSection(TaskSectionKind.Workers, count = taskWorkerCount(task.workerIds.size, workers.count { it.id in task.workerIds && it.status == "running" })) {
                                     task.workerIds.forEach { id ->
                                         val worker = workers.firstOrNull { it.id == id }
                                         if (worker == null) Text(id, Modifier.padding(horizontal = 12.dp, vertical = 6.dp).semantics { contentDescription = "$id, this worker was forgotten" }, style = TaskType.xs.copy(fontFamily = JetBrainsMono), color = colors.fgSubtle)

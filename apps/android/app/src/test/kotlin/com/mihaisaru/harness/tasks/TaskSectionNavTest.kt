@@ -44,15 +44,16 @@ class TaskSectionNavTest {
         assertEquals(TaskSectionKind.Decisions, selection.current(TaskSectionKind.Brief))
     }
 
-    @Test fun spyUsesFirstSectionBelowSummaryUntilEnd() {
+    @Test fun spyUsesSectionItemsStartingAtZero() {
         assertEquals(-1, taskSectionIndex(0, 0, false, 0))
         assertEquals(0, taskSectionIndex(0, 2, false, 5))
-        assertEquals(1, taskSectionIndex(2, 5, false, 5))
+        assertEquals(1, taskSectionIndex(1, 3, false, 5))
+        assertEquals(2, taskSectionIndex(2, 4, false, 5))
     }
 
     @Test fun spyAtEndChoosesLastVisibleShortSectionNotFirstVisible() {
         assertEquals(4, taskSectionIndex(2, 5, true, 5))
-        assertEquals(3, taskSectionIndex(2, 4, true, 5))
+        assertEquals(3, taskSectionIndex(2, 3, true, 5))
         assertEquals(4, taskSectionIndex(2, 99, true, 5))
     }
 

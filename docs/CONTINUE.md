@@ -2,10 +2,15 @@
 
 ## Compact task header (T62)
 
-Web removes the task summary and its divider. Waiting note/since/return date and subtask done/total now wrap in header
-metadata; section navigation keeps question/warning counts, stored open+handling feedback totals and total/running
-worker counts. Existing blocked callouts remain. No new backend reads. DESIGN records the shared web/native contract.
-Web: 801 tests pass, check has zero errors/warnings, build passes. Synthetic desktop/phone light/dark proof is on T62.
+Web and Android remove the task summary and its divider. Waiting note/since/return date and subtask done/total now wrap
+in header metadata; section navigation keeps question/warning counts, stored open+handling feedback totals and
+total/running worker counts. Older backends without feedback totals fall back to timeline counts. Existing blocked
+callouts remain. No new backend reads. Android lazy sections start at zero: both nav taps and scroll-spy use that index.
+DESIGN records the shared contract. Root: 1,686 tests and typecheck pass; web: 801 tests, zero check errors/warnings,
+build passes. Android: 584 tests (two existing skips), assembly and lint pass (35 warnings, zero errors). Generation:
+299 DTOs / 78 overloads, unchanged; public guard passes. T62 has synthetic before/after light/dark screenshots for
+web desktop/phone and native phone, including review, waiting with subtasks/feedback, and blocked tasks, plus section-nav
+recordings on both platforms. Nothing was deployed or pushed.
 
 ## Board Markdown (T60)
 

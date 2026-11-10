@@ -23,14 +23,14 @@ internal data class TaskSectionLink(val kind: TaskSectionKind, val count: String
 /** The body and navigation share this list, so absent sections never leave dead chips or empty list items. */
 internal fun taskSheetSections(
     task: BoardTask, questions: Int, files: Int, related: Int, decisions: Int,
-    linksEnabled: Boolean, feedback: Int, timeline: Int,
+    linksEnabled: Boolean, feedback: Int, timeline: Int, runningWorkers: Int = 0,
 ): List<TaskSectionLink> = buildList {
     if (questions > 0) add(TaskSectionLink(TaskSectionKind.Questions, "$questions open"))
     add(TaskSectionLink(TaskSectionKind.Report, if (hasReport(task.report)) "Current update" else null))
     if (linksEnabled) add(TaskSectionLink(TaskSectionKind.Feedback, "$feedback open"))
     if (files > 0) add(TaskSectionLink(TaskSectionKind.Files, files.toString()))
     if (linksEnabled && related > 0) add(TaskSectionLink(TaskSectionKind.Related, related.toString()))
-    if (task.workerIds.isNotEmpty()) add(TaskSectionLink(TaskSectionKind.Workers, task.workerIds.size.toString()))
+    if (task.workerIds.isNotEmpty()) add(TaskSectionLink(TaskSectionKind.Workers, taskWorkerCount(task.workerIds.size, runningWorkers)))
     if (decisions > 0) add(TaskSectionLink(TaskSectionKind.Decisions, decisions.toString()))
     // Android keeps its existing empty timeline and feedback placeholders.
     if (linksEnabled) add(TaskSectionLink(TaskSectionKind.Timeline, timeline.toString()))
@@ -45,10 +45,10 @@ internal data class TaskSectionSelection(val pinned: TaskSectionKind? = null) {
     fun current(spy: TaskSectionKind?) = pinned ?: spy
 }
 
-/** Lazy item zero is the summary. At the end the last visible section wins, even if it is short. */
+/** Each lazy item is a section, starting at zero. At the end the last visible section wins. */
 internal fun taskSectionIndex(firstVisible: Int, lastVisible: Int, atEnd: Boolean, sectionCount: Int): Int {
     if (sectionCount == 0) return -1
-    return ((if (atEnd) lastVisible else firstVisible) - 1).coerceIn(0, sectionCount - 1)
+    return (if (atEnd) lastVisible else firstVisible).coerceIn(0, sectionCount - 1)
 }
 
 @Composable
