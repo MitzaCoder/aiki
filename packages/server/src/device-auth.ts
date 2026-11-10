@@ -8,6 +8,9 @@ import { deviceComparisonCode, type AuthDevice, type AuthPairing, type DeviceAut
 const MINUTE = 60_000,
 	DAY = 86400_000;
 export const ACCESS_TTL = 15 * MINUTE;
+const MIGRATION_IDLE_TTL = 14 * DAY,
+	MIGRATION_ABSOLUTE_TTL = 30 * DAY,
+	MIGRATION_APPROVAL_TTL = 14 * DAY;
 export class DeviceAuthError extends Error {
 	constructor(
 		readonly code: string,
@@ -71,6 +74,7 @@ type Claim = {
 	lastSeen: number;
 	source: string;
 	state: "pending" | "approved" | "denied" | "acknowledged" | "expired";
+	approvedUntil?: number;
 	delivery?: string;
 	deliveryUntil?: number;
 	sessionId?: string;
@@ -197,12 +201,24 @@ export class DeviceAuth {
 			}
 			if (c.state === "pending") {
 				const grant = this.#state.grants.find((g) => g.id === c.grantId);
-				if ((grant && grant.expires <= this.now()) || (!grant && this.now() - c.created >= 10 * MINUTE)) {
-					c.state = "expired";
-					changed = true;
-				}
+				const expired = c.grantId === "migration"
+					? this.now() >= Math.min(c.lastSeen + MIGRATION_IDLE_TTL, c.created + MIGRATION_ABSOLUTE_TTL)
+					: !grant || grant.expires <= this.now();
+				if (expired) { c.state = "expired"; changed = true; }
+			}
+			if (c.grantId === "migration" && c.state === "approved" && this.now() >= (c.approvedUntil ?? c.deliveryUntil ?? 0)) {
+				c.state = "expired";
+				delete c.delivery;
+				if (c.sessionId && this.active(c.sessionId)) void this.revoke(c.sessionId);
+				changed = true;
 			}
 		}
+		// Bound the whole migration inventory, not just its pending subset. Keep terminal
+		// proofs long enough for returning devices to see denial or revive idle expiry.
+		const retained = this.#state.claims.filter(c => !(c.grantId === "migration" &&
+			(c.state === "expired" || c.state === "denied" || c.state === "acknowledged") &&
+			this.now() >= Math.max(c.created, c.lastSeen, c.approvedUntil ?? 0) + MIGRATION_ABSOLUTE_TTL));
+		if (retained.length !== this.#state.claims.length) { this.#state.claims = retained; changed = true; }
 		if (changed) this.save();
 	}
 
@@ -392,7 +408,10 @@ export class DeviceAuth {
 		for (const g of this.#state.grants) if (g.owner === sessionId && g.state === "unused") g.state = "cancelled";
 		// Keep the hash until normal expiry so a verified reconnect can distinguish revoked from unknown.
 		// Every access lookup consults this now-revoked session row before authorizing.
-		for (const c of this.#state.claims) if (c.sessionId === sessionId) delete c.delivery;
+		for (const c of this.#state.claims) if (c.sessionId === sessionId) {
+			delete c.delivery;
+			if (c.grantId === "migration" && c.state === "approved") c.state = "expired";
+		}
 		this.save();
 		this.onAudit?.("revoke", sessionId);
 		await this.onRevoke?.(sessionId);
@@ -552,14 +571,8 @@ export class DeviceAuth {
 		comparisonCode: string;
 		credentials: SessionCredentials | null;
 	} {
-		const g = this.#state.grants.find((g) => g.id === c.grantId);
-		if (c.delivery && this.now() >= c.deliveryUntil!) {
-			delete c.delivery;
-			this.save();
-		}
-		const expired =
-			(c.state === "pending" && ((g && g.expires <= this.now()) || (!g && this.now() - c.created >= 10 * MINUTE))) ||
-			(c.state === "approved" && !c.delivery);
+		this.sweep();
+		const expired = c.state === "approved" && !c.delivery && c.grantId !== "migration";
 		return {
 			claimId: c.id,
 			state: expired ? "expired" : c.state,
@@ -575,11 +588,24 @@ export class DeviceAuth {
 	poll(claimId: string, secret: string) {
 		const c = this.claim(claimId, secret);
 		this.limit(`poll:${claimId}`, 1, 1000);
+		this.sweep();
+		if (c.grantId === "migration") {
+			this.touchMigration(c);
+			if (c.state === "approved" && !c.delivery) {
+				// Only the proof holder starts delivery. A lost delivery must never leave
+				// two live sessions, nor undo an explicit owner revocation.
+				if (c.sessionId && !this.active(c.sessionId)) return { ...this.claimView(c), state: "expired" as const };
+				if (c.sessionId) void this.revoke(c.sessionId);
+				this.issue(c);
+				this.save();
+			}
+		}
 		return this.claimView(c);
 	}
 	ack(claimId: string, secret: string) {
 		const c = this.claim(claimId, secret);
-		if (c.state !== "approved" && c.state !== "acknowledged") return fail("claim_pending", 409);
+		this.sweep();
+		if ((c.state !== "approved" && c.state !== "acknowledged") || !c.sessionId) return fail("claim_pending", 409);
 		delete c.delivery;
 		c.state = "acknowledged";
 		this.save();
@@ -610,21 +636,34 @@ export class DeviceAuth {
 		if (c) c.state = "denied";
 		this.save();
 	}
+	touchMigration(c: Claim) {
+		if ((c.state === "pending" || c.state === "approved") && this.now() - c.lastSeen >= MINUTE) {
+			c.lastSeen = this.now();
+			this.save();
+		}
+	}
 	async migration(input: { claimId: string; claimSecret: string; label: string; platform: string }, source: string) {
 		if (this.mode !== "optional") return fail("migration_closed", 403);
 		this.enrollmentLimit("migration", source);
+		this.sweep();
 		const existing = this.#state.claims.find((c) => c.id === input.claimId);
 		if (existing) {
 			if (existing.grantId !== "migration" || !matches(input.claimSecret, existing.hash)) return fail();
-			existing.lastSeen = this.now();
-			this.save();
+			if (existing.state === "expired" && !existing.approvedUntil && !existing.sessionId &&
+				this.now() < existing.created + MIGRATION_ABSOLUTE_TTL) {
+				existing.state = "pending";
+				existing.lastSeen = this.now();
+				this.save();
+			} else this.touchMigration(existing);
 			return this.claimView(existing);
 		}
-		if (this.#state.claims.filter((c) => c.grantId === "migration" && c.state === "pending").length >= 100)
+		if (this.#state.claims.filter((c) => c.grantId === "migration").length >= 100)
 			return fail("pending_limit", 429);
 		const code = await deviceComparisonCode(this.backendId, "migration", input.claimId, input.claimSecret);
 		if (this.mode !== "optional" || this.#state.claims.some((c) => c.id === input.claimId))
 			return fail("claim_exists", 409);
+		if (this.#state.claims.filter((c) => c.grantId === "migration").length >= 100)
+			return fail("pending_limit", 429);
 		const c: Claim = {
 			id: input.claimId,
 			hash: hash(input.claimSecret),
@@ -642,6 +681,7 @@ export class DeviceAuth {
 		return this.claimView(c);
 	}
 	inventory() {
+		this.sweep();
 		return this.#state.claims
 			.filter((c) => c.grantId === "migration")
 			.map((c) => ({
@@ -656,6 +696,7 @@ export class DeviceAuth {
 			}));
 	}
 	approveMigration(batchId: string, claimIds: string[]) {
+		this.sweep();
 		if (!claimIds.length || new Set(claimIds).size !== claimIds.length) return fail("bad_request", 400);
 		if (this.mode !== "optional") return fail("migration_closed", 403);
 		const previous = this.#state.batches[batchId];
@@ -665,10 +706,13 @@ export class DeviceAuth {
 		}
 		const claims = claimIds.map((claimId) => {
 			const c = this.#state.claims.find((c) => c.id === claimId && c.grantId === "migration" && c.state === "pending");
-			if (!c || this.now() - c.created >= 10 * MINUTE) return fail("not_found", 404);
+			if (!c) return fail("not_found", 404);
 			return c;
 		});
-		for (const c of claims) this.issue(c);
+		for (const c of claims) {
+			c.state = "approved";
+			c.approvedUntil = this.now() + MIGRATION_APPROVAL_TTL;
+		}
 		this.#state.batches[batchId] = claimIds;
 		this.save();
 		this.onChange?.();

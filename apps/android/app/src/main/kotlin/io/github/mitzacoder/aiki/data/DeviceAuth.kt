@@ -83,6 +83,10 @@ class DeviceAuth(val origin: String, private val store: DeviceAuthStorage, val h
         store.write(origin, saved ?: SavedDeviceAuth(backendId = backendId))
         mutableState.value = state.value.copy(backendId = backendId, mode = mode, sessionId = saved?.sessionId)
         if (saved?.sessionToken != null) return@withLock refreshLocked(saved)
+        // Required-mode cutover closes registration, not collection of an existing approval.
+        saved?.pending?.takeIf { mode == "required" && it.kind == "migration" && saved.migrationStopped == null }?.let { claim ->
+            if (acceptClaim(http.call(origin, "/auth/claims/poll", claimProof(claim)), claim)) return@withLock access
+        }
         saved?.pending?.takeIf { it.kind != "migration" }?.let { pending ->
             redeemLocked(DevicePairingLink(backendId, origin, pending.grantId, if (pending.kind == "pair") pending.redeemSecret.orEmpty() else "", pending.kind == "bootstrap"), pending.redeemSecret.orEmpty(),
                 onWaiting = { code -> mutableState.value = state.value.copy(notice = "Waiting for approval", comparisonCode = code) })
@@ -151,7 +155,11 @@ class DeviceAuth(val origin: String, private val store: DeviceAuthStorage, val h
         if (state.value.mode != "optional") return
         val saved = mutex.withLock {
             val prior = store.read(origin) ?: return
-            if (prior.migrationStopped != null) { mutableState.value = state.value.copy(notice = prior.migrationStopped); return }
+            // The stage-one build dropped expired proofs and stored this ambiguous message.
+            // Recover it once; a new explicit denial remains terminal across launches.
+            if (prior.migrationStopped != null && prior.migrationStopped != "Approval expired or was denied. Pair this backend.") {
+                mutableState.value = state.value.copy(notice = prior.migrationStopped); return
+            }
             if (prior.sessionToken != null || prior.signedOut != null || (prior.pending != null && prior.pending.kind != "migration")) return
             SavedDeviceAuth(prior.backendId, pending = prior.pending ?: newDeviceClaim("migration")).also { store.write(origin, it) }
         }
@@ -168,17 +176,18 @@ class DeviceAuth(val origin: String, private val store: DeviceAuthStorage, val h
                     if (store.read(origin)?.pending?.id != claim.id) return
                     acceptClaim(response, claim)
                 }) { onApproved(); return }
-                if (response.string("state") in setOf("expired", "denied", "acknowledged")) {
-                    store.write(origin, SavedDeviceAuth(saved.backendId, migrationStopped = "Approval expired or was denied. Pair this backend."))
-                    mutableState.value = state.value.copy(notice = "Approval expired or was denied. Pair this backend.", comparisonCode = null)
+                if (response.string("state") == "denied") {
+                    store.write(origin, SavedDeviceAuth(saved.backendId, pending = claim, migrationStopped = "Approval was denied. Pair this backend."))
+                    mutableState.value = state.value.copy(notice = "Approval was denied. Pair this backend.", comparisonCode = null)
                     return
                 }
+                if (response.string("state") in setOf("expired", "acknowledged")) registered = false
                 wait = (wait * 2).coerceAtMost(30_000)
             } catch (error: CancellationException) { throw error }
             catch (error: DeviceAuthHttpException) {
-                if (error.status == 403) { mutableState.value = state.value.copy(notice = "Pair this backend", comparisonCode = null); return }
+                registered = false
                 wait = maxOf(wait * 2, error.retryAfterMs).coerceAtMost(3_600_000)
-            } catch (_: Exception) { wait = (wait * 2).coerceAtMost(30_000) }
+            } catch (_: Exception) { registered = false; wait = (wait * 2).coerceAtMost(30_000) }
             delay(wait)
         }
     }

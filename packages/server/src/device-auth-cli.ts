@@ -81,7 +81,7 @@ export async function ownerCommand(
 			if (value && (action === "allow" || action === "remove")) return auth.hostChange(value, action === "allow");
 			break;
 		case "migration":
-			if (action === "list") return { claims: auth.inventory() };
+			if (action === "list") return { claims: auth.inventory().filter(c => !args.includes("--pending") || c.state === "pending") };
 			if (action === "approve" && value === "--batch" && rest[0] && rest.length > 1)
 				return auth.approveMigration(rest[0], rest.slice(1));
 			break;

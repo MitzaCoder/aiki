@@ -152,6 +152,7 @@ export class BackendConnection {
 			url: backendWebSocketUrl(config.url),
 			clientName: "aiki-web",
 			prepareHello: async () => {
+				this.#migrationRegistered = false;
 				try { return await this.#deviceAuth.prepare(); }
 				finally {
 					this.authBackendId = this.#deviceAuth.backendId;
@@ -240,32 +241,41 @@ export class BackendConnection {
 	async pollMigration(): Promise<void> {
 		if (this.#migrationRunning || Date.now() < this.#migrationNotBefore || this.authMode !== "optional" || this.authSessionId || !this.ready) return;
 		this.#migrationRunning = true; clearTimeout(this.#migrationTimer);
-		let delay = 20_000;
+		let delay = 30_000;
+		let migrationDenied = false;
 		try {
+			migrationDenied = (await this.#deviceAuth.record()).migrationDenied ?? false;
+			if (migrationDenied) {
+				this.authNotice = "Approval was denied. Pair this backend.";
+				return;
+			}
 			const proof = await this.#deviceAuth.proof("migration");
 			const result = await authRequest<ClaimResult>(this.url, this.#migrationRegistered ? "/auth/claims/poll" : "/auth/migration/claims", this.#migrationRegistered ? proof : { ...proof, label: browserDeviceLabel(), platform: "web" });
 			this.#migrationRegistered = true; this.#migrationFailures = 0;
 			this.#migrationNotBefore = Date.now() + 1000;
 			this.storageWarning = this.#deviceAuth.store.memoryOnly ? STORAGE_WARNING : undefined;
-			if (await this.#deviceAuth.acceptClaim(result, proof)) {
+			const migration = await this.#deviceAuth.acceptMigration(result, proof);
+			if (migration === "approved") {
 				this.authNotice = undefined; this.client.close(); this.client.connect(); return;
 			}
-			this.authNotice = result.state === "pending" ? `Waiting for approval · code ${result.comparisonCode}` : `Device enrollment ${result.state}. Reopen to request approval again.`;
+			if (result.state === "expired" || result.state === "acknowledged") this.#migrationRegistered = false;
+			migrationDenied = migration === "denied";
+			this.authNotice = migrationDenied ? "Approval was denied. Pair this backend." : `Waiting for approval · code ${result.comparisonCode}`;
 		} catch (error) {
+			this.#migrationRegistered = false;
 			delay = Math.min(120_000, delay * 2 ** Math.min(3, ++this.#migrationFailures));
 			if (error instanceof AuthHttpError && error.status === 429) delay = Math.max(delay, error.retryAfter * 1000);
 			this.#migrationNotBefore = Date.now() + delay;
 			// Registration errors must never interrupt ordinary work on an optional backend.
 		} finally {
 			this.#migrationRunning = false;
-			if (!this.authSessionId && this.ready) this.#migrationTimer = setTimeout(() => void this.pollMigration(), delay);
+			if (!migrationDenied && !this.authSessionId && this.ready) this.#migrationTimer = setTimeout(() => void this.pollMigration(), delay);
 		}
 	}
 	async requestMigrationApproval(): Promise<void> {
 		if (this.authSessionId) return;
 		this.#migrationRegistered = false; this.#migrationNotBefore = 0;
-		const record = await this.#deviceAuth.record(); delete record.migration;
-		await this.#deviceAuth.store.write(record); await this.pollMigration();
+		await this.pollMigration();
 	}
 	reviewPairing(pairing: AuthPairing): void {
 		if (!this.pairingRequest) this.pairingRequest = pairing;

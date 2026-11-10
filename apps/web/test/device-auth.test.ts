@@ -273,7 +273,9 @@ test('migration reuses persisted proof across reload, remains anonymous until ap
 	expect(await reloaded.proof('migration')).toEqual(proof);
 	expect((await register(reloaded)).comparisonCode).toBe(pending.comparisonCode);
 	s.server.auth.approveMigration('synthetic-batch', [proof.claimId]);
-	expect(await reloaded.acceptClaim(await register(reloaded), proof)).toBe(true);
+	expect(await reloaded.acceptMigration(await register(reloaded), proof)).toBe('waiting');
+	const delivery = await authRequest<ClaimResult>(reloaded.origin, '/auth/claims/poll', proof);
+	expect(await reloaded.acceptMigration(delivery, proof)).toBe('approved');
 	expect((await reloaded.record()).migration).toBeUndefined();
 	expect((await reloaded.record()).session).toBeDefined();
 	expect(await reloaded.prepare()).toMatch(/^aiki_a1\./);
@@ -504,4 +506,52 @@ test('web push sync rebinds an unreadable legacy row after migration', async () 
 		if (previous === undefined) delete globals.$state;
 		else globals.$state = previous;
 	}
+});
+
+
+test('migration expiry, acknowledged response and network failure preserve one IndexedDB proof across reloads', async () => {
+	const s = await setup('optional');
+	const factory = new IDBFactory();
+	const auth = new BackendDeviceAuth(s.server.url, new DeviceCredentialStore(factory));
+	await auth.discover();
+	const proof = await auth.proof('migration');
+	for (const state of ['pending', 'expired', 'acknowledged'] as const) {
+		expect(await auth.acceptMigration({ claimId: proof.claimId, comparisonCode: 'ABCD-EFGH', state, credentials: null }, proof)).toBe('waiting');
+		const reloaded = new BackendDeviceAuth(s.server.url, new DeviceCredentialStore(factory));
+		await reloaded.discover();
+		expect(await reloaded.proof('migration')).toEqual(proof);
+		expect((await reloaded.record()).migrationDenied).toBeUndefined();
+	}
+	await expect(authRequest(s.server.url, '/auth/claims/poll', proof)).rejects.toBeInstanceOf(AuthHttpError);
+	expect(await auth.proof('migration')).toEqual(proof);
+	expect(await auth.prepare()).toBeUndefined();
+});
+
+test('migration denial is durable and never drops the denied proof or blocks anonymous work', async () => {
+	const s = await setup('optional');
+	const factory = new IDBFactory();
+	const auth = new BackendDeviceAuth(s.server.url, new DeviceCredentialStore(factory));
+	await auth.discover();
+	const proof = await auth.proof('migration');
+	expect(await auth.acceptMigration({ claimId: proof.claimId, comparisonCode: 'ABCD-EFGH', state: 'denied', credentials: null }, proof)).toBe('denied');
+	const reloaded = new BackendDeviceAuth(s.server.url, new DeviceCredentialStore(factory));
+	expect(await reloaded.prepare()).toBeUndefined();
+	expect(await reloaded.proof('migration')).toEqual(proof);
+	expect((await reloaded.record()).migrationDenied).toBe(true);
+});
+
+
+test('an offline approved migration collects during prepare after required-mode cutover', async () => {
+	const s = await setup('optional');
+	const factory = new IDBFactory();
+	const auth = new BackendDeviceAuth(s.server.url, new DeviceCredentialStore(factory));
+	await auth.discover();
+	const proof = await auth.proof('migration');
+	await authRequest(auth.origin, '/auth/migration/claims', { ...proof, label: 'Offline browser', platform: 'web' });
+	s.server.auth.approveMigration('offline-browser', [proof.claimId]);
+	s.server.auth.setMode('required');
+	const reloaded = new BackendDeviceAuth(s.server.url, new DeviceCredentialStore(factory));
+	expect(await reloaded.prepare()).toMatch(/^aiki_a1\./);
+	expect((await reloaded.record()).session).toBeDefined();
+	expect((await reloaded.record()).migration).toBeUndefined();
 });

@@ -202,6 +202,12 @@ export class BackendDeviceAuth {
 		if (!this.backendId) return undefined;
 		const record = await this.record();
 		if (!record.session) {
+			// An owner may cut over while this already-approved device is offline.
+			// Registration is closed in required mode, but proof-bound collection is not.
+			if (this.mode === 'required' && record.migration && !record.migrationDenied) {
+				const result = await authRequest<ClaimResult>(this.origin, '/auth/claims/poll', record.migration);
+				if (await this.acceptMigration(result, record.migration) === 'approved') return this.#access!.accessToken;
+			}
 			if (this.mode === 'required') throw new AuthHttpError('auth_required', 401, 0);
 			return undefined;
 		}
@@ -297,6 +303,18 @@ export class BackendDeviceAuth {
 		if (record.pairing?.claimId === proof.claimId) delete record.pairing;
 		if (record.migration?.claimId === proof.claimId) delete record.migration;
 		await this.store.write(record);
+	}
+	/** Expiry is retryable with the same durable proof; only explicit denial stops migration. */
+	async acceptMigration(result: ClaimResult, proof: ClaimProof): Promise<'approved' | 'denied' | 'waiting'> {
+		if (result.claimId !== proof.claimId) throw new Error('Claim identity mismatch.');
+		if (await this.acceptClaim(result, proof)) return 'approved';
+		if (result.state === 'denied') {
+			const record = await this.record();
+			record.migrationDenied = true;
+			await this.store.write(record);
+			return 'denied';
+		}
+		return 'waiting';
 	}
 	async acceptClaim(result: ClaimResult, proof: ClaimProof): Promise<boolean> {
 		if (result.state !== 'approved' || !result.credentials) return false;

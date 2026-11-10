@@ -63,6 +63,97 @@ class DeviceAuthLifecycleTest {
         }
     }
 
+    @Test fun stageOneStoppedMigrationRecoversOnceAndPersistsItsReplacementAcrossLaunches() = runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            val origin = server.url("/").toString().trimEnd('/')
+            val store = Store(SavedDeviceAuth("backend", migrationStopped = "Approval expired or was denied. Pair this backend."))
+            val status = """{"backendId":"backend","mode":"optional","authVersion":1}"""
+            repeat(2) {
+                server.reply(status)
+                val auth = DeviceAuth(origin, store, label = "Test phone")
+                assertNull(auth.prepare())
+                server.takeRequest()
+                val job = launch { auth.migrate { fail() } }
+                val request = withContext(Dispatchers.IO) { server.takeRequest(5, java.util.concurrent.TimeUnit.SECONDS)!! }
+                assertEquals("/auth/migration/claims", request.url.encodedPath)
+                val body = wireJson.parseToJsonElement(request.body!!.utf8()).jsonObject
+                val proof = store.saved!!.pending!!
+                assertEquals(proof.id, body.string("claimId"))
+                assertEquals(proof.secret, body.string("claimSecret"))
+                assertNull(store.saved!!.migrationStopped)
+                assertEquals("Waiting for approval", auth.state.value.notice)
+                assertNotNull(auth.state.value.comparisonCode)
+                server.reply("""{"claimId":"${proof.id}","state":"pending","credentials":null}""")
+                job.cancelAndJoin()
+            }
+            assertEquals(1, store.writes.mapNotNull { it.pending?.id }.distinct().size)
+        }
+    }
+
+    @Test fun expiredMigrationReregistersTheSameClaimAndOnlyDenialStopsIt() = runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            val origin = server.url("/").toString().trimEnd('/')
+            val claim = PendingDeviceClaim("same-claim", "aiki_c1." + "A".repeat(43), "migration")
+            val store = Store(SavedDeviceAuth("backend", pending = claim))
+            server.reply("""{"backendId":"backend","mode":"optional","authVersion":1}""")
+            server.reply("""{"claimId":"same-claim","state":"expired","credentials":null}""")
+            server.reply("""{"claimId":"same-claim","state":"denied","credentials":null}""")
+            val auth = DeviceAuth(origin, store, label = "Test phone")
+            auth.prepare()
+            withTimeout(8000) { auth.migrate { fail() } }
+            server.takeRequest()
+            repeat(2) {
+                val request = server.takeRequest()
+                assertEquals("/auth/migration/claims", request.url.encodedPath)
+                val body = wireJson.parseToJsonElement(request.body!!.utf8()).jsonObject
+                assertEquals(claim.id, body.string("claimId"))
+                assertEquals(claim.secret, body.string("claimSecret"))
+            }
+            assertEquals(claim.id, store.saved!!.pending!!.id)
+            assertEquals("Approval was denied. Pair this backend.", store.saved!!.migrationStopped)
+        }
+    }
+
+    @Test fun migrationNetworkFailureRetriesTheSameClaim() = runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            val origin = server.url("/").toString().trimEnd('/')
+            val claim = PendingDeviceClaim("same-claim", "aiki_c1." + "A".repeat(43), "migration")
+            val store = Store(SavedDeviceAuth("backend", pending = claim))
+            server.reply("""{"backendId":"backend","mode":"optional","authVersion":1}""")
+            server.enqueue(MockResponse.Builder().code(503).body("{}").build())
+            server.reply("""{"claimId":"same-claim","state":"denied","credentials":null}""")
+            val auth = DeviceAuth(origin, store, label = "Test phone")
+            auth.prepare()
+            withTimeout(8000) { auth.migrate { fail() } }
+            server.takeRequest()
+            val bodies = (1..2).map { server.takeRequest().body!!.utf8() }
+            assertEquals(bodies[0], bodies[1])
+            assertEquals(claim.id, store.saved!!.pending!!.id)
+        }
+    }
+
+    @Test fun offlineApprovedMigrationCollectsAfterRequiredModeCutover() = runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            val origin = server.url("/").toString().trimEnd('/')
+            val claim = PendingDeviceClaim("offline-claim", "proof", "migration")
+            val store = Store(SavedDeviceAuth("backend", pending = claim))
+            server.reply("""{"backendId":"backend","mode":"required","authVersion":1}""")
+            server.reply(credentials(claim.id))
+            server.reply("""{"ok":true}""")
+            val auth = DeviceAuth(origin, store, label = "Test phone")
+            assertEquals("access-memory", auth.prepare())
+            server.takeRequest()
+            assertEquals("/auth/claims/poll", server.takeRequest().url.encodedPath)
+            assertEquals("/auth/claims/ack", server.takeRequest().url.encodedPath)
+            assertEquals("session", store.saved!!.sessionId)
+            assertNull(store.saved!!.pending)
+        }
+    }
+
     @Test fun requiredBackendWithoutSessionNeverUpgradesOrReconnects() = runBlocking {
         MockWebServer().use { server ->
             server.start()

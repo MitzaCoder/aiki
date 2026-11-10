@@ -80,7 +80,8 @@ persists them for lost-response recovery. Pair secrets are `aiki_p1.<32 bytes ba
   does not consume. Return **ClaimResult** `{claimId,state,comparisonCode,credentials}`. States `pending|approved|denied|
   acknowledged|expired`. `credentials` null unless approved/delivery still live. Claim-result schema same on every exchange.
 - `POST /auth/claims/poll`: `{claimId,claimSecret}` → ClaimResult. Max one/sec/claim. Approvals deliver only to the bound
-  claim proof; retryable 60 seconds after issue. After expiry re-pair (no new delivery to another claim).
+  claim proof; retryable 60 seconds after issue. Pairing/bootstrap expiry requires re-pairing. Migration delivery follows
+  the longer approval/retry rules below; a poll never creates authority without an explicit owner approval.
 - `POST /auth/claims/ack`: `{claimId,claimSecret}` → `{ok:true}`; idempotently deletes encrypted delivery. Persist session first.
 - **Credentials**: `{backendId,sessionId,sessionToken,accessToken,accessExpiresAt,sessionExpiresAt,rotateAfter}`; timestamps
   ISO8601 UTC. `sessionExpiresAt` is min(idle,absolute); refresh returns updated expiry.
@@ -88,10 +89,33 @@ persists them for lost-response recovery. Pair secrets are `aiki_p1.<32 bytes ba
   `{backendId,sessionId,accessToken,accessExpiresAt,sessionExpiresAt,rotateAfter}`.
 - `POST /auth/session/rotate`: retained bearer, `{successorToken}` → `{sessionId,rotateAfter}`.
 - `POST /auth/migration/claims`: optional only, `{claimId,claimSecret,label,platform}` → ClaimResult. Re-registration with
-  same proof updates last-seen without creating a new claim; pending claims expire after ten minutes. No auto enrollment.
+  same proof updates last-seen without creating a new claim. Pending migration expires after 14 idle days since last seen,
+  with a 30-day absolute cap since creation. Poll and re-registration refresh last-seen (disk writes at most once/minute).
+  Re-registering an idle-expired proof revives the same claim ID and comparison code within the absolute cap. Denial and
+  expired approval never revive. No auto enrollment.
+
+Migration approval is valid for 14 days, independent of pending-claim idle/absolute expiry. Approval records permission,
+not a session: the first proof-holder poll mints the session and starts the existing encrypted 60-second delivery window.
+An offline device can collect days later, including after required-mode cutover. If delivery lapses without acknowledgement,
+the next poll revokes the unacknowledged session before minting a replacement; there is never more than one live session
+per claim. Explicit session revocation blocks replacement. Approval expiry revokes any unacknowledged session. Pairing and
+bootstrap retain their stricter grant lifetimes and do not remint. ClaimResult fields and authVersion are unchanged.
+
+The migration inventory includes pending, approved (including not yet collected), acknowledged, expired and denied states
+and first/last-seen times; `auth migration list --pending --json` filters pending only. All retained migration rows share a
+100-claim cap. Terminal rows are purged 30 days after their latest creation, last-seen or approval-expiry timestamp, so
+churn cannot exhaust that cap permanently. Owner batch approval remains exact and idempotent.
+
+Clients keep one durable proof per backend, re-register at launch/reconnect, and poll with backoff while open (normally
+30 seconds). Expiry and network errors preserve the proof and retry registration; only explicit denial stops migration.
+Anonymous optional-mode work continues. The old web build kept its expired proof, so reload/re-registration recovers it.
+Android recovers the stage-one ambiguous `migrationStopped` expiry/denial message once when optional with no session or
+explicit sign-out; it durably creates a replacement proof before sending. New explicit denials retain the proof and a
+separate terminal message. An old ambiguous denial cannot be distinguished from expiry, but recovery never grants access:
+the owner must explicitly approve the replacement ID.
 
 Enrollment limits: 5/min/grant+source and 30/min/backend; 10 grants/hour/session, 5 pending/session; 500 global pending
-claims (migration additionally capped 100); refresh source/global/session limits. Required-mode handshakes additionally
+claims (all retained migration rows additionally capped 100); refresh source/global/session limits. Required-mode handshakes additionally
 limit source/backend/session attempts (30/120/60 per minute), 100 outstanding pre-auth sockets, five seconds and 8 KiB
 for hello. Optional/off legacy handshakes have none of these new quotas/timeouts/caps (the existing 32 MiB frame cap
 remains); a post-deploy reconnect storm must not lock out old tabs behind one proxy. Use backoff on 429.

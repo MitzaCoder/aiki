@@ -17,6 +17,8 @@ test("three-backend migration approves exactly two browsers and Android, never t
 			expect(response.status).toBe(200);
 			expect(await response.json()).toMatchObject({ state: "pending", credentials: null });
 		}
+		// The owner reviews hours later, and the phone is offline during approval.
+		now += 2 * 3600_000;
 		const listed = await ownerCli(backend, ["migration", "list", "--json"]);
 		expect(listed.claims.map((claim: { claimId: string }) => claim.claimId)).toEqual(inventory.map(c => c.claimId));
 		expect(listed.claims.map((claim: { state: string }) => claim.state)).toEqual(Array(4).fill("pending"));
@@ -26,6 +28,9 @@ test("three-backend migration approves exactly two browsers and Android, never t
 		const altered = await ownerControl(backend, [...approve.slice(0, -1), inventory[3]!.claimId]);
 		expect(altered.status).toBe(409);
 		expect(await altered.json()).toMatchObject({ error: { code: "batch_mismatch" } });
+		expect(backend.server.auth.devices()).toHaveLength(0);
+		expect((await ownerCli(backend, ["migration", "list", "--json"])).claims.map((c: { state: string }) => c.state)).toEqual(["approved", "approved", "approved", "pending"]);
+		now += 3 * 3600_000;
 		const credentials: SessionCredentials[] = [];
 		for (const claim of inventory.slice(0, 3)) {
 			const delivered = await authPost(backend, "/auth/claims/poll", claim);
@@ -46,10 +51,10 @@ test("three-backend migration approves exactly two browsers and Android, never t
 	now += 10 * 60_000 + 1;
 	for (const [index, backend] of backends.entries()) {
 		const stranger = await authPost(backend, "/auth/claims/poll", inventory[3]);
-		expect(await stranger.json()).toMatchObject({ state: "expired", credentials: null });
+		expect(await stranger.json()).toMatchObject({ state: "pending", credentials: null });
 		const listed = await ownerCli(backend, ["migration", "list", "--json"]);
 		expect(listed.claims.map((claim: { state: string }) => claim.state)).toEqual([
-			"acknowledged", "acknowledged", "acknowledged", "expired",
+			"acknowledged", "acknowledged", "acknowledged", "pending",
 		]);
 		expect((await ownerControl(backend, ["mode", "required"])).status).toBe(200);
 		await anonymous[index]!.closed();
@@ -62,7 +67,8 @@ test("three-backend migration approves exactly two browsers and Android, never t
 		expect(backend.server.auth.backendId).toBe(backendId);
 		expect(backend.server.auth.mode).toBe("required");
 		for (const credentials of enrolled.get(backendId)!) {
-			const { client, hello } = await authClient(backend, credentials);
+			const access = backend.server.auth.refresh(credentials.sessionToken, "loopback");
+			const { client, hello } = await authClient(backend, access);
 			expect(hello).toMatchObject({ type: "hello", auth: { mode: "required", sessionId: credentials.sessionId } });
 			expect((await client.request({ type: "projects.list" })).type).toBe("projects.list");
 		}

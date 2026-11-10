@@ -13,6 +13,7 @@ export type DeviceCredentialRecord = {
 	advertised: boolean;
 	session?: RetainedSession;
 	migration?: ClaimProof;
+	migrationDenied?: boolean;
 	pairing?: ClaimProof & { grantId?: string; label?: string; started?: boolean };
 };
 const DATABASE = 'aiki-device-auth';

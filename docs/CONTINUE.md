@@ -1,5 +1,19 @@
 # Continue
 
+## Stable migration inventory (T81)
+
+Migration claims now wait 14 idle days (30-day absolute cap), refreshing last-seen on proof-bound polls and registration.
+Idle expiry revives the same ID/code. Approval lasts 14 days; sessions are minted only when collected, with 60-second
+retry delivery and revoke-before-remint if unacknowledged. Pairing/bootstrap keep their strict existing rules. Inventory
+includes all states/last-seen; `migration list --pending --json` filters pending. No wire fields or authVersion change.
+Web/Android preserve proofs through expiry/network errors, retry quietly, and stop only on explicit denial. Android's old
+ambiguous stopped message recovers once; the old web proof recovers on reload. Approved offline devices can collect even
+following required-mode cutover. New tests cover lifetimes, offline approval/restart, remint, inventory and client recovery.
+Checks: root 1,817 tests and typecheck; web 832 tests, zero check errors/warnings and build; generator check exit 0
+(330 DTOs / 88 overloads); Android 612 JVM tests, two existing skips, zero failures/errors, debug assembly and lint
+(36 warnings, zero errors). Public guard and Gitleaks pass. T81 holds synthetic web reload and emulator-u recovery
+screenshots/recordings. No live backend, phone, main or remote changed.
+
 ## Required-mode deploy health checks (T80)
 
 Required local health checks now run only hello/status/drain/list/page through the owner socket and normal RPC dispatch;
