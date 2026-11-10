@@ -2,20 +2,22 @@
 
 ## Local installer and Welcome (T71)
 
-`install.sh` brings checksum-pinned private Bun 1.4.4 and zellij 0.45.1, versioned source/web releases,
-a local CLI, stopped-process update/rollback and optional user services. Only the CLI opts into same-origin
-static serving and loopback discovery; hosted deployment stays API-only. Welcome reuses provider settings
-and the folder picker. Installed CLI data/config/env-file paths are isolated from inherited backend settings.
-Git/jj/Tailscale checks explain missing tools; minimal systems still need curl/tar/unzip/checksum utilities.
-`docs/INSTALL.md` covers paths, troubleshooting, manual macOS checks and release building. Tag workflow is ready;
-no tag/release/push/bookmark move was made. Device auth/pairing (T57) and single binary (T72) remain separate.
+The eight installer commits are rebased on the device sign-in/usage/migration main. Private pinned Bun 1.4.4,
+zellij 0.45.1, versioned source/web releases, stopped-process update/rollback and optional user services remain.
+Only the CLI opts into same-origin public SPA delivery; hello, auth HTTP and private artifact checks stay intact.
+Fresh data remains required. Pre-auth Welcome explains `aiki pair`, which delegates `pair --local` to the existing
+owner-only socket and prints its one-time URL/code. Existing `/pair` confirmation enrolls the browser; provider
+settings and folder selection follow. No auth redesign, automatic grant, mode downgrade or network binding.
+Activation creates its explicit owned env file; CLI startup prints effective data/config before server import.
 
-Clean non-root Debian and throwaway-HOME Linux runs covered repeat installation, foreground start/open/status,
-second-release update, rollback, generated service definitions, uninstall/reinstall and purge. A synthetic local
-git-ref install also rebuilt the web app. T71 has six before/after screenshots, first-run video and container log.
-Root: 1,722 tests pass (one earlier nightly-maintenance timeout passed isolated and in two later full runs);
-web: 809 tests, zero check errors/warnings, build passes. Typecheck, protocol generator (299 DTOs / 78 overloads,
-exit 0), shellcheck and public/Gitleaks checks pass. Real service activation and macOS execution are untested.
+Clean non-root Debian rehearsal used env-i, temporary paths and three distinct original server logs. Install/rerun,
+first-device pairing, actual Chromium Welcome/provider/project setup, update and rollback retaining sign-in,
+uninstall/reinstall and purge pass. Refreshed desktop light/dark and phone dark comparisons, a 9.8-second recording,
+container log and all three first server logs are on T71. Root: 1,841 tests / 12,170 assertions pass; the first env-i
+run omitted USER and broke three existing watcher fixtures, corrected by supplying that required non-AIKI variable.
+Web: 837 tests / 2,887 assertions, zero check errors/warnings, build passes. Typecheck, generator --check (330 DTOs /
+88 overloads, exit 0), shellcheck and public/Gitleaks pass. Real services, macOS execution and remote HTTPS/phone
+setup remain untested. No main move, push, tag or deployment. Single-binary packaging is still T72.
 
 ## One delivery per worker answer (T85)
 
