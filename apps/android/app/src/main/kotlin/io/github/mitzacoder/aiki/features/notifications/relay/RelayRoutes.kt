@@ -39,7 +39,8 @@ class RelayRoutes(
     suspend fun create(backendId: String, sessionId: String, backendKey: String, predecessor: String? = null,
         label: String = "Android app", preferences: NotificationPreferences? = null): String = mutex.withLock {
         val state = storage.read()
-        check(state.signedIn && state.activeToken != null) { "Relay installation is not enrolled" }
+        check(state.signedIn && state.activeToken != null && !state.accountDisabled &&
+            !state.accountDeleted && !state.accountDeletionPending) { "Relay installation is not enrolled" }
         state.routes.values.firstOrNull { it.backendId == backendId && it.sessionId == sessionId &&
             it.phase !in setOf(RelayRoute.Phase.Active, RelayRoute.Phase.Retiring) }?.let { return@withLock it.routeId }
         val active = state.routes.values.singleOrNull { it.backendId == backendId && it.sessionId == sessionId &&
@@ -64,7 +65,8 @@ class RelayRoutes(
     suspend fun maintain(backendKey: String? = null) = mutex.withLock {
         cleanup()
         val state = storage.read()
-        if (!state.signedIn || state.activeToken == null) return@withLock
+        if (!state.signedIn || state.activeToken == null || state.accountDisabled ||
+            state.accountDeleted || state.accountDeletionPending) return@withLock
         for (route in state.routes.values.filter { backendKey == null || it.backendKey == backendKey }) {
             try { resumeRoute(route.routeId) }
             catch (error: CancellationException) { throw error }

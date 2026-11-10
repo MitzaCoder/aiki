@@ -95,6 +95,11 @@ data class RelayState(
     val failure: RelayErrorCode? = null,
     val retryAfterSeconds: Long? = null,
     val signedIn: Boolean = false,
+    val accountDisabled: Boolean = false,
+    val accountDeleted: Boolean = false,
+    val accountDeletionOperationId: String? = null,
+    val accountDeletionPending: Boolean = false,
+    val accountStatus: RelayAccountStatus? = null,
 ) {
     /** Removes retired decrypt keys and their windows together, while preserving cross-key event dedupe. */
     fun retire(now: Long): RelayState {

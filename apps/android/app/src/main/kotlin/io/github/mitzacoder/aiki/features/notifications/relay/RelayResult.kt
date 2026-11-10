@@ -15,7 +15,8 @@ enum class RelayErrorCode(val wire: String) {
     RelayUnavailable("relay_unavailable"), RouteRate("route_rate"), AccountRate("account_rate"),
     IpRate("ip_rate"), RelayCapacity("relay_capacity"), ChallengeRate("challenge_rate"),
     EnrollmentCapacity("enrollment_capacity"), RelayDisabled("relay_disabled"),
-    RecentLoginRequired("recent_login_required"), NotSignedIn("local_not_signed_in"),
+    RecentLoginRequired("recent_auth_required"), RequestRate("request_rate"), EnrollmentRate("enrollment_rate"),
+    EnrollmentDisabled("enrollment_disabled"), ClientAddressUnavailable("client_address_unavailable"), NotSignedIn("local_not_signed_in"),
     StorageUnavailable("local_storage_unavailable"), Unavailable("local_unavailable"),
     Network("local_network"), InvalidResponse("local_invalid_response"), Unknown("unknown");
 
@@ -28,7 +29,7 @@ enum class RelayErrorCode(val wire: String) {
 /** Typed transport outcome with bounded Retry-After seconds; no response bodies or credentials in errors. */
 sealed interface RelayResult<out T> {
     /** Carries a typed decoded receipt without including it in diagnostics. */
-    class Success<T>(val value: T) : RelayResult<T> {
+    class Success<T>(val value: T, val retryAfterSeconds: Long? = null) : RelayResult<T> {
         override fun toString(): String = "RelaySuccess"
     }
     /** Contains only a fixed code and optional Retry-After seconds, never upstream error text. */

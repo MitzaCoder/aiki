@@ -113,6 +113,46 @@ class RelayClientTest {
         }
     }
 
+    @Test fun accountDeletionRequestPendingAndCompleteResultsAreTyped() = runTest {
+        MockWebServer().use { server ->
+            server.start()
+            val client = client(server)
+            server.enqueue(MockResponse.Builder().code(202).addHeader("Retry-After", "60")
+                .body("""{"state":"deleting","deletionPending":true}""").build())
+            val pending = client.deleteAccount(operation) as RelayResult.Success
+            assertEquals(RelayDeletionState.Deleting, pending.value.state)
+            assertTrue(pending.value.deletionPending)
+            assertEquals(60L, pending.retryAfterSeconds)
+            val request = server.takeRequest(2, TimeUnit.SECONDS)!!
+            assertEquals("/v1/accounts/delete", request.url.encodedPath)
+            assertEquals("application/octet-stream", request.headers["Content-Type"])
+            assertEquals("Bearer synthetic-id-token", request.headers["Authorization"])
+            assertEquals(obj("operationId" to operation), Json.parseToJsonElement(request.body!!.utf8()))
+            server.enqueue(MockResponse.Builder().body("""{"state":"deleted","deletionPending":false}""").build())
+            val complete = client.deleteAccount(operation) as RelayResult.Success
+            assertEquals(RelayDeletionState.Deleted, complete.value.state)
+            server.enqueue(MockResponse.Builder().code(401).body("""{"error":"recent_auth_required"}""").build())
+            assertEquals(RelayResult.Failure(RelayErrorCode.RecentLoginRequired), client.deleteAccount(operation))
+            server.enqueue(MockResponse.Builder().code(410).body("""{"error":"account_deleted"}""").build())
+            assertEquals(RelayResult.Failure(RelayErrorCode.AccountDeleted), client.deleteAccount(operation))
+        }
+    }
+
+    @Test fun quotaSnapshotsAndDeletingStatusWithoutLimitsDecode() = runTest {
+        MockWebServer().use { server ->
+            server.start()
+            val client = client(server)
+            server.enqueue(MockResponse.Builder().body("""{"state":"active","phones":1,"routes":2,"phoneLimit":3,"routeLimit":24,"relayEnabled":false,"enrollmentEnabled":true,"quotas":[{"scope":"account_rate","budget":"accountDay","remaining":19,"resetAt":86400000}]}""").build())
+            val status = (client.accountStatus() as RelayResult.Success).value
+            assertEquals(false, status.relayEnabled)
+            assertEquals(RelayQuota("account_rate", "accountDay", 19, 86400000), status.quotas.single())
+            server.enqueue(MockResponse.Builder().body("""{"state":"deleting","phones":0,"routes":0,"deletionPending":true,"quotas":[]}""").build())
+            val deleting = (client.accountStatus() as RelayResult.Success).value
+            assertTrue(deleting.deletionPending)
+            assertNull(deleting.phoneLimit)
+        }
+    }
+
     @Test fun endpointPolicyNeverAcceptsUntrustedOrigins() {
         assertNotNull(RelayEndpoint("", false).unavailableReason)
         assertNotNull(RelayEndpoint("http://relay.example.test/v1", true).unavailableReason)

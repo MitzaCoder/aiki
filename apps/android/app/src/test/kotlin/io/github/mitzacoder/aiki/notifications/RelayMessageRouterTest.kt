@@ -110,7 +110,7 @@ class RelayMessageRouterTest {
     }
 
     @Test fun expiredClockUntrustedAndDeletedOrSignedOutRoutesNeverDisplay() = runTest {
-        for (kind in listOf("expired", "clock", "reboot", "deleted", "signed-out", "retired")) {
+        for (kind in listOf("expired", "clock", "reboot", "deleted", "signed-out", "retired", "disabled")) {
             val f = Fixture()
             val envelope = f.envelope()
             when (kind) {
@@ -119,6 +119,7 @@ class RelayMessageRouterTest {
                 "reboot" -> f.time.bootId = "new-boot"
                 "deleted" -> f.store.state = f.store.state.copy(routes = emptyMap())
                 "signed-out" -> f.store.state = f.store.state.copy(signedIn = false)
+                "disabled" -> f.store.state = f.store.state.copy(accountDisabled = true)
                 "retired" -> f.store.state = f.store.state.copy(routes = mapOf(f.route.routeId to f.route.copy(
                     phase = RelayRoute.Phase.Retiring, retireAt = 0)))
             }

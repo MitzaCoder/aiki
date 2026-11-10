@@ -17,11 +17,12 @@ class RelayNotifications(
     storageLost: suspend () -> Unit = {},
 ) {
     private val store by lazy(storage)
-    private val client by lazy(api)
+    private val client by lazy { RelayAccountAwareApi(api(), store) }
     private val clock = time
     private val mutableRevision = kotlinx.coroutines.flow.MutableStateFlow(0L)
     val revision: kotlinx.coroutines.flow.StateFlow<Long> get() = mutableRevision
     val enrollment by lazy { RelayEnrollmentMachine(store, client, time) { mutableRevision.value++ } }
+    val accounts by lazy { RelayAccounts(store, client) }
     val routes by lazy { RelayRoutes(store, client, backend(), time) }
     private val router = RelayMessageRouter({ settings().relayEnabled }, { store }, time,
         { enrollment.challenge(it) }, present, storageLost)
@@ -45,7 +46,8 @@ class RelayNotifications(
         if (!current.relayEnabled) return false
         if (!relayBackendEligible(connection)) return selected(backendKey)
         val state = store.read()
-        if (!state.signedIn || state.activeToken == null) return true
+        if (!state.signedIn || state.activeToken == null || state.accountDisabled || state.accountDeletionPending ||
+            state.accountDeleted) return true
         val backendId = requireNotNull(connection.hello?.backendId)
         val sessionId = requireNotNull(connection.hello?.auth?.sessionId)
         for (old in state.routes.values.filter { it.backendKey == backendKey &&

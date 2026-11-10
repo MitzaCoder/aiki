@@ -40,6 +40,8 @@ internal open class RelayFakeApi(private val time: RelayFakeTime) : RelayApi {
     var challengeId = RelayCrypto.newId()
     var staged: RelayRoute? = null
     override suspend fun accountStatus(): RelayResult<RelayAccountStatus> = RelayResult.Success(RelayAccountStatus("active", 1, 0, 3, 24))
+    override suspend fun deleteAccount(operationId: String): RelayResult<RelayAccountDeletion> =
+        failure ?: RelayResult.Success(RelayAccountDeletion(RelayDeletionState.Deleted))
     override suspend fun begin(installationId: String, operationId: String, token: String,
         replacing: Boolean): RelayResult<RelayChallengeReceipt> {
         begins++

@@ -23,7 +23,8 @@ class RelayEnrollmentMachine(
     /** Called at launch and by both FCM token callbacks; missed replacement is retried at the next launch. */
     suspend fun tokenChanged(token: String) = mutex.withLock {
         val state = storage.read()
-        if (!state.signedIn || state.installationId == null) return@withLock
+        if (!state.signedIn || state.installationId == null || state.accountDisabled || state.accountDeleted ||
+            state.accountDeletionPending) return@withLock
         stageToken(token)
         resumeLocked()
     }
@@ -52,7 +53,7 @@ class RelayEnrollmentMachine(
 
     private suspend fun resumeLocked() {
         var state = storage.read()
-        if (!state.signedIn) return
+        if (!state.signedIn || state.accountDisabled || state.accountDeleted || state.accountDeletionPending) return
         val installation = state.installationId ?: return
         var operation = state.enrollment ?: return
         if (operation.deadline < time.wall() && operation.phase != RelayEnrollment.Phase.Confirm) {
@@ -93,7 +94,7 @@ class RelayEnrollmentMachine(
     /** Accepts only a canonical challenge for the persisted pending installation, operation and bounded deadline. */
     suspend fun challenge(raw: String): Boolean = mutex.withLock {
         val state = storage.read()
-        if (!state.signedIn) return@withLock false
+        if (!state.signedIn || state.accountDisabled || state.accountDeleted || state.accountDeletionPending) return@withLock false
         val operation = state.enrollment ?: return@withLock false
         val challenge = try {
             RelayCrypto.checkSize(raw, RelayCrypto.FCM_DATA_CAP)

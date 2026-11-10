@@ -14,7 +14,24 @@ import okhttp3.MediaType.Companion.toMediaType
 
 /** Minimal quota inventory; additional relay status fields are deliberately ignored for forward compatibility. */
 @Serializable
-data class RelayAccountStatus(val state: String, val phones: Int, val routes: Int, val phoneLimit: Int, val routeLimit: Int)
+data class RelayAccountStatus(val state: String, val phones: Int, val routes: Int,
+    val phoneLimit: Int? = null, val routeLimit: Int? = null, val quotas: List<RelayQuota> = emptyList(),
+    val deletionPending: Boolean = false, val relayEnabled: Boolean? = null, val enrollmentEnabled: Boolean? = null)
+
+/** Advisory quota snapshot. Budget names and scopes may grow without breaking older clients. */
+@Serializable
+data class RelayQuota(val scope: String, val budget: String, val remaining: Long, val resetAt: Long)
+
+/** Deletion completion is explicit; a pending response carries Retry-After on RelayResult.Success. */
+@Serializable
+data class RelayAccountDeletion(val state: RelayDeletionState, val deletionPending: Boolean = false)
+
+/** Only the two documented successful account-deletion states are accepted. */
+@Serializable
+enum class RelayDeletionState {
+    @kotlinx.serialization.SerialName("deleted") Deleted,
+    @kotlinx.serialization.SerialName("deleting") Deleting,
+}
 
 /** Challenge metadata contains no nonce: possession arrives exclusively through the FCM receive path. */
 @Serializable
@@ -38,6 +55,8 @@ data class RelayRouteReceipt(val routeId: String, val state: String, val leaseEx
 interface RelayApi {
     /** Reads safe account capacity without enrolling an installation. */
     suspend fun accountStatus(): RelayResult<RelayAccountStatus>
+    /** Recent-auth deletion retries use one durable operation, including asynchronous cascade polling. */
+    suspend fun deleteAccount(operationId: String): RelayResult<RelayAccountDeletion>
     /** Starts or retries one installation-wide possession operation. */
     suspend fun begin(installationId: String, operationId: String, token: String,
         replacing: Boolean = false): RelayResult<RelayChallengeReceipt>
@@ -100,7 +119,7 @@ class RelayClient(
                     val code = (raw as? JsonObject)?.get("error")?.jsonPrimitive?.contentOrNull
                     return@withContext RelayResult.Failure(RelayErrorCode.fromWire(code), retry)
                 }
-                RelayResult.Success(decode(raw))
+                RelayResult.Success(decode(raw), retry)
             }
         } catch (error: CancellationException) { throw error }
         catch (_: IOException) { RelayResult.Failure(RelayErrorCode.Network) }
@@ -116,6 +135,11 @@ class RelayClient(
     override suspend fun accountStatus(): RelayResult<RelayAccountStatus> = request("accounts/status", buildJsonObject {}) {
         json.decodeFromJsonElement(RelayAccountStatus.serializer(), it)
     }
+
+    override suspend fun deleteAccount(operationId: String): RelayResult<RelayAccountDeletion> =
+        request("accounts/delete", buildJsonObject { put("operationId", operationId) }) {
+            json.decodeFromJsonElement(RelayAccountDeletion.serializer(), it)
+        }
 
     override suspend fun begin(installationId: String, operationId: String, token: String,
         replacing: Boolean): RelayResult<RelayChallengeReceipt> = request(

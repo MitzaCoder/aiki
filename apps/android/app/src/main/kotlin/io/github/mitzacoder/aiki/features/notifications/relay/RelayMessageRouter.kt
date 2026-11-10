@@ -55,7 +55,8 @@ class RelayMessageRouter(
             var payloadJson: JsonObject? = null
             store.update { previous ->
                 val local = previous.retire(time)
-                if (!local.signedIn) reject("signed_out")
+                if (!local.signedIn || local.accountDeleted || local.accountDeletionPending) reject("signed_out")
+                if (local.accountDisabled) reject("account_disabled")
                 val route = local.routes[envelope.r] ?: reject("unknown_route")
                 if (route.phase !in setOf(RelayRoute.Phase.Active, RelayRoute.Phase.Retiring,
                     RelayRoute.Phase.Confirmed)) reject("inactive_route")
