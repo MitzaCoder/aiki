@@ -106,3 +106,16 @@ describe("validation", () => {
 		).toThrow("is taken");
 	});
 });
+
+describe("remote_command under a fish login shell", () => {
+	const fish = Bun.which("fish");
+	test.skipIf(!fish)("passes quotes and backslashes in a commit message through fish to bash unchanged", () => {
+		const message = `test(deploy): keep the deploy's "config" out \\ of the scripts`;
+		const script = `source ${JSON.stringify(join(import.meta.dir, "..", "targets.sh"))}; T_SHELL=fish; remote_command "printf '%s' $(printf '%q' "$1")"`;
+		const built = Bun.spawnSync(["bash", "-c", script, "bash", message]);
+		expect(built.exitCode).toBe(0);
+		const ran = Bun.spawnSync([fish as string, "-c", built.stdout.toString()]);
+		expect(ran.stderr.toString()).toBe("");
+		expect(ran.stdout.toString()).toBe(message);
+	});
+});

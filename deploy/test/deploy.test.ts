@@ -825,10 +825,12 @@ describe("deploy.sh", () => {
 					'printf "%s\\t%s\\t%s\\n" "$target" "$opts" "$command" >> "$STUB_SSH_LOG"',
 					'if grep -qx "$target" "$STUB_SSH_DOWN"; then exit 255; fi',
 					'home=$STUB_VM_HOME; if [[ $target == "user@laptop.example.test" ]]; then home=$STUB_Laptop_HOME; fi',
+					// The laptop's login shell is fish: its commands go through a stand-in that parses them as fish does.
+					`login=(bash -c); if [[ $target == "user@laptop.example.test" ]]; then login=(${JSON.stringify(BUN)} ${JSON.stringify(join(import.meta.dir, "fish-login.ts"))}); fi`,
 					'if [[ -n ${STUB_DROP_AFTER:-} && $command == *" release "* && $target == "$STUB_DROP_AFTER" ]]; then',
-					'  env HOME="$home" bash -c "$command" >/dev/null 2>&1; echo "$target" >> "$STUB_SSH_DOWN"; exit 255',
+					'  env HOME="$home" "${login[@]}" "$command" >/dev/null 2>&1; echo "$target" >> "$STUB_SSH_DOWN"; exit 255',
 					"fi",
-					'exec env HOME="$home" bash -c "$command"',
+					'exec env HOME="$home" "${login[@]}" "$command"',
 				].join("\n"),
 			);
 			const log = join(machine.dir, "ssh.log");

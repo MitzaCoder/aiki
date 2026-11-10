@@ -80,6 +80,11 @@ function remote_command() { # <command>
 	local command=$1
 	if [[ -z $T_SHELL || $T_SHELL == bash ]]; then
 		printf '%s' "$command"
+	elif [[ $T_SHELL == fish ]]; then
+		# fish single quotes treat \\ and \' as escapes and have no '\'' trick: escape both inside the quotes.
+		local quoted=${command//\\/\\\\}
+		quoted=${quoted//\'/\\\'}
+		printf "bash -c '%s'" "$quoted"
 	else
 		printf "bash -c '%s'" "${command//\'/\'\\\'\'}"
 	fi
