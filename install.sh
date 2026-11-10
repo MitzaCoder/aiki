@@ -15,7 +15,7 @@ purge=0
 custom_dir=0
 say() { printf '%s\n' "aiki: $*"; }
 die() { say "$*" >&2; exit 1; }
-need_value() { [ "$#" -ge 2 ] && [ -n "$2" ] || die "$1 needs a value"; }
+need_value() { [ "$#" -ge 2 ] || die "$1 needs a value"; [ -n "$2" ] || die "$1 needs a value"; }
 while [ "$#" -gt 0 ]; do
  case $1 in
  --version) need_value "$@"; version=$2; shift 2 ;;
@@ -32,9 +32,10 @@ done
 case $root in /*) ;; *) die '--dir must be an absolute path' ;; esac
 case $root in /|"$HOME"|*/../*|*/..|*/./*|*/.) die 'Refusing an unsafe install directory' ;; esac
 # Service formats and launcher paths must never contain control characters.
+cr=$(printf '\r')
 case $root in *"
-"*|*"
-"*) die 'Install paths must not contain line breaks' ;; esac
+"*|*"$cr"*) die 'Install paths must not contain line breaks' ;; esac
+[ ! -L "$root" ] || die 'Install directory must not be a symlink'
 if [ "$custom_dir" = 1 ]; then config=$root/config; fi
 [ "$purge" = 0 ] || [ "$uninstall" = 1 ] || die '--purge requires --uninstall'
 launcher=$HOME/.local/bin/aiki
@@ -76,10 +77,10 @@ for command in git jj tailscale; do
 done
 if [ -e "$root" ] && [ ! -f "$root/.aiki-managed" ]; then
  # Refuse an existing backend data directory: never adopt the owner's installation.
- [ -d "$root" ] && [ -z "$(ls -A "$root")" ] || die 'Directory is not an Aiki-managed installation; choose an empty --dir'
+ if [ ! -d "$root" ] || [ -n "$(ls -A "$root")" ]; then die 'Directory is not an Aiki-managed installation; choose an empty --dir'; fi
 fi
 if [ -e "$launcher" ] || [ -L "$launcher" ]; then
- [ -f "$root/.aiki-install.json" ] && grep -Fq "# Aiki launcher: $root" "$launcher" || die 'Another launcher exists at ~/.local/bin/aiki; refusing to overwrite it'
+ if [ ! -f "$root/.aiki-install.json" ] || ! grep -Fq "# Aiki launcher: $root" "$launcher"; then die 'Another launcher exists at ~/.local/bin/aiki; refusing to overwrite it'; fi
 fi
 mkdir -p "$root"
 mkdir "$root/.install-lock" 2>/dev/null || die 'Another install is running (or a stale .install-lock remains)'
@@ -109,7 +110,7 @@ if [ -n "$ref" ]; then
  git -C "$work/git" archive FETCH_HEAD | tar -xf - -C "$work/source"
 else
  if [ "$version" = latest ]; then
-  latest=$(curl --connect-timeout 15 --max-time 30 -fsSL -o /dev/null -w '%{url_effective}' "$REPOSITORY/releases/latest")
+  latest=$(curl --connect-timeout 15 --max-time 30 -fsSLI -o /dev/null -w '%{url_effective}' "$REPOSITORY/releases/latest")
   version=${latest##*/}
  fi
 fi
@@ -128,7 +129,7 @@ if [ ! -f "$release/.ready" ]; then
    fetch "$url.sha256" "$work/aiki.sha256"
   fi
   expected=$(awk 'NR==1 {print $1}' "$work/aiki.sha256")
-  [ "${#expected}" = 64 ] && [ "$(sha256 "$work/aiki.tar.gz")" = "$expected" ] || die 'Aiki archive checksum mismatch; nothing activated'
+  if [ "${#expected}" != 64 ] || [ "$(sha256 "$work/aiki.tar.gz")" != "$expected" ]; then die 'Aiki archive checksum mismatch; nothing activated'; fi
   # Our release format is a single aiki/ tree of regular files and directories.
   tar -tzf "$work/aiki.tar.gz" > "$work/files"
   awk '$0 !~ /^aiki\// || $0 ~ /(^|\/)\.\.(\/|$)/ {bad=1} END {exit bad}' "$work/files" || die 'Unsafe archive paths'
@@ -137,11 +138,11 @@ if [ ! -f "$release/.ready" ]; then
   mkdir "$work/source"
   tar -xzf "$work/aiki.tar.gz" -C "$work/source" --strip-components=1
  fi
- [ -f "$work/source/bun.lock" ] && [ -f "$work/source/scripts/aiki.ts" ] || die 'Not an Aiki release'
+ if [ ! -f "$work/source/bun.lock" ] || [ ! -f "$work/source/scripts/aiki.ts" ]; then die 'Not an Aiki release'; fi
  say "Preparing Aiki $version with the frozen lockfile"
  (cd "$work/source" && "$bun" install --frozen-lockfile)
  if [ ! -f "$work/source/apps/web/build/200.html" ]; then
-  (cd "$work/source/apps/web" && AIKI_PUBLISHED_BACKENDS_FILE=/dev/null "$bun" run build)
+  (cd "$work/source/apps/web" && AIKI_PUBLISHED_BACKENDS_FILE="$work/no-backends.json" AIKI_LEGACY_STORAGE_PREFIX="" "$bun" run build)
  fi
  # A generic install never retains published backend suggestions.
  rm -f "$work/source/apps/web/build/backends.json"
@@ -166,6 +167,8 @@ if [ ! -x "$root/tools/bin/zellij" ]; then
  else say 'Could not download zellij. App terminals are unavailable; re-run the installer to retry. Chat still works.'; fi
 fi
 "$bun" "$release/scripts/aiki.ts" activate "$root" "$config" "$version" "$launcher"
+# Print the export literally for the user's shell.
+# shellcheck disable=SC2016
 case :$PATH: in *:"$HOME/.local/bin":*) ;; *) say 'Add ~/.local/bin to PATH: export PATH="$HOME/.local/bin:$PATH"' ;; esac
 say "Ready. Run: $launcher start"
 say "Then: $launcher open (or visit http://127.0.0.1:7317). Local access only; device pairing will be added separately."

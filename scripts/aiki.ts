@@ -2,10 +2,8 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 
 export const BUN_VERSION = "1.4.4";
-const repository = "https://github.com/MitzaCoder/aiki";
 type Installation = { root: string; config: string; data: string; launcher: string; version: string };
 const shellQuote = (path: string) => `'${path.replaceAll("'", "'\\''")}'`;
 const xml = (text: string) => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -125,8 +123,12 @@ async function main(args: string[]): Promise<void> {
 	}
 	const root = resolve(command === "uninstall" ? rest[0]! : process.env.AIKI_INSTALL_DIR || join(homedir(), ".local/share/aiki"));
 	const installation = metadata(root);
-	process.env.AIKI_CONFIG_DIR ??= installation.config;
-	process.env.AIKI_DATA_DIR ??= installation.data;
+	// An installed launcher must not inherit another backend's storage/config paths.
+	process.env.AIKI_CONFIG_DIR = installation.config;
+	process.env.AIKI_DATA_DIR = installation.data;
+	const envFile = join(installation.config, "server.env");
+	if (existsSync(envFile)) process.env.AIKI_ENV_FILE = envFile;
+	else delete process.env.AIKI_ENV_FILE;
 	const { loadServerEnv } = await import("../packages/server/src/server-env.ts");
 	loadServerEnv();
 	const port = process.env.AIKI_PORT || "7317";
@@ -135,7 +137,8 @@ async function main(args: string[]): Promise<void> {
 	switch (command) {
 		case "start": {
 			requireStopped(root);
-			writeFileSync(join(root, "server.pid"), String(process.pid), { mode: 0o600 });
+			try { writeFileSync(join(root, "server.pid"), String(process.pid), { mode: 0o600, flag: "wx" }); }
+			catch { throw new Error("server.pid already exists. If a previous process crashed, confirm it is stopped before removing this stale file."); }
 			process.on("exit", () => { try { rmSync(join(root, "server.pid")); } catch { /* already removed */ } });
 			process.env.AIKI_HOST = "127.0.0.1";
 			process.env.AIKI_WEB_DIR = join(root, "current/apps/web/build");
@@ -163,7 +166,8 @@ async function main(args: string[]): Promise<void> {
 			console.log(`Aiki ${installation.version}; Bun ${Bun.version}; ${process.platform}/${process.arch}\nData: ${installation.data}\nConfig: ${installation.config}\nLocal URL: ${url} (loopback only; device pairing not installed)`);
 			for (const [tool, hint] of [["git", "repository operations"], ["jj", "isolated workers"], ["tailscale", "future phone access"], ["zellij", "persistent app terminals"], ["ffprobe", "optional video metadata"]]) {
 				console.log(`${tool}: ${Bun.which(tool!) || `missing — needed for ${hint}`}`);
-				if (Bun.which(tool!)) await run([tool!, tool === "tailscale" ? "version" : "--version"]);
+				if (Bun.which(tool!)) try { await run([tool!, tool === "tailscale" ? "version" : tool === "ffprobe" ? "-version" : "--version"]); }
+				catch { console.log(`${tool}: version check failed; setup can continue.`); }
 			}
 			try { const listener = Bun.listen({ hostname: "127.0.0.1", port: Number(port), socket: { data() {} } }); listener.stop(); console.log(`Port ${port}: free`); }
 			catch { console.log(`Port ${port}: in use; aiki status checks whether it is Aiki. Set AIKI_PORT for another port.`); }
