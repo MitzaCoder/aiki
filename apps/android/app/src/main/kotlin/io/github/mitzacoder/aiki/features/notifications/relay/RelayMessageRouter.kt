@@ -83,7 +83,10 @@ class RelayMessageRouter(
     }
 
     private suspend fun count(store: RelayStorage, reason: String) {
-        store.update { it.copy(counters = it.counters + (reason to (it.counters.getOrDefault(reason, 0) + 1))) }
+        store.update { previous ->
+            val local = previous.retire(time)
+            local.copy(counters = local.counters + (reason to (local.counters.getOrDefault(reason, 0) + 1)))
+        }
     }
     private suspend fun safeCount(reason: String) {
         try { count(storage(), reason) }
