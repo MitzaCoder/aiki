@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import type { ConversationView, EntryRecord } from "@earendil-works/pi-durable";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { ModelRef, ProjectActivity, ServerMessage } from "@aiki/protocol";
+import type { ModelRef, ProjectActivity } from "@aiki/protocol";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,6 +13,7 @@ import {
 	DEFAULT_ACTIVITY,
 	idleActivity,
 	ProjectActivityStore,
+	ProjectActivityService,
 } from "../src/activity.ts";
 import { ProjectStore } from "../src/projects.ts";
 import { createSetup, entryText, TestClient, type TestSetup } from "./support.ts";
@@ -123,12 +124,6 @@ function viewOf(entries: EntryRecord[], live: Record<string, unknown> = {}): Con
 		entries,
 		docs: { "pi.live": live },
 	} as unknown as ConversationView;
-}
-
-function activityOf(client: TestClient, projectId: string): ServerMessage[] {
-	return client.messages.filter(
-		(message) => message.type === "project.state" && message.project.id === projectId,
-	);
 }
 
 describe("activity values", () => {
@@ -250,6 +245,18 @@ describe("project activity", () => {
 		const projectId = await addProject(client, test.projectDir);
 		await configure(client, projectId);
 
+		// project.state also carries attention, links and runtime state. Those can change with identical activity.
+		// Check activity deduplication at its publisher, not by projecting unrelated summary pushes onto activity.
+		const published: ProjectActivity[] = [];
+		const { runtime } = await test.server.manager.open(projectId);
+		const observer = new ProjectActivityService({
+			conversation: runtime.conversation,
+			initial: DEFAULT_ACTIVITY,
+			onChange: (activity) => published.push(activity),
+		});
+		cleanups.unshift(() => observer.stop());
+		await observer.start();
+
 		const gate = deferred();
 		test.faux.setResponses([
 			async () => {
@@ -287,13 +294,11 @@ describe("project activity", () => {
 		);
 		expect(answer?.id ?? null).toBe(activity?.lastReplyEntryId ?? null);
 
-		// The same activity is not sent again while the run runs: from `working` on, no two consecutive pushes match.
-		const values = activityOf(client, projectId)
-			.map((message) => (message.type === "project.state" ? message.project.activity : undefined))
-			.filter((value): value is NonNullable<typeof value> => value !== undefined);
-		const start = values.findIndex((value) => value.coordinator === "working");
+		await until(() => observer.current.coordinator === "idle" && observer.current.lastReplyEntryId === answer?.id);
+		// The publisher never repeats unchanged activity, whichever summary pushes interleave on the socket.
+		const start = published.findIndex((value) => value.coordinator === "working");
 		expect(start).toBeGreaterThanOrEqual(0);
-		const duringRun = values.slice(start).map((value) => JSON.stringify(value));
+		const duringRun = published.slice(start).map((value) => JSON.stringify(value));
 		for (let index = 1; index < duringRun.length; index++) {
 			expect(duringRun[index]).not.toBe(duringRun[index - 1]);
 		}
