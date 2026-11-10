@@ -16,10 +16,13 @@ Only the installed CLI opts into `AIKI_WEB_DIR`. The server then serves the stat
 GET/HEAD, safe path resolution, no-store HTML/service-worker responses and immutable hashed assets. Its fixed
 loopback origins are accepted for WebSockets; no reflected Host/Origin allow-list. `/aiki-local.json` advertises
 same-origin discovery; hosted builds without this endpoint retain their existing multi-backend setup. Fresh local
-installs bind loopback only. Device authentication is separate (T57); a future installer pairing command can print
-its one-time local token between service startup and opening the URL. No remote access or auth claim ships here.
+installs bind loopback only and retain required device authentication. The public shell and discovery do not grant
+API access. `aiki pair` delegates `pair --local` to the existing owner-only socket, printing its ten-minute one-time
+URL and the code already included in that URL. Existing `/pair` confirmation signs this browser in; no auth protocol,
+mode downgrade, automatic grant issuance or remote exposure is added. Pairing output is sensitive, never a server log.
 
-A fresh local backend with no provider/project shows Welcome, reusing account settings and the folder picker.
+Before authentication, local Welcome explains `aiki pair`; provider/project data is not requested or displayed.
+After pairing, a fresh local backend with no provider/project shows Welcome, reusing account settings and the folder picker.
 Credentials stay on the backend and providers remain direct pi-ai integrations; paid API keys are a clear option,
 and subscription sign-in remains subject to the provider's terms. After adding a folder, existing project settings
 choose the coordinator model. Generic release builds never include personal backend suggestions or local config.

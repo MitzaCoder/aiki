@@ -171,8 +171,8 @@ fi
 # shellcheck disable=SC2016
 case :$PATH: in *:"$HOME/.local/bin":*) ;; *) say 'Add ~/.local/bin to PATH: export PATH="$HOME/.local/bin:$PATH"' ;; esac
 say "Ready. Run: $launcher start"
-say "Then: $launcher open (or visit http://127.0.0.1:7317). Local access only; device pairing will be added separately."
-# Pairing hook: a future local one-time-token command belongs here, before opening the browser.
+say "Then: $launcher open (or visit http://127.0.0.1:7317). Fresh installs require device sign-in. Run aiki pair in another terminal and open its one-time URL here."
+# Enrollment is issued only by the running server\'s owner socket, through aiki pair.
 if [ "$no_service" = 0 ]; then
  if ! "$launcher" service install; then say 'User service unavailable. Continue with aiki start; inspect aiki doctor.'; fi
 fi

@@ -120,6 +120,9 @@ async function main(args: string[]): Promise<void> {
 		atomicLink(root, "current", `releases/${version}`);
 		const installation: Installation = { root, config: old?.config ?? config, data: old?.data ?? join(root, "data"), version, launcher };
 		writeFileSync(join(root, ".aiki-install.json"), JSON.stringify(installation, null, 2));
+		mkdirSync(installation.config, { recursive: true });
+		const configFile = join(installation.config, "server.env");
+		if (!existsSync(configFile)) writeFileSync(configFile, "# Local Aiki server settings\n", { mode: 0o600, flag: "wx" });
 		mkdirSync(dirname(launcher), { recursive: true });
 		writeFileSync(launcher, `#!/bin/sh\n# Aiki launcher: ${root}\nexport AIKI_INSTALL_DIR=${shellQuote(root)}\nexport PATH=${shellQuote(join(root, "tools/bin"))}:"$PATH"\nexec ${shellQuote(join(root, `runtime/bun-${BUN_VERSION}/bin/bun`))} "$AIKI_INSTALL_DIR/current/scripts/aiki.ts" "$@"\n`, { mode: 0o755 });
 		// Retain just current and previous; do not collect data/config or unknown top-level paths.
@@ -137,8 +140,8 @@ async function main(args: string[]): Promise<void> {
 	process.env.AIKI_CONFIG_DIR = installation.config;
 	process.env.AIKI_DATA_DIR = installation.data;
 	const envFile = join(installation.config, "server.env");
-	if (existsSync(envFile)) process.env.AIKI_ENV_FILE = envFile;
-	else delete process.env.AIKI_ENV_FILE;
+	// Activation creates this file, so main never falls back to another HOME/XDG env file.
+	process.env.AIKI_ENV_FILE = envFile;
 	const { loadServerEnv } = await import("../packages/server/src/server-env.ts");
 	loadServerEnv();
 	const port = process.env.AIKI_PORT || "7317";
@@ -152,6 +155,7 @@ async function main(args: string[]): Promise<void> {
 			process.on("exit", () => { try { rmSync(join(root, "server.pid")); } catch { /* already removed */ } });
 			process.env.AIKI_HOST = "127.0.0.1";
 			process.env.AIKI_WEB_DIR = join(root, "current/apps/web/build");
+			console.log(`Aiki data: ${process.env.AIKI_DATA_DIR}\nAiki config: ${process.env.AIKI_CONFIG_DIR}`);
 			// Resolve the selected release now; a running process never changes imports underneath itself.
 			const entry = join(realpathSync(join(root, "current")), "packages/server/src/main.ts");
 			await import(entry); break;
@@ -163,6 +167,20 @@ async function main(args: string[]): Promise<void> {
 			else if (Bun.which("xdg-open")) await run(["xdg-open", url]);
 			else console.log("Open this URL in a browser on this machine.");
 			break;
+		case "pair": {
+			// Delegate enrollment to the existing owner-only socket; no HTTP management or new auth protocol.
+			const response = await fetch("http://localhost/", {
+				unix: join(installation.data, "auth.sock"), method: "POST",
+				headers: { "content-type": "application/json" }, body: JSON.stringify({ args: ["pair", "--local"] }),
+				signal: AbortSignal.timeout(10000),
+			});
+			const grant = await response.json() as { url?: string; expiresAt?: string; error?: { code: string } };
+			if (!response.ok || !grant.url) throw new Error(`Pairing failed: ${grant.error?.code || "invalid owner response"}`);
+			const link = new URL(grant.url);
+			if (link.origin !== url) throw new Error("Pairing URL uses a different port. Set AIKI_PORT to the running server port.");
+			console.log(JSON.stringify({ url: grant.url, code: link.hash.slice("#bootstrap=".length), expiresAt: grant.expiresAt }, null, 2));
+			break;
+		}
 		case "status": {
 			try {
 				const response = await fetch(`${url}/aiki-local.json`, { signal: AbortSignal.timeout(2000) });
@@ -173,7 +191,7 @@ async function main(args: string[]): Promise<void> {
 		}
 		case "version": console.log(`Aiki ${installation.version}\nBun ${Bun.version} (pinned ${BUN_VERSION})`); break;
 		case "doctor": {
-			console.log(`Aiki ${installation.version}; Bun ${Bun.version}; ${process.platform}/${process.arch}\nData: ${installation.data}\nConfig: ${installation.config}\nLocal URL: ${url} (loopback only; device pairing not installed)`);
+			console.log(`Aiki ${installation.version}; Bun ${Bun.version}; ${process.platform}/${process.arch}\nData: ${installation.data}\nConfig: ${installation.config}\nLocal URL: ${url} (loopback only; use aiki pair for device sign-in)`);
 			for (const [tool, hint] of [["git", "repository operations"], ["jj", "isolated workers"], ["tailscale", "future phone access"], ["zellij", "persistent app terminals"], ["ffprobe", "optional video metadata"]]) {
 				console.log(`${tool}: ${Bun.which(tool!) || `missing — needed for ${hint}`}`);
 				if (Bun.which(tool!)) try { await run([tool!, tool === "tailscale" ? "version" : tool === "ffprobe" ? "-version" : "--version"]); }
@@ -212,7 +230,7 @@ async function main(args: string[]): Promise<void> {
 			}
 			console.log(rest[1] === "1" ? "Uninstalled and purged Aiki data/config. Repositories were not touched." : "Uninstalled. Data and config kept. Re-run the installer to reinstall."); break;
 		}
-		default: console.log("Usage: aiki start|open|status|update|rollback|version|doctor|service install|remove\nSee docs/INSTALL.md. Stop Aiki before updating or rolling back.");
+		default: console.log("Usage: aiki start|open|pair|status|update|rollback|version|doctor|service install|remove\nSee docs/INSTALL.md. Stop Aiki before updating or rolling back.");
 	}
 }
 if (import.meta.main) {

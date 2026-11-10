@@ -1,0 +1,58 @@
+import { afterEach, expect, test } from "bun:test";
+import { createModels } from "@earendil-works/pi-ai";
+import { fauxProvider } from "@earendil-works/pi-ai/providers/faux";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { FileCredentialStore } from "../src/credentials.ts";
+import { startServer, type HarnessServer } from "../src/server.ts";
+import { TestClient } from "./support.ts";
+import { authSecret } from "../src/device-auth.ts";
+
+const cleanups: (() => Promise<void>)[] = [];
+afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup(); });
+
+test("fresh installed SPA requires sign-in and pairs through the CLI's existing local owner socket", async () => {
+ const root = await mkdtemp(join(tmpdir(), "aiki-local-auth-"));
+ cleanups.push(() => rm(root, { recursive: true, force: true }));
+ const dataDir = join(root, "data"), configDir = join(root, "config"), webDir = join(root, "web");
+ await mkdir(webDir); await writeFile(join(webDir, "200.html"), "<h1>Synthetic local app</h1>");
+ const credentials = new FileCredentialStore(join(dataDir, "credentials.json"));
+ const models = createModels({ credentials }); models.setProvider(fauxProvider().provider);
+ console.log(JSON.stringify({ dataDir, configDir })); // Before opening any backend state.
+ const server: HarnessServer = await startServer({ dataDir, configDir, webDir, agentDir: join(root, "agent"), claudeDir: join(root, "claude"), port: 0, models, credentials, terminals: false, log: () => {} });
+ cleanups.push(() => server.stop());
+ expect(server.auth.mode).toBe("required");
+ expect(await (await fetch(server.url)).text()).toContain("Synthetic local app");
+ expect((await fetch(server.url + "/auth/status")).status).toBe(200);
+ expect((await fetch(server.url + "/auth/status", { headers: { origin: "http://example.test" } })).status).toBe(403);
+ expect((await fetch(server.url, { headers: { host: "example.test" } })).status).toBe(403);
+ const anonymous = await TestClient.open(server, { origin: server.url }); cleanups.push(async () => anonymous.close());
+ expect(await anonymous.hello()).toMatchObject({ type: "error", error: { code: "auth_required" } });
+ expect((await fetch(server.url + "/artifacts/project/file")).status).toBe(403);
+
+ // Generate installation metadata without installing a service or copying a runtime.
+ await mkdir(join(root, "releases/v0.0.1-test"), { recursive: true });
+ await writeFile(join(root, "releases/v0.0.1-test/.ready"), "v0.0.1-test");
+ await writeFile(join(root, ".aiki-managed"), "aiki-installer-v1\n");
+ const cli = resolve(import.meta.dir, "../../../scripts/aiki.ts");
+ const env = { HOME: join(root, "home"), PATH: process.env.PATH, AIKI_INSTALL_DIR: root, AIKI_PORT: String(server.port), AIKI_DATA_DIR: join(root, "foreign-data"), AIKI_CONFIG_DIR: join(root, "foreign-config"), AIKI_ENV_FILE: join(root, "foreign.env") };
+ async function command(...args: string[]) {
+  const child = Bun.spawn([process.execPath, cli, ...args], { env, stdout: "pipe", stderr: "pipe", timeout: 10000 });
+  const [out, err, code] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited]);
+  expect(err).toBe(""); expect(code).toBe(0); return out;
+ }
+ await command("activate", root, configDir, "v0.0.1-test", join(root, "home/.local/bin/aiki"));
+ const grant = JSON.parse(await command("pair"));
+ expect(grant.url).toBe(`${server.url}/pair#bootstrap=${grant.code}`);
+ const response = await fetch(server.url + "/auth/bootstrap/redeem", {
+  method: "POST", headers: { "content-type": "application/json", origin: server.url },
+  body: JSON.stringify({ requestId: "local", code: grant.code, claimId: "synthetic-local-device", claimSecret: authSecret("aiki_c1"), label: "Synthetic browser", platform: "web" }),
+ });
+ expect(response.status).toBe(200);
+ const enrollment = await response.json() as { credentials: { accessToken: string } };
+ const authenticated = await TestClient.open(server, { origin: server.url }); cleanups.push(async () => authenticated.close());
+ expect(await authenticated.request({ type: "hello", protocolVersion: 1, auth: { accessToken: enrollment.credentials.accessToken } })).toMatchObject({ type: "hello" });
+ expect(await authenticated.request({ type: "projects.list" })).toMatchObject({ type: "projects.list", projects: [] });
+ expect(server.auth.mode).toBe("required");
+});

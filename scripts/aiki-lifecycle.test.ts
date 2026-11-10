@@ -76,7 +76,7 @@ test("an unavailable user service session leaves no unit and does not block unin
 
 test("uninstall preserves data/config, then reinstall and purge remove only installation state", async () => {
 	const fixture = await setup(); await fixture.release("v0.1.0");
-	await mkdir(join(fixture.root, "data")); await mkdir(fixture.config);
+	await mkdir(join(fixture.root, "data")); await mkdir(fixture.config, { recursive: true });
 	await writeFile(join(fixture.root, "data/keep"), "synthetic conversation");
 	await writeFile(join(fixture.config, "keep"), "synthetic configuration");
 	await writeFile(join(fixture.home, "repository"), "keep repository");

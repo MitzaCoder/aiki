@@ -2,8 +2,8 @@
 
 Aiki runs your agents and tools as **your user**, with your filesystem access and provider spending authority.
 Each person installs their own backend. This experimental installer is for Linux and macOS, x64/arm64; Windows
-users run it inside WSL. There is no Node fallback. Device authentication/pairing is separate work: **keep this
-installation on loopback. Do not forward the port, bind it to the LAN, or put it behind Tailscale Serve yet.**
+users run it inside WSL. There is no Node fallback. Fresh data starts with device sign-in **required**. This installer
+keeps loopback binding; network/Tailscale HTTPS setup is separate. Do not forward the port or expose it casually.
 
 ## Install
 
@@ -35,7 +35,11 @@ aiki start                             # keep this terminal open
 aiki open                              # http://127.0.0.1:7317
 ```
 
-Welcome connects to this computer automatically. Sign in or save an API key in the existing account settings,
+Welcome discovers this computer automatically but cannot read projects/providers before device sign-in. Keep Aiki
+running and run `aiki pair` in another terminal. It asks the existing local owner socket for a ten-minute one-time
+URL and code (the code is already included in the URL). Open that URL in the same browser, confirm full access,
+and choose **Open Aiki**. Treat the URL/code as secrets; do not paste them into logs, screenshots or support reports.
+Re-running `aiki pair` cancels any unused earlier bootstrap grant. Sign in or save an API key in the existing account settings,
 choose a project folder, then choose its coordinator model. Providers still connect directly through pi-ai;
 Claude Code and Codex CLIs are not required. Subscription access is subject to provider policy/account eligibility;
 paid API keys are the straightforward alternative. A saved credential is not proof of successful inference.
@@ -44,6 +48,7 @@ paid API keys are the straightforward alternative. A saved credential is not pro
 
 - `aiki start`: foreground, loopback only. Ctrl-C closes it cleanly. It never auto-opens a browser.
 - `aiki open`: open the local URL; prints it if no browser is available. `AIKI_NO_BROWSER=1` prints only.
+- `aiki pair`: print a one-time local first-device URL and code using the running server’s owner socket.
 - `aiki status`: check the selected port for Aiki's local discovery endpoint; nonzero when unavailable.
 - `aiki version`: release and private Bun versions.
 - `aiki doctor`: tool availability/versions, local paths, platform and whether the configured port is free.
@@ -61,7 +66,9 @@ Re-running the same version reuses its ready release and does not reinstall depe
 retains the tiny ownership metadata so reinstalling into the same root reuses your data/config.
 
 The installed CLI deliberately uses its recorded data/config directories, not another backend's inherited
-`AIKI_DATA_DIR`, `AIKI_CONFIG_DIR` or `AIKI_ENV_FILE`. Its own `config/server.env` is loaded if present. Keep
+`AIKI_DATA_DIR`, `AIKI_CONFIG_DIR` or `AIKI_ENV_FILE`. Activation creates an empty owned `server.env` when absent;
+the installed CLI loads that explicit file, never a fallback HOME/XDG file. Startup prints effective data/config
+paths before importing the server. Keep
 persistent storage identity settings stable; never borrow another installation's environment or credential files.
 The source/deploy entry point retains its existing environment behavior.
 
@@ -128,6 +135,8 @@ tags. GitHub's latest non-prerelease is the only automatic update channel.
 - Checksum mismatch: retry on a trusted connection; do not bypass verification.
 - Bun cannot execute: verify OS/architecture and Linux libc compatibility. x64 uses the baseline build (no AVX2
   requirement); Linux musl has separate pins. Very old CPUs/libc/kernel versions may need a newer OS.
+- Welcome asks for device sign-in: this is expected for new data. Run `aiki pair` while Aiki is running, open its
+  one-time URL in that browser and confirm. An expired/used URL needs a fresh `aiki pair`; never disable auth to fix it.
 - Page opens but is disconnected: verify `aiki status`, configured port, and that the URL is loopback. Remove stale
   saved backends only in this browser's Settings. Static hosted web deployments do not auto-discover a local server.
 - Port in use: `aiki doctor`; choose another `AIKI_PORT`. Aiki never kills a process to reclaim a port.
@@ -138,7 +147,8 @@ tags. GitHub's latest non-prerelease is the only automatic update channel.
 ### Manual macOS checklist (not tested on Linux)
 
 On both Apple Silicon and Intel: verify the pinned download hashes and execution, frozen install/build from a ref,
-paths with spaces/quotes, browser opening, loopback HTTP/WebSocket and first-run setup. Generate and inspect the
+paths with spaces/quotes, browser opening, required-mode loopback HTTP/WebSocket, owner-socket `aiki pair`,
+first-device sign-in and provider/project setup. Generate and inspect the
 plist; in a disposable account test launchctl bootstrap/bootout, login restart, PATH discovery and `service.log`.
 Then test update/rollback while stopped, running-process refusal, normal uninstall/reinstall and purge. Confirm no
 global Bun, shell profile, unrelated launch agent or existing backend is changed. Cross-compilation is not testing.

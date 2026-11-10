@@ -2,7 +2,7 @@
 
 Aiki is an early personal, cross-device agent harness built on
 [pi durable](https://github.com/earendil-works/pi/tree/main/packages/durable).
-The local installer is experimental. Network/device pairing is not available yet; keep fresh installs on loopback.
+The local installer is experimental. Fresh installs require device sign-in and stay on loopback.
 
 Original project code is [MIT-licensed](LICENSE). Bundled third-party code, fonts and icons retain their own licences;
 see `apps/android/licenses/` and the notices alongside the bundled code.
@@ -20,8 +20,9 @@ curl -fsSL https://github.com/MitzaCoder/aiki/releases/latest/download/install.s
 
 The installer brings private, checksum-pinned Bun 1.4.4 and zellij, installs the release and its local web app,
 and tries to start a user service. No root or global Bun/Node installation. Install git and jj for repositories;
-Tailscale is for future phone access. Use `--no-service` to run `aiki start` in a terminal, then `aiki open`.
-Welcome reuses provider settings and the project folder picker. Providers use pi-ai directly; no vendor CLI needed.
+Use `--no-service` to run `aiki start` in a terminal, then `aiki open`. Welcome explains `aiki pair`: run it in another
+terminal on this computer and open its one-time URL in the browser. Confirm device sign-in, then connect a provider
+and pick a project folder. Providers use pi-ai directly; no vendor CLI needed. Tailscale/HTTPS phone setup is separate.
 
 Until releases exist, use `sh install.sh --ref COMMIT_OR_TAG --no-service` from a downloaded script.
 [Install guide](docs/INSTALL.md): paths, prerequisites for minimal systems, update/rollback, uninstall,

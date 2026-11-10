@@ -10,6 +10,7 @@
 	let { backend }: { backend: BackendConnection } = $props();
 	let showAccounts = $state(false);
 	let showPicker = $state(false);
+	const needsDeviceSignIn = $derived(backend.authMode === "required" && !backend.authSessionId);
 	const configured = $derived(backend.providers.some((provider) => provider.configured));
 
 	async function addFolder(path: string): Promise<void> {
@@ -25,9 +26,22 @@
 	<header class="flex flex-col gap-2">
 		<p class="text-sm font-medium text-primary">Your computer. Your projects.</p>
 		<h1 id="welcome-title" class="text-3xl font-bold tracking-tight">Welcome to Aiki</h1>
-		<p class="max-w-lg text-muted-foreground">Connect a provider, then choose a project folder. Everything runs on this computer.</p>
+		<p class="max-w-lg text-muted-foreground">{needsDeviceSignIn ? "Sign in to this computer first, then connect a provider and choose a project." : "Connect a provider, then choose a project folder. Everything runs on this computer."}</p>
 	</header>
 
+	{#if needsDeviceSignIn}
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Sign in to this computer</Card.Title>
+				<Card.Description>Keep Aiki running. In another terminal on this computer, run:</Card.Description>
+			</Card.Header>
+			<Card.Content class="flex flex-col gap-3">
+				<code class="rounded-lg bg-muted p-3 font-mono text-sm">aiki pair</code>
+				<p class="text-sm text-muted-foreground">Open the printed URL in this browser. It includes a one-time code and expires in ten minutes. Confirm pairing, then choose Open Aiki.</p>
+				<p class="text-sm text-muted-foreground">Pairing gives this browser full access to files, terminals and provider accounts. Do not share the URL or code.</p>
+			</Card.Content>
+		</Card.Root>
+	{:else}
 	<Card.Root>
 		<Card.Header>
 			<Card.Title>1. Connect a provider</Card.Title>
@@ -56,7 +70,8 @@
 			<Button disabled={!configured} onclick={() => (showPicker = true)}>Choose a project folder</Button>
 		</Card.Content>
 	</Card.Root>
-	<p class="text-xs text-muted-foreground">Local access only. Phone pairing is coming separately; don’t expose this server to the network.</p>
+	{/if}
+	<p class="text-xs text-muted-foreground">This install listens only on this computer. Network access needs deliberate HTTPS and device setup.</p>
 </section>
 
 {#if showPicker}
