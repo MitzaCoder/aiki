@@ -30,6 +30,9 @@ import {
  */
 export const HARNESS_PROVIDERS = ["opencode-go", "anthropic", "openai", "openai-codex"] as const;
 
+/** Claude Code version sent with Anthropic requests; pi-ai 1.5.1 sends 2.1.280, which newer models refuse. */
+export const CLAUDE_CODE_VERSION = "2.1.311";
+
 export function createHarnessModels(options: { credentials: CredentialStore }): Models {
 	const models = createModels({ credentials: options.credentials });
 	// Side-effect free factories: their API SDKs load lazily on the first request.
@@ -38,11 +41,15 @@ export function createHarnessModels(options: { credentials: CredentialStore }): 
 	// Provider-side model switches require an explicit product choice, not a catalog upgrade.
 	const withoutFallbacks = <T extends Model<Api>>(model: T): T => model.compat && "allowedFallbackModels" in model.compat && model.compat.allowedFallbackModels?.length
 		? { ...model, compat: { ...model.compat, allowedFallbackModels: [] } } : model;
+	// Newer models reject subscription requests from older Claude Code versions; model headers override pi-ai's own.
+	const withClaudeCodeVersion = <T extends Model<Api>>(model: T): T =>
+		({ ...model, headers: { ...model.headers, "user-agent": `claude-cli/${CLAUDE_CODE_VERSION}` } });
+	const anthropicChatModel = <T extends Model<Api>>(model: T): T => withClaudeCodeVersion(withoutFallbacks(model));
 	models.setProvider({
 		...anthropic,
-		getModels: () => anthropic.getModels().map(withoutFallbacks),
+		getModels: () => anthropic.getModels().map(anthropicChatModel),
 		getAllModels: () => (anthropic.getAllModels?.() ?? anthropic.getModels()).map(model =>
-			model.type === undefined || model.type === "chat" ? withoutFallbacks(model) : model),
+			model.type === undefined || model.type === "chat" ? anthropicChatModel(model) : model),
 	});
 	models.setProvider(openaiProvider());
 	models.setProvider(openaiCodexProvider());

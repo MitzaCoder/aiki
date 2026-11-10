@@ -33,6 +33,19 @@ describe("local model catalog extensions", () => {
 		expect(catalog.models.find((entry) => entry.modelId === ref.modelId)).toMatchObject({ ...ref, name: "Claude Fable 5.2", configured: true, contextWindow: 1_000_000, maxTokens: 128_000, input: ["text", "image"], thinkingLevels: ["minimal", "low", "medium", "high", "xhigh", "max"] });
 	});
 
+	it("sets the current Claude Code user agent on every Anthropic chat model without enabling fallbacks", () => {
+		const models = createHarnessModels({ credentials: credentials() });
+		for (const catalog of [models.getModels("anthropic"), models.getAllModels("anthropic")]) {
+			const chatModels = catalog.filter(model => model.type === undefined || model.type === "chat");
+			expect(chatModels.length).toBeGreaterThan(0);
+			for (const model of chatModels) {
+				expect(model.headers?.["user-agent"]).toBe("claude-cli/2.1.311");
+				expect((model as Model<"anthropic-messages">).compat?.allowedFallbackModels ?? []).toEqual([]);
+			}
+		}
+		expect(fable().compat?.allowedFallbackModels).toEqual([]);
+	});
+
 	it("prices input/output and both cache TTLs through pi-ai's cost calculator", () => {
 		expect(calculateCost(fable(), usage())).toEqual({ input: 8, output: 40, cacheRead: 0.2, cacheWrite: 10, total: 58.2, totalFromProvider: false });
 		expect(calculateCost(fable(), usage(true)).cacheWrite).toBe(16);

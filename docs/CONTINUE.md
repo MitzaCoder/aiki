@@ -1,5 +1,12 @@
 # Continue
 
+## Anthropic subscription user agent (T76)
+
+Anthropic chat models override pi-ai 1.5.1's old user agent with `claude-cli/2.1.311`.
+Catalog tests retain the no-fallback policy; fake API-key and OAuth HTTP tests verify the wire header,
+cache-warm fingerprint and continuation. No real provider requests. Root: 1,700 tests and typecheck pass;
+web check has zero errors/warnings and build passes. Public guard and Gitleaks pass. No deployment or push.
+
 ## Aiki identity and existing installations (T70)
 
 Rebased onto the pi 1.5.1 integration upgrade; all checks below were rerun on that base. Its upstream storage-format

@@ -1,5 +1,5 @@
 import { createHarnessModels } from "../src/models.ts";
-import type { CredentialStore } from "@earendil-works/pi-ai";
+import { InMemoryCredentialStore } from "@earendil-works/pi-ai";
 import { cacheWarmAuthFingerprint, cacheWarmHeaders } from "../src/cache-warm-transport.ts";
 import { CoordinatorCacheWarm } from "../src/cache-keep-warm.ts";
 import type { Conversation, ConversationView as DurableView } from "@earendil-works/pi-durable";
@@ -152,17 +152,24 @@ it("restores a still-live schedule from its private snapshot, without a startup 
 });
 
 
-it("adapts the real pi-ai Anthropic auth/build/parser stack with fake HTTP only", async () => {
-    const models = createHarnessModels({ credentials: { read: async () => ({ type: "api_key", key: "fake-test-only" }) } as unknown as CredentialStore });
+it.each(["api_key", "oauth"] as const)("adapts the real pi-ai Anthropic %s auth/build/parser stack with fake HTTP only", async authType => {
+    const credentials = new InMemoryCredentialStore();
+    await credentials.modify("anthropic", async () => authType === "oauth"
+        ? { type: "oauth", access: "sk-ant-oat-fake-test-only", refresh: "fake-refresh-only", expires: Date.now() + 3_600_000 }
+        : { type: "api_key", key: "fake-test-only" });
+    const models = createHarnessModels({ credentials });
     const model = models.getModels("anthropic")[0]!;
     const context = { messages: [{ role: "system" as const, content: "Exact stable system", timestamp: 0 }, { role: "user" as const, content: "Real input", timestamp: 1 }] };
     let original: Record<string,unknown> = {}; let fingerprint = ""; let cacheHeaders: Record<string,string> = {};
     const event = (type: string, payload: unknown) => `event: ${type}\ndata: ${JSON.stringify(payload)}\n\n`;
-    const requestOptions = { sessionId: "cache-warm-unit-test", cacheRetention: "long" as const, reasoning: "low" as const };
+    const requestOptions = { sessionId: `cache-warm-unit-test-${authType}`, cacheRetention: "long" as const, reasoning: "low" as const, maxRetries: 0, timeoutMs: 5_000 };
     const first = await models.streamSimple(model, context, { ...requestOptions,
         fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
             const request = new Request(input, init); original = JSON.parse(await request.text()); fingerprint = cacheWarmAuthFingerprint(request.headers); cacheHeaders = cacheWarmHeaders(request.headers);
-            expect(request.headers.get("x-api-key")).toBe("fake-test-only");
+            expect(request.headers.get("user-agent")).toBe("claude-cli/2.1.311");
+            expect(request.headers.get("x-api-key")).toBe(authType === "api_key" ? "fake-test-only" : null);
+            expect(request.headers.get("authorization")).toBe(authType === "oauth" ? "Bearer sk-ant-oat-fake-test-only" : null);
+            if (authType === "oauth") expect(request.headers.get("anthropic-beta")).toContain("oauth-2025-04-20");
             expect(request.headers.get("anthropic-beta")).toContain("message-threads-2026-08-12");
             return new Response(event("message_start", { type: "message_start", message: { id: "fake-real", model: model.id, role: "assistant", content: [],
                 usage: { input_tokens: 2, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 100, cache_creation: { ephemeral_1h_input_tokens: 100 } } } }) +
@@ -176,7 +183,11 @@ it("adapts the real pi-ai Anthropic auth/build/parser stack with fake HTTP only"
             expect(original.thread).toEqual({ type: "create" });
             expect(body).toEqual({ ...fullOriginal, stream: false, max_tokens: 0 });
             expect(body.thread).toBeUndefined();
+            expect(request.headers.get("user-agent")).toBe("claude-cli/2.1.311");
             expect(cacheWarmAuthFingerprint(request.headers)).toBe(fingerprint);
+            const outdatedHeaders = new Headers(request.headers);
+            outdatedHeaders.set("user-agent", "claude-cli/2.1.280");
+            expect(cacheWarmAuthFingerprint(outdatedHeaders)).not.toBe(fingerprint);
             return Response.json({ id: "fake-maintenance", model: model.id, role: "assistant", type: "message", content: [], stop_reason: "max_tokens",
                 usage: { input_tokens: 2, output_tokens: 0, cache_read_input_tokens: 100, cache_creation_input_tokens: 0 } });
         }) as typeof fetch }, payload: original, authFingerprint: fingerprint, cacheHeaders, signal: new AbortController().signal, admit: () => true });
