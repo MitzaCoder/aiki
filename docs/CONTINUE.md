@@ -1,5 +1,15 @@
 # Continue
 
+## Android Report check settings (T126)
+
+Completed the interrupted Report check group in Project settings → Coordinator. Automatic/Off/custom
+model selection and daily budget save through projects.configure; the group requires report-audit.
+The automatic explanation matches web wording. Muted status has model/provider plus token use, then
+last run (or No checks run yet) plus state/reason. JVM presentation/gating coverage: 865 tests in 115
+suites, zero failures/errors, two existing opt-in skips; assemble/lint, protocol generation and public
+source checks passed. T126 emulator artifacts retain before/after light/dark and mode/budget interaction.
+Only synthetic createSetup data was used; no deployment or physical device operation.
+
 ## T126 web polish: compact status
 
 Mode now explains the automatic small-model fallback order. Status is two muted lines: model plus

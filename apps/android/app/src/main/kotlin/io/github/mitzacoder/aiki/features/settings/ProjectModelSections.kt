@@ -139,6 +139,7 @@ internal fun CoordinatorSection(context: ProjectScreenContext, project: ProjectS
                 Combobox(UI_PROOF_OPTIONS, uiProofValue, ::pickUiProof, "Show UI changes", invalid = uiProofSave.status == SaveStatus.Failed)
             }
         }
+        ReportAuditSettings(backend, project)
     }
 }
 

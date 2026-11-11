@@ -1486,6 +1486,10 @@ the server's effective model and token use on one muted line, then last-run time
 on a second; the browser never predicts the
 automatic choice. Ages tick locally. A missing advertised feature hides the group, even before hello.
 
+Android Project settings → Coordinator includes a feature-gated Report check group beside Show UI changes.
+Mode offers Automatic, Off, or Choose a model using the searchable model picker. The daily token budget
+saves on leaving the field (default 65,000). Two muted status lines show effective model/provider and
+UTC-day token use, then last run and state or reason. Missing `report-audit` hides the group.
 `projects.configure.reportAudit` replaces the project setting:
 `{ mode: "auto" | "off" | "model", model?: ModelRef, dailyTokens: number }`; null restores
 `{ mode: "auto", dailyTokens: 65000 }`. Model mode requires a catalogued model ref; explicit model
