@@ -174,7 +174,7 @@ export function deploySummary(fact: DeployAttempt): { state: "failed" | "active"
  const ready = targets.filter(t => t.state === "ok").length;
  const failed = targets.filter(t => t.state === "failed" || t.state === "rolled_back").length;
  if (failed) return { state: "failed", text: `Deploy failed on ${failed} of ${total} targets`, outcome: true };
- if (targets.some(t => t.state === "running")) return { state: "active", text: `Deploying ${fact.intendedCommit.slice(0,7)} · ${ready} of ${total} targets ready`, outcome: false };
- if (targets.some(t => t.state === "queued")) return { state: "active", text: `Deploy queued for ${fact.intendedCommit.slice(0,7)}`, outcome: false };
+ if (targets.some(t => t.state === "running")) return { state: "active", text: `Deploying ${fact.intendedCommit.slice(0,12)} · ${ready} of ${total} targets ready`, outcome: false };
+ if (targets.some(t => t.state === "queued")) return { state: "active", text: `Deploy queued for ${fact.intendedCommit.slice(0,12)}`, outcome: false };
  return { state: "delivered", text: ready === total ? "Live on all backends" : `Live on ${ready} of ${total} targets · ${total - ready} pending`, outcome: true };
 }

@@ -1,3 +1,4 @@
+import { timelineId, upsertTimelineFact } from "./task-timeline.ts";
 import { stateKind } from "./state-identity.ts";
 /**
  * Background threads: full coordinators of a project, started by main (or a schedule) for big, long work. The contract
@@ -62,6 +63,7 @@ import {
 	type BoardService,
 	HARNESS_WRITER,
 	claimTaskForThread,
+ openTaskHistory,
 	openBoard,
 	snapshotStatusChanges,
 	statusesOf,
@@ -897,6 +899,9 @@ export class ThreadService {
 			const taskId =
 				input.taskId ?? taskForSchedule(board, { scheduleId: input.scheduleId as string, title, now }).after.id;
 			claimTaskForThread(board, { key: `thread-start:${input.key}`, taskId, threadId: id, now });
+   const task = board.tasks.find(task => task.id === taskId)!;
+   const history = await openTaskHistory(tx, this.#mainId, taskId);
+   upsertTimelineFact(history, task, { id: timelineId(taskId, `claim:${input.key}`), at: now, endAt: now, kind: "milestone", group: "work", source: "ownership", outcome: "claimed", label: `Claimed by ${id}`, by: HARNESS_WRITER });
 			await snapshotStatusChanges(tx, this.#mainId, board, before, { by: HARNESS_WRITER, at: now, key: `thread-start:${input.key}` });
 			const background = { ownership: { kind: "conversation" as const }, conversationId: this.#mainId, background: true };
 			const anchor = await tx.createTask(ThreadAnchor, null, background);

@@ -26,7 +26,7 @@ test("atomic fan-out includes many tasks, closed and archived; outcomes stale op
   await runtime.board.configureDeployFeed(true);
   const start = attempt(); await runtime.board.recordDeployAttempt(start);
   let board = await runtime.board.state();
-  expect(board.tasks.every(t => t.activity?.text === "Deploy queued for bbbbbbb")).toBe(true);
+  expect(board.tasks.every(t => t.activity?.text === "Deploy queued for bbbbbbbbbbbb")).toBe(true);
   expect(board.tasks[0]!.report.freshness!.results.stale).toBe(false);
   const failed = structuredClone(start); failed.sequence = 2;
   failed.targets.one!.state = "ok"; failed.targets.two!.state = "rolled_back"; failed.targets.two!.servingCommit = "a".repeat(40); failed.targets.three!.state = "pending";
@@ -36,7 +36,7 @@ test("atomic fan-out includes many tasks, closed and archived; outcomes stale op
    expect(t.report.freshness!.results.stale).toBe(!["done","dropped"].includes(t.status));
    expect(t.report.freshness!.next.stale).toBe(!["done","dropped"].includes(t.status));
    const entries = (await runtime.board.timeline(t.id)).entries.filter(e => e.ref?.startsWith("deploy:"));
-   expect(entries).toHaveLength(1); expect(entries[0]!.detail).toContain(`Attempted ${"b".repeat(40)}`); expect(entries[0]!.detail).toContain(`serving ${"a".repeat(40)}`);
+   expect(entries).toHaveLength(1); expect(entries[0]!.detail).toContain(`Attempted ${"b".repeat(12)}`); expect(entries[0]!.detail).toContain(`serving ${"a".repeat(12)}`);
   }
   await runtime.board.recordDeployAttempt(failed); expect(await runtime.board.state()).toEqual(board);
   await commit(async tx => { prepareReportNudges(await tx.doc(BoardDoc,runtime.conversation.id) as BoardState,Date.parse(at)+30_000,()=>"main"); });
@@ -63,7 +63,7 @@ test("atomic fan-out includes many tasks, closed and archived; outcomes stale op
   const retry = attempt(5,"attempt-two"); await runtime.board.recordDeployAttempt(retry);
   const late = structuredClone(failed); late.sequence=6;
   await runtime.board.recordDeployAttempt(late);
-  expect((await runtime.board.state()).tasks[0]!.activity?.text).toBe("Deploy queued for bbbbbbb");
+  expect((await runtime.board.state()).tasks[0]!.activity?.text).toBe("Deploy queued for bbbbbbbbbbbb");
   const newFailure = structuredClone(retry); newFailure.sequence = 7; newFailure.targets.one!.state = "failed";
   await runtime.board.recordDeployAttempt(newFailure);
   const newRetry = attempt(8, "attempt-three"); await runtime.board.recordDeployAttempt(newRetry);

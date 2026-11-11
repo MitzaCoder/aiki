@@ -695,9 +695,9 @@ export class ProjectManager {
 	}
 
 	/** A board task's timeline and feedback; `unknown_task` when the board has no such task. */
-	async boardTaskTimeline(projectId: string, taskId: string, kinds?: readonly BoardTimelineKind[]) {
+	async boardTaskTimeline(projectId: string, taskId: string, kinds?: readonly BoardTimelineKind[], grouped = false) {
 		const { runtime } = await this.open(projectId);
-		return runtime.board.timeline(taskId, kinds);
+		return runtime.board.timeline(taskId, kinds, grouped);
 	}
 
 	/** The user sets a feedback entry's state (dismisses or reopens it). */

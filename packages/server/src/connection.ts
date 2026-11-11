@@ -733,12 +733,13 @@ export class ClientConnection {
 				}
 				case "board.task.timeline": {
 					if (!this.#features.includes("task-links")) return this.#unknownRequest(request);
-					const { entries, feedback } = await this.#manager.boardTaskTimeline(
+					const timeline = await this.#manager.boardTaskTimeline(
 						request.projectId,
 						request.taskId,
 						request.kinds,
+      request.grouped === true && this.#features.includes("task-timeline-groups"),
 					);
-					this.#respond({ type: "board.task.timeline", id: request.id, taskId: request.taskId, entries, feedback });
+					this.#respond({ type: "board.task.timeline", id: request.id, taskId: request.taskId, ...timeline });
 					return;
 				}
 				case "board.feedback.set": {

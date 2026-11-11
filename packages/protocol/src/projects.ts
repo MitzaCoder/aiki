@@ -369,12 +369,13 @@ export const HARNESS_FEATURES = [
 	"device-management-v1",
 	"task-changes",
 	"task-deploys",
+ "task-timeline-groups",
 ] as const;
 export type HarnessFeature = (typeof HARNESS_FEATURES)[number];
 
 /** Missing hello.features is never evidence of device-auth support. */
 export const LEGACY_HARNESS_FEATURES = HARNESS_FEATURES.filter(
-	(feature) => feature !== "task-deploys" && feature !== "task-activity" && feature !== "report-audit" && feature !== "task-freshness" && feature !== "task-changes" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
+	(feature) => feature !== "task-timeline-groups" && feature !== "task-deploys" && feature !== "task-activity" && feature !== "report-audit" && feature !== "task-freshness" && feature !== "task-changes" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
 );
 
 export const HarnessFeatureSchema = Type.Union([
@@ -428,6 +429,7 @@ export const HarnessFeatureSchema = Type.Union([
 	Type.Literal("device-management-v1"),
 	Type.Literal("task-changes"),
 	Type.Literal("task-deploys"),
+ Type.Literal("task-timeline-groups"),
 ]);
 export type HarnessFeatureValue = Static<typeof HarnessFeatureSchema>;
 

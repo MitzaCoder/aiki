@@ -2074,6 +2074,48 @@ its own list, and a timeline; the description stays the original ask and the rep
 - **Compatibility.** Every new field is optional on the wire; boards written before links and feedback load as having
   none. A backend without `task-links` shows none of the above in the app. Android follows the same feature gate and presentation.
 
+### Hourly task timeline groups (T123, stage 3 of T120)
+
+Capability `task-timeline-groups` adds optional `board.task.timeline.grouped: true`. Opt-in responses
+add `groups` and `timelineRevision`; old `entries` and `feedback` are unchanged, including their filters.
+Without both capability and opt-in, those new fields are absent. Clients choose groups **or** flat entries,
+never concatenate them; absent groups means fallback, empty groups means no matching facts. Web and Android
+display are separate follow-ups; the T118 order/toggle/bounded-height/day-group/richer-row contract still applies.
+
+Each group is `{ id, kind, hour, range: { start, end }, revision, factCount, label, entries }`.
+Kinds `work`, `decisions`, `delivery` mean Work, Decisions and feedback, Delivery. The bucket is the
+entry's **starting UTC clock hour**, with at most three nonempty groups per task/hour. Localise displayed
+times without regrouping by end time. Groups and entries are chronological on the wire, sorted by immutable
+start, not progress. A run crossing hours stays in its starting group while the range end advances.
+The group ID is task/hour/category-derived; expansion must use opaque IDs, not positions or labels.
+Filters apply to expanded entry kinds before ranges, counts and labels are computed; omit empty groups.
+
+Expanded `BoardTimelineFact` retains the existing seven wire kinds and entry fields (`at` is the start),
+adding required `id`, `endAt`, `revision`, `group`, `outcome`, `factCount`, optional `source` category and
+optional typed `actor`. Source IDs are stable task/source-derived hashes, not hashes of evolving labels.
+One worker or thread episode, Q, F, deploy attempt or branch advance is one source entry. A worker episode
+includes thread/conversation/run identity, so retries/name reuse cannot merge unrelated work. Initial thread
+claim becomes its run in place; subsequent release/handoff entries remain inspectable. Answers and feedback
+handling evidence stay in detail. Each attributed deploy attempt keeps intended and per-target serving commits,
+latest target states/messages in detail; target updates replace, not append. Branch advances use durable fact IDs.
+Local changes/check outcomes can use the keyed reducer when explicitly declared; no inference from tool logs,
+chat or report text. Existing producers and source attribution rules are unchanged.
+
+`revision` advances when an entry changes; group revision is the sum of visible entry revisions. `factCount`
+counts meaningful lifecycle facts (start/outcome, asked/answered, feedback state changes), not intermediate
+phases or target-detail refreshes. The monotonic per-task `timelineRevision` now covers Q/decision changes
+as well as source/history updates; clients refresh cheaply from it. No new pushes or model turns are added.
+Labels prefer failures, then open questions, over later routine successes. Otherwise combine worker outcomes
+and status (`2 workers reported; ready for review`), latest Q/F (`Q1 answered; F1 addressed`), or landed changes
+and latest attempt (`3 changes landed; live on 3/3 targets`). Failures and questions remain in existing attention
+sections too; the hourly budget never hides an urgent signal behind a delayed flush.
+
+Metadata edits, report rewrites, stale marks, phases, thread messages, check-ins, artifacts and tools are excluded.
+Stable evolving source projections are bounded to 500 entries in task history, separately from legacy events.
+Legacy events and immutable snapshots fold on read without upgrade/backfill writes; historical prose is not
+converted into activity. New worker/thread/ownership projections do not manufacture additional flat rows.
+Kotlin DTOs are generated from the protocol; clients must explicitly gate grouped display and preserve legacy fallback.
+
 ## Judgment, writing and resources
 
 Status: backend done in `packages/server` (2026-11-05); the web side is built in parallel.

@@ -29,7 +29,7 @@ test("legacy projection is one plain milestone per task per advance, including d
 		for (const taskId of fact.taskIds) {
 			const entries = (await runtime.board.timeline(taskId)).entries.filter(entry => entry.ref === fact.id);
 			expect(entries).toHaveLength(1); expect(entries[0]?.kind).toBe("milestone"); expect(entries[0]?.label).toBe("3 changes landed on main");
-			expect(entries[0]?.detail).toContain("1".repeat(40)); expect(entries[0]?.detail).toContain("3".repeat(40));
+			expect(entries[0]?.detail).toContain("1".repeat(12)); expect(entries[0]?.detail).toContain("3".repeat(12));
 		}
 	} finally { await setup.cleanup(); }
 }, 30_000);
@@ -52,6 +52,11 @@ test.each(["landed", "removed", "reverted"] as const)("attributed %s changes sta
 		expect(await runtime.board.state()).toEqual(before);
 		await runtime.board.recordChangesLanded(fact);
 		const stale = await runtime.board.state();
+		const timeline = await runtime.board.timeline("T1");
+		const detail = timeline.entries.find(entry => entry.ref === fact.id)!.detail!;
+		const verb = kind[0]!.toUpperCase() + kind.slice(1);
+		expect(detail).toContain(`${verb} ${"1".repeat(12)} Synthetic change`);
+		expect(detail).not.toContain("1".repeat(40));
 		const reason = `${count} change${count === 1 ? "" : "s"} ${kind} ${kind === "removed" ? "from" : "on"} main`;
 		for (const section of ["results", "next"] as const) {
 			expect(stale.tasks[0]!.report.freshness![section]).toMatchObject({ stale: true, reasons: [reason], eventsSince: 1 });

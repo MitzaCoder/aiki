@@ -1,3 +1,4 @@
+import { buildTimelineGroups, recordTimelineRun, timelineId, upsertTimelineFact } from "./task-timeline.ts";
 import { deploySummary, type TaskDeployFact } from "./task-deploys.ts";
 import { activityTracking, taskActivity, endActivitySource, setActivityPhase, type TaskActivityTracking, DELIVERY_ACTIVITY_MS } from "./task-activity.ts";
 import type { Models } from "@earendil-works/pi-ai";
@@ -172,6 +173,8 @@ export type TaskHistoryState = {
 	keys: string[];
 	/** What happened that nothing else on the board records: workers started and reported, link changes. Oldest first. Absent before links. */
 	events?: BoardTimelineEntry[];
+ /** Stable evolving entries; legacy events/snapshots are folded only on read. */
+ timelineEntries?: import("@aiki/protocol").BoardTimelineFact[];
 	/** The task's feedback entries, oldest first. Absent before feedback. */
 	feedback?: BoardFeedback[];
 	/** Request IDs of messages already recorded as feedback, with the entry each made, so a re-sent message adds none. */
@@ -259,7 +262,7 @@ export function addSnapshot(
 
 /** Note that the task's timeline gained something the board document does not carry, so readers read it again. */
 function bumpTimeline(history: TaskHistoryState, task: BoardTask): void {
-	history.revision = (history.revision ?? 0) + 1;
+	history.revision = Math.max(history.revision ?? 0, task.timelineRevision ?? 0) + 1;
 	task.timelineRevision = history.revision;
 }
 
@@ -284,15 +287,24 @@ export function addTimelineEvent(history: TaskHistoryState, task: BoardTask, ent
 export function applyTaskDeploy(state: BoardState, history: TaskHistoryState, task: BoardTask, fact: TaskDeployFact): void {
  const summary = deploySummary(fact);
  const ref = `deploy:${fact.scope}:${fact.attemptId}`;
- const detail = [`Attempted ${fact.intendedCommit}`, ...fact.expectedTargets.map(name => {
+ const detail = [`Attempted ${fact.intendedCommit.slice(0, 12)}`, ...fact.expectedTargets.map(name => {
   const target = fact.targets[name]!;
   const serving = target.servingCommit ?? (target.state === "ok" && !target.backendUnchanged ? fact.intendedCommit : target.previousCommit);
-  return `${name}: ${target.state}${target.backendUnchanged ? " (backend unchanged)" : ""}${serving ? ` · serving ${serving}` : ""}${target.message ? ` · ${target.message}` : ""}`;
+  return `${name}: ${target.state}${target.backendUnchanged ? " (backend unchanged)" : ""}${serving ? ` · serving ${serving.slice(0, 12)}` : ""}${target.message ? ` · ${target.message}` : ""}`;
  })].join("\n");
  const entry = history.events?.find(entry => entry.ref === ref);
+ const priorEntry = entry ? { ...entry } : undefined;
  const unchanged = entry?.detail === detail && entry?.label === summary.text;
  if (entry && !unchanged) { entry.label = summary.text; entry.detail = detail; bumpTimeline(history, task); }
  else if (!entry) addTimelineEvent(history, task, { kind: "milestone", at: fact.observedAt, label: summary.text, detail, ref, by: HARNESS_WRITER });
+ if (!unchanged || !history.timelineEntries?.some(entry => entry.id === timelineId(task.id, ref))) {
+  if (priorEntry && !history.timelineEntries?.some(entry => entry.id === timelineId(task.id, ref))) upsertTimelineFact(history, task, { ...priorEntry, id: timelineId(task.id, ref), endAt: priorEntry.at, group: "delivery", source: "deploy", outcome: /failed|rolled.back/i.test(priorEntry.label) ? "failed" : /live on/i.test(priorEntry.label) ? "ok" : "running" });
+  const ready = fact.expectedTargets.filter(name => fact.targets[name]?.state === "ok").length;
+  const failed = fact.expectedTargets.some(name => ["failed", "rolled_back"].includes(fact.targets[name]!.state));
+  const outcome = failed ? "failed" : ready === fact.expectedTargets.length ? "ok" : "running";
+  upsertTimelineFact(history, task, { id: timelineId(task.id, ref), at: entry?.at ?? fact.observedAt, endAt: fact.observedAt, kind: "milestone", group: "delivery", source: "deploy", outcome,
+   label: outcome === "ok" ? `live on ${ready}/${fact.expectedTargets.length} targets` : summary.text, detail, ref, by: HARNESS_WRITER });
+ }
  state.latestTaskDeploy ??= {};
  const latest = state.latestTaskDeploy[task.id];
  // A late catch-up updates its own history only; it cannot revive an older attempt in Now.
@@ -418,6 +430,7 @@ export async function inferCoordinatorTaskFocusIn(tx: Tx, mainId: ConversationId
  const tracking = activityTracking(state, taskId);
  if (tracking.sources[id]?.state === "running") return;
  tracking.sources[id] = { actor: { id, kind: threadId === "main" ? "coordinator" : "thread", name: threadId === "main" ? "Coordinator" : threadId, threadId, conversationId, runId }, state: "running", since: at, title: task.title };
+ if (threadId !== "main") recordTimelineRun(await openTaskHistory(tx, mainId, taskId), task, tracking.sources[id]!.actor, "running", at, task.title);
 }
 
 /**
@@ -1185,6 +1198,7 @@ export function askQuestion(
 		answeredAt: null,
 	};
 	state.questions.push(question);
+ if (question.taskId) { const task = state.tasks.find(task => task.id === question.taskId)!; task.timelineRevision = (task.timelineRevision ?? 0) + 1; }
 	if (input.taskId !== null) noteTaskFact(state, input.taskId, { actor: "coordinator", kind: "question_asked", reason: `${question.id} asked`, ref: question.id, at: input.now });
 	state.updatedAt = input.now;
 	return plain(question);
@@ -1210,6 +1224,7 @@ export function settleQuestion(
 	question.answer = input.answer;
 	question.answeredAt = input.now;
 	question.revision += 1;
+ if (question.taskId) { const task = state.tasks.find(task => task.id === question.taskId)!; task.timelineRevision = (task.timelineRevision ?? 0) + 1; }
  if (question.kind === "warning" && question.taskId && question.activitySourceId && input.answer !== null) {
   const tracking = state.taskActivity?.[question.taskId];
   for (const source of Object.values(tracking?.sources ?? {})) if (source.state === "failed" && source.actor.id === question.activitySourceId) source.state = "ended";
@@ -1234,6 +1249,7 @@ export function addDecision(
 		at: input.now,
 	};
 	state.decisions.push(decision);
+ if (decision.taskId) { const task = state.tasks.find(task => task.id === decision.taskId)!; task.timelineRevision = (task.timelineRevision ?? 0) + 1; }
 	if (input.taskId !== null) noteTaskFact(state, input.taskId, { actor: "coordinator", kind: "decision", reason: `${decision.id} recorded`, ref: decision.id, at: input.now });
 	state.updatedAt = input.now;
 	return plain(decision);
@@ -1944,7 +1960,9 @@ export class BoardService {
 					removed.length ? `${removed.length} change${removed.length === 1 ? "" : "s"} removed from ${ref}` : "", reverted.length ? `${reverted.length} change${reverted.length === 1 ? "" : "s"} reverted on ${ref}` : ""].filter(Boolean).join("; ");
 				noteTaskFact(state, taskId, { kind: "commit", reason: label, at: fact.at, ref: fact.id });
 				addTimelineEvent(history, task, { at: fact.at, kind: "milestone", label, ref: fact.id, by: HARNESS_WRITER,
-					detail: [...landed.map(commit => `Landed ${commit.hash} ${commit.subject}`), ...removed.map(commit => `Removed ${commit.hash} ${commit.subject}`), ...reverted.map(commit => `Reverted ${commit.hash} ${commit.subject}`)].join("\n") }, fact.id);
+					detail: [...landed.map(commit => `Landed ${commit.hash.slice(0, 12)} ${commit.subject}`), ...removed.map(commit => `Removed ${commit.hash.slice(0, 12)} ${commit.subject}`), ...reverted.map(commit => `Reverted ${commit.hash.slice(0, 12)} ${commit.subject}`)].join("\n") }, fact.id);
+    upsertTimelineFact(history, task, { id: timelineId(task.id, fact.id), at: fact.at, endAt: fact.at, kind: "milestone", group: "delivery", source: "change", outcome: removed.length || reverted.length ? "removed" : "landed", label, ref: fact.id, by: HARNESS_WRITER,
+     detail: [...landed.map(commit => `Landed ${commit.hash.slice(0, 12)} ${commit.subject}`), ...removed.map(commit => `Removed ${commit.hash.slice(0, 12)} ${commit.subject}`), ...reverted.map(commit => `Reverted ${commit.hash.slice(0, 12)} ${commit.subject}`)].join("\n") });
 			}
 		}, BACKGROUND_CONTEXT);
 	}
@@ -2002,11 +2020,11 @@ export class BoardService {
 	 * A task's timeline, oldest first, and its feedback entries (open ones first). `kinds` keeps only those kinds of entry.
 	 * `unknown_task` when the board has no such task.
 	 */
-	async timeline(taskId: string, kinds?: readonly BoardTimelineKind[]): Promise<{ entries: BoardTimelineEntry[]; feedback: BoardFeedback[] }> {
+	async timeline(taskId: string, kinds?: readonly BoardTimelineKind[], grouped = false): Promise<{ entries: BoardTimelineEntry[]; feedback: BoardFeedback[]; groups?: import("@aiki/protocol").BoardTimelineGroup[]; timelineRevision?: number }> {
 		const state = await this.state();
 		if (!state.tasks.some((task) => task.id === taskId)) throw unknownTask(taskId);
 		const history = await this.#options.harness.snapshot(TaskHistoryDoc, this.coordinator.id, taskId, BACKGROUND_CONTEXT);
-		return plain(buildTimeline({ id: taskId }, state, history as TaskHistoryState | undefined, kinds));
+		return plain({ ...buildTimeline({ id: taskId }, state, history as TaskHistoryState | undefined, kinds), ...(grouped ? { groups: buildTimelineGroups({ id: taskId }, state, history as TaskHistoryState | undefined, kinds), timelineRevision: state.tasks.find(task => task.id === taskId)?.timelineRevision ?? 0 } : {}) });
 	}
 
 	/**
@@ -2131,8 +2149,10 @@ export class BoardService {
 	async #change<T>(tx: Tx, by: BoardWriter, key: string | undefined, change: (state: BoardState, now: string) => T | Promise<T>): Promise<T> {
 		const state = await openBoard(tx, this.#mainId);
 		const before = statusesOf(state);
+  const threadRunsBefore = this.#threadRunStates(state);
 		const waitingBefore = new Map(state.tasks.map((task) => [task.id, JSON.stringify(task.waiting)]));
 		const linksBefore = linksOfBoard(state);
+ const ownersBefore = new Map(state.tasks.map(task => [task.id, task.ownerThreadId]));
 		const now = this.#iso();
 		const result = await change(state, now);
   for (const task of state.tasks) if (before.get(task.id) !== task.status) {
@@ -2147,6 +2167,13 @@ export class BoardService {
 			addSnapshot(await openTaskHistory(tx, this.#mainId, task.id), task, { label: "Waiting updated", by, at: now, key: key === undefined ? undefined : `${key}:${task.id}:waiting` });
 		}
 		await logLinkChanges(tx, this.#mainId, state, linksBefore, { by, at: now });
+  await this.#syncThreadTimeline(tx, state, threadRunsBefore);
+  for (const task of state.tasks) if ((ownersBefore.get(task.id) ?? null) !== (task.ownerThreadId ?? null)) {
+   const from = ownersBefore.get(task.id);
+   const to = task.ownerThreadId;
+   const history = await openTaskHistory(tx, this.#mainId, task.id);
+   upsertTimelineFact(history, task, { id: timelineId(task.id, `ownership:${task.revision}:${now}`), at: now, endAt: now, kind: "milestone", group: "work", source: "ownership", outcome: "recorded", label: to ? (from ? `Handed from ${from} to ${to}` : `Claimed by ${to}`) : `Released by ${from}`, by });
+  }
 		return result;
 	}
 
@@ -2366,6 +2393,19 @@ export class BoardService {
 		);
 	}
 
+ #threadRunStates(state: BoardState): Map<string, string> {
+  return new Map(state.tasks.flatMap(task => Object.values(state.taskActivity?.[task.id]?.sources ?? {}).map(source => [`${task.id}:${source.actor.id}`, source.state])));
+ }
+
+ async #syncThreadTimeline(tx: Tx, state: BoardState, before: ReadonlyMap<string, string>): Promise<void> {
+  for (const task of state.tasks) {
+   const sources = Object.values(state.taskActivity?.[task.id]?.sources ?? {}).filter(source => source.actor.kind === "thread" && source.state !== "unknown" && before.get(`${task.id}:${source.actor.id}`) !== source.state);
+   if (!sources.length) continue;
+   const history = await openTaskHistory(tx, this.#mainId, task.id);
+   for (const source of sources) recordTimelineRun(history, task, source.actor, source.state, source.since, source.failure ?? source.title);
+  }
+ }
+
  async endTaskFocus(conversationId: number, runId: string): Promise<void> {
   await this.#commit(HARNESS_WRITER, state => {
    for (const tracking of Object.values(state.taskActivity ?? {})) for (const source of Object.values(tracking.sources)) {
@@ -2394,6 +2434,7 @@ export class BoardService {
   await this.#options.harness.commit(async tx => {
    const state = await openBoard(tx, this.#mainId);
    if (!state.taskActivityEnabled) return;
+   const threadRunsBefore = this.#threadRunStates(state);
    const at = this.#iso();
    const ownTaskId = state.taskFocus?.[threadId];
    if (ownTaskId) taskIds.add(ownTaskId);
@@ -2410,13 +2451,14 @@ export class BoardService {
      else endActivitySource(tracking, source.actor.id, at);
     }
    }
-   if (!runId) return;
+   if (!runId) { await this.#syncThreadTimeline(tx, state, threadRunsBefore); return; }
    const id = `${threadId}:${conversationId}:${runId}`;
    for (const task of state.tasks.filter(task => taskIds.has(task.id))) {
     const tracking = activityTracking(state, task.id);
     if (tracking.sources[id]?.state === "running") continue;
     tracking.sources[id] = { actor: { id, kind: threadId === "main" ? "coordinator" : "thread", name: threadId === "main" ? "Coordinator" : threadId, threadId, conversationId, runId }, state: "running", since: at, title: task.title };
    }
+   await this.#syncThreadTimeline(tx, state, threadRunsBefore);
   }, BACKGROUND_CONTEXT);
  }
 

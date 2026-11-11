@@ -2320,6 +2320,43 @@ data class BoardTaskBrief(
 )
 
 @Serializable
+data class BoardTimelineFact(
+    val `at`: String,
+    val `kind`: String,
+    val `label`: String,
+    val `detail`: String? = null,
+    val `ref`: String? = null,
+    val `state`: String? = null,
+    val `by`: BoardWriter? = null,
+    val `id`: String,
+    val `endAt`: String,
+    val `revision`: Long,
+    val `group`: String,
+    val `outcome`: String,
+    val `factCount`: Long,
+    val `source`: String? = null,
+    val `actor`: BoardActivityActor? = null
+)
+
+@Serializable
+data class BoardTimelineGroup(
+    val `id`: String,
+    val `kind`: String,
+    val `hour`: String,
+    val `range`: BoardTimelineGroupRange,
+    val `revision`: Long,
+    val `factCount`: Long,
+    val `label`: String,
+    val `entries`: List<BoardTimelineFact>
+)
+
+@Serializable
+data class BoardTimelineGroupRange(
+    val `start`: String,
+    val `end`: String
+)
+
+@Serializable
 data class BoardTimelineEntry(
     val `at`: String,
     val `kind`: String,
@@ -2336,7 +2373,8 @@ data class BoardTaskTimelineRequest(
     val `id`: String = java.util.UUID.randomUUID().toString(),
     val `projectId`: String,
     val `taskId`: String,
-    val `kinds`: List<String>? = null
+    val `kinds`: List<String>? = null,
+    val `grouped`: Boolean? = null
 )
 
 @Serializable
@@ -2356,6 +2394,8 @@ data class BoardTaskTimelineResponse(
     val `id`: String,
     val `taskId`: String,
     val `entries`: List<BoardTimelineEntry>,
+    val `groups`: List<BoardTimelineGroup>? = null,
+    val `timelineRevision`: Long? = null,
     val `feedback`: List<BoardFeedback>
 )
 

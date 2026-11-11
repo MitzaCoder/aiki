@@ -1,5 +1,50 @@
 # Continue
 
+## T123 server: stable hourly task timelines (stage 3 of T120)
+
+Resolved the two documentation-only stack conflicts oldest-first, squashing into the original changes:
+`nuttzssv` is `69937e13`, `ksutrsvt` is `9f67cff5`. Both continuation insertions were checked line-by-line
+for retained destination and added source lines; newer sections come first. DESIGN retains both clients'
+automatic-Now contracts and the deployment feed contract. `tlspuuvr::` has no conflicts. Nothing moved main.
+
+The server now advertises `task-timeline-groups`. Client handoff:
+- Send `board.task.timeline` with optional `grouped: true`, only with that explicit capability. The existing
+  `kinds` filter applies inside groups. Without opt-in/capability the old flat response is unchanged.
+- Responses add optional `groups` and `timelineRevision`; `entries` and `feedback` retain their old shape/content.
+  Render groups **instead of**, not alongside, flat entries. Fall back to entries when groups is absent; an
+  empty groups array is a successful empty/filter result. Feedback still feeds its separate existing section.
+- A group has `{ id, kind, hour, range: { start, end }, revision, factCount, label, entries }`. `kind` is
+  `work`, `decisions` or `delivery` (display Work, Decisions and feedback, Delivery). `hour` is a UTC clock-hour
+  anchor; localise displayed times, but do not rebucket by end time. At most three nonempty groups per starting
+  hour. Wire groups and expanded entries are chronological; clients retain T118 newest-first/order preference,
+  bounded scrolling, day separators and expansion controls. Cache expansion by opaque ID, not index or label.
+- Expanded entries retain the seven existing `kind` values and add required `{ id, endAt, revision, group,
+  outcome, factCount }`, with optional `source` and `actor`. `at` is the immutable start, `endAt` the latest
+  meaningful update. Run identity includes thread/conversation/episode, not reusable worker name alone.
+  `source` identifies worker/thread/check/change/deploy/ownership where known; legacy rows need not have an actor.
+  Per-entry revision changes with content; group revision sums its entries' revisions. Refresh from the task's
+  monotonic `timelineRevision`, which now also covers question/decision changes. Filters recalculate range/count/label.
+
+One source entry evolves for a worker/thread episode, Q, F or deploy attempt; initial thread claim folds into its
+run. Lifecycle transitions count as facts, while target/detail updates revise the same entry without inventing a
+phase fact. Q/F details retain the answer/handling evidence; deploy details retain intended/serving commits and
+per-target states. Branch advances use their durable fact IDs. Local change/check outcomes can use the same keyed
+source reducer; this stage does not infer them from tools, chat or free-form report prose.
+
+Failures dominate labels, then open Qs; routine labels combine reported-worker count/review, latest Q/F outcome,
+or landed count/latest attempt. Examples: `2 workers reported; ready for review`, `Q1 answered; F1 addressed`,
+`3 changes landed; live on 3/3 targets`, `Worker fern failed`, `Q1 awaiting answer`. Cross-hour runs remain in their
+starting group and position. Report/metadata rewrites, stale marks, phases, check-ins, messages, artifacts and tool
+noise add no grouped rows. Legacy snapshots/events fold purely on read; no migration/backfill writes or snapshot
+rewrites. New source projections are bounded independently of legacy flat history, which gains no duplicate rows.
+
+Verification: new timeline suite 28 tests / 80 assertions; related server suites 65 / 478. Sequential gates pass:
+root 2,386 tests / 91,178 assertions; typecheck; web check zero diagnostics, 1,022 tests / 79,544 assertions and build;
+Kotlin generation and --check; public-source guard/Gitleaks; Android JVM 872 tests (two opt-in skips), 116 suites,
+zero failures/errors, and debug assembly. Gradle daemons stopped. No known flaky gate needed a rerun; initial new-test
+type errors were fixed before the successful typecheck. Web/Android display work and UI proof are for later briefs;
+only generated Kotlin DTOs changed here. No live data, phone install, push, main move or deployment.
+
 ## T125: Android Delivery settings
 
 Project settings now offers Delivery when task-changes or task-deploys is advertised. Integration branch

@@ -1,3 +1,4 @@
+import { recordTimelineRun } from "./task-timeline.ts";
 import { activityTracking, endActivitySource } from "./task-activity.ts";
 import { noteTaskFact } from "./task-freshness.ts";
 import { stateKind } from "./state-identity.ts";
@@ -147,6 +148,13 @@ export async function syncWorkerActivity(tx: Tx, service: WorkerService, worker:
   tracking.sources[id] = { actor: { id, kind: "worker", name: worker.id, threadId, conversationId: worker.conversationId, runId }, state: "failed", title: worker.title, since: worker.updatedAt, failure: worker.failure ?? "no reason given" };
   tracking.lastEndedAt = worker.updatedAt;
  } else endActivitySource(tracking, id, worker.updatedAt);
+ const task = board.tasks.find(task => task.id === worker.taskId);
+ if (task) {
+  const history = await openTaskHistory(tx, service.mainId as ConversationId, task.id);
+  const outcome = worker.status === "running" ? "running" : worker.status === "failed" ? "failed" : worker.status === "stopped" ? "stopped" : "reported";
+  recordTimelineRun(history, task, { id, kind: "worker", name: worker.id, threadId, conversationId: worker.conversationId, runId }, outcome, worker.updatedAt,
+   outcome === "failed" ? worker.failure ?? "no reason given" : outcome === "reported" ? reportGist(worker.lastReport ?? "") : worker.title);
+ }
 }
 
 /** Read-only on subsequent requests in the same run; no transaction or document writes. */

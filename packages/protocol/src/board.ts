@@ -367,6 +367,33 @@ export const BoardTimelineEntrySchema = Type.Object({
 });
 export type BoardTimelineEntry = Static<typeof BoardTimelineEntrySchema>;
 
+/** task-timeline-groups: entries stay in their UTC starting hour, even when endAt advances. */
+export const BoardTimelineGroupKindSchema = Type.Union([Type.Literal("work"), Type.Literal("decisions"), Type.Literal("delivery")]);
+export type BoardTimelineGroupKind = Static<typeof BoardTimelineGroupKindSchema>;
+export const BoardTimelineFactSchema = Type.Object({
+ ...BoardTimelineEntrySchema.properties,
+ id: Type.String(),
+ endAt: Type.String(),
+ revision: Type.Integer({ minimum: 1 }),
+ group: BoardTimelineGroupKindSchema,
+ outcome: Type.String({ description: "Latest source outcome, e.g. running, reported, failed, open, answered, addressed, ok." }),
+ factCount: Type.Integer({ minimum: 1, description: "Meaningful lifecycle facts, not phase/progress updates." }),
+ source: Type.Optional(Type.String({ description: "Source category: worker, thread, check, change, deploy, ownership." })),
+ actor: Type.Optional(BoardActivityActorSchema),
+});
+export type BoardTimelineFact = Static<typeof BoardTimelineFactSchema>;
+export const BoardTimelineGroupSchema = Type.Object({
+ id: Type.String(),
+ kind: BoardTimelineGroupKindSchema,
+ hour: Type.String({ description: "UTC clock-hour start; group identity never depends on endAt." }),
+ range: Type.Object({ start: Type.String(), end: Type.String() }),
+ revision: Type.Integer({ minimum: 1 }),
+ factCount: Type.Integer({ minimum: 1 }),
+ label: Type.String(),
+ entries: Type.Array(BoardTimelineFactSchema),
+});
+export type BoardTimelineGroup = Static<typeof BoardTimelineGroupSchema>;
+
 // --- requests ----------------------------------------------------------------------------------------------------
 
 export const BoardGetRequestSchema = Type.Object({
@@ -434,6 +461,7 @@ export const BoardTaskTimelineRequestSchema = Type.Object({
 	projectId: ProjectIdSchema,
 	taskId: Type.String({ minLength: 1 }),
 	kinds: Type.Optional(Type.Array(BoardTimelineKindSchema)),
+ grouped: Type.Optional(Type.Boolean({ description: "Request groups with task-timeline-groups; legacy entries remain unchanged." })),
 });
 export type BoardTaskTimelineRequest = Static<typeof BoardTaskTimelineRequestSchema>;
 
@@ -508,6 +536,8 @@ export const BoardTaskTimelineResponseSchema = Type.Object({
 	id: RequestIdSchema,
 	taskId: Type.String(),
 	entries: Type.Array(BoardTimelineEntrySchema),
+ groups: Type.Optional(Type.Array(BoardTimelineGroupSchema)),
+ timelineRevision: Type.Optional(Type.Integer({ minimum: 0 })),
 	feedback: Type.Array(BoardFeedbackSchema, { description: "Open and handling ones first (oldest first), then the rest, newest first." }),
 });
 export type BoardTaskTimelineResponse = Static<typeof BoardTaskTimelineResponseSchema>;
