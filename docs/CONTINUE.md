@@ -1,5 +1,15 @@
 # Continue
 
+## T120: task freshness design (no implementation)
+
+`docs/research/task-freshness.md` proposes automatic Now, three folded timeline groups
+per busy task-hour, generic commit/deploy attribution and D59 stale-section nudges.
+Results/Next stay agent-written; section-specific coverage avoids fresh Now disguising
+old prose. The answered-question/work-advanced rule explicitly covers T71/Q121. Cheap
+chat-mention and age fallbacks plus a user stale-report action are recommended; a bounded
+small-model audit is optional and token-budgeted. No runtime/UI/deploy changes, push or
+main move. Defaults and optional audit enablement remain owner choices.
+
 ## T130: restore the web Bubble club graph
 
 Restored the T79 web graph from `19cc5744`, backing out the Connected work renderer introduced by
