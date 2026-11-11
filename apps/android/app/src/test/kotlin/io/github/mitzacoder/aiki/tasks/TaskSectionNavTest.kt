@@ -14,14 +14,14 @@ class TaskSectionNavTest {
     @Test fun richTaskUsesTheSameSingleColumnOrderAsWeb() {
         val rich = task("T1").copy(workerIds = listOf("w1"), snapshots = 2, description = "Brief")
         val sections = taskSheetSections(rich, 1, 3, 2, 1, true, 2, 12)
-        assertEquals(listOf(TaskSectionKind.Questions, TaskSectionKind.Report, TaskSectionKind.Feedback,
+        assertEquals(listOf(TaskSectionKind.Questions, TaskSectionKind.Report, TaskSectionKind.Timeline, TaskSectionKind.Feedback,
             TaskSectionKind.Files, TaskSectionKind.Related, TaskSectionKind.Workers, TaskSectionKind.Decisions,
-            TaskSectionKind.Timeline, TaskSectionKind.History, TaskSectionKind.Brief), sections.map { it.kind })
-        assertEquals(listOf("1 open", null, "2 open", "3", "2", "1", "1", "12", "2", "Reference"), sections.map { it.count })
+            TaskSectionKind.History, TaskSectionKind.Brief), sections.map { it.kind })
+        assertEquals(listOf("1 open", null, "12", "2 open", "3", "2", "1", "1", "2", "Reference"), sections.map { it.count })
     }
 
     @Test fun linksFeatureKeepsExistingEmptyFeedbackAndTimelineButNoEmptyRelated() {
-        assertEquals(listOf(TaskSectionKind.Report, TaskSectionKind.Feedback, TaskSectionKind.Timeline),
+        assertEquals(listOf(TaskSectionKind.Report, TaskSectionKind.Timeline, TaskSectionKind.Feedback),
             taskSheetSections(task("T1"), 0, 0, 0, 0, true, 0, 0).map { it.kind })
         assertFalse(taskSheetSections(task("T1"), 0, 0, 3, 0, false, 0, 0).any { it.kind == TaskSectionKind.Related })
     }

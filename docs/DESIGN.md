@@ -2787,8 +2787,8 @@ follows the same visual hierarchy in D28, using its existing Jarvis theme and sh
   input scrolls internally without discarding text; expanding refs or changing keyboard size never recreates it.
   Below 400dp available Android height, section chips temporarily yield their space to the scrollable body and its
   padding is reduced; normal-height windows retain the existing section navigation.
-- **One column at every width (T43).** Questions comes immediately after the header/navigation, then Report, Feedback and Files.
-  Related, Workers, Decisions, Timeline, History and Brief follow. Existing visibility rules remain; empty reference
+- **One column at every width (T43).** Questions comes immediately after the header/navigation, then Report, Timeline, Feedback and Files.
+  Related, Workers, Decisions, History and Brief follow. Existing visibility rules remain; empty reference
   sections do not leave blank cards. History, Timeline and Brief retain their existing folding behaviour.
 - **Section navigation (T43).** At 54rem of sheet width (a container query, not window width), a slim sticky rail sits
   left of the single card column. Below that width it becomes a horizontally scrolling chip row, sticky below the
@@ -2812,6 +2812,17 @@ follows the same visual hierarchy in D28, using its existing Jarvis theme and sh
   secondary. A report not yet written gets a plain explanation, not empty Now/Results/Next blocks or a misleading update
   chip. Finished and archived reports remain readable; Reopen, archive lookup and thread-holder identification keep
   their existing behaviour. Long titles and refs wrap on a phone or narrow desktop.
+- **Timeline reading (T118).** Timeline and its navigation chip sit between Report and Feedback, still folded by
+  default. Entries are sorted newest first; a separate 44px/48dp icon button in the section header reverses the
+  direction, with a named current direction and tooltip. Web stores the global choice in `aiki.timeline-order.v1`;
+  Android stores `timelineNewestFirst` in device preferences (old settings default to true). Opening, reversing or
+  filtering starts at the newest end: top in newest-first, bottom in oldest-first. Live entries do not force a jump.
+  The web event viewport is at most 400px / 48dvh, keyboard focusable, with contained overscroll; Android uses a bounded
+  LazyColumn at most 400dp / 36% of screen height and a horizontally scrolling filter row. The sheet keeps its own
+  scrolling and T113 header/composer/IME budgets. Rows use quiet kind/outcome-tinted icons, actor and relative time,
+  exact time on hover (web) or long-press (Android), single-line labels, expandable secondary detail, and from → to
+  status chips. Local calendar-day separators say Today, Yesterday or a date, independent of reading direction.
+  The existing wire timeline remains chronological; no history data, endpoint, kind filter or status action changes.
 - **Reply.** `TaskReply` renders the actual coordinator `Composer`, without model/worker/task pickers. No copied shell:
   it has the same glass card, 16px type, internal attach and arrow-up send controls, paste/drop handling, image strip,
   autosizing and Enter/Shift+Enter rules (touch Enter is a newline). The coordinator composer itself is unchanged.
@@ -2834,8 +2845,8 @@ ellipsis treatment (T31). Foldable sections retain heading/button semantics and 
 
 - **T62 removes `TaskSummary.kt`.** `TaskSheetMeta.kt` keeps the same compact context as web: waiting and subtask
   progress in wrapping header metadata, open question/feedback and running-worker counts on section chips. It adds no reads.
-- **T43 removes the 840dp two-column layout.** Every window uses the same Questions, Report, Feedback, Files,
-  Related, Workers, Decisions, Timeline, History, Brief order. The side sheet still starts at 600dp, has a maximum
+- **T43 removes the 840dp two-column layout.** Every window uses the same Questions, Report, Timeline, Feedback, Files,
+  Related, Workers, Decisions, History, Brief order. The side sheet still starts at 600dp, has a maximum
   1184dp width and a 48dp outside gutter.
 - A horizontal sticky chip row stays above the scrolling body, below the unchanged header. A keyed LazyColumn
   holds one item per present section, starting at index zero (T62). Tapping a chip pins its key immediately and calls

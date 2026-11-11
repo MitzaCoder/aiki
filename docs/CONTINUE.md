@@ -1,5 +1,43 @@
 # Continue
 
+## T118 integration on the pilot release fix (Q133)
+
+Rebased T118 onto the checked pilot fix `de189883`. Runtime files merge cleanly; CONTINUE retains every section
+from both sides and DESIGN keeps the pilot contract plus the timeline reading design. Q133 authorizes pushing
+this exact combined tip and moving main after full sequential root, web, Android and public-source gates.
+Earlier T118 counts below describe its isolated tree; final combined checks and the target hash are attached to
+T118. No phone install, physical-device operation or manual deployment is part of this integration. The separate
+Android graph stack is left untouched for the owner's next request.
+
+## Task timeline reading (T118)
+
+Web and Android place Timeline between Report and Feedback, including navigation. It stays folded initially. The
+header has a separate named order icon/tooltip; newest-first is the default. Web persists the global choice at
+`aiki.timeline-order.v1`; Android uses `DeviceSettings.timelineNewestFirst` and the existing repository/DataStore.
+Opening, reversing or filtering starts at the newest end (top for newest-first, bottom for oldest-first). Live data
+updates do not force a scroll jump. Existing endpoint ordering/history, filters and feature gates are unchanged.
+
+The chosen design is a calm row rather than nested event cards: kind/outcome-tinted icons, actor and relative time,
+exact time on hover/long-press, one-line labels, expandable secondary text, status transition chips and local-day
+separators. Web events scroll within 400px / 48dvh with contained overscroll. Android uses a bounded LazyColumn at
+400dp / 36% of screen height and horizontally scrolling filters. T113 header/refs/composer/IME budgets are untouched;
+TaskSheet changes only section placement, web order-control wiring and the Android timeline call.
+
+`packages/server/scripts/task-timeline-demo.ts` provides 49 synthetic events across four days and all seven wire
+kinds, plus Report/Feedback context, on a createSetup-only backend. It prints fresh data/config/project paths.
+T118 artifacts have desktop/phone web and emulator before/after light/dark screenshots, oldest-first states, an
+11-second Chromium screencast and a 14-second native scrolling/toggling/details/time recording. Browser assertions
+verify bounds, sorted endpoints, reload persistence, newest-end positioning and inner scroll leaving the sheet
+alone. Android persistence was checked across force-stop/relaunch. No physical device or real task/provider data.
+
+Checks pass: root 2,217 tests / 81,296 assertions and typecheck; web 999 tests / 70,551 assertions, zero check diagnostics
+and production build; Android 823 JVM tests / 110 suites / two skips / zero failures or errors, debug assembly and
+lint (44 warnings, one hint, no errors). Heavy gates ran sequentially after a transient host EAGAIN burst; Gradle
+daemon stopped after builds. Isolated runner setup errors (overlong Unix-socket TMPDIR and missing USER) were fixed
+in the runner environment. Public-source guard/Gitleaks pass. Proof and runner output stay workspace-local and ignored.
+Owned proof backend, Vite, Chromium and emulator were stopped by recorded PIDs. No push, main move or deployment.
+
+
 ## T71: release-runner prerequisites and deterministic deploy assertions
 
 Release run `43047820705` at `b7cf8f27` failed before any draft/assets were produced.

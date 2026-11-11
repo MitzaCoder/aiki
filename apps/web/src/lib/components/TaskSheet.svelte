@@ -28,6 +28,9 @@
 	import TaskFeedback from '#lib/components/TaskFeedback.svelte';
 	import TaskHistory from '#lib/components/TaskHistory.svelte';
 	import TaskRelations from '#lib/components/TaskRelations.svelte';
+	import ArrowDownWideNarrowIcon from '@lucide/svelte/icons/arrow-down-wide-narrow';
+	import ArrowUpWideNarrowIcon from '@lucide/svelte/icons/arrow-up-wide-narrow';
+	import { timelineOrder } from '#lib/timeline-order.svelte.js';
 	import TaskTimeline from '#lib/components/TaskTimeline.svelte';
 	import TaskRefs from '#lib/components/TaskRefs.svelte';
 	import { useRefLinks } from '#lib/ref-links.svelte.js';
@@ -555,6 +558,11 @@
 											class="flex flex-col gap-2"
 											data-timeline
 										>
+											{#snippet meta()}
+												<button type="button" class="inline-flex size-11 items-center justify-center rounded-lg hover:bg-(--chat-surface-2)" aria-label={timelineOrder.order === 'newest' ? 'Newest first; show oldest first' : 'Oldest first; show newest first'} title={timelineOrder.order === 'newest' ? 'Newest first' : 'Oldest first'} onclick={() => timelineOrder.toggle()} data-timeline-order>
+													{#if timelineOrder.order === 'newest'}<ArrowDownWideNarrowIcon class="size-4" />{:else}<ArrowUpWideNarrowIcon class="size-4" />{/if}
+												</button>
+											{/snippet}
 											{#if timelineOpen}
 												<TaskTimeline
 													entries={timelineEntries}
@@ -589,12 +597,12 @@
 								{@render questionsSection()}
 								{@render blockedSection()}
 								{@render reportSection()}
+								{@render timelineSection()}
 								{@render feedbackSection()}
 								{@render filesSection()}
 								{@render relatedSection()}
 								{@render workersSection()}
 								{@render decisionsSection()}
-								{@render timelineSection()}
 								{@render historySection()}
 								{@render briefSection()}
 							{/if}

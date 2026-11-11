@@ -27,13 +27,13 @@ internal fun taskSheetSections(
 ): List<TaskSectionLink> = buildList {
     if (questions > 0) add(TaskSectionLink(TaskSectionKind.Questions, "$questions open"))
     add(TaskSectionLink(TaskSectionKind.Report, if (hasReport(task.report)) "Current update" else null))
+    // Android keeps its existing empty timeline and feedback placeholders.
+    if (linksEnabled) add(TaskSectionLink(TaskSectionKind.Timeline, timeline.toString()))
     if (linksEnabled) add(TaskSectionLink(TaskSectionKind.Feedback, "$feedback open"))
     if (files > 0) add(TaskSectionLink(TaskSectionKind.Files, files.toString()))
     if (linksEnabled && related > 0) add(TaskSectionLink(TaskSectionKind.Related, related.toString()))
     if (task.workerIds.isNotEmpty()) add(TaskSectionLink(TaskSectionKind.Workers, taskWorkerCount(task.workerIds.size, runningWorkers)))
     if (decisions > 0) add(TaskSectionLink(TaskSectionKind.Decisions, decisions.toString()))
-    // Android keeps its existing empty timeline and feedback placeholders.
-    if (linksEnabled) add(TaskSectionLink(TaskSectionKind.Timeline, timeline.toString()))
     if (task.snapshots > 0) add(TaskSectionLink(TaskSectionKind.History, task.snapshots.toString()))
     if (task.description.isNotBlank() || !task.acceptance.isNullOrBlank()) add(TaskSectionLink(TaskSectionKind.Brief, "Reference"))
 }

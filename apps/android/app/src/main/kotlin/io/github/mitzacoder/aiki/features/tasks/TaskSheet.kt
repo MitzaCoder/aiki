@@ -374,7 +374,7 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
                                 }
                             }
                             TaskSectionKind.Timeline -> {
-                                TaskTimeline(timeline?.entries.orEmpty())
+                                TaskTimeline(timeline?.entries.orEmpty(), deviceSettings.timelineNewestFirst, { scope.launch { context.repository.setTimelineNewestFirst(!deviceSettings.timelineNewestFirst) } }, ::writerName, now)
                             }
                             TaskSectionKind.History -> {
                                 if (task.snapshots > 0) {

@@ -127,6 +127,7 @@ class HarnessRepository(private val store: DeviceStore, private val authStore: D
     suspend fun setWorkDayStart(start: String) = update { it.copy(workDayStart = normalizeWorkDayStart(start)) }
     suspend fun setTheme(palette: ThemePalette, mode: ThemeMode) = update { it.copy(palette = palette, mode = mode) }
     suspend fun setCodeWrap(stored: String) = update { it.copy(codeWrap = stored) }
+    suspend fun setTimelineNewestFirst(newestFirst: Boolean) = update { it.copy(timelineNewestFirst = newestFirst) }
     suspend fun setTasksView(stored: String) = update { it.copy(tasksView = stored) }
     suspend fun setTaskFamilyExpanded(backendKey: String, projectId: String, parentId: String, expanded: Boolean) = update {
         it.withFamilyExpansion(backendKey, projectId, parentId, expanded)
