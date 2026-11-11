@@ -21,7 +21,6 @@ import type {
 	BoardTaskTimelineResponse,
 	BoardFeedbackSetResponse,
 	BoardTimelineKind,
-	BoardTimelineEntry,
 	BoardFeedback,
 	BoardFeedbackState,
 	BoardTaskInput,
@@ -959,20 +958,23 @@ export class HarnessClient {
 
 	/**
 	 * A task's timeline, oldest first (all kinds, or only `kinds`), and its feedback entries, open ones first. Needs
-	 * `task-links`.
+	 * `task-links`. Opt into optional groups/revision only with `task-timeline-groups`; legacy payload fields remain.
 	 */
 	async readTaskTimeline(
 		projectId: string,
 		taskId: string,
-		options: { kinds?: BoardTimelineKind[] } = {},
-	): Promise<{ entries: BoardTimelineEntry[]; feedback: BoardFeedback[] }> {
+		options: { kinds?: BoardTimelineKind[]; grouped?: boolean } = {},
+	): Promise<Pick<BoardTaskTimelineResponse, 'entries' | 'feedback' | 'groups' | 'timelineRevision'>> {
 		const response = await this.#call<BoardTaskTimelineResponse>({
 			type: "board.task.timeline",
 			projectId,
 			taskId,
 			...(options.kinds === undefined ? {} : { kinds: options.kinds }),
+			...(options.grouped === undefined ? {} : { grouped: options.grouped }),
 		});
-		return { entries: response.entries, feedback: response.feedback };
+		return { entries: response.entries, feedback: response.feedback,
+			...(response.groups === undefined ? {} : { groups: response.groups }),
+			...(response.timelineRevision === undefined ? {} : { timelineRevision: response.timelineRevision }) };
 	}
 
 	/** Set a feedback entry's state: the user dismisses or reopens it. Answers the entry as stored. Needs `task-links`. */

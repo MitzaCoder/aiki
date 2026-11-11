@@ -564,6 +564,23 @@ describe("workers", () => {
 		expect(off.deployFeed).toBeNull();
 	});
 
+	it("opts into grouped timelines without changing legacy reads or losing empty groups", async () => {
+		const test = await setup();
+		const client = await connect(test.server);
+		const project = await client.addProject(test.projectDir);
+		const input = { title: "Synthetic timeline", description: "", acceptance: null, status: "in_progress" as const, blockedBy: [], blockedReason: null, writeScopes: [] };
+		const task = await client.saveBoardTask(project.id, input);
+		await client.saveBoardTask(project.id, { ...input, status: "review" }, { taskId: task.id, expectedRevision: task.revision });
+		const flat = await client.readTaskTimeline(project.id, task.id);
+		expect(flat).not.toHaveProperty("groups");
+		expect(flat).not.toHaveProperty("timelineRevision");
+		const grouped = await client.readTaskTimeline(project.id, task.id, { grouped: true });
+		expect(grouped.groups?.length).toBeGreaterThan(0);
+		expect(grouped.timelineRevision).toBeNumber();
+		const empty = await client.readTaskTimeline(project.id, task.id, { grouped: true, kinds: ["feedback"] });
+		expect(empty.groups).toEqual([]);
+	});
+
 	it("sends report audit settings and restores server defaults", async () => {
 		const test = await setup();
 		const client = await connect(test.server);

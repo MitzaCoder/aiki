@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
+	import { timelineGroupsSupported } from '#lib/timeline-groups.js';
 	import TaskActivityLine from './TaskActivityLine.svelte';
 	import { automaticTaskActivity, taskActivitySupported } from '#lib/task-activity.js';
 	import CardMarkdown from './markdown/CardMarkdown.svelte';
@@ -54,6 +56,7 @@
 		BoardTask,
 		BoardTaskStatus,
 		BoardTimelineEntry,
+		BoardTimelineGroup,
 		BoardWriter,
 		ThreadSummary,
 		WorkerSummary
@@ -141,6 +144,7 @@
 
 	// The timeline and the feedback come from one read, repeated when anything the board carries about the task moves.
 	let timelineEntries = $state<BoardTimelineEntry[] | undefined>(undefined);
+	let timelineGroups = $state<BoardTimelineGroup[] | undefined>(undefined);
 	let timelineError = $state<string | undefined>(undefined);
 	let feedbackEntries = $state<BoardFeedback[]>([]);
 	let feedbackBusy = $state(false);
@@ -156,6 +160,7 @@
 		historyOpen = false;
 		timelineOpen = false;
 		timelineEntries = undefined;
+		timelineGroups = undefined;
 		timelineError = undefined;
 		feedbackEntries = [];
 		feedbackProblem = undefined;
@@ -176,27 +181,31 @@
 	const supportsLinks = $derived(backend.supports('task-links'));
 	const supportsFreshness = $derived(task !== undefined && reportFreshnessEnabled(backend.supports('task-freshness'), task));
 
+	const supportsTimelineGroups = $derived(timelineGroupsSupported(backend.connection.features));
+	// A stable primitive prevents activity/report-only board pushes from re-reading grouped history.
+	const timelineReadKey = $derived.by(() => {
+		if (!task || !board || !supportsLinks || (supportsTimelineGroups && (requestedId === null || backend.connection.status !== 'ready'))) return undefined;
+		const revision = supportsTimelineGroups ? task.timelineRevision ?? 0 : [task.timelineRevision, task.snapshots, task.feedback, task.status, task.report.revision, task.revision, questions.length, decisions.length];
+		return JSON.stringify([backend.id, projectId, task.id, supportsTimelineGroups, revision]);
+	});
 	$effect(() => {
-		const current = task;
-		if (current === undefined || board === undefined || !supportsLinks) return;
-		const id = current.id;
-		void [current.timelineRevision, current.snapshots, current.feedback, current.status, current.report.revision, current.revision];
-		void [questions.length, decisions.length];
+		if (timelineReadKey === undefined) return;
+		const currentBoard = untrack(() => board)!;
+		const id = untrack(() => task)!.id;
+		const grouped = untrack(() => supportsTimelineGroups);
 		let cancelled = false;
-		board
-			.timeline(id)
+		currentBoard.timeline(id, grouped)
 			.then((read) => {
 				if (cancelled) return;
 				timelineEntries = read.entries;
+				timelineGroups = grouped ? read.groups : undefined;
 				feedbackEntries = read.feedback;
 				timelineError = undefined;
 			})
 			.catch((cause: unknown) => {
 				if (!cancelled) timelineError = cause instanceof Error ? cause.message : String(cause);
 			});
-		return () => {
-			cancelled = true;
-		};
+		return () => { cancelled = true; };
 	});
 
 	async function setFeedback(entry: BoardFeedback, state: 'dismissed' | 'open'): Promise<void> {
@@ -570,11 +579,11 @@
 									{/if}
 								{/snippet}
 								{#snippet timelineSection()}
-									{#if supportsLinks && timelineEntries !== undefined && timelineEntries.length > 0}
+									{#if supportsLinks && (timelineGroups !== undefined || (timelineEntries !== undefined && timelineEntries.length > 0))}
 										<TaskSection
 											title="Timeline"
 											kind="timeline"
-											count={timelineEntries.length}
+											count={timelineGroups === undefined ? timelineEntries?.length : `${timelineGroups.length} ${timelineGroups.length === 1 ? 'group' : 'groups'}`}
 											expanded={timelineOpen}
 											ontoggle={() => (timelineOpen = !timelineOpen)}
 											class="flex flex-col gap-2"
@@ -588,6 +597,7 @@
 											{#if timelineOpen}
 												<TaskTimeline
 													entries={timelineEntries}
+													groups={timelineGroups}
 													error={timelineError}
 													{writerName}
 													workerHref={(id) => {

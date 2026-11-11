@@ -1,5 +1,30 @@
 # Continue
 
+## T123 web: hourly folded Timeline
+
+The sheet requests grouped history only with explicit task-timeline-groups support. Groups replace flat
+rows (absent groups falls back; empty groups stays empty), with local range/kind/fact count and emphasized
+failure/open-Q labels. Buttons start collapsed; opaque-ID expansion survives source revisions, filters and
+order changes. Expanded facts reuse T118 rich rows/details and show start → outcome times; entries are
+Tab-reachable. Existing kind filters recalculate groups locally, including labels/counts/ranges; the
+filtered label helper mirrors the server's failure/question/outcome priority, while original labels stay
+server-authored. Day headings, newest-first toggle/preference, 400px/48dvh bound and scrolling remain.
+Groups sort by starting hour/start, not evolving end; cross-hour source updates never rebucket them.
+
+A stable read key uses task.timelineRevision only for grouped history while the sheet is open, with
+reconnect/task changes; legacy reads preserve their existing broader dependencies. Actual CDP counts:
+report-only rewrite caused zero timeline reads, source outcome caused exactly one; expansion remained
+open. A real Tab key focused the expanded fact, and hiding Workers recomputed the remaining Work group
+to ready for review. The client wrapper forwards grouped and preserves optional groups/revision,
+including empty arrays. Seven pure tests cover formatting/gating/filtering/order/priority; the targeted
+client wire/legacy/empty test passes (one test / five assertions).
+
+Requested checks pass: web check zero diagnostics; 1,029 tests / 79,571 assertions; production build;
+root typecheck; public guard/Gitleaks. No root suite was requested. T123 has desktop/390px light/dark
+flat-before, collapsed-after and expanded-after screenshots plus an interaction/live-update recording.
+Seed uses actual server timeline/run/Q/F/deploy helpers against a throwaway createSetup backend; no
+manual wire groups, real providers, live data, push, main move or deployment. Demo processes stopped.
+
 ## T123 server: stable hourly task timelines (stage 3 of T120)
 
 Resolved the two documentation-only stack conflicts oldest-first, squashing into the original changes:

@@ -15,7 +15,6 @@ import type {
 	BoardTaskBrief,
 	BoardTaskInput,
 	BoardTaskSnapshot,
-	BoardTimelineEntry,
 } from "@aiki/protocol";
 
 export type SaveOutcome =
@@ -115,8 +114,8 @@ export class ProjectBoard {
 	}
 
 	/** A task's timeline, oldest first, and its feedback entries, open ones first. */
-	timeline(taskId: string): Promise<{ entries: BoardTimelineEntry[]; feedback: BoardFeedback[] }> {
-		return this.#client.readTaskTimeline(this.projectId, taskId);
+	timeline(taskId: string, grouped = false): ReturnType<HarnessClient['readTaskTimeline']> {
+		return this.#client.readTaskTimeline(this.projectId, taskId, grouped ? { grouped: true } : {});
 	}
 
 	/** Dismiss, reopen or otherwise set a feedback entry; the entry as stored. Throws what the server refused with. */

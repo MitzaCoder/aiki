@@ -2079,8 +2079,16 @@ its own list, and a timeline; the description stays the original ask and the rep
 Capability `task-timeline-groups` adds optional `board.task.timeline.grouped: true`. Opt-in responses
 add `groups` and `timelineRevision`; old `entries` and `feedback` are unchanged, including their filters.
 Without both capability and opt-in, those new fields are absent. Clients choose groups **or** flat entries,
-never concatenate them; absent groups means fallback, empty groups means no matching facts. Web and Android
-display are separate follow-ups; the T118 order/toggle/bounded-height/day-group/richer-row contract still applies.
+never concatenate them; absent groups means fallback, empty groups means no matching facts. The web sheet
+opts in only with the explicit capability and renders collapsed group buttons with local ranges, kind,
+label and fact count. Failure/open-question labels keep their emphasis. Expansion is keyed by opaque ID
+and survives revisions, filters and order changes. Existing kind chips filter inside groups, recalculating
+visible ranges/counts/labels with the server's failure/question/outcome priorities; unfiltered labels stay
+server-authored. Expanded facts retain T118's rich rows, focusable entries and details, adding start →
+outcome times for evolving sources. Newest-first/order toggle, local day headings and the 400px/48dvh
+scroll region are retained; groups sort by starting hour/start, never evolving end. Grouped history reads
+follow task.timelineRevision while the sheet is open (plus reconnect/task changes), not report/activity
+pushes. Missing capability preserves the T118 flat UI. Android display is a separate follow-up.
 
 Each group is `{ id, kind, hour, range: { start, end }, revision, factCount, label, entries }`.
 Kinds `work`, `decisions`, `delivery` mean Work, Decisions and feedback, Delivery. The bucket is the
