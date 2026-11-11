@@ -1,5 +1,62 @@
 # Continue
 
+## T71: first pilot release preparation (not authorized to publish)
+
+Imported the earlier `yoopyppp` audit onto the then-current main as the first local
+commit; its historical findings remain in `docs/research/pilot-release-audit.md`.
+Target is `v0.1.0-pilot.1`. No tag, push, publication, main move, deployment or
+physical-phone operation was performed. The owner's Q121 decision is local signing,
+external owner-held key plus backup, manual APK attachment and Sora LGPL notices.
+
+`check-public.ts --public-ci` skips only private terms and always requires Gitleaks;
+local/default mode still fails without a nonempty private denylist. Six guard tests
+pass; actual clean-config CI-mode success and default-mode missing-denylist failure
+were checked. The workflow installs SHA-256-pinned Gitleaks 8.30.1, stages a draft
+release, and supplies an installer checksum. The owner must still run the private
+scan on exact public refs before the separately authorized tag push.
+
+Android version input is `aiki.version`, `AIKI_RELEASE_VERSION`, or the CI tag;
+dev defaults to `0.0.0-dev` / 1. Pilot.1 is `0.1.0-pilot.1` / 1000001, pilot.2
+is 1000002. The bounded major/minor/patch/stage formula and regressions are in the
+build/README. Offline Settings → About and licences includes Sora notice/full LGPL,
+source/replacement instructions and font/Termux texts. Google's OSS plugin 0.13.0
+produces the release dependency catalogue (287 metadata rows in this build), shown
+by its bundled v2 viewer; some generated entries are licence URLs rather than full
+text. Debug deliberately gets the plugin's placeholder catalogue, not release proof.
+The notices/source bundler hash-checks complete pinned Sora source and two module
+source JARs, and includes the exact selected Aiki source snapshot for relinking.
+
+The local key was created outside the repository with protected directory/files;
+paths and the public certificate fingerprint are in the private T71 handoff. **The
+owner must securely back up key and password before distribution.** Signing builds
+use env isolation, explicit empty private properties and neutral production values,
+check actual BuildConfig/notice assets plus release manifest/DEX seams, align, sign,
+verify and record the APK hash/version/certificate/source commit in a manifest.
+Public package is `io.github.mitzacoder.aiki`; no backend/Firebase/relay values ship.
+
+T71 artifacts show settings before/after, the signed About screen, Sora/source notice,
+generated dependency list and an interaction recording. An owned emulator completed
+fresh signed installation, same-key code 1000001 → 1000002 `install -r`, saved
+synthetic backend survival after upgrade and a cold process start, and refusal of
+an unsigned same-code upgrade (`INSTALL_PARSE_FAILED_NO_CERTIFICATES`). Screenshots
+and a second recording capture that lifecycle. Only a reserved invalid-domain
+backend was saved; no server, real account/provider or physical phone was used.
+The owned emulator was stopped by its verified PID. Retained-auth renewal and an
+invited tester's actual HTTPS/matching-code pairing remain separate acceptance work.
+
+Checks pass: fresh frozen Bun install; root 2,148 tests / 24,519 assertions and
+typecheck; web 929 tests / 13,765 assertions, zero check diagnostics and production
+build; Android 813 JVM tests / 108 suites / two skips / zero failures or errors,
+debug assembly and lint (42 warnings, one hint, zero errors); version regressions,
+neutral signed release builds and release seams; protocol generation; private and
+public-CI source guards with Gitleaks (including the workflow's exact pinned binary).
+No runtime changes followed those gates. `docs/RELEASE.md` has the exact assets and
+owner procedure; `docs/releases/v0.1.0-pilot.1.md` has friend-facing notes. After merge,
+freeze the approved commit and rebuild source/manifest/notice snapshot for that exact
+commit before authorized tagging. The publisher still reviews LGPL/relinking and
+Google/dependency terms; this work is not a legal certification.
+
+
 ## T114 integration on T113 (Q126)
 
 Rebased T114 onto T113 `pnyuzyvu` / `5ed27fea`, above T112 F20. Runtime files merge cleanly; the only conflict
