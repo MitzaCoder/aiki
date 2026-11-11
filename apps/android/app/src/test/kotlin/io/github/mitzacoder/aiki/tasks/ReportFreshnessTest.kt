@@ -13,6 +13,22 @@ class ReportFreshnessTest {
     private val report = BoardTaskReport(now = "Working", results = "", next = "Await answer", revision = 1,
         updatedAt = null, updatedBy = null, freshness = BoardTaskReportFreshness(results = section, next = section))
 
+    @Test fun oneTapRequestLeavesSectionsReasonAndStatusOut() {
+        val request = reportStaleRequest("project-example", "T1")
+        val json = kotlinx.serialization.json.Json { encodeDefaults = false }
+            .encodeToString(BoardReportStaleRequest.serializer(), request)
+        assertEquals("project-example", request.projectId)
+        assertEquals("T1", request.taskId)
+        assertNull(request.sections)
+        assertNull(request.reason)
+        assertFalse(json.contains("sections"))
+        assertFalse(json.contains("reason"))
+        assertFalse(json.contains("status"))
+        assertEquals("This looks out of date. Ask the agent to update", REPORT_STALE_LABEL)
+        assertEquals("Asked the agent to update", REPORT_STALE_CONFIRMATION)
+        assertEquals(4000L, REPORT_STALE_CONFIRMATION_MS)
+    }
+
     @Test fun featureAndMetadataAreBothRequired() {
         assertTrue(reportFreshnessVisible(true, report))
         assertFalse(reportFreshnessVisible(false, report))

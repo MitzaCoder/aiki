@@ -1399,12 +1399,13 @@ imply this feature. All existing wire fields and requests remain valid.
 
 Android's Report shows section-local ages and uncovered event counts below Results/Next in one muted,
 wrapping metadata line. Only “needs update” is emphasized; reasons remain muted and use semicolons.
-A speech-bubble alert icon at the header's right edge, beside its timestamp, opens “This looks out of
-date” (tooltip and TalkBack label). Empty Results on review/done are explicit. Ages reuse the sheet's local
-30-second clock; Now and Timeline are unchanged. The feature-gated “This looks out of date” dialog
-selects both sections, Results or Next, accepts an optional 160-character reason, and reports success
-or failure inline without changing status. Selection rows and actions have 48 dp targets and TalkBack
-selection semantics. Without the feature the Report retains its earlier display.
+A speech-bubble alert icon at the header's right edge, beside its timestamp, requests an update in one
+tap, with no dialog, section choice or reason. Its 48 dp target has the TalkBack label “This looks out of
+date. Ask the agent to update”. It sends only projectId and taskId to board.report.stale. Success shows
+“Asked the agent to update” beside a check for four seconds, announced with a polite live region; errors
+use the usual inline error message. Status never changes. Empty Results on review/done are explicit.
+Ages reuse the sheet's local 30-second clock; Now and Timeline are unchanged. Without task-freshness
+the Report retains its earlier display.
 
 `board.report.stale` takes `projectId`, `taskId`, optional `sections: ["results", "next"]` (omitted means
 both written sections, plus empty Results at review/done; a nonempty explicit subset is still allowed),

@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import kotlinx.coroutines.delay
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.withStyle
@@ -24,17 +28,26 @@ internal fun ReportSectionView(task: BoardTask, now: Long, writerName: (BoardWri
     val colors = Jarvis.colors
     val report = task.report
     var marked by remember(task.id) { mutableStateOf(false) }
+    var problem by remember(task.id) { mutableStateOf<String?>(null) }
+    LaunchedEffect(marked) {
+        if (marked) { delay(REPORT_STALE_CONFIRMATION_MS); marked = false }
+    }
     val showFreshness = reportFreshnessVisible(freshnessEnabled, report)
     TaskSection(
         TaskSectionKind.Report, count = if (hasReport(report)) "Current update" else null,
-        metadata = report.updatedAt?.let { at -> {
-            Text(
-                listOfNotNull(relativeTime(at, now), report.updatedBy?.let(writerName)).joinToString(" · "),
-                style = TaskType.meta, color = colors.fgSubtle,
-                textAlign = TextAlign.End, maxLines = 2, overflow = TextOverflow.Ellipsis,
-            )
-        } },
-        headerAction = if (freshnessEnabled) { { ReportStaleAction(context, task.id) { marked = true } } } else null,
+        metadata = {
+            val message = if (marked) REPORT_STALE_CONFIRMATION else problem
+            if (message != null) Text(message, Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                style = TaskType.meta, color = if (problem != null && !marked) colors.danger else colors.fgMuted,
+                textAlign = TextAlign.End)
+            else report.updatedAt?.let { at ->
+                Text(listOfNotNull(relativeTime(at, now), report.updatedBy?.let(writerName)).joinToString(" · "),
+                    style = TaskType.meta, color = colors.fgSubtle,
+                    textAlign = TextAlign.End, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+        },
+        headerAction = if (freshnessEnabled) { { ReportStaleAction(context, task.id, marked,
+            onMarked = { problem = null; marked = true }, onError = { problem = it }) } } else null,
     ) {
         if (hasReport(report) || showFreshness) TASK_SHEET_REPORT_SECTIONS.forEach { section ->
             val text = report.section(section)
@@ -66,7 +79,6 @@ internal fun ReportSectionView(task: BoardTask, now: Long, writerName: (BoardWri
             }
         }
         else Text("Nothing written yet. The agents fill this in as they work.", style = TextStyles.task, color = colors.fgSubtle)
-        if (marked) Text("Marked as needing an update.", style = TaskType.xs, color = colors.fgMuted)
     }
 }
 

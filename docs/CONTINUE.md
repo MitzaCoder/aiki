@@ -1,5 +1,14 @@
 # Continue
 
+## Android one-tap report update request (T121, F24)
+
+Replaced the section/reason dialog with one header tap. Only projectId and taskId go to board.report.stale;
+status stays unchanged. Success replaces header metadata with Asked the agent to update and a check for
+four seconds, using a polite live region; request errors appear inline. T121 has light/dark control and
+confirmation screenshots and a tap recording from a synthetic backend. JVM: 861 tests / 114 suites,
+zero failures/errors, two existing opt-in skips; assembly, lint, protocol generation and public guard pass.
+Immediate server delivery is a separate change, not implemented or certified here.
+
 ## T121 F24: one-tap report update request
 
 Replaced the web dialog with one header action: no section picker or reason input. A successful tap
@@ -101,14 +110,16 @@ Gradle daemons stopped. JVM/assembly/lint gates passed again. No Timeline or sec
 Report-only display is split into TaskReport, ReportFreshness and ReportStaleAction. Backend
 `task-freshness` gates the action; both feature and optional metadata gate section ages/counts,
 stale reasons and empty Results at review/done. Now, section order and Timeline are untouched.
-Ages tick on the existing local sheet clock. The dialog selects both/Results/Next, bounds the
-optional reason to 160 characters and uses the generated stale request; success/error are inline.
+Ages tick on the existing local sheet clock. F24 replaces the dialog with one header tap using only
+projectId and taskId in the generated stale request; success/error are inline. Success shows a check
+and Asked the agent to update for four seconds with a polite TalkBack announcement.
 Five new JVM tests cover gating, ticking/approximate ages, missing dates/counts, reasons and empty
 finished Results. Android gates: 824 tests / 110 suites / two skipped / zero failures or errors;
 assembly and lint pass (44 warnings, one hint, no errors). Protocol --check and public guard pass.
 A shared Gradle daemon received an external stop during a later run; --no-daemon rerun passed.
-Synthetic real-server emulator proof includes old-feature fallback and light/dark stale reports,
-dialog and successful mark without a status move; T121 holds screenshots and interaction recording.
+Synthetic real-server emulator proof includes old-feature fallback and light/dark stale reports.
+F24 replacement proof shows the one-tap control and confirmation without a status move; T121 holds
+screenshots and interaction recording. Earlier dialog evidence is historical, not current behavior.
 The isolated demo seeds a review task, old Next and unchanged Now, then asks/answers its question
 through board reducers. Scratch demo/recipe are evidence artifacts, not committed infrastructure.
 No main move, push, deploy or physical-device interaction.

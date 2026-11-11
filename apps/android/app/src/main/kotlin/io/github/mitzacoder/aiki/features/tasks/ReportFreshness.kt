@@ -3,6 +3,13 @@ package io.github.mitzacoder.aiki.features.tasks
 import io.github.mitzacoder.aiki.protocol.BoardReportSection
 import io.github.mitzacoder.aiki.protocol.BoardTaskReport
 
+internal const val REPORT_STALE_LABEL = "This looks out of date. Ask the agent to update"
+internal const val REPORT_STALE_CONFIRMATION = "Asked the agent to update"
+internal const val REPORT_STALE_CONFIRMATION_MS = 4_000L
+
+internal fun reportStaleRequest(projectId: String, taskId: String) =
+    io.github.mitzacoder.aiki.protocol.BoardReportStaleRequest(projectId = projectId, taskId = taskId)
+
 internal fun reportFreshnessVisible(enabled: Boolean, report: BoardTaskReport): Boolean = enabled && report.freshness != null
 
 internal fun emptyFinishedResults(status: String, results: String): Boolean =
