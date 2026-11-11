@@ -322,7 +322,7 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
                                             blockers.forEach { blocker -> TaskChip(blocker.id, onOpen = { context.openTask(blocker.id) }) }
                                         }
                                     }
-                                    ReportSectionView(task, now, ::writerName)
+                                    ReportSectionView(task, now, ::writerName, connection.supports("task-freshness"), context)
                                 }
                             }
                             TaskSectionKind.Feedback -> {
@@ -418,35 +418,6 @@ private fun ButtonLabel(icon: LucideIcon, text: String) {
     LucideGlyph(icon, size = 16.dp)
     Spacer(Modifier.width(6.dp))
     Text(text)
-}
-
-/** The report the agents keep current: next, now and results as Markdown, with when and who last wrote. */
-@Composable
-private fun ReportSectionView(task: BoardTask, now: Long, writerName: (BoardWriter) -> String) {
-    val colors = Jarvis.colors
-    val report = task.report
-    TaskSection(
-        TaskSectionKind.Report, count = if (hasReport(report)) "Current update" else null,
-        metadata = report.updatedAt?.let { at -> {
-            Text(
-                listOfNotNull(relativeTime(at, now), report.updatedBy?.let(writerName)).joinToString(" · "),
-                style = TaskType.meta, color = colors.fgSubtle,
-                textAlign = TextAlign.End, maxLines = 2, overflow = TextOverflow.Ellipsis,
-            )
-        } },
-    ) {
-        if (hasReport(report)) TASK_SHEET_REPORT_SECTIONS.forEach { section ->
-            val text = report.section(section)
-            if (text.isNotBlank()) Column(
-                if (section == ReportSection.Next) Modifier.fillMaxWidth().background(colors.accent2.copy(alpha = .07f), RoundedCornerShape(12.dp)).padding(12.dp) else Modifier,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(section.label.uppercase(), style = TaskType.heading, color = colors.accent2)
-                ReportMarkdown(text)
-            }
-        }
-        else Text("Nothing written yet. The agents fill this in as they work.", style = TextStyles.task, color = colors.fgSubtle)
-    }
 }
 
 /**

@@ -1,5 +1,33 @@
 # Continue
 
+## T121 Android: match web's quieter Report
+
+Moved “This looks out of date” into a speech-bubble alert icon at the Report header's right
+edge, beside the shared timestamp, with tooltip, TalkBack label and a 48 dp target. Removed
+the bottom text action. Each section now has one muted wrapping metadata line; only “needs
+update” is emphasized in on-surface semibold, with reasons separated by semicolons. Updated
+the formatting regression. Replacement light/dark Report/dialog screenshots and the header
+interaction recording are on T121. The same scratch recipe/launcher still applies; tap the
+header icon instead of the former bottom button. Track r and throwaway servers are stopped;
+Gradle daemons stopped. JVM/assembly/lint gates passed again. No Timeline or section order edit.
+
+## T121: Android stage 1 Report freshness
+
+Report-only display is split into TaskReport, ReportFreshness and ReportStaleAction. Backend
+`task-freshness` gates the action; both feature and optional metadata gate section ages/counts,
+stale reasons and empty Results at review/done. Now, section order and Timeline are untouched.
+Ages tick on the existing local sheet clock. The dialog selects both/Results/Next, bounds the
+optional reason to 160 characters and uses the generated stale request; success/error are inline.
+Five new JVM tests cover gating, ticking/approximate ages, missing dates/counts, reasons and empty
+finished Results. Android gates: 824 tests / 110 suites / two skipped / zero failures or errors;
+assembly and lint pass (44 warnings, one hint, no errors). Protocol --check and public guard pass.
+A shared Gradle daemon received an external stop during a later run; --no-daemon rerun passed.
+Synthetic real-server emulator proof includes old-feature fallback and light/dark stale reports,
+dialog and successful mark without a status move; T121 holds screenshots and interaction recording.
+The isolated demo seeds a review task, old Next and unchanged Now, then asks/answers its question
+through board reducers. Scratch demo/recipe are evidence artifacts, not committed infrastructure.
+No main move, push, deploy or physical-device interaction.
+
 ## T121 web review: header action and settled proof
 
 Moved the stale-report action into the Report header as a labelled ghost icon button with a tooltip.

@@ -45,6 +45,7 @@ internal fun TaskSection(
     expanded: Boolean? = null,
     onToggle: (() -> Unit)? = null,
     metadata: (@Composable () -> Unit)? = null,
+    headerAction: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = Jarvis.colors
@@ -72,6 +73,7 @@ internal fun TaskSection(
                 }
                 if (metadata != null) Box(Modifier.weight(1f, fill = false), contentAlignment = Alignment.CenterEnd) { metadata() }
                 else Spacer(Modifier.weight(1f))
+                headerAction?.invoke()
                 if (onToggle != null) LucideGlyph(Lucide.ChevronRight, Modifier.rotate(if (expanded == true) 90f else 0f), size = 16.dp, tint = colors.fgSubtle)
             }
             if (expanded != false) {

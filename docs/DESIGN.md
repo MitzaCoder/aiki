@@ -1345,6 +1345,15 @@ old clients; refreshing Now never refreshes either section date. Missing feature
 metadata means the old backend UI, never an inferred freshness claim. Missing hello.features does not
 imply this feature. All existing wire fields and requests remain valid.
 
+Android's Report shows section-local ages and uncovered event counts below Results/Next in one muted,
+wrapping metadata line. Only “needs update” is emphasized; reasons remain muted and use semicolons.
+A speech-bubble alert icon at the header's right edge, beside its timestamp, opens “This looks out of
+date” (tooltip and TalkBack label). Empty Results on review/done are explicit. Ages reuse the sheet's local
+30-second clock; Now and Timeline are unchanged. The feature-gated “This looks out of date” dialog
+selects both sections, Results or Next, accepts an optional 160-character reason, and reports success
+or failure inline without changing status. Selection rows and actions have 48 dp targets and TalkBack
+selection semantics. Without the feature the Report retains its earlier display.
+
 `board.report.stale` takes `projectId`, `taskId`, optional `sections: ["results", "next"]` (omitted means
 both; a nonempty subset is allowed), and optional `reason` (1–160 characters). It returns the task and
 broadcasts normal board state. It never changes status. The request and automatic detection are gated
