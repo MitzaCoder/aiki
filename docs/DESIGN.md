@@ -1463,6 +1463,16 @@ Small footer text uses foreground; blocker arrows have full-opacity stronger str
 - Synthetic proof uses the throwaway backend seed script. Loopback-only controls exercise reports, reassignment,
   completion, task arrival and 80 tasks/10 workers. No installed data or real worker tools are used.
 
+The unused `task-graph-families.ts` engine prepares the next card renderer: deterministic indented preorder trees in
+measured family shelves, fixed creature/count bands, reserved arrival rows and compact pill geometry. Callers supply
+full-board `familyId` values when ancestors are hidden. Singleton tasks keep independent small family regions rather
+than changing identity when a child arrives. Status/report/crew changes and show-closed toggles never move retained
+slots; hidden cards and empty families reserve their space until explicit `regroupTaskFamilies`. Overflow grows locally;
+only colliding neighbors can be displaced, reported by `movedFamilyIds` plus sticky `needsRegroup` for the renderer to
+handle explicitly, not silently reflow. Geometry options/viewport aspect apply only on first layout or regroup. Pure
+helpers provide legibility-safe LOD hysteresis, border-to-border relationship routes and explicit fit/reveal cameras
+(screen = world × zoom + translation). This engine is not yet wired into the visible graph.
+
 ### Ticket and pull request links
 
 Decided with the user on 2026-11-06 (cards on 2026-11-07). Contract in `packages/protocol/src/refs.ts` (features

@@ -121,6 +121,28 @@ zero check diagnostics and production build; Android 811 JVM tests / 107 suites 
 debug assembly and lint (40 warnings, one hint, zero errors). Android builds use an explicit empty private-properties
 file. Public denylist/generic guard and Gitleaks pass. Main stayed untouched.
 
+## Family card layout engine (T107 / graph stage 2a)
+
+Unused pure TypeScript engine in `apps/web/src/lib/task-graph-families*.ts`, with synthetic tests in
+`apps/web/test/task-graph-families.test.ts`. Stage 2 should call `layoutTaskFamilies` with its previous return value;
+provide full-board `familyId` for visible tasks with hidden ancestors. Named hidden slots/empty families survive until
+`regroupTaskFamilies`. Fixed creature bands aggregate excess crew into counts, so worker/report/status replacements
+never move anything. Reserved arrival rows accept new IDs; overflow expands locally, explicitly returning
+`needsRegroup` and any unavoidable `movedFamilyIds`. Existing slot coordinates stay family-local and unchanged.
+Reparented tasks stay pinned to their old families until regroup. Options are frozen between regroups.
+
+Cards have world-space body, occupied (including crew), creature and independently compressed pill boxes. The engine
+also exports border edge routing (blocked → prerequisite), legibility-safe cards/pills/dots hysteresis, screen-sized
+family-dot title targets, fit-all/family and pan-only reveal. Camera translation is screen = world × zoom + {x,y},
+not the older graph's world-centre convention. Pass actual font/pill metrics to `chooseFamilyDetail`; defaults are
+16px card titles, 20px pill labels and 64px pill height. Dot titles belong in a screen-space overlay. Cross-family
+routing builds a static corridor grid; scope routes to the selected relationships, not every pair on every frame.
+Verification: 23 engine tests; full web suite 941 pass / 79,137 assertions / 71 files; web check zero errors/warnings,
+root typecheck and public-source/Gitleaks pass. Median 1,000-task layout: 1.90ms fresh / 1.96ms incremental in Bun
+(150ms regression guard). No graph/model/component/demo edits, visible change, browser proof, server, root tests,
+build, push or deployment.
+
+
 ## Task graph stage 1 polish (T106)
 
 One compact strip now shows each count once, including Quiet; zero Dropped is hidden. Scope/overlap text is accessible
