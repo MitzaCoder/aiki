@@ -1354,26 +1354,35 @@ A no-op covers nothing, whether coverage is omitted or explicit. A substantive r
 bumps only that section's version and date; identical prose does not clear staleness or rearm nudges.
 A covered rewrite clears its stale causes and rearms that section. An uncovered rewrite retains its
 pending admission or delivered suppression, rather than creating a nag loop. Milestones are authored
-facts: they invalidate only sections not substantively rewritten with the milestone; they may advance
+facts: non-coordinator milestones invalidate only sections not substantively rewritten with the milestone; they may advance
 explicit coverage over their own event only when no unseen sequence gap precedes it.
 
 The reducer `noteTaskFact(state, taskId, fact)` (and BoardService method) is the entry point for lifecycle
-facts and later verified commit/deploy adapters. Next invalidates on answers/withdrawals (nonempty Next;
-any task question without waitsOn), resolved blockers, worker start/resume/outcome/stop, handoff/thread
-outcome, stage changes and feedback. Results invalidates on outcomes, decisions and addressed feedback,
-not starts; review/done with empty Results requires a rewrite. All meaningful facts bump uncovered counts,
-even after a nudge has been suppressed. Causes preserve the first important reasons and latest cause.
+facts and later verified commit/deploy adapters. Internal facts carry an actor (user, coordinator, worker,
+or harness; omitted/unknown attribution conservatively means harness). Done/dropped tasks never become
+stale or nudge: closing clears stale causes, pending admissions and undelivered batches; other tasks in
+cancelled batches remain pending for rebatching. Reopening does not retroactively invalidate old facts.
+Coordinator-authored facts (main or any thread) only count, except moving to review with empty Results:
+that real gap invalidates Results and may nudge. Worker start/resume never invalidates either section.
+Other actors’ answers/withdrawals (nonempty Next; any task question without waitsOn), resolved blockers,
+handoffs, stage changes and feedback invalidate Next; worker outcomes/stop, thread finish/failure and
+verified harness outcomes still invalidate. Results invalidates on outcomes, non-coordinator decisions
+and addressed feedback. All meaningful facts still bump eventSeq/eventsSince, including closed tasks
+and suppressed nudges. Causes preserve the first important reasons and latest cause.
 No individual tool/progress/poll is a fact. Legacy dates are approximate from the shared report timestamp,
 coverage unknown: normalization itself neither creates a fact nor queues a nudge.
 
 At turn end an outgoing coordinator reply or delivered thread message mentioning valid task IDs outside
-quotes/code/transport prefixes/templates, with at least 40 other characters, flags reports not written in
-that run as “discussed in chat”. Successful board tool results, including nested tool results, establish
-same-run writes. Outgoing thread messages are durably held until the sender's run ends so a later write
+quotes/code/transport prefixes/templates, with at least 40 other characters, records a harness-detected
+“discussed in chat” gap for reports not written in that run: both unwritten sections become stale and may
+nudge, at most once per task per turn. This fallback is not a coordinator-authored action. Successful
+board tool results, including nested tool results, establish same-run writes and prevent the fallback. Outgoing thread messages are durably held until the sender's run ends so a later write
 in that turn can cover them. Two bounded snippet/source references are retained internally; no chat is
 added to the timeline. The age backstop runs at most hourly per project (last sweep persisted), only for
 in_progress/review/waiting and only when meaningful activity is newer than a section at least two hours
-old. Quiet old reports never wake anyone; the sweep is a coverage warning, not another counted fact.
+old. Coordinator-authored facts and starts/resumes do not refresh that activity clock, so the backstop
+cannot turn them into delayed self-nudges. Quiet old reports never wake anyone; the sweep is a coverage
+warning, not another counted fact.
 
 Stale marks are synchronous. Nudge defaults are 30 s trailing and a 2 min maximum from the first trigger;
 BoardService `reportTimings` injects trailing/max/age/sweep/token limits in tests. Pending task sections and

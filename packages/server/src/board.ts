@@ -367,7 +367,7 @@ export async function writeReportIn(
 			const bullet = /^[-*] /.test(line) ? line : `- ${line}`;
 			return prose.split("\n").pop() === bullet;
 		});
-		noteTaskFact(state, input.taskId, { kind: "milestone", reason: input.milestone, at, sections: unchanged });
+		noteTaskFact(state, input.taskId, { actor: input.by.author, kind: "milestone", reason: input.milestone, at, sections: unchanged });
 		if (coverage === before) coverage += 1; // The writer authored this fact, but cannot cover an earlier unseen gap.
 	}
 	const written = writeReport(state, { ...input, coveredEventSeq: coverage, now: at });
@@ -452,7 +452,7 @@ export function recordFeedback(
 	}
 	task.feedback = feedbackCounts(entries);
 	state.updatedAt = input.now;
-	noteTaskFact(state, task.id, { kind: "feedback", reason: `${entry.id} received`, at: input.now });
+	noteTaskFact(state, task.id, { actor: "user", kind: "feedback", reason: `${entry.id} received`, at: input.now });
 	bumpTimeline(history, task);
 	return plain(entry);
 }
@@ -482,7 +482,7 @@ export function setFeedbackState(
 	entry.note = nextNote;
 	entry.updatedAt = input.now;
 	entry.changes.push({ state: input.state, at: input.now, by: input.by, note });
-	if (input.state === "addressed") noteTaskFact(state, task.id, { kind: "feedback_addressed", reason: `${entry.id} addressed`, at: input.now });
+	if (input.state === "addressed") noteTaskFact(state, task.id, { actor: input.by.author, kind: "feedback_addressed", reason: `${entry.id} addressed`, at: input.now });
 	task.feedback = feedbackCounts(history.feedback ?? []);
 	state.updatedAt = input.now;
 	bumpTimeline(history, task);
@@ -683,7 +683,7 @@ export function changeLink(
 		}
 	}
 	state.updatedAt = input.now;
-	if (before.blockedBy.some((id) => !task.blockedBy.includes(id))) noteTaskFact(state, task.id, { kind: "blocker_resolved", reason: "blocker resolved", at: input.now });
+	if (before.blockedBy.some((id) => !task.blockedBy.includes(id))) noteTaskFact(state, task.id, { actor: "coordinator", kind: "blocker_resolved", reason: "blocker resolved", at: input.now });
 	return { before, after: plain(task) };
 }
 
@@ -1015,7 +1015,7 @@ export function saveTask(
 		const stored = state.tasks.find((task) => task.id === id) as BoardTask;
 		setRelated(state, stored, fields.related ?? []);
 		initializeTaskFreshness(state, stored);
-		if (stored.status === "review" || stored.status === "done") noteTaskFact(state, stored.id, { kind: "status", reason: `Results empty at ${stored.status}`, at: now });
+		if (stored.status === "review" || stored.status === "done") noteTaskFact(state, stored.id, { actor: author, kind: "status", reason: `Results empty at ${stored.status}`, at: now });
 		state.updatedAt = now;
 		return { before: null, after: plain(stored) };
 	}
@@ -1055,11 +1055,11 @@ export function saveTask(
 	existing.updatedAt = now;
 	state.updatedAt = now;
 	if (before.status !== existing.status) {
-		noteTaskFact(state, existing.id, { kind: "status", reason: `stage changed to ${existing.status}`, at: now });
-		if (existing.status === "done") for (const dependent of state.tasks.filter((task) => task.blockedBy.includes(existing.id))) noteTaskFact(state, dependent.id, { kind: "blocker_resolved", reason: `${existing.id} resolved`, ref: existing.id, at: now });
+		noteTaskFact(state, existing.id, { actor: author, ...(SETTLED.has(before.status) ? { sections: [] } : {}), kind: "status", reason: `stage changed to ${existing.status}`, at: now });
+		if (existing.status === "done") for (const dependent of state.tasks.filter((task) => task.blockedBy.includes(existing.id))) noteTaskFact(state, dependent.id, { actor: author, kind: "blocker_resolved", reason: `${existing.id} resolved`, ref: existing.id, at: now });
 	}
-	if (before.status === existing.status && JSON.stringify(before.waiting) !== JSON.stringify(existing.waiting)) noteTaskFact(state, existing.id, { kind: "status", reason: "waiting stage changed", at: now });
-	if (before.blockedBy.some((id) => !existing.blockedBy.includes(id)) || (before.blockedReason !== null && existing.blockedReason === null)) noteTaskFact(state, existing.id, { kind: "blocker_resolved", reason: "blocker resolved", at: now });
+	if (before.status === existing.status && JSON.stringify(before.waiting) !== JSON.stringify(existing.waiting)) noteTaskFact(state, existing.id, { actor: author, kind: "status", reason: "waiting stage changed", at: now });
+	if (before.blockedBy.some((id) => !existing.blockedBy.includes(id)) || (before.blockedReason !== null && existing.blockedReason === null)) noteTaskFact(state, existing.id, { actor: author, kind: "blocker_resolved", reason: "blocker resolved", at: now });
 	return { before, after: plain(existing) };
 }
 
@@ -1099,7 +1099,7 @@ export function askQuestion(
 		answeredAt: null,
 	};
 	state.questions.push(question);
-	if (input.taskId !== null) noteTaskFact(state, input.taskId, { kind: "question_asked", reason: `${question.id} asked`, ref: question.id, at: input.now });
+	if (input.taskId !== null) noteTaskFact(state, input.taskId, { actor: "coordinator", kind: "question_asked", reason: `${question.id} asked`, ref: question.id, at: input.now });
 	state.updatedAt = input.now;
 	return plain(question);
 }
@@ -1107,7 +1107,7 @@ export function askQuestion(
 /** Answer an open question (the user's answer, or the coordinator's when the user answered in the chat), or withdraw it. */
 export function settleQuestion(
 	state: BoardState,
-	input: { questionId: string; expectedRevision?: number | undefined; answer: string | null; now: string },
+	input: { questionId: string; expectedRevision?: number | undefined; answer: string | null; now: string; actor?: TaskFact["actor"] },
 ): BoardQuestion {
 	const question = state.questions.find((candidate) => candidate.id === input.questionId);
 	if (question === undefined) throw new ServerError("unknown_task", `No question "${input.questionId}" on the board`, { questionId: input.questionId });
@@ -1124,7 +1124,7 @@ export function settleQuestion(
 	question.answer = input.answer;
 	question.answeredAt = input.now;
 	question.revision += 1;
-	if (question.taskId !== null) noteTaskFact(state, question.taskId, { kind: "question_settled", reason: `${question.id} ${question.status}`, ref: question.id, at: input.now });
+	if (question.taskId !== null) noteTaskFact(state, question.taskId, { actor: input.actor ?? "user", kind: "question_settled", reason: `${question.id} ${question.status}`, ref: question.id, at: input.now });
 	state.updatedAt = input.now;
 	return plain(question);
 }
@@ -1144,7 +1144,7 @@ export function addDecision(
 		at: input.now,
 	};
 	state.decisions.push(decision);
-	if (input.taskId !== null) noteTaskFact(state, input.taskId, { kind: "decision", reason: `${decision.id} recorded`, ref: decision.id, at: input.now });
+	if (input.taskId !== null) noteTaskFact(state, input.taskId, { actor: "coordinator", kind: "decision", reason: `${decision.id} recorded`, ref: decision.id, at: input.now });
 	state.updatedAt = input.now;
 	return plain(decision);
 }
@@ -1191,7 +1191,7 @@ export function changeOwner(
 	}
 	const before = plain(task);
 	task.ownerThreadId = change.kind === "claim" ? change.threadId : change.kind === "release" ? null : change.to;
-	if (owner !== task.ownerThreadId) noteTaskFact(state, task.id, { kind: "thread_handoff", reason: "thread handoff", at: input.now });
+	if (owner !== task.ownerThreadId) noteTaskFact(state, task.id, { actor: "coordinator", kind: "thread_handoff", reason: "thread handoff", at: input.now });
 	task.revision += 1;
 	task.updatedBy = "coordinator";
 	task.updatedAt = input.now;
@@ -1210,12 +1210,12 @@ function claimHarnessKey(state: BoardState, key: string): boolean {
 	return true;
 }
 
-function touchByHarness(state: BoardState, task: BoardTask, status: BoardTask["status"], now: string): void {
+function touchByHarness(state: BoardState, task: BoardTask, status: BoardTask["status"], now: string, actor: NonNullable<TaskFact["actor"]> = "harness"): void {
 	if (status !== "waiting") delete task.waiting;
 	if (status !== task.status) {
 		clockStatus(state, task, status, now);
 		task.status = status;
-		noteTaskFact(state, task.id, { kind: "status", reason: `stage changed to ${status}`, at: now });
+		noteTaskFact(state, task.id, { actor, kind: "status", reason: `stage changed to ${status}`, at: now });
 		task.settledAt = SETTLED.has(status) ? now : null;
 		task.archived = false;
 	}
@@ -1241,13 +1241,13 @@ export function moveTaskForWorker(
 	const task = state.tasks.find((candidate) => candidate.id === input.taskId);
 	if (task === undefined || !claimHarnessKey(state, input.key)) return undefined;
 	const { move, now } = input;
-	noteTaskFact(state, task.id, { kind: move.kind === "spawned" ? "worker_start" : "worker_fail", reason: move.kind === "spawned" ? "work advanced" : "worker failed", at: now });
+	noteTaskFact(state, task.id, { actor: move.kind === "spawned" ? "coordinator" : "worker", kind: move.kind === "spawned" ? "worker_start" : "worker_fail", reason: move.kind === "spawned" ? "work advanced" : "worker failed", at: now });
 	if (move.kind !== "spawned" && isSettled(task)) return undefined;
 	const before = plain(task);
 	if (move.kind === "spawned") {
 		if (!task.workerIds.includes(move.workerId)) task.workerIds.push(move.workerId);
 		task.blockedReason = null;
-		touchByHarness(state, task, "in_progress", now);
+		touchByHarness(state, task, "in_progress", now, "coordinator");
 	} else {
 		task.blockedReason = move.reason;
 		touchByHarness(state, task, "blocked", now);
@@ -1270,7 +1270,7 @@ export function recordScheduledReport(
 	// Only the schedule's own collecting task: an event run's task (no `scheduleId`) is the coordinator's and the user's.
 	if (task === undefined || task.scheduleId !== input.scheduleId || isSettled(task) || !claimHarnessKey(state, input.key)) return undefined;
 	const before = plain(task);
-	noteTaskFact(state, task.id, { kind: "worker_report", reason: "worker reported; work advanced", at: input.now });
+	noteTaskFact(state, task.id, { actor: "worker", kind: "worker_report", reason: "worker reported; work advanced", at: input.now });
 	// One line of plain words: the report's own headings (`## Report`) would read as stray hashes inside a bullet.
 	const summary = input.text.replace(/(^|\s)#{1,6}\s+/g, "$1").replace(/\s+/g, " ").trim();
 	const clipped = summary.length <= 300 ? summary : `${summary.slice(0, 299)}…`;
@@ -1312,9 +1312,9 @@ export function claimTaskForThread(
 	if (!claimHarnessKey(state, input.key)) return undefined;
 	const before = plain(task);
 	task.ownerThreadId = input.threadId;
-	noteTaskFact(state, task.id, { kind: "thread_handoff", reason: "thread started work", at: input.now });
+	noteTaskFact(state, task.id, { actor: "coordinator", kind: "thread_handoff", reason: "thread started work", at: input.now });
 	task.blockedReason = null;
-	touchByHarness(state, task, "in_progress", input.now);
+	touchByHarness(state, task, "in_progress", input.now, "coordinator");
 	return { before, after: plain(task) };
 }
 
@@ -2073,7 +2073,7 @@ export class BoardService {
 			for (const task of state.tasks) {
 				const owned = task.ownerThreadId === threadId;
 				if (!owned && task.id !== primaryTaskId) continue;
-				noteTaskFact(state, task.id, { kind: "thread_finish", reason: "thread finished or stopped", at: now });
+				noteTaskFact(state, task.id, { actor: "harness", kind: "thread_finish", reason: "thread finished or stopped", at: now });
 				if (!owned || isSettled(task)) continue;
 				task.ownerThreadId = null;
 				touchByHarness(state, task, task.status, now);
@@ -2086,7 +2086,7 @@ export class BoardService {
 	async noteThreadOutcome(threadId: string, key: string, reason: string, taskId?: string | null): Promise<void> {
 		await this.#commit(HARNESS_WRITER, (state) => {
 			if (!claimHarnessKey(state, `report-thread:${key}`)) return;
-			for (const task of state.tasks) if (task.ownerThreadId === threadId || task.id === taskId) noteTaskFact(state, task.id, { kind: "thread_finish", reason, at: this.#iso() });
+			for (const task of state.tasks) if (task.ownerThreadId === threadId || task.id === taskId) noteTaskFact(state, task.id, { actor: "harness", kind: "thread_finish", reason, at: this.#iso() });
 		});
 	}
 
@@ -2113,7 +2113,7 @@ export class BoardService {
 
 	async answer(input: { questionId: string; expectedRevision: number; answer: string }): Promise<BoardQuestion> {
 		const now = this.#iso();
-		const question = await this.#commit(USER_WRITER, (state) => settleQuestion(state, { ...input, now }));
+		const question = await this.#commit(USER_WRITER, (state) => settleQuestion(state, { ...input, now, actor: "user" }));
 		const text = `${BOARD_PREFIX} The user answered ${question.id} (${JSON.stringify(clip(question.text, 200))}): ${input.answer}`;
 		try {
 			// The answer goes to the thread that asked; a question from before threads, or from a thread that is gone, to main.
@@ -2300,7 +2300,7 @@ export class BoardService {
  async markReportStale(taskId: string, sections?: readonly ReportSection[], reason?: string): Promise<BoardTask> {
   await this.requireTask(taskId);
   return this.#commit(USER_WRITER, (state) => {
-   markReportStale(state, taskId, sections, reason, this.#iso());
+   markReportStale(state, taskId, sections, reason, this.#iso(), "user");
    return plain(state.tasks.find((task) => task.id === taskId)!);
   });
  }
@@ -2329,7 +2329,7 @@ export class BoardService {
    for (const source of sources) for (const id of substantiveTaskMentions(source.text, valid)) {
     if (written.has(id) || mentioned.has(id)) continue;
     mentioned.add(id);
-    noteTaskFact(state, id, { kind: "chat", reason: "discussed in chat", at: this.#iso() });
+    noteTaskFact(state, id, { actor: "harness", kind: "chat", reason: "discussed in chat", at: this.#iso() });
     const tracking = state.reportTracking?.[id];
     if (tracking !== undefined) tracking.chatEvidence = [...(tracking.chatEvidence ?? []), { snippet: source.text.replace(/\s+/g, " ").slice(0, 240), source: source.key }].slice(-2);
    }
@@ -2677,7 +2677,7 @@ function createBoardExtension(service: BoardService): Extension {
 						const question = await service.commitFor(
 							(change) => api.commit(change, context),
 							(state, now) =>
-								settleQuestion(state, { questionId: id, expectedRevision: input.expectedRevision, answer: input.answer ?? null, now }),
+								settleQuestion(state, { questionId: id, expectedRevision: input.expectedRevision, answer: input.answer ?? null, now, actor: input.answer == null ? "coordinator" : "user" }),
 							writer,
 							callKey,
 						);

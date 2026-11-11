@@ -245,7 +245,7 @@ function createWorkerReporter(service: WorkerService): Task<ReporterInput, Repor
 						if (forgotten || worker === undefined) return;
 						if (worker.status !== "running" && worker.taskId != null) {
 							const board = await openBoard(tx, service.mainId as ConversationId);
-							noteTaskFact(board, worker.taskId, { kind: "worker_resume", reason: "worker resumed", at: new Date().toISOString() });
+							noteTaskFact(board, worker.taskId, { actor: "coordinator", kind: "worker_resume", reason: "worker resumed", at: new Date().toISOString() });
 						}
 						worker.status = "running";
 						worker.updatedAt = new Date().toISOString();
@@ -391,7 +391,7 @@ function createWorkerReporter(service: WorkerService): Task<ReporterInput, Repor
 										task,
 										{ at: now, kind: "worker", label: `Worker ${workerId} reported`, detail: reportGist(text), ref: workerId, by: HARNESS_WRITER },
 										key,
-									) && !recordsRun) noteTaskFact(board, task.id, { kind: "worker_report", reason: "worker reported; work advanced", at: now });
+									) && !recordsRun) noteTaskFact(board, task.id, { actor: "worker", kind: "worker_report", reason: "worker reported; work advanced", at: now });
 								}
 							}
 						}
@@ -2005,7 +2005,7 @@ function createWorkerExtension(service: WorkerService): Extension {
 				if (worker !== undefined) {
 					if (worker.status !== "running" && worker.taskId != null) {
 						const board = await openBoard(tx, service.mainId as ConversationId);
-						noteTaskFact(board, worker.taskId, { kind: "worker_resume", reason: "worker resumed", at: new Date().toISOString() });
+						noteTaskFact(board, worker.taskId, { actor: "coordinator", kind: "worker_resume", reason: "worker resumed", at: new Date().toISOString() });
 					}
 					worker.status = "running";
 					if (args.title !== undefined) worker.title = args.title.slice(0, 120);
@@ -2066,7 +2066,7 @@ function createWorkerExtension(service: WorkerService): Extension {
 				if (current === undefined) return;
 				if (current.status !== "stopped" && current.taskId != null) {
 					const board = await openBoard(tx, service.mainId as ConversationId);
-					noteTaskFact(board, current.taskId, { kind: "worker_stop", reason: "worker stopped", at: new Date().toISOString() });
+					noteTaskFact(board, current.taskId, { actor: "worker", kind: "worker_stop", reason: "worker stopped", at: new Date().toISOString() });
 				}
 				current.status = "stopped";
 				current.updatedAt = new Date().toISOString();

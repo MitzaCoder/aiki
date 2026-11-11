@@ -13,6 +13,18 @@ the initial stage-1 implementation; this review changed no wire fields or UI.
 
 ## T121: stage 1 report freshness server/protocol
 
+Noise fix is a new child of `tqmtvotm`; the stage-1/stage-4/landing-wiring revisions were not rewritten.
+Facts now carry an internal actor; coordinator actions (including milestones) count but do not
+invalidate, except review with empty Results. Substantive outgoing chat without a same-turn report
+write is a harness-detected gap: it still stales both sections and queues one nudge, once per task/turn. Starts/resumes never invalidate. Worker outcomes, thread
+finish/failure, owner answers/edits and verified harness facts still invalidate. Done/dropped tasks clear
+stale causes and pending/undelivered nudges while keeping honest counts; reopening does not retro-mark.
+Mixed batches cancel and rebatch the still-open tasks. The age backstop excludes self-caused activity.
+T71 replay still passes. Noise-fix checks: 100 affected tests / 773 assertions; root once, 2,234 tests /
+81,440 assertions / zero failures; typecheck; private public guard/Gitleaks. No protocol/UI changes,
+push, main move or deployment. Chat-fallback correction checks pass: 20 freshness tests / 150 assertions
+and root typecheck. The original implementation and review gate counts below are historical.
+
 Implemented D59/D60's deterministic Results/Next freshness, without removing Now or changing the timeline.
 `task-freshness` gates detection and the `board.report.stale` request. Optional `task.eventSeq` and
 `report.freshness.results/next` carry section dates/writers/versions/coverage, approximate legacy dates,
@@ -23,8 +35,10 @@ regenerated (341 typed DTOs, 92 request overloads); existing Android sources sti
 Agents read `show_task`'s eventSeq and pass `coveredEventSeq` with substantive rewrites. Workers can
 read their task with an empty `task_progress` call. A changed-prose rewrite without coverage covers the
 current task sequence at write time; an explicit earlier sequence keeps concurrent newer facts stale.
-No-op prose never advances coverage, clears stale state or rearms nudges. Lifecycle reducers, conservative turn-end chat mentions,
+No-op prose never advances coverage, clears stale state or rearms nudges. Lifecycle reducers, the
 hourly-at-most two-hour age backstop, and the user/audit stale-mark path share durable admission.
+Conservative turn-end coordinator chat mentions invalidate as harness facts only when the task report
+was not written that turn; same-turn writes prevent this fallback.
 The nudge outbox freezes task + both section versions + burst, batches by owning live coordinator
 (otherwise main), and submits a durable follow-up, never a steer. Overflow waits for the previous
 input's receipt. Replays reuse admission IDs; quiet restarts/migration create no fact or nudge.

@@ -9,7 +9,10 @@ export const REPORT_AGE_MS = 2 * 60 * 60_000;
 export const REPORT_SWEEP_MS = 60 * 60_000;
 export type ReportSection = "results" | "next";
 export const REPORT_SECTIONS: readonly ReportSection[] = ["results", "next"];
+export type TaskFactActor = "user" | "coordinator" | "worker" | "harness";
 export type TaskFact = {
+	/** Unknown callers are conservatively treated as harness facts. */
+	actor?: TaskFactActor;
 	kind: "question_asked" | "question_settled" | "blocker_resolved" | "worker_start" | "worker_resume" | "worker_report" | "worker_fail" | "worker_stop" | "thread_handoff" | "thread_finish" | "status" | "feedback" | "feedback_addressed" | "decision" | "milestone" | "commit" | "integration" | "publication" | "deploy" | "check_outcome" | "chat" | "stale";
 	reason: string;
 	at: string;
@@ -44,9 +47,28 @@ export function initializeTaskFreshness(state: BoardState, task: BoardTask): voi
 	}
 	state.reportTracking ??= {};
 	state.reportTracking[task.id] ??= { activityAt: null, invalidated: {}, suppressed: {} };
+	if (task.status === "done" || task.status === "dropped") {
+		const tracking = state.reportTracking[task.id]!;
+		delete tracking.pending;
+		tracking.activityAt = null;
+		tracking.invalidated = {};
+		tracking.suppressed = {};
+		for (const name of REPORT_SECTIONS) {
+			task.report.freshness[name].stale = false;
+			task.report.freshness[name].reasons = [];
+		}
+		// Cancel a frozen batch containing a closed task. Other tasks stay pending and are rebatched.
+		if (state.reportOutbox !== undefined) state.reportOutbox = state.reportOutbox.filter((batch) => !batch.admissions.some((admission) => admission.taskId === task.id));
+	}
 }
 
 function invalidatedSections(task: BoardTask, fact: TaskFact): readonly ReportSection[] {
+	if (task.status === "done" || task.status === "dropped") return [];
+	if (fact.kind === "worker_start" || fact.kind === "worker_resume") return [];
+	if (fact.actor === "coordinator") {
+		// Missing review evidence is a real gap, even when the coordinator made the move.
+		return fact.kind === "status" && task.status === "review" && task.report.results.trim() === "" ? ["results"] : [];
+	}
 	if (fact.sections !== undefined) return fact.sections;
 	switch (fact.kind) {
 		case "question_asked": return [];
@@ -54,9 +76,9 @@ function invalidatedSections(task: BoardTask, fact: TaskFact): readonly ReportSe
 			const waitsOn = task.report.freshness?.next.waitsOn;
 			return task.report.next.trim() !== "" && (waitsOn === undefined || (fact.ref !== undefined && waitsOn.includes(fact.ref))) ? ["next"] : [];
 		}
-		case "worker_start": case "worker_resume": case "blocker_resolved": case "thread_handoff": case "feedback": return ["next"];
+		case "blocker_resolved": case "thread_handoff": case "feedback": return ["next"];
 		case "decision": case "feedback_addressed": return ["results"];
-		case "status": return ["next", ...(task.report.results.trim() === "" && (task.status === "review" || task.status === "done") ? ["results" as const] : [])];
+		case "status": return ["next", ...(task.report.results.trim() === "" && task.status === "review" ? ["results" as const] : [])];
 		default: return REPORT_SECTIONS;
 	}
 }
@@ -69,7 +91,8 @@ export function noteTaskFact(state: BoardState, taskId: string, fact: TaskFact):
 	initializeTaskFreshness(state, task);
 	const tracking = state.reportTracking![taskId]!;
 	task.eventSeq = (task.eventSeq ?? 0) + 1;
-	tracking.activityAt = fact.at;
+	// The age backstop must not turn self-caused activity into a delayed nudge either.
+	if (task.status !== "done" && task.status !== "dropped" && fact.actor !== "coordinator" && fact.kind !== "worker_start" && fact.kind !== "worker_resume" && fact.sections?.length !== 0) tracking.activityAt = fact.at;
 	for (const name of REPORT_SECTIONS) {
 		const section = task.report.freshness![name];
 		section.eventsSince = (section.eventsSince ?? 0) + 1;
@@ -145,13 +168,13 @@ export function sweepReportAge(state: BoardState, now: number, ageMs = REPORT_AG
 			return !section.stale && now - written >= ageMs && written < Date.parse(activity);
 		});
 		// This is a coverage warning about existing activity, not a new meaningful fact.
-		if (sections.length > 0) invalidateReportSections(state, task, { kind: "stale", sections, reason: "new activity since this section was written", at: new Date(now).toISOString() });
+		if (sections.length > 0) invalidateReportSections(state, task, { actor: "harness", kind: "stale", sections, reason: "new activity since this section was written", at: new Date(now).toISOString() });
 	}
 }
 
 /** Audit and UI action share this path, without changing the task's status or timeline. */
-export function markReportStale(state: BoardState, taskId: string, sections: readonly ReportSection[] = REPORT_SECTIONS, reason = "marked out of date", at: string): void {
-	noteTaskFact(state, taskId, { kind: "stale", reason, sections, at });
+export function markReportStale(state: BoardState, taskId: string, sections: readonly ReportSection[] = REPORT_SECTIONS, reason = "marked out of date", at: string, actor: TaskFactActor = "harness"): void {
+	noteTaskFact(state, taskId, { actor, kind: "stale", reason, sections, at });
 }
 
 export function reportDueAt(pending: PendingReport, trailingMs = REPORT_TRAILING_MS, maxBurstMs = REPORT_MAX_BURST_MS): number {
@@ -164,6 +187,8 @@ export function prepareReportNudges(state: BoardState, now: number, ownerOf: (ta
 } = {}): void {
  if (state.taskFreshnessEnabled === false) return;
  state.reportOutbox ??= [];
+ // Recheck persisted pending/outbox entries immediately before delivery, including legacy state.
+ for (const task of state.tasks) if (task.status === "done" || task.status === "dropped") initializeTaskFreshness(state, task);
  const admitted = new Set(state.reportOutbox.flatMap((batch) => batch.admissions.map((item) => `${item.taskId}:${item.burst}`)));
  const grouped = new Map<string, { lines: string[]; admissions: ReportAdmission[] }>();
  const suffix = ". Read tasks; rewrite stale sections with evidence.";
