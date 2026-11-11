@@ -23,6 +23,7 @@ enum class GeneralSection(override val id: String, override val label: String, o
     Backends("backends", "Backends", "Servers, accounts and API keys", SettingsIcon.Server),
     Notifications("notifications", "Notifications", "Push, quiet hours, muted projects", SettingsIcon.Bell),
     Archived("archived", "Archived projects", "Bring a project back", SettingsIcon.Archive),
+    About("about", "About and licences", "Version, notices and library source", SettingsIcon.Settings),
 }
 
 @Serializable

@@ -11,6 +11,31 @@ static-by-default orbs, a glass-like composer and Lucide controls. This is **not
 Haze blur**. Compact bundled syntax grammars/fonts are not every reference asset.
 Push notifications go through Firebase Cloud Messaging (below); there is no voice implementation.
 
+## Pilot release builds
+
+See `docs/RELEASE.md` at the repository root for the owner-only release procedure.
+`sign-release.sh` builds a neutral, no-push APK with explicit empty private properties
+and scrubbed environment; it never reads operator Android configuration. Signing is
+local, with an external owner-held keystore and password file, never GitHub secrets.
+
+Set `-Paiki.version=v0.1.0-pilot.1` (or `AIKI_RELEASE_VERSION`; tag workflows also
+read `GITHUB_REF_NAME` when `GITHUB_REF_TYPE=tag`). `versionName` drops `v`.
+`versionCode = major*100000000 + minor*1000000 + patch*10000 + stage`, where
+pilot N uses N (1–9998) and stable uses 9999. Major is 0–20, minor/patch 0–99.
+Thus pilot.1 is 1000001, pilot.2 is 1000002, stable 0.1.0 is 1009999;
+the next patch sorts after stable. Never reuse a distributed code or change schemes
+without preserving monotonicity. No release input means `0.0.0-dev`, code 1.
+`:app:checkReleaseVersion` runs parser/order regressions; malformed release inputs fail.
+
+Settings → About and licences is available offline. Sora's LGPL notice/full text,
+pinned source links, replacement instructions and font/Termux notices are APK assets.
+Google's OSS licenses plugin 0.13.0 generates the dependency catalogue from the
+release dependency list, shown by its bundled licence viewer. Debug builds deliberately
+show that plugin's placeholder catalogue; verify the real catalogue on a release build.
+`bundle-release-notices.sh` includes that generated catalogue, exact upstream Sora
+source (hash-checked) and matching Aiki source for relinking. Publisher review is still
+required; see `licenses/RELINKING.md`, not a blanket compliance claim.
+
 ## Install and run
 
 ```sh

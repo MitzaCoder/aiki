@@ -9,7 +9,7 @@ import org.junit.Test
 /** The settings split and redesign's pure logic: the section lists, combobox filtering, thinking options, save states, worker model edits. */
 class SettingsSplitTest {
     @Test fun sectionListsMatchTheWebUrlSegments() {
-        assertEquals(listOf("appearance", "backends", "notifications", "archived"), GeneralSection.entries.map { it.id })
+        assertEquals(listOf("appearance", "backends", "notifications", "archived", "about"), GeneralSection.entries.map { it.id })
         assertEquals(listOf("general", "coordinator", "workers", "schedules", "tickets", "cache", "storage"), ProjectSection.entries.map { it.id })
         assertEquals(GeneralSection.Notifications, generalSectionFor("notifications"))
         assertNull(generalSectionFor("nope"))

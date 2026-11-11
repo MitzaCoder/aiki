@@ -2,6 +2,33 @@
 
 Name: Aiki (command and data directory: `aiki`).
 
+## Pilot release identity and notices
+
+Release CI has an explicit `check-public.ts --public-ci` mode: generic source checks
+and mandatory Gitleaks still run; only the unavailable private-term scan is skipped.
+Local/default checks remain fail-closed without the ignored private denylist, and the
+owner must run them on the exact proposed public refs before a tag push. Tag automation
+stages a draft, not a public release, so the owner can attach/review local signed assets.
+No signing key or password is stored in the repository or GitHub.
+
+The neutral Android signing script uses an empty external properties file, `env -i`
+and explicit public build overrides; package ID is `io.github.mitzacoder.aiki` and
+Firebase/relay/backend suggestions are empty. Version inputs are `aiki.version`, then
+`AIKI_RELEASE_VERSION`, then the CI tag. Android names omit `v`; numeric codes allocate
+major/minor/patch slots and order pilot N below stable (formula in Android README).
+Dev builds default to `0.0.0-dev` / 1. Keep package, signing certificate and storage
+prefixes stable across upgrades. Local owner signing, backup and manual APK attachment
+are the pilot path; no deployment or main move is part of releasing.
+
+Android Settings has an offline About and licences section. Explicit LGPL-2.1 Sora
+0.24.6 notices/source/relinking instructions and bundled font/Termux notices supplement
+the Google OSS plugin's generated release dependency catalogue. A separate notices-and-
+source asset includes pinned upstream source and the matching Aiki commit snapshot.
+Java/AAR inputs become combined DEX; an already signed APK cannot simply load a replaced
+JAR. The documented rebuild path permits modified-library debugging, with a separately
+signed/identified APK. These are technical materials, not legal certification; the
+publisher still reviews the final distribution. See `docs/RELEASE.md`.
+
 ## Local installer and first run
 
 The public installer ships a versioned source/web archive and a private, checksum-pinned Bun runtime (no Node

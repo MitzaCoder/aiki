@@ -1,0 +1,40 @@
+Sora editor and language-textmate 0.24.6
+
+This application uses io.github.rosemoe:editor:0.24.6 and
+io.github.rosemoe:language-textmate:0.24.6. Their published POMs declare the
+GNU Lesser General Public License, version 2.1 (LGPL-2.1). The full license
+is included as LGPL-2.1-Sora.txt. Copyright notices remain in upstream source.
+No changes to these libraries are carried by Aiki.
+
+Exact upstream source for both pinned libraries:
+https://github.com/Rosemoe/sora-editor/tree/87055c459e346cac6c619b3350f0bfba076228cc
+This is upstream tag 0.24.6. Complete source archive:
+https://github.com/Rosemoe/sora-editor/archive/87055c459e346cac6c619b3350f0bfba076228cc.tar.gz
+Published module source archives:
+https://repo.maven.apache.org/maven2/io/github/rosemoe/editor/0.24.6/editor-0.24.6-sources.jar
+https://repo.maven.apache.org/maven2/io/github/rosemoe/language-textmate/0.24.6/language-textmate-0.24.6-sources.jar
+
+Replacement / relinking
+
+These are Java libraries supplied as separate Gradle dependencies, not a
+runtime download. Android's build tools combine their bytecode with the app
+in DEX files inside the APK. There is no supported drop-in JAR replacement
+in an already signed APK. Do not interpret Java dynamic linking as proof
+that no relinking materials are needed.
+
+The matching Aiki source release, Gradle wrapper, dependency declarations and
+instructions in apps/android/licenses/RELINKING.md let you rebuild the app
+with modified versions of these libraries. You may modify these libraries
+and reverse engineer the work for debugging those modifications as provided
+by LGPL 2.1 section 6; Aiki adds no restriction on that use. Build your own
+replacement APK and sign it with your own key. That key cannot upgrade the
+owner-signed APK in place: use a different application ID for side-by-side
+installation, or export non-secret settings first and reinstall. Uninstalling
+removes app-local data and authentication, so re-pairing is then required.
+No private publisher signing key or backend credentials are needed to rebuild.
+
+The release notices-and-source bundle includes the pinned upstream source,
+module source archives and matching Aiki relinking source. These instructions
+are a technical description, not a legal opinion or a claim that a source
+link alone settles redistribution obligations. The publisher must review the
+final materials before distributing the pilot.

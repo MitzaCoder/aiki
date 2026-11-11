@@ -8,6 +8,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
+apply(plugin = "com.google.android.gms.oss-licenses-plugin")
 /** Private build values stay in ignored local.properties or the deploy checkout's android.properties. */
 val localBuildProperties = Properties().apply {
     val configured = providers.environmentVariable("HARNESS_ANDROID_PROPERTIES").orNull
@@ -63,6 +64,31 @@ val firebaseConfig: Map<String, String> = run {
     )
 }
 
+/** Numeric SemVer slots, with pilot builds below the stable release in each patch slot. */
+fun androidReleaseVersion(tag: String): Pair<String, Int> {
+    val match = Regex("v?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-pilot\\.([1-9][0-9]*))?").matchEntire(tag)
+        ?: error("Expected vMAJOR.MINOR.PATCH[-pilot.N]")
+    val (major, minor, patch) = match.groupValues.drop(1).take(3).map { it.toLong() }
+    val pilot = match.groupValues[4].takeIf { it.isNotEmpty() }?.toLong() ?: 9999L
+    require(major <= 20 && minor <= 99 && patch <= 99 && pilot in 1..9999 &&
+        (match.groupValues[4].isEmpty() || pilot < 9999)) { "Android version slots exceeded" }
+    return tag.removePrefix("v") to (major * 100_000_000 + minor * 1_000_000 + patch * 10_000 + pilot).toInt()
+}
+val releaseTag = providers.gradleProperty("aiki.version").orElse(providers.environmentVariable("AIKI_RELEASE_VERSION")).orNull
+    ?: if (providers.environmentVariable("GITHUB_REF_TYPE").orNull == "tag") providers.environmentVariable("GITHUB_REF_NAME").orNull else null
+val releaseVersion = releaseTag?.let(::androidReleaseVersion) ?: ("0.0.0-dev" to 1)
+tasks.register("checkReleaseVersion") {
+    val validCases = listOf(
+        androidReleaseVersion("v0.1.0-pilot.1") == ("0.1.0-pilot.1" to 1_000_001),
+        androidReleaseVersion("v0.1.0-pilot.2").second > androidReleaseVersion("v0.1.0-pilot.1").second,
+        androidReleaseVersion("v0.1.0").second > androidReleaseVersion("v0.1.0-pilot.9998").second,
+        androidReleaseVersion("v0.1.1-pilot.1").second > androidReleaseVersion("v0.1.0").second,
+    )
+    val invalidCases = listOf("main", "v01.1.0", "v0.100.0", "v21.0.0", "v0.1.0-pilot.0", "v0.1.0-pilot.9999", "v0.1.0-beta.1")
+        .map { runCatching { androidReleaseVersion(it) }.isFailure }
+    doLast { check(validCases.all { it } && invalidCases.all { it }) { "Android release version regression" } }
+}
+
 android {
     namespace = "io.github.mitzacoder.aiki"
     compileSdk = 37
@@ -71,8 +97,8 @@ android {
         applicationId = installedApplicationId
         minSdk = 31
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = releaseVersion.second
+        versionName = releaseVersion.first
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["appLinkHost"] = appUri.host
         manifestPlaceholders["relayEmailLinkHost"] = relayEmailLinkDomain.ifEmpty { "relay.example.invalid" }
@@ -91,6 +117,7 @@ android {
             buildConfigField("String", name, "\"${firebaseConfig[name].orEmpty()}\"")
         }
     }
+    sourceSets.getByName("main").assets.srcDir(rootProject.file("licenses"))
     buildTypes {
         getByName("debug") {
             buildConfigField("String", "RELAY_AUTH_EMULATOR", buildString(privateBuildProperty(
@@ -148,7 +175,33 @@ tasks.register("checkReleaseRelayAuth") {
     }
 }
 
+/** Only the public signing script invokes this; private operator builds may intentionally differ. */
+tasks.register("checkNeutralRelease") {
+    dependsOn("generateReleaseBuildConfig", "assembleRelease")
+    val config = layout.buildDirectory.file("generated/source/buildConfig/release/io/github/mitzacoder/aiki/BuildConfig.java")
+    val apkFile = layout.buildDirectory.file("outputs/apk/release/app-release-unsigned.apk")
+    doLast {
+        val text = config.get().asFile.readText()
+        val expected = mapOf(
+            "APPLICATION_ID" to "io.github.mitzacoder.aiki", "PREFERENCES_PREFIX" to "aiki",
+            "NOTIFICATION_INTENT_PREFIX" to "io.github.mitzacoder.aiki",
+            "APP_ORIGIN" to "https://app.example.invalid", "APP_LINK_HOST" to "app.example.invalid",
+            "PUBLISHED_BACKENDS_URL" to "", "PUSH_RELAY_URL" to "", "RELAY_GOOGLE_CLIENT_ID" to "",
+            "RELAY_EMAIL_LINK_DOMAIN" to "", "RELAY_PRIVACY_CONTACT" to "", "FIREBASE_APP_ID" to "",
+            "FIREBASE_API_KEY" to "", "FIREBASE_PROJECT_ID" to "", "FIREBASE_SENDER_ID" to "",
+        )
+        for ((field, value) in expected) check(text.contains("""String $field = "$value";""")) { "Non-neutral release field: $field" }
+        ZipFile(apkFile.get().asFile).use { archive ->
+            for (notice in listOf("Sora-NOTICE.txt", "LGPL-2.1-Sora.txt", "RELINKING.md", "OFL-JetBrainsMono.txt", "OFL-AtkinsonHyperlegibleNext.txt", "APACHE-2.0-termux-terminal.txt")) {
+                check(archive.getEntry("assets/$notice") != null) { "Missing APK notice: $notice" }
+            }
+        }
+    }
+}
+
 dependencies {
+    implementation("com.google.android.gms:play-services-oss-licenses:17.5.3")
+    implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("io.github.rosemoe:language-textmate:0.24.6")
     implementation("io.github.rosemoe:editor:0.24.6")

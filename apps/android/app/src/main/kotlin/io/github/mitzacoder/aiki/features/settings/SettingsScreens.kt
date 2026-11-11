@@ -73,6 +73,7 @@ fun GeneralSettingsScreen(
             }
             GeneralSection.Notifications -> NotificationsSection(repository)
             GeneralSection.Archived -> ArchivedSection(repository, navigate)
+            GeneralSection.About -> AboutSection()
         }
     }
 }
