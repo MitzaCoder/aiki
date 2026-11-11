@@ -3,6 +3,7 @@ import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import type { JsonObject, SetTimer } from "@earendil-works/pi-durable";
+import { DEFAULT_CHECK_INS, DEFAULT_LONG_PROMPT_CACHE, DEFAULT_UI_PROOF } from "@aiki/protocol";
 import type {
 	BoardTask,
 	ConversationContext,
@@ -14,8 +15,21 @@ import type {
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
 import { type BoardState, changeOwner, emptyBoardState, saveTask } from "../src/board.ts";
-import { THREAD_ARCHIVE_AFTER_MS, THREAD_MESSAGES_PER_HOUR, MAIN_THREADS_SECTION } from "../src/threads.ts";
+import { THREAD_ARCHIVE_AFTER_MS, THREAD_MESSAGES_PER_HOUR, MAIN_THREADS_SECTION, threadInstructions } from "../src/threads.ts";
 import { createSetup, entryText, errorOf, TestClient, ViewClient, type TestSetup } from "./support.ts";
+
+it("asks jj background threads to use the namespaced task trailer", () => {
+	const instructions = threadInstructions({
+		id: "fixture", title: "Fixture", checkout: "/tmp/aiki-fixture-workspace", checkoutKind: "jj", startedBy: "main",
+		project: {
+			version: 1, id: "fixture", name: "Fixture", path: "/tmp/aiki-fixture-project", createdAt: "2026-01-01T00:00:00Z",
+			coordinator: { model: null, thinkingLevel: null }, workerModels: [], checkIns: { ...DEFAULT_CHECK_INS },
+			longPromptCache: DEFAULT_LONG_PROMPT_CACHE, keepPromptCacheWarm: true, promptCacheWarmHours: 8,
+			uiProof: DEFAULT_UI_PROOF, links: null,
+		},
+	});
+	expect(instructions).toContain("Add an `Aiki-Task: T…` trailer to commit descriptions.");
+});
 
 const cleanups: (() => Promise<void>)[] = [];
 const clients: TestClient[] = [];

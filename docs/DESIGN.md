@@ -1294,7 +1294,7 @@ Conflicting task sets produce diagnostics, never an automatic union; `declareCha
 corrects attribution after verifying objects and board IDs. Structured worker declarations have the same
 verified internal API; no new prompt-heavy tool is added. No attribution is inferred from chat hashes.
 
-Portable trailers occupy the final message paragraph: repeat `Task: T1` or use `Tasks: T1, T2`.
+Portable trailers occupy the final message paragraph: repeat `Aiki-Task: T1` or use `Aiki-Task: T1, T2`.
 Keys/IDs are case-insensitive; IDs normalize to uppercase `T` plus a positive decimal number.
 Other Git trailers may coexist. Unknown project-board IDs are ignored with a diagnostic, not guessed.
 Squashes/merges must retain trailers. Task membership on a merge includes its newly reachable ancestors.

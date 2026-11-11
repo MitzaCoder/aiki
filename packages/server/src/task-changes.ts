@@ -59,7 +59,7 @@ export function taskTrailers(message: string): string[] {
 	if (!paragraph.split(/\r?\n/).every(line => /^[A-Za-z][A-Za-z0-9-]*:/.test(line) || /^[ \t]+\S/.test(line))) return [];
 	const tasks: string[] = [];
 	for (const line of paragraph.split(/\r?\n/)) {
-		const match = /^Tasks?:[ \t]*(T[1-9]\d*(?:[ \t]*,[ \t]*T[1-9]\d*)*)[ \t]*$/i.exec(line);
+		const match = /^Aiki-Task:[ \t]*(T[1-9]\d*(?:[ \t]*,[ \t]*T[1-9]\d*)*)[ \t]*$/i.exec(line);
 		if (match) tasks.push(...(match[1] ?? "").toUpperCase().split(/\s*,\s*/));
 	}
 	return [...new Set(tasks)];

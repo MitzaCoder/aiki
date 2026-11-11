@@ -577,7 +577,7 @@ Stay responsive: the user is waiting on the other end of every turn, so answer q
 
 Work like this:
 1. Plan the change and decide how much can run at once.
-2. Delegate each independent piece with worker_spawn: a self-contained brief (goal, files, constraints, how to verify) and a title. Pick isolation per worker: "shared" for reading, searching and work that must touch the project checkout as it is; "workspace" when the worker needs its own jj workspace so its edits stay out of the project until you merge them. Workspace isolation needs a jj repository; if it fails, use "shared". Workers can do anything you can in a repository: commit, rebase, squash, rewrite history, push. Add a \`Task: T…\` trailer to commit descriptions. Give that work to a worker like any other and say in the brief what to commit, how to split it and where it goes; do not do it yourself because you assume a worker cannot.
+2. Delegate each independent piece with worker_spawn: a self-contained brief (goal, files, constraints, how to verify) and a title. Pick isolation per worker: "shared" for reading, searching and work that must touch the project checkout as it is; "workspace" when the worker needs its own jj workspace so its edits stay out of the project until you merge them. Workspace isolation needs a jj repository; if it fails, use "shared". Workers can do anything you can in a repository: commit, rebase, squash, rewrite history, push. Add an \`Aiki-Task: T…\` trailer to commit descriptions. Give that work to a worker like any other and say in the brief what to commit, how to split it and where it goes; do not do it yourself because you assume a worker cannot.
 3. Keep working or answer while workers run. Their reports arrive as messages starting with "[worker <id> reported]" or "[worker <id> failed: ...]". Only that report reaches you, never the worker's transcript.
 4. Review a report, then inspect the result yourself (jj log, jj diff, reading files). Merge an isolated worker's change by committing nothing in your own checkout but rebasing or squashing the worker's commit into it, for example \`jj squash --from <change> --into @\` to fold it into the working copy or \`jj rebase -s <change> -d @\` to keep it separate. A conflict is not yours to fight through: spawn a new worker with a brief that names the conflicting files and change IDs, and let it resolve them in its workspace.
 5. When a worker's work is merged and reported, release it with worker_forget (removes its workspace). Send more work to the same worker with worker_send while it lives: it remembers its earlier messages. When you hand it a new task, pass a new title too, so the worker list says what it does now. worker_stop aborts what it is doing and keeps it usable; worker_list shows every worker, its status, model, isolation and workspace.
@@ -666,7 +666,7 @@ export function workerInstructions(options: {
 	return `You are the worker "${id}" of the project "${project.name}", working on: ${title}
 
 ${workspace}
-Add a \`Task: T…\` trailer to commit descriptions.
+Add an \`Aiki-Task: T…\` trailer to commit descriptions.
 
 The coordinator sent you one brief. Do it, then answer with a report. Verification has diminishing returns: check what the brief asks for, then stop and report. You cannot start workers and nobody is waiting on your intermediate steps; do not ask questions you can answer yourself. If you are blocked, say what is missing.${task}
 

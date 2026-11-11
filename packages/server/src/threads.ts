@@ -229,7 +229,7 @@ export function threadInstructions(options: {
 			: `\n\nYou were started for the board task ${options.taskId} and hold it. The user reads that task, not this conversation: keep its report current with the \`board\` action \`write_report\`, and move it to review when it is ready for them.`;
 	const workspace =
 		checkoutKind === "jj"
-			? `Your workspace is ${checkout}, a jj workspace of the project's repository, started from main's working copy. Do your work and merge your workers' changes there, and commit it; name the change IDs in your summary. Add a \`Task: T…\` trailer to commit descriptions.`
+			? `Your workspace is ${checkout}, a jj workspace of the project's repository, started from main's working copy. Do your work and merge your workers' changes there, and commit it; name the change IDs in your summary. Add an \`Aiki-Task: T…\` trailer to commit descriptions.`
 			: `Your workspace is ${checkout}, a directory of your own. The project at ${project.path} is not a jj repository, so make your checkouts here: a git worktree (\`git -C ${project.path} worktree add ${checkout}/<name> -b <branch>\`) or a clone. Workers with isolation "workspace" need jj and are not available; spawn "shared" workers and name the worktree they work in.`;
 	const starter =
 		startedBy === "schedule"

@@ -22,7 +22,7 @@ async function fixture(colocated = false) {
 	const root = await mkdtemp(join(tmpdir(), "task-changes-")); roots.push(root);
 	await git(root, "init", "-b", "main");
 	await git(root, "config", "user.name", "Fixture"); await git(root, "config", "user.email", "fixture@example.invalid");
-	await git(root, "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "baseline\n\nTask: T1");
+	await git(root, "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "baseline\n\nAiki-Task: T1");
 	if (colocated) await jj(root, "git", "init", "--colocate");
 	const stateDir = await mkdtemp(join(tmpdir(), "task-changes-state-")); roots.push(stateDir);
 	const file = join(stateDir, "ledger.json");
@@ -38,33 +38,35 @@ async function commit(root: string, message: string): Promise<string> {
 }
 function repository(ledger: TaskChangeLedger) { return Object.values(ledger.repositories)[0]!; }
 
-test("portable trailers: repeated, plural comma lists, case-insensitive, deduplicated", () => {
-	expect(taskTrailers("feat: example\n\nTask: T1\nTasks: T2, T3\nTask: T1\nSigned-off-by: Fixture <fixture@example.invalid>")).toEqual(["T1", "T2", "T3"]);
-	expect(taskTrailers("Task: T2\n\nNot a trailer")).toEqual([]);
-	expect(taskTrailers("feat: Task: T1")).toEqual([]);
-	expect(taskTrailers("feat: example\n\ntask: t1")).toEqual(["T1"]);
-	expect(taskTrailers("feat: example\n\nTask: T0\nTasks: T1 T2")).toEqual([]);
+test("portable Aiki-Task trailers: repeated, comma lists, case-insensitive, deduplicated", () => {
+	expect(taskTrailers("feat: example\n\nAiki-Task: T1\nAiki-Task: T2, T3\nAiki-Task: T1\nSigned-off-by: Fixture <fixture@example.invalid>")).toEqual(["T1", "T2", "T3"]);
+	expect(taskTrailers("Aiki-Task: T2\n\nNot a trailer")).toEqual([]);
+	expect(taskTrailers("feat: Aiki-Task: T1")).toEqual([]);
+	expect(taskTrailers("feat: example\n\naiki-task: T1")).toEqual(["T1"]);
+	expect(taskTrailers("feat: example\n\nAiki-Task: T1\nAiki-Task: T2")).toEqual(["T1", "T2"]);
+	expect(taskTrailers(`feat: example\n\n${"Task"}: T1\n${"Tasks"}: T2, T3`)).toEqual([]);
+	expect(taskTrailers("feat: example\n\nAiki-Task: T0\nAiki-Task: T1 T2")).toEqual([]);
 });
 
 describe.skipIf(!hasGit)("Git integration observation", () => {
 	test("baseline without history; several tasks; unknown IDs diagnosed; quiet polls deduplicate", async () => {
 		const f = await fixture(); await f.observer.poll(); expect(f.facts).toHaveLength(0);
-		const hash = await commit(f.root, "feat: shared\n\nTask: T1\nTasks: T2, T999");
+		const hash = await commit(f.root, "feat: shared\n\nAiki-Task: T1\nAiki-Task: T2, T999");
 		await f.observer.poll(); await f.observer.poll();
 		expect(f.facts).toHaveLength(1); expect(f.facts[0]?.taskIds).toEqual(["T1", "T2"]);
 		expect(f.facts[0]?.commits[0]?.hash).toBe(hash); expect(f.diagnostics.join()).toContain("T999");
 		expect(repository(await f.ledger()).changes.map(change => [change.taskId, change.source])).toEqual([["T1", "trailer"], ["T2", "trailer"]]);
-		await commit(f.root, "feat: unrelated\n\nTask: T999"); await f.observer.poll(); expect(f.facts).toHaveLength(1);
+		await commit(f.root, "feat: unrelated\n\nAiki-Task: T999"); await f.observer.poll(); expect(f.facts).toHaveLength(1);
 	});
 	test("restart catches up from persisted tip, not whole history", async () => {
 		const f = await fixture(); await f.observer.poll();
-		const hash = await commit(f.root, "feat: offline\n\nTask: T2");
+		const hash = await commit(f.root, "feat: offline\n\nAiki-Task: T2");
 		await new TaskChangeObserver(f.options).poll();
 		expect(f.facts).toHaveLength(1); expect(f.facts[0]?.commits.map(commit => commit.hash)).toEqual([hash]);
 		await new TaskChangeObserver(f.options).poll(); expect(f.facts).toHaveLength(1);
 	});
 	test("durable outbox retries a failed callback after restart with the same admission key", async () => {
-		const f = await fixture(); await f.observer.poll(); await commit(f.root, "feat: delivery\n\nTask: T1");
+		const f = await fixture(); await f.observer.poll(); await commit(f.root, "feat: delivery\n\nAiki-Task: T1");
 		const observer = new TaskChangeObserver({ ...f.options, onChangesLanded: () => { throw new Error("interrupted"); } });
 		await expect(observer.poll()).rejects.toThrow("interrupted");
 		const id = repository(await f.ledger()).facts[0]?.id;
@@ -73,7 +75,7 @@ describe.skipIf(!hasGit)("Git integration observation", () => {
 	});
 	test("force move backwards records removals, and re-landing is a distinct fact", async () => {
 		const f = await fixture(); await f.observer.poll(); const base = await git(f.root, "rev-parse", "HEAD");
-		const hash = await commit(f.root, "feat: first\n\nTask: T1"); await f.observer.poll();
+		const hash = await commit(f.root, "feat: first\n\nAiki-Task: T1"); await f.observer.poll();
 		await git(f.root, "update-ref", "refs/heads/main", base); await f.observer.poll();
 		expect(f.facts[1]?.commits).toEqual([]); expect(f.facts[1]?.removed.map(commit => commit.hash)).toEqual([hash]);
 		await git(f.root, "update-ref", "refs/heads/main", hash); await f.observer.poll();
@@ -82,7 +84,7 @@ describe.skipIf(!hasGit)("Git integration observation", () => {
 	test("revert retains ancestry but records the original task and semantic removal", async () => {
 		const f = await fixture(); await f.observer.poll();
 		await writeFile(join(f.root, "feature.txt"), "synthetic\n"); await git(f.root, "add", "feature.txt");
-		const hash = await commit(f.root, "feat: feature\n\nTask: T2"); await f.observer.poll();
+		const hash = await commit(f.root, "feat: feature\n\nAiki-Task: T2"); await f.observer.poll();
 		await git(f.root, "-c", "commit.gpgsign=false", "revert", "--no-edit", hash); await f.observer.poll();
 		expect(f.facts[1]?.taskIds).toEqual(["T2"]); expect(f.facts[1]?.reverted[0]?.hash).toBe(hash);
 		expect(f.facts[1]?.removed).toEqual([]); expect(f.facts[1]?.commits[0]?.reverts).toBe(hash);
@@ -91,11 +93,11 @@ describe.skipIf(!hasGit)("Git integration observation", () => {
 		const f = await fixture(); await f.observer.poll();
 		await git(f.root, "checkout", "-b", "topic");
 		await writeFile(join(f.root, "feature.txt"), "synthetic\n"); await git(f.root, "add", "feature.txt");
-		await commit(f.root, "feat: topic\n\nTask: T1"); await git(f.root, "checkout", "main");
-		await git(f.root, "merge", "--squash", "topic"); const squash = await commit(f.root, "feat: squashed\n\nTasks: T1, T2");
+		await commit(f.root, "feat: topic\n\nAiki-Task: T1"); await git(f.root, "checkout", "main");
+		await git(f.root, "merge", "--squash", "topic"); const squash = await commit(f.root, "feat: squashed\n\nAiki-Task: T1, T2");
 		await f.observer.poll(); expect(f.facts[0]?.commits.map(commit => commit.hash)).toEqual([squash]);
-		await git(f.root, "checkout", "-b", "other"); await commit(f.root, "feat: more\n\nTask: T2"); await git(f.root, "checkout", "main");
-		await git(f.root, "-c", "commit.gpgsign=false", "merge", "--no-ff", "other", "-m", "feat: merged\n\nTask: T1");
+		await git(f.root, "checkout", "-b", "other"); await commit(f.root, "feat: more\n\nAiki-Task: T2"); await git(f.root, "checkout", "main");
+		await git(f.root, "-c", "commit.gpgsign=false", "merge", "--no-ff", "other", "-m", "feat: merged\n\nAiki-Task: T1");
 		await f.observer.poll(); expect(f.facts[1]?.taskIds.sort()).toEqual(["T1", "T2"]); expect(f.facts[1]?.commits).toHaveLength(2);
 	});
 	test("manual corrections and worker declarations verify commits and scope; conflicts do not union", async () => {
@@ -113,7 +115,7 @@ describe.skipIf(!hasGit)("Git integration observation", () => {
 		expect(repository(await f.ledger()).ref).toBe("refs/heads/main");
 		await git(f.root, "branch", "-m", "main", "master"); await f.observer.poll();
 		expect(repository(await f.ledger()).ref).toBe("refs/heads/master");
-		f.setRef(null); await commit(f.root, "feat: disabled\n\nTask: T1"); await f.observer.poll(); expect(f.facts).toEqual([]);
+		f.setRef(null); await commit(f.root, "feat: disabled\n\nAiki-Task: T1"); await f.observer.poll(); expect(f.facts).toEqual([]);
 		f.setRef("refs/heads/missing"); await f.observer.poll(); expect(f.facts).toEqual([]);
 		await git(f.root, "branch", "custom"); f.setRef("refs/heads/custom"); await f.observer.poll(); expect(f.facts).toEqual([]);
 		const empty = await mkdtemp(join(tmpdir(), "task-changes-empty-")); roots.push(empty);
@@ -125,7 +127,7 @@ describe.skipIf(!hasGit)("Git integration observation", () => {
 describe.skipIf(!hasJj)("colocated jj observation and workspace provenance", () => {
 	test("jj rebase preserves change identity and replaces concrete hashes", async () => {
 		const f = await fixture(true); await f.observer.poll();
-		await jj(f.root, "commit", "-m", "feat: task change\n\nTask: T1");
+		await jj(f.root, "commit", "-m", "feat: task change\n\nAiki-Task: T1");
 		await jj(f.root, "bookmark", "set", "main", "-r", "@-");
 		const changeId = await jj(f.root, "--ignore-working-copy", "log", "--no-graph", "-r", "main", "-T", "change_id");
 		const old = await git(f.root, "rev-parse", "main"); await f.observer.poll();
@@ -143,7 +145,7 @@ describe.skipIf(!hasJj)("colocated jj observation and workspace provenance", () 
 		const f = await fixture(true); await f.observer.poll();
 		const beforeWorking = await jj(f.root, "--ignore-working-copy", "log", "--no-graph", "-r", "@", "-T", "commit_id");
 		await writeFile(join(f.root, "uncommitted.txt"), "must stay uncommitted\n");
-		await commit(f.root, "feat: external Git\n\nTask: T1");
+		await commit(f.root, "feat: external Git\n\nAiki-Task: T1");
 		const operation = await jj(f.root, "--ignore-working-copy", "op", "log", "--limit", "1", "--no-graph", "-T", "id");
 		await f.observer.poll(); await f.observer.poll();
 		expect(await jj(f.root, "--ignore-working-copy", "op", "log", "--limit", "1", "--no-graph", "-T", "id")).toBe(operation);
@@ -172,8 +174,8 @@ describe.skipIf(!hasJj)("colocated jj observation and workspace provenance", () 
 		const workspace = await mkdtemp(join(tmpdir(), "task-workspace-")); await rm(workspace, { recursive: true }); roots.push(workspace);
 		await jj(f.root, "workspace", "add", workspace, "--name", "synthetic-worker", "-r", "main"); await f.observer.rememberWorkspace(workspace);
 		await jj(workspace, "commit", "-m", "feat: no declaration");
-		await jj(workspace, "commit", "-m", "feat: invalid declaration\n\nTask: T999");
-		await jj(workspace, "commit", "-m", "feat: explicit\n\nTasks: T1, T2");
+		await jj(workspace, "commit", "-m", "feat: invalid declaration\n\nAiki-Task: T999");
+		await jj(workspace, "commit", "-m", "feat: explicit\n\nAiki-Task: T1, T2");
 		await f.observer.recordWorkspace(workspace, ["T1", "T2"]);
 		expect(repository(await f.ledger()).changes.map(change => [change.taskId, change.source])).toEqual([["T1", "trailer"], ["T2", "trailer"]]);
 		await f.observer.recordWorkspace(workspace, ["T1"]);

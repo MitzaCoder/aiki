@@ -1,11 +1,23 @@
 # Continue
 
+## T124: namespaced commit trailers
+
+Task attribution now reads only case-insensitive `Aiki-Task:` trailers, including repeated lines and
+comma-separated IDs. Coordinator, worker and thread instructions use the same key to avoid clashes
+with other projects' conventions. No legacy-key migration is needed; this stage has not shipped.
+
+Sequential checks passed: root 2,264 tests / 81,622 assertions and typecheck; web 1,003 tests /
+70,570 assertions, zero check diagnostics and production build; protocol generation; private source
+and Gitleaks guards; Android 860 JVM tests / 114 suites / two skips / zero failures or errors,
+debug assembly and lint. No flaky retries needed. Gradle daemons stopped. No UI change, push,
+main move or deployment; existing stack left unchanged with one new commit above it.
+
 ## T124: stage 4 stacked on stage 1; landed changes invalidate reports
 
 Rebased `zmwxuvvx` onto `tqmtvotm`, preserving both stages. Only CONTINUE and the legacy
 feature exclusion list conflicted: retained every continuation section (stage 4 first), and excluded
 both task-changes and task-freshness from legacy support. DESIGN and both prompt edits merged
-cleanly, including the [reports] paragraph and Task trailer instructions. Regenerated Android DTOs.
+cleanly, including the [reports] paragraph and Aiki-Task trailer instructions. Regenerated Android DTOs.
 
 `recordChangesLanded` now admits one commit fact per attributed task inside its timeline transaction.
 Landed, removed and reverted changes stale Results/Next with count/ref reasons. The existing fact-ID
@@ -28,8 +40,8 @@ opening coordinators/resuming runs for observation at startup. The review fix re
 reattachment and tests both closed/unchanged-ledger state after restart and catch-up on explicit reopen.
 Atomic private `task-changes.json` stores
 repository-scoped attribution, workspace bases, integration tips and structured durable/outbox facts.
-`integrationRef`: auto (main/master), full Git ref, or null (off). Repeated `Task: T1` and comma-separated
-`Tasks: T1, T2` trailers validate against the project's board. Stable jj IDs replace hashes on rewrite.
+`integrationRef`: auto (main/master), full Git ref, or null (off). Repeated `Aiki-Task: T1` and comma-separated
+`Aiki-Task: T1, T2` trailers validate against the project's board. Stable jj IDs replace hashes on rewrite.
 Forget/storage cleanup records isolated single-task base→tip provenance before deleting workspaces;
 shared/reused/multi-task work requires explicit trailers. Git-only object/ref reads plus optional
 `jj --ignore-working-copy` metadata reads do not snapshot working copies.

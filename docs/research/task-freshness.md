@@ -113,7 +113,7 @@ working/failure/live; no timeout of legitimate long tools. Push transitions imme
 ## 4. Generic commit/deploy attribution
 - Persist project/repository-scoped task ↔ change ledger with attribution source,
   thread/conversation/run, optional stable jj change ID and concrete commit hashes.
-  Portable default: `Task: T120` trailers, multiple allowed, in Git messages/jj descriptions.
+  Portable default: `Aiki-Task: T120` trailers, multiple allowed, in Git messages/jj descriptions.
   Validate against that project's board. Worker structured `changes` verifies repo objects.
 - Isolated single-task workspace base/tip is fallback provenance, never “all commits while
   worker ran”. Shared/multi-task work requires explicit IDs. Task commit/change refs count;

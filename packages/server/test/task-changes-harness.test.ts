@@ -86,7 +86,7 @@ describe.skipIf(!Bun.which("git"))("server integration ref lifecycle", () => {
 			await expect(setup.server.manager.configure(project.id, { integrationRef: "refs/heads/../bad" })).rejects.toThrow("Integration ref");
 			expect((await setup.server.manager.configure(project.id, { integrationRef: "auto" })).integrationRef).toBe("auto");
 			const { runtime } = await setup.server.manager.open(project.id); await runtime.board.saveTask({ task }, "harness");
-			await run(setup.projectDir, "git", "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "feat: offline\n\nTask: T1");
+			await run(setup.projectDir, "git", "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "feat: offline\n\nAiki-Task: T1");
 			const ledgerFile = join(setup.dataDir, "projects", project.id, TASK_CHANGES_FILE);
 			const beforeRestart = await readFile(ledgerFile, "utf8");
 			const restarted = await setup.restart();
