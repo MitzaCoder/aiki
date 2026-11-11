@@ -1,5 +1,28 @@
 # Continue
 
+## T126 web polish: compact status
+
+Mode now explains the automatic small-model fallback order. Status is two muted lines: model plus
+usage, then last run plus state/reason. Updated pure formatter expectations. Web check has zero
+diagnostics; all 1,008 web tests / 70,597 assertions pass. Replaced the model-state desktop-light and
+390px-dark screenshots on T126 with settled synthetic faux-provider captures. No other gates rerun.
+
+## T126: web Report check settings
+
+Added Project settings → Coordinator → Report check, gated on the explicit `report-audit` hello
+feature (no inferred support). Automatic/Off/model choice and the 65,000 default daily-token budget
+use existing combobox/autosave controls. Choosing a model saves that mode only once a model is picked;
+status shows the server-selected model/provider, daily usage, locally ticking last run and state/reason.
+The client configure wrapper now forwards reportAudit, including null resets; a regression test verifies
+both. No coordinator defaults, audit scheduling, server logic or Android UI changed.
+
+Checks: web check zero diagnostics; 1,008 tests / 70,597 assertions; production build; root typecheck;
+public guard/Gitleaks. Targeted client request/reset test: one pass / two assertions. No root suite
+rerun was requested. T126 proof contains desktop/390px light/dark before/after screenshots, plus a
+faux-model state and a recording changing mode/budget/model against a synthetic createSetup backend.
+Dark follows system colour-scheme emulation with reduced motion and settled transitions. No real
+provider credentials, live data, push, main move or deployment. Demo processes stopped after proof.
+
 ## T121: freshness stack integration
 
 The eight T120 freshness changes are linear on the Android graph/timeline main: design,

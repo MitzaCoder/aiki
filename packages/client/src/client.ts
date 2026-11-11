@@ -97,6 +97,7 @@ import type {
 	NotificationsTestResponse,
 	NotificationsUnregisterResponse,
 	ProjectCheckIns,
+	ReportAuditSettings,
 	ProjectSummary,
 	ProjectsAddResponse,
 	ProjectsConfigureResponse,
@@ -203,6 +204,8 @@ export type ProjectChange = {
 	promptCacheWarmHours?: 1 | 2 | 4 | 8 | null;
 	/** `null` restores the server's default (`screenshots-and-videos`); needs feature `ui-proof`. */
 	uiProof?: UiProof | null;
+	/** Feature `report-audit`; null restores automatic checks with 65,000 daily tokens. */
+	reportAudit?: ReportAuditSettings | null;
 	/** `null` goes back to letting the server fill them in. */
 	links?: ProjectLinks | null;
 	/** `true` archives the project, `false` unarchives it (feature `project-archive`). */
@@ -559,6 +562,7 @@ export class HarnessClient {
 			...(change.keepPromptCacheWarm === undefined ? {} : { keepPromptCacheWarm: change.keepPromptCacheWarm }),
 			...(change.promptCacheWarmHours === undefined ? {} : { promptCacheWarmHours: change.promptCacheWarmHours }),
 			...(change.uiProof === undefined ? {} : { uiProof: change.uiProof }),
+			...(change.reportAudit === undefined ? {} : { reportAudit: change.reportAudit }),
 			...(change.links === undefined ? {} : { links: change.links }),
 			...(change.archived === undefined ? {} : { archived: change.archived }),
 		});

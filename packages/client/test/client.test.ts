@@ -549,6 +549,16 @@ describe("workers", () => {
 		expect(listed.defaults).toEqual({ model: { provider: "faux", modelId: "faux-1" }, thinkingLevel: "high" });
 	});
 
+	it("sends report audit settings and restores server defaults", async () => {
+		const test = await setup();
+		const client = await connect(test.server);
+		const project = await client.addProject(test.projectDir);
+		const configured = await client.configureProject(project.id, { reportAudit: { mode: "off", dailyTokens: 1200 } });
+		expect(configured.reportAudit).toEqual({ mode: "off", dailyTokens: 1200 });
+		const reset = await client.configureProject(project.id, { reportAudit: null });
+		expect(reset.reportAudit).toEqual({ mode: "auto", dailyTokens: 65000 });
+	});
+
 	it("configures worker check-ins and recognises the harness' own transcript inputs", async () => {
 		const test = await setup();
 		const client = await connect(test.server);

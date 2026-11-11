@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ReportAuditGroup from './ReportAuditGroup.svelte';
 	import BrainIcon from '@lucide/svelte/icons/brain';
 	import ImageIcon from '@lucide/svelte/icons/image';
 	import { onMount } from 'svelte';
@@ -181,4 +182,5 @@
 			</SettingsRow>
 		</SettingsGroup>
 	{/if}
+	<ReportAuditGroup {backend} {projectId} />
 </SettingsSection>

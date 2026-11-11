@@ -1478,7 +1478,15 @@ only a covered rewrite rearms. No model tokens are spent on detection and there 
 
 D60 makes this second opinion **on by default**, superseding the optional/off proposal in the research
 note. `report-audit` advertises settings/status support; absent features never imply this capability.
-There is no settings UI yet. `projects.configure.reportAudit` replaces the project setting:
+Project settings → Coordinator has a feature-gated **Report check** group on the web: Automatic
+(default), Off, or Choose a model using the existing catalogue picker. Mode/model changes save at once;
+the daily token budget saves on blur or Enter, with the neighbouring settings' saved/error feedback.
+Choosing model mode without a prior model waits for a selection before saving. The status uses only
+the server's effective model and token use on one muted line, then last-run time and state/reason
+on a second; the browser never predicts the
+automatic choice. Ages tick locally. A missing advertised feature hides the group, even before hello.
+
+`projects.configure.reportAudit` replaces the project setting:
 `{ mode: "auto" | "off" | "model", model?: ModelRef, dailyTokens: number }`; null restores
 `{ mode: "auto", dailyTokens: 65000 }`. Model mode requires a catalogued model ref; explicit model
 choice can be larger, but the same token limits apply. Settings survive older clients' unrelated writes.
