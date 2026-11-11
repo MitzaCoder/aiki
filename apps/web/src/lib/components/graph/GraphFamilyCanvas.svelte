@@ -7,11 +7,13 @@
 	import { familyDotTargets, minimumFamilyDotZoom } from '#lib/task-graph-family-dots.js';
 	import { GraphFamilyCamera } from '#lib/graph-family-camera.svelte.js';
 	import GraphCard from './GraphCard.svelte';
+	import GraphCrewLayer from './GraphCrewLayer.svelte';
+	import type { TaskGraphSession } from '#lib/task-graph-session.svelte.js';
 	import GraphFamilyRegion from './GraphFamilyRegion.svelte';
 	import GraphFamilyDot from './GraphFamilyDot.svelte';
 	import GraphEdges from './GraphEdges.svelte';
-	let {model,scope,showClosed,selectedTaskId,matches,focusRequest,onrevealed,onselect,onclear,taskHref}: {
-		model:GraphModel;scope:string;showClosed:boolean;selectedTaskId:string|null;matches:ReadonlySet<string>|null;focusRequest:string|null;
+	let {model,session,now,tabVisible,scope,showClosed,selectedTaskId,matches,focusRequest,onrevealed,onselect,onclear,taskHref}: {
+		model:GraphModel;session:TaskGraphSession;now:number;tabVisible:boolean;scope:string;showClosed:boolean;selectedTaskId:string|null;matches:ReadonlySet<string>|null;focusRequest:string|null;
 		onrevealed:()=>void;onselect:(id:string)=>void;onclear:()=>void;taskHref:(id:string)=>string;
 	}=$props();
 	const view=new GraphFamilyCamera(untrack(()=>scope));
@@ -20,10 +22,15 @@
 	let detail=$state<FamilyDetail>('cards');
 	let familyId=$state<string|null>(null);
 	let focusId=$state<string|null>(null);
-	let reports=$state<Record<string,string>>({});
-	const seenReports=new Map<string,string|null>();
-	const reportTimers=new Set<ReturnType<typeof setTimeout>>();
-	const tasks=$derived([...model.details.values()].filter(d=>!d.task.archived&&(showClosed||!['done','dropped'].includes(d.task.status))).map(d=>({id:d.task.id,parent:d.task.parent??null,createdAt:d.task.createdAt,familyId:d.familyId})));
+	function inViewport(id:string){
+		const card=layout?.cards.get(id);if(!card)return false;
+		if(phone&&detail!=='dots'&&card.familyId!==familyId)return false;
+		const b=card.box,c=view.camera;
+		return (b.x+b.width)*c.zoom+c.x>0&&b.x*c.zoom+c.x<view.width&&(b.y+b.height)*c.zoom+c.y>0&&b.y*c.zoom+c.y<view.height;
+	}
+	const offscreen=$derived(session.offscreenTaskIds.filter(id=>!inViewport(id)));
+	$effect(()=>{const remaining=offscreen;untrack(()=>{if(remaining.length!==session.offscreenTaskIds.length)session.offscreenTaskIds=remaining;});});
+	const tasks=$derived([...model.details.values()].filter(d=>!d.task.archived&&(showClosed||!['done','dropped'].includes(d.task.status)||(session.closedUntil[d.task.id]??0)>now||(d.task.id===selectedTaskId&&!!session.closedUntil[d.task.id]))).map(d=>({id:d.task.id,parent:d.task.parent??null,createdAt:d.task.createdAt,familyId:d.familyId})));
 	const families=$derived(layout?.families.filter(f=>f.taskIds.length)??[]);
 	const phone=$derived(view.phone);
 	const shownFamilies=$derived(phone&&detail!=='dots'?families.filter(f=>f.id===familyId):families);
@@ -50,18 +57,9 @@
 		const id=focusRequest;
 		untrack(()=>{familyId=layout!.cards.get(id)!.familyId;focusId=id;view.reveal(layout!,id,true);onrevealed();});
 	});
-	$effect(()=>{
-		for(const d of model.details.values())for(const w of d.workers){
-			if(seenReports.has(w.id)&&w.lastReport&&seenReports.get(w.id)!==w.lastReport){
-				untrack(()=>reports={...reports,[w.id]:w.updatedAt});
-				const timer=setTimeout(()=>{const next={...reports};delete next[w.id];reports=next;reportTimers.delete(timer);},1800);reportTimers.add(timer);
-			}
-			seenReports.set(w.id,w.lastReport);
-		}
-	});
 	// A level/family change must not leave every rendered target at tabindex=-1.
 	$effect(()=>{const targets=detail==='dots'?families.map(f=>'family:'+f.id):[...shownCards.map(c=>c.id),...shownFamilies.map(f=>'family:'+f.id)];if(!targets.includes(focusId??''))focusId=targets[0]??null;});
-	onMount(()=>{const cleanup=host?view.mount(host):()=>{};return()=>{cleanup();for(const timer of reportTimers)clearTimeout(timer);};});
+	onMount(()=>{const cleanup=host?view.mount(host):()=>{};return cleanup;});
 	function enterFamily(id:string){if(!layout)return;familyId=id;focusId='family:'+id;view.family(layout,id);}
 	function switchFamily(direction:number){const index=families.findIndex(f=>f.id===familyId);const family=families[(index+direction+families.length)%families.length];if(family)enterFamily(family.id);}
 	function open(id:string){location.assign(taskHref(id));}
@@ -96,6 +94,7 @@
 	<p id="family-graph-instructions" class="sr-only">Arrow keys move between tasks and families. Space selects, Enter opens a task. Home focuses the family header. Escape clears selection, then returns to families. Drag the background to pan; wheel or pinch to zoom. List has every task.</p>
 	<div class="controls"><button onclick={()=>view.zoom(1.25)} aria-label="Zoom in">+</button><button onclick={()=>view.zoom(.8)} aria-label="Zoom out">−</button><button onclick={()=>layout&&view.fit(layout)}>Fit</button>{#if matches?.size}<button onclick={fitMatches}>Fit matches</button>{/if}{#if layout?.needsRegroup}<button onclick={()=>layout=regroupTaskFamilies(tasks,{options:layout?.options})}>Regroup</button>{/if}</div>
 	{#if phone&&families.length}<nav class="family-switcher" aria-label="Task families"><button onclick={()=>switchFamily(-1)} aria-label="Previous family">‹</button><span>{summaries.get(familyId??'')?.title??'Families'}<small>{families.findIndex(f=>f.id===familyId)+1} / {families.length}</small></span><button onclick={()=>switchFamily(1)} aria-label="Next family">›</button></nav>{/if}
+	{#if offscreen.length}<button class="offscreen" onclick={async()=>{const id=offscreen[0]!;onselect(id);await tick();if(layout?.cards.has(id)){familyId=layout.cards.get(id)!.familyId;view.reveal(layout,id,true);}}}>↗ {offscreen.length} {offscreen.length===1?'change':'changes'} off screen</button>{/if}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="canvas" role="group" aria-label="Connected task families" aria-describedby="family-graph-instructions" data-detail={detail}
 		onpointerdown={e=>view.pointerDown(e)} onpointermove={e=>view.pointerMove(e)} onpointerup={e=>view.pointerUp(e)} onpointercancel={e=>view.pointerUp(e)} onwheel={e=>view.wheel(e)}>
@@ -108,7 +107,8 @@
 						<div class="world" style="transform:translate({view.camera.x}px,{view.camera.y}px) scale({view.camera.zoom})">
 							{#each shownFamilies as family (family.id)}<GraphFamilyRegion {family} summary={summaries.get(family.id)!} zoom={view.camera.zoom} tabIndex={tabStop==='family:'+family.id?0:-1} onfocus={id=>focusId=id} onkeydown={keyboard} onenter={()=>enterFamily(family.id)}/>{/each}
 							<GraphEdges {layout} {edges} {detail}/>
-							{#each shownCards as card (card.id)}{@const details=model.details.get(card.id)!}<GraphCard {card} {details} {model} pill={detail==='pills'} selected={selectedTaskId===card.id} matching={!!matches?.has(card.id)} dimmed={!!matches&&!matches.has(card.id)} tabIndex={tabStop===card.id?0:-1} {reports} onselect={select} onopen={open} onfocus={focusCard} onkeydown={keyboard}/>{/each}
+							{#each shownCards as card (card.id)}{@const details=model.details.get(card.id)!}<GraphCard {card} {details} {model} pill={detail==='pills'} selected={selectedTaskId===card.id} matching={!!matches?.has(card.id)} dimmed={!!matches&&!matches.has(card.id)} tabIndex={tabStop===card.id?0:-1} {now} updated={(session.updatedUntil[card.id]??0)>now} completing={!showClosed&&!!session.closedUntil[card.id]&&['done','dropped'].includes(details.task.status)} onselect={select} onopen={open} onfocus={focusCard} onkeydown={keyboard}/>{/each}
+							{#if detail==='cards'}<GraphCrewLayer cards={shownCards} {model} reports={session.reports} {now} reduced={view.reduced} {tabVisible}/>{/if}
 						</div>
 					{/if}
 				</div>
@@ -118,6 +118,7 @@
 </div>
 <style>
 	.canvas-host{position:absolute;inset:0}.canvas{position:absolute;inset:0;touch-action:none;user-select:none;overflow:hidden;cursor:grab;background:radial-gradient(ellipse at 40% 35%,color-mix(in srgb,var(--tone-accent-1) 5%,transparent),transparent 65%)}.canvas:active{cursor:grabbing}.world{position:absolute;left:0;top:0;transform-origin:0 0}.detail-layer{position:absolute;inset:0}.controls{position:absolute;top:12px;right:12px;z-index:3;display:flex;gap:5px}.controls button,.family-switcher button{height:36px;min-width:36px;border:1px solid var(--chat-border);border-radius:10px;background:var(--chat-surface);color:var(--chat-fg);font-size:14px;padding:0 9px;box-shadow:var(--tone-shadow);cursor:pointer}.controls button:focus-visible,.family-switcher button:focus-visible{outline:3px solid var(--chat-fg);outline-offset:2px}.family-overview{position:absolute;inset:0}.family-switcher{position:absolute;top:62px;left:8px;right:8px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--chat-border);border-radius:14px;background:var(--chat-bg);padding:2px 4px;color:var(--chat-fg)}.family-switcher>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}.family-switcher small{font-size:12px;margin-left:8px}.sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-	@media(max-width:640px){.controls{top:8px;right:8px}.controls button,.family-switcher button{min-height:44px;min-width:44px}}
+	.offscreen{position:absolute;bottom:12px;left:12px;z-index:3;min-height:36px;padding:6px 12px;border:1px solid var(--chat-fg-muted);border-radius:12px;background:var(--chat-surface);color:var(--chat-fg);box-shadow:var(--tone-shadow);font-size:13px}.offscreen:focus-visible{outline:3px solid var(--chat-fg)}
+	@media(max-width:640px){.offscreen{min-height:44px}.controls{top:8px;right:8px}.controls button,.family-switcher button{min-height:44px;min-width:44px}}
 	@media(prefers-reduced-motion:reduce){.detail-layer{transition:none}}
 </style>

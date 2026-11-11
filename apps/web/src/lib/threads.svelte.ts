@@ -19,6 +19,8 @@ export class ProjectThreads {
 	archived = $state<ThreadSummary[]>([]);
 	showArchived = $state(false);
 	loaded = $state(false);
+	/** True until this connection's authoritative list has arrived. Cached rows remain readable. */
+	refreshing = $state(true);
 	error = $state<string | undefined>(undefined);
 	/** The last failed stop or archive, by thread. */
 	actionError = $state<{ threadId: string; message: string } | undefined>(undefined);
@@ -47,6 +49,7 @@ export class ProjectThreads {
 		// A reconnect loses the pushes sent while away, so ask for the list again.
 		this.#unsubscribeState = client.subscribe((state) => {
 			if (state.status === "ready") void this.load();
+			else this.refreshing = true;
 		});
 		if (client.connected) void this.load();
 	}
@@ -57,6 +60,7 @@ export class ProjectThreads {
 			const snapshot = await this.#client.listThreads(this.projectId, { includeArchived: this.showArchived });
 			if (this.#stopped) return;
 			this.#apply(snapshot.threads.filter((thread) => !thread.archived));
+			this.refreshing = false;
 			if (this.showArchived) this.archived = snapshot.threads.filter((thread) => thread.archived);
 		} catch (error) {
 			if (this.#stopped) return;

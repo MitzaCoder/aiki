@@ -12,7 +12,8 @@ describe('family card presentation',()=>{
 		expect(familyCardLabel(model.details.get('T2')!,model)).toContain('Review, Review, Question / warning');
 		expect(familyCardLabel(model.details.get('T39')!,model)).toContain('Worker failed');
 		expect(familyCardLabel(model.details.get('T3')!,model)).toContain('Worker');
-		expect(familyCardLabel(model.details.get('T7')!,model)).toContain('Quiet');
+		expect(familyCardLabel(model.details.get('T7')!,model,Date.parse(FIXTURE_NOW))).toContain('quiet 3 d');
+		expect(familyCardLabel(model.details.get('T3')!,model)).toContain('Holds up 2 tasks');
 		expect(familyCardLabel(model.details.get('T1')!,model)).toContain('1 of 8 subtasks done');
 	});
 	it('counts descendants of each parent rather than copying whole-family progress',()=>{

@@ -1449,9 +1449,28 @@ the existing task sheet. The view choice stays local under `tasks.view.v2:`. No 
   geometry-derived minimum zoom prevents compact labels from colliding. Fit frames all family anchors with screen
   padding for labels, even when the card regions are tall. Click/Enter enters that family at cards level. Detail
   changes fade quickly; reduced motion is immediate.
-- Worker and non-main thread creatures attach to their task: up to three, then +N. Running creatures type/sway;
-  idle ones rest; failures have a mark. A changed nonempty report produces one bounded spark. Reduced motion removes
-  sway/typing/sparks without removing crew or status information. Card names expose all crew names/states.
+- Worker and non-main thread creatures attach to their task: up to three, then +N. A keyed world-space crew layer
+  preserves worker identity across cards: reassignment travels for 400ms; arrivals/finished or removed crew fade.
+  Running creatures type/sway; idle ones breathe/rest with a z; failures have a mark. A changed nonempty worker report
+  produces one bounded spark, never periodic traffic; the panel keeps the report line. Reduced motion removes travel,
+  sway/typing/sparks and card glow without removing information. Hidden tabs pause decoration and the display clock;
+  an intersection observer also pauses off-screen creatures. Card names expose all crew names/states.
+- Changes beside the summary opens a desktop popover or phone sheet. Successive board/worker/thread snapshots produce
+  at most 50 session-only entries: arrivals, status transitions/completions, task questions/warnings and their answers,
+  reports and crew lifecycle/reassignments. Like events within a fixed one-second window batch into one entry. Entries
+  have relative times and task focus links; the unseen-entry count clears on opening. First load, remount and reconnect
+  establish a baseline without invented history. Reconnect waits for authoritative board, worker and thread reads,
+  not a guessed delay. Selection, entries and their read state live in a backend/project-scoped in-memory store so
+  responsive sidebar remounts do not erase them. Reload starts a new graph session; this is not durable replay.
+- A changed card gets one 1.5-second glow in its status colour (a brief static Updated mark under reduced motion).
+  Done/dropped work remains faded for about 4.5 seconds with its status mark while Show closed is off; selection
+  retains it until dismissed. Removing it preserves the engine's named slot. A small off-screen-change chip reveals
+  changed tasks only when clicked; live updates never move the camera. Waiting cards show a short local until date,
+  with overdue only after that instant. Quiet age is spoken and shown in days in the panel. The panel counts direct
+  and indirect unfinished dependents with cycle/diamond defense; cards with two or more direct dependents say holds up N.
+- Live / Reconnecting / Offline with last-data time sits next to the summary; its tooltip gives update age in seconds.
+  One polite live region batches meaningful changes at most once per five seconds, never creature motion. Connection
+  freshness has its own quiet status. Unassigned questions remain available through the summary's List guidance.
 - One roving graph Tab stop supports spatial arrows, Enter to open, Space to select, Home to the family header and
   Escape to clear selection then return to families. Spoken card names include ID/title/status/reasons/quiet/progress/
   crew. Focus has a strong foreground outline separated by background. Instructions identify List as the complete path.
@@ -1466,7 +1485,9 @@ the existing task sheet. The view choice stays local under `tasks.view.v2:`. No 
 Implementation: `TaskGraph.svelte` owns chrome/model; `graph/GraphFamilyCanvas.svelte` owns layout/LOD/focus; small
 card/family/edge/creature components render content. `graph-family-camera.svelte.ts` owns only the viewport, and
 `task-graph-cards.ts` holds pure presentation/navigation helpers; `task-graph-family-dots.ts` holds world-anchor,
-label-density, minimum-zoom and dot-fit calculations. `task-graph-families*.ts` remains the geometry contract.
+label-density, minimum-zoom and dot-fit calculations. `task-graph-changes.ts` owns pure snapshots, baseline resets,
+change diffing/batching, announcement throttling, dates and dependency counts; `task-graph-session.svelte.ts` owns
+only the scoped session presentation state. `task-graph-families*.ts` remains the geometry contract.
 The isolated busy demo has 90 synthetic tasks, ten families and real worker/thread/report watches; no installed data,
 real worker tools, feature flag or prototype renderer is involved.
 

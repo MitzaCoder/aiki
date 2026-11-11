@@ -121,6 +121,39 @@ zero check diagnostics and production build; Android 811 JVM tests / 107 suites 
 debug assembly and lint (40 warnings, one hint, zero errors). Android builds use an explicit empty private-properties
 file. Public denylist/generic guard and Gitleaks pass. Main stayed untouched.
 
+## Live graph changes and crew activity (T109 / stage 3)
+
+The graph has a bounded session-only Changes popover/phone sheet with unseen-entry counts, fixed one-second burst
+batching and task focus links. Pure `task-graph-changes.ts` copies watched fields before diffing board/worker/thread
+snapshots; it also owns explicit baseline reset, announcement throttling, waiting/quiet dates and dependency counts.
+`task-graph-session.svelte.ts` keeps selection, history/read state and short-lived emphasis by backend/project scope.
+Responsive sidebar remounts preserve selection and the list; reload deliberately starts a new session. Board, workers
+and threads expose `refreshing` fences so reconnect waits for all authoritative lists, not a hydration timeout.
+
+A keyed `GraphCrewLayer` preserves identity across cards for 400ms reassignment travel and arrival/departure fades.
+Existing busy/resting/failed art remains; actual changed nonempty reports alone spark and still appear in the panel.
+Changed cards glow once for 1.5s; reduced motion uses a static Updated mark without travel/sparks/glow. Completed or
+dropped cards stay faded about 4.5s, or until deselected, before leaving their reserved slots. Off-screen changes have
+an explicit reveal chip; watches never pan the camera. Waiting cards have local dates; quiet age is spoken in days;
+the panel counts direct/indirect unfinished dependents, with holds up N on cards for two or more direct dependents.
+Freshness sits beside the summary. A single polite change region is throttled to five seconds. Hidden tabs pause
+art and display-clock work; off-screen crew also pause. No graph task writes, durable replay or protocol changes.
+
+Real Chromium proof: desktop 1440×1000 and phone 390×844 light/dark before/after with the change list open, a 15-second
+recording, and a reduced-motion shot with computed-style checks. Browser assertions retained all 80 card transforms
+and the camera through report/status watches, kept existing slots through arrival, observed completion departure,
+preserved selection/list across both responsive breakpoints, and kept exactly eight entries across a reconnect even
+with real offline changes. No browser errors. CDP offline does not close existing sockets: close only the synthetic
+backend socket by port (not Vite's socket, which reloads the page). Global reduced-motion CSS uses a tiny nonzero
+transition duration; test transition-property:none rather than equality to 0s. Ignored scripts/recipe in `.preview/s3*`
+use busy demo controls, Vite 5198 and CDP 9398. Demo adds complete/fail/question/answer/offscreen/batch-review/arrival
+controls, all through the isolated test setup. No live data, hardware screen-reader certification, push or deployment.
+
+Checks: root 2,175 tests / 80,717 assertions; web 957 tests / 69,972 assertions. Web check zero errors/warnings;
+web production build, root typecheck and public-source/Gitleaks pass. An initial full run caught the old Quiet-only
+label expectation; it now checks the deterministic fixture's quiet 3 d age. The corrected full run passed without
+flaky retries. See the task artifacts for proof and the exact local browser recipe. Existing notes below are history.
+
 ## Crew readability polish (T108)
 
 Crew bodies now measure about 25px at default cards zoom, using a tighter SVG frame and shorter antenna. Their

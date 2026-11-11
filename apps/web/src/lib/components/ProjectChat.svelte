@@ -1104,6 +1104,7 @@
 								connection={backend.connection}
 								workers={workerList}
 								graphWorkers={workers?.allWorkers ?? []}
+								snapshotsReady={!!board && !board.refreshing && !!workers && !workers.refreshing && !!threads && !threads.refreshing}
 								scope={`${backend.id}:${projectId}`}
 								threads={threadList}
 								workerHref={(worker) => workerLink(worker)}

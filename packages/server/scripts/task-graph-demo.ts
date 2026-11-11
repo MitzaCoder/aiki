@@ -84,15 +84,28 @@ const controls=Bun.serve({port:0,hostname:'127.0.0.1',async fetch(request){
 		await runtime.harness.commit(async tx=>{const doc=await tx.doc(BoardDoc,runtime.conversation.id);const task=doc.tasks.find(t=>t.id==='T3')!;task.status='review';task.updatedAt=new Date().toISOString();},BACKGROUND_CONTEXT);
 		return new Response('review');
 	}
+	if(path==='/complete' || path==='/offscreen' || path==='/reviews' || path==='/question' || path==='/answer') {
+		await runtime.harness.commit(async tx=>{
+			const doc=await tx.doc(BoardDoc,runtime.conversation.id);const now=new Date().toISOString();
+			if(path==='/question')doc.questions.push({id:`Q${++doc.counters.question}`,revision:1,kind:'warning',text:'Check the sample carrying case.',options:[],taskId:'T3',status:'open',answer:null,askedAt:now,answeredAt:null,threadId:'main'});
+			else if(path==='/answer'){const q=doc.questions.find(q=>q.taskId==='T3'&&q.status==='open');if(q){q.status='answered';q.answer='Checked';q.answeredAt=now;}}
+			else for(const id of path==='/complete'?['T4']:path==='/offscreen'?['T84','T85']:['T3','T12','T21']){const task=doc.tasks.find(t=>t.id===id);if(task){task.status=path==='/complete'?'done':'review';task.updatedAt=now;}}
+		},BACKGROUND_CONTEXT);
+		return new Response('board changed');
+	}
+	if(path==='/fail' || path==='/worker-arrive') {
+		await runtime.harness.commit(async tx=>{const doc=await tx.doc(WorkersDoc,runtime.conversation.id);if(path==='/fail'){doc.workers.pip!.status='failed';doc.workers.pip!.failure='Synthetic sample check failed.';}else doc.workers['new-sprout']=workerFixture('new-sprout','T3','running');},BACKGROUND_CONTEXT);
+		return new Response('worker changed');
+	}
 	if(path==='/report') {
 		await runtime.harness.commit(async tx=>{const doc=await tx.doc(WorkersDoc,runtime.conversation.id);doc.workers.pip!.lastReport=`Checked the lens, sample ${++sequence}.`;doc.workers.pip!.updatedAt=new Date().toISOString();},BACKGROUND_CONTEXT);
 		return new Response('reported');
 	}
-	if(path==='/move' || path==='/rest' || path==='/finish') {
+	if(path==='/move' || path==='/move-near' || path==='/rest' || path==='/finish') {
 		await runtime.harness.commit(async tx=>{
 			const doc=await tx.doc(WorkersDoc,runtime.conversation.id);
 			const worker=doc.workers[path==='/finish'?(busy?'moss':'dot'):'pip']!;
-			if(path==='/move')worker.taskId='T8';
+			if(path==='/move'||path==='/move-near')worker.taskId=path==='/move-near'?'T4':'T8';
 			else worker.status=path==='/rest'?'idle':'done';
 			worker.updatedAt=new Date().toISOString();
 		},BACKGROUND_CONTEXT);

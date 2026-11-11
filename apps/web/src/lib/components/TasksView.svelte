@@ -20,6 +20,7 @@
 		connection,
 		workers = [],
 		graphWorkers = workers,
+		snapshotsReady = true,
 		scope,
 		threads = [],
 		workerHref,
@@ -31,6 +32,7 @@
 		connection?: ClientState;
 		workers?: readonly WorkerSummary[];
 		graphWorkers?: readonly WorkerSummary[];
+		snapshotsReady?: boolean;
 		scope: string;
 		threads?: readonly ThreadSummary[];
 		workerHref?: (worker: WorkerSummary) => string;
@@ -68,7 +70,7 @@
 {#if tasksView.mode === 'board'}
 	<TaskBoard {board} {workers} {threads} {workerHref} {taskHref} {canNote} {onsendreason} {viewSwitch} />
 {:else if tasksView.mode === 'graph'}
-	{#key scope}<TaskGraph {board} {connection} {scope} workers={graphWorkers} {threads} {taskHref} {viewSwitch} />{/key}
+	{#key scope}<TaskGraph {board} {connection} {snapshotsReady} {scope} workers={graphWorkers} {threads} {taskHref} {viewSwitch} />{/key}
 {:else}
 	<TasksPanel {board} {threads} {workers} {workerHref} {taskHref} toolbarStart={viewSwitch} />
 {/if}

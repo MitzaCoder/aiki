@@ -39,6 +39,11 @@ export class ProjectBoard {
 	archived = $state<BoardTask[]>([]);
 	showArchived = $state(false);
 	loaded = $state(false);
+	/** True until this connection's authoritative list has arrived. Cached rows remain readable. */
+	refreshing = $state(true);
+	/** Successful reconnect reads fence graph change baselines from stale cached boards. */
+	readyVersion = $state(0);
+	receivedAt = $state(0);
 	error = $state<string | undefined>(undefined);
 
 	/** Live tasks and, when asked for, the archived ones. */
@@ -66,6 +71,7 @@ export class ProjectBoard {
 		// A reconnect loses the pushes sent while away, so ask for the board again.
 		this.#unsubscribeState = client.subscribe((state) => {
 			if (state.status === "ready") void this.load();
+			else this.refreshing = true;
 		});
 		if (client.connected) void this.load();
 	}
@@ -76,6 +82,8 @@ export class ProjectBoard {
 			const board = await this.#client.readBoard(this.projectId, { includeArchived: this.showArchived });
 			if (this.#stopped) return;
 			this.#apply(board);
+			this.refreshing = false;
+			this.readyVersion++;
 			if (this.showArchived) this.archived = board.tasks.filter((task) => task.archived);
 		} catch (error) {
 			if (this.#stopped) return;
@@ -193,6 +201,7 @@ export class ProjectBoard {
 	}
 
 	#apply(board: Board): void {
+		this.receivedAt = Date.now();
 		this.board = { ...board, tasks: board.tasks.filter((task) => !task.archived) };
 		this.loaded = true;
 		this.error = undefined;

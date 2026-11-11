@@ -1,3 +1,4 @@
+import { quietGraphAge, graphHoldsUp, graphWaitingDate } from './task-graph-changes.ts';
 import type { GraphModel, GraphTaskDetails } from './task-graph-model.ts';
 import { GRAPH_REASONS, GRAPH_STATUSES } from './task-graph-model.ts';
 import type { FamilyBox, FamilyCamera, FamilyEdge, TaskFamilyLayout } from './task-graph-families.ts';
@@ -29,9 +30,12 @@ export function familySummary(model: GraphModel, familyId: string) {
 	};
 }
 
-export function familyCardLabel(details: GraphTaskDetails, model: GraphModel): string {
+export function familyCardLabel(details: GraphTaskDetails, model: GraphModel, now=Date.now()): string {
+	const holds=graphHoldsUp([...model.details.values()].map(d=>d.task),details.task.id);
 	return [details.task.id, details.task.title, GRAPH_STATUSES.find(s => s.key === details.task.status)!.label,
-		...details.reasons.map(reason => GRAPH_REASONS.find(r => r.key === reason)!.label), details.quiet ? 'Quiet' : '',
+		...details.reasons.map(reason => GRAPH_REASONS.find(r => r.key === reason)!.label), details.quiet ? quietGraphAge(details.task.updatedAt,now) : '',
+		details.task.status==='waiting'?graphWaitingDate(details.task.waiting?.until,now):'',
+		holds.direct?`Holds up ${holds.direct} tasks (${holds.total} including indirect)`:'',
 		cardProgress(details, model), ...details.workers.map(w => `Worker ${w.title}, ${w.status}`),
 		...details.threads.filter(t => !t.main && !t.archived).map(t => `Thread ${t.title}, ${t.status}`)].filter(Boolean).join(', ');
 }

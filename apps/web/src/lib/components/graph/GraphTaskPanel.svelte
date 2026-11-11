@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { GRAPH_REASONS, GRAPH_STATUSES, type GraphModel } from '#lib/task-graph-model.js';
+	import { quietGraphAge, graphHoldsUp, graphWaitingDate } from '#lib/task-graph-changes.js';
 	import { relativeTime } from '#lib/relative-time.js';
 	let { taskId, model, now, taskHref, onselect, onclose }: { taskId: string; model: GraphModel; now: number; taskHref: (id: string) => string; onselect: (id: string) => void; onclose: () => void } = $props();
 	const details = $derived(model.details.get(taskId));
 	let expanded = $state(false);
+	const holds=$derived(graphHoldsUp([...model.details.values()].map(d=>d.task),taskId));
 </script>
 <aside class="task-panel" class:expanded aria-label={`Selected task ${taskId}`}>
 	<header><strong>{taskId}</strong><div class="panel-actions"><button class="expand-sheet" aria-expanded={expanded} onclick={() => expanded = !expanded}>{expanded ? 'Peek' : 'Expand'}</button><button aria-label="Close task details" onclick={onclose}>×</button></div></header>
@@ -15,12 +17,12 @@
 		{#if details.reasons.length}<div class="reason-overview" aria-label="Needs you">{#each details.reasons as key}{@const reason = GRAPH_REASONS.find(r => r.key === key)!}<span><b style:color={reason.tone}>{reason.mark}</b> {reason.label}</span>{/each}</div>{/if}
 		<a class="open-task" href={taskHref(task.id)}>Open task ↗</a>
 		{#if details.reasons.length}<h4>Needs you</h4><ul>{#each details.reasons as key}{@const reason = GRAPH_REASONS.find(r => r.key === key)!}<li><b style:color={reason.tone}>{reason.mark}</b> {reason.label}
-			{#if key === 'waiting'}<p>{task.waiting?.note ?? 'Waiting, no note'} · {task.waiting?.until ? `until ${new Date(task.waiting.until).toLocaleString()}` : 'no date'}</p>{/if}
+			{#if key === 'waiting'}<p>{graphWaitingDate(task.waiting?.until,now)} · {task.waiting?.note ?? 'Waiting, no note'} · {task.waiting?.until ? `until ${new Date(task.waiting.until).toLocaleString()}` : 'no date'}</p>{/if}
 			{#if key === 'blocked'}<p>{task.blockedReason ?? (task.blockedBy.length ? 'Waiting on the tasks below.' : 'No blocker detail recorded.')}</p>{/if}
 			{#if key === 'question'}{#each details.questions as question}<p>{question.kind === 'warning' ? 'Warning' : 'Question'}: {question.text.slice(0, 240)}</p>{/each}{/if}
 			{#if key === 'failed'}{#each details.workers.filter(w => w.status === 'failed') as worker}<p>{worker.id}: {worker.failure ?? 'Worker failed; open the task for more.'}</p>{/each}{/if}
 		</li>{/each}</ul>{/if}
-		<p class="age">{details.quiet ? '◷ Quiet · ' : ''}Last update {relativeTime(task.updatedAt, now)}{details.quiet ? ' (48 h or more)' : ''}</p>
+		<p class="age">{details.quiet ? `◷ ${quietGraphAge(task.updatedAt,now)} · ` : ''}Last update {relativeTime(task.updatedAt, now)}{details.quiet ? ' (48 h or more)' : ''}</p>
 		<h4>Family</h4><button class="task-link" onclick={() => onselect(details.familyId)}>{details.familyTitle}</button><p>{details.progress}</p>
 		{#snippet taskList(title: string, ids: string[])}
 			<h4>{title} ({ids.length})</h4>
@@ -29,6 +31,7 @@
 		{@render taskList('Parent', task.parent ? [task.parent] : [])}
 		{@render taskList('Subtasks', details.children)}
 		{@render taskList('Blocked by', task.blockedBy)}
+		<p>Holds up {holds.direct} tasks ({holds.total} including indirect)</p>
 		{@render taskList('Blocks directly', details.blocks)}
 		<h4>Workers ({details.workers.length})</h4>
 		{#each details.workers as worker}<div class="crew"><strong>{worker.id} · {worker.status === 'running' ? 'Busy' : worker.status === 'idle' ? 'Resting' : worker.status}</strong><p>{worker.title}</p><p>{worker.lastReport?.split('\n').filter(Boolean).at(-1) ?? 'No report yet.'}</p></div>{/each}
