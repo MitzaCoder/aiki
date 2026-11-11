@@ -47,12 +47,15 @@ fun TasksView(
     val mode = tasksViewMode(settings.projectTasksView[context.backend.config.key]?.get(context.route.projectId) ?: settings.tasksView)
     val scope = rememberCoroutineScope()
     val switch: @Composable () -> Unit = { TasksViewSwitch(mode) { scope.launch { context.repository.setProjectTasksView(context.backend.config.key, context.route.projectId, it.stored) } } }
+    val connection by context.backend.client.state.collectAsStateWithLifecycle()
+    androidx.compose.runtime.CompositionLocalProvider(io.github.mitzacoder.aiki.features.tasks.LocalTaskActivityEnabled provides connection.supports("task-activity")) {
     when (mode) {
         TasksViewMode.Board -> TaskBoard(context, modifier, switch, looseQuestion, addTask)
         TasksViewMode.Graph -> io.github.mitzacoder.aiki.features.tasks.graph.TaskGraph(context, modifier, switch, onLeave = {
             scope.launch { context.repository.setProjectTasksView(context.backend.config.key, context.route.projectId, "list") }
         })
         TasksViewMode.List -> Column(modifier) { list(switch) }
+    }
     }
 }
 

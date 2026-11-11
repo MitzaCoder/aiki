@@ -91,6 +91,7 @@ fun TaskCard(
     val task = card.task
     val needsYou = card.waiting.isNotEmpty() && card.column != KanbanColumnId.Done
     val warned = card.waiting.any(::isWarning)
+    val activity = io.github.mitzacoder.aiki.features.tasks.taskActivity(task, io.github.mitzacoder.aiki.features.tasks.LocalTaskActivityEnabled.current)
     val gist = cardGist(card)
     val time = cardTime(card, now)
     val closed = card.column == KanbanColumnId.Done
@@ -131,7 +132,8 @@ fun TaskCard(
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (task.status == "waiting") Text(io.github.mitzacoder.aiki.features.tasks.waitingSummary(task), style = TextStyles.taskSm, color = colors.fgMuted)
+                if (activity != null && searchHit?.snippet.isNullOrEmpty()) io.github.mitzacoder.aiki.features.tasks.TaskActivityView(activity, maxLines = 2, inlineAge = true)
+                else if (task.status == "waiting") Text(io.github.mitzacoder.aiki.features.tasks.waitingSummary(task), style = TextStyles.taskSm, color = colors.fgMuted)
             else if (!searchHit?.snippet.isNullOrEmpty()) Text(searchHit!!.snippet, style = TextStyles.taskSm, color = colors.fgMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             else if (gist.isNotEmpty()) Text(gist, style = TextStyles.taskSm, color = colors.fgMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (needsYou && card.waiting.size > 1) Text("+${card.waiting.size - 1} more waiting", style = small, color = colors.fgSubtle)

@@ -1,5 +1,28 @@
 # Continue
 
+## T122 Android: automatic Now display
+
+Android gates automatic Now on both `task-activity` and `task.activity`. The Report Now row,
+list rows, board cards and Graph report detail show canonical plain text, a quiet kind-coloured
+dot and age. One shared minute flow ticks only the activity views; it never polls or writes to
+the backend. TalkBack gets text plus age; search uses text without ages. Legacy report rendering
+and historical snapshots stay unchanged. Existing family expansion controls remain available.
+List rows and board cards keep text and muted age inline in one naturally wrapping Text, avoiding
+an extra line per row. Refreshed light/dark after list shots replace the earlier taller list proof.
+
+Six new JVM tests cover feature/field gating, elapsed ages, bad/future timestamps, embedded
+“since”, all kind tones, canonical gists and populated legacy sections without writtenAt. The
+existing freshness formatter already omits a missing age while retaining events and stale reasons.
+Debug JVM checks pass (870 passed, two existing opt-in skips), assembly and lint pass (zero
+errors, 46 warnings, four hints); protocol generation and the public-source guard also pass.
+T122 has refreshed synthetic emulator before/after task-list and task-sheet screenshots in both
+themes plus a recording of legacy prose changing to automatic Now. Demo Results/Next are seeded
+through the board write_report path, with populated dates. The list covers working, question,
+review, failed and idle states; supplementary proof covers board cards and Graph report detail.
+The backend uses createSetup temporary data/config/project directories only; no real phone,
+production data, main movement, push or deployment is involved. The isolated emulator and demo
+backend were stopped by PID; Gradle daemons were stopped.
+
 ## T122 proof follow-up: populated sections with missing dates
 
 The demo assigned `report.next/results` directly on BoardDoc after saveTask had initialized freshness

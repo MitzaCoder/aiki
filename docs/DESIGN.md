@@ -1392,6 +1392,14 @@ no report gist). One shared minute timer updates only activity-line components, 
 search indexes. Unknown/not-started omit an age; state/delivery text already containing “since” does
 not get a duplicate suffix. Search indexes canonical activity text only. An explicit hello capability
 and the optional field are both required; missing either preserves the existing prose UI.
+Android displays this read-only line in the existing Report Now row, list rows, board cards and
+Graph's report detail. A small kind-coloured dot distinguishes failure (error), questions/waits
+(attention), work (active), review, and quiet states. List rows and board cards keep the age inline
+with the canonical text in one naturally wrapping Text, with a muted age span; report details
+retain the age below. Ages share one locally ticking minute clock and are included in TalkBack's description. Text already
+containing “since” does not receive another age. Search indexes canonical text, never rendered
+ages. Both the `task-activity` feature and the optional field are required; otherwise Android keeps
+its existing report rendering. Historical report snapshots are unchanged.
 
 A pure project-local reducer reads durable source records and board facts, first match wins:
 1. Unresolved worker/thread failure (reserved typed deploy-failure slot first).

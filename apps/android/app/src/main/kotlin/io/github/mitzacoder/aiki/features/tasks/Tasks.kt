@@ -212,8 +212,9 @@ fun taskSections(tasks: List<BoardTask>, questions: List<BoardQuestion>, include
 }
 
 /** What a row says under the title: the report line that matters for where the task stands. */
-fun rowGist(row: TaskRow): String {
+fun rowGist(row: TaskRow, activityEnabled: Boolean = false): String {
     val task = row.task
+    taskActivity(task, activityEnabled)?.let { return it.text }
     if (task.status == "waiting") return task.waiting?.note.orEmpty()
     val report = task.report
     if (row.section == TaskSectionId.NeedsYou) return markdownText(row.waiting.firstOrNull()?.text.orEmpty())

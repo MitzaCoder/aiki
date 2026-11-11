@@ -322,7 +322,7 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
                                             blockers.forEach { blocker -> TaskChip(blocker.id, onOpen = { context.openTask(blocker.id) }) }
                                         }
                                     }
-                                    ReportSectionView(task, now, ::writerName, connection.supports("task-freshness"), context)
+                                    ReportSectionView(task, now, ::writerName, connection.supports("task-freshness"), connection.supports("task-activity"), context)
                                 }
                             }
                             TaskSectionKind.Feedback -> {

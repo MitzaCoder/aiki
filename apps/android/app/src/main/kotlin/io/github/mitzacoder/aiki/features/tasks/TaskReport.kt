@@ -24,9 +24,10 @@ import io.github.mitzacoder.aiki.ui.theme.Text as TextStyles
 
 /** The report the agents keep current: next, now and results as Markdown, with when and who last wrote. */
 @Composable
-internal fun ReportSectionView(task: BoardTask, now: Long, writerName: (BoardWriter) -> String, freshnessEnabled: Boolean, context: ProjectScreenContext) {
+internal fun ReportSectionView(task: BoardTask, now: Long, writerName: (BoardWriter) -> String, freshnessEnabled: Boolean, activityEnabled: Boolean, context: ProjectScreenContext) {
     val colors = Jarvis.colors
     val report = task.report
+    val activity = taskActivity(task, activityEnabled)
     var marked by remember(task.id) { mutableStateOf(false) }
     var problem by remember(task.id) { mutableStateOf<String?>(null) }
     LaunchedEffect(marked) {
@@ -49,8 +50,8 @@ internal fun ReportSectionView(task: BoardTask, now: Long, writerName: (BoardWri
         headerAction = if (freshnessEnabled) { { ReportStaleAction(context, task.id, marked,
             onMarked = { problem = null; marked = true }, onError = { problem = it }) } } else null,
     ) {
-        if (hasReport(report) || showFreshness) TASK_SHEET_REPORT_SECTIONS.forEach { section ->
-            val text = report.section(section)
+        if (hasReport(report) || showFreshness || activity != null) TASK_SHEET_REPORT_SECTIONS.forEach { section ->
+            val text = if (section == ReportSection.Now) taskNowText(task, activityEnabled) else report.section(section)
             val freshness = if (!showFreshness) null else when (section) {
                 ReportSection.Results -> report.freshness?.results
                 ReportSection.Next -> report.freshness?.next
@@ -62,7 +63,8 @@ internal fun ReportSectionView(task: BoardTask, now: Long, writerName: (BoardWri
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(section.label.uppercase(), style = TaskType.heading, color = colors.accent2)
-                if (text.isNotBlank()) ReportMarkdown(text)
+                if (section == ReportSection.Now && activity != null) TaskActivityView(activity)
+                else if (text.isNotBlank()) ReportMarkdown(text)
                 if (emptyResults) Text("No results yet · work finished", style = TaskType.xs, color = colors.fgMuted)
                 freshness?.let { metadata ->
                     val age = reportSectionAge(metadata, now)

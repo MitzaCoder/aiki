@@ -66,7 +66,9 @@ internal fun GraphDetails(id: String, model: GraphModel, now: Long, onSelect: (S
                 thread.failure?.let { Text(it, color = colors.fg) }
             }
             GraphDetailHeading("Last report")
-            Text(d.task.report.now.ifBlank { "No report yet." }, color = colors.fg)
+            val activity = io.github.mitzacoder.aiki.features.tasks.taskActivity(d.task, io.github.mitzacoder.aiki.features.tasks.LocalTaskActivityEnabled.current)
+            if (activity != null) io.github.mitzacoder.aiki.features.tasks.TaskActivityView(activity)
+            else Text(d.task.report.now.ifBlank { "No report yet." }, color = colors.fg)
             if (d.task.report.results.isNotBlank()) Text(d.task.report.results, color = colors.fg)
             Button(onClick = onOpen, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Open task") }
         }

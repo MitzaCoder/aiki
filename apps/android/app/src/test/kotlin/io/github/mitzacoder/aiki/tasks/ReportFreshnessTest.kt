@@ -42,6 +42,14 @@ class ReportFreshnessTest {
         assertEquals("", reportSectionAge(section.copy(writtenAt = null, eventsSince = 0), now))
         assertEquals("written 2 h ago · 1 event since", reportSectionAge(section.copy(eventsSince = 1), now))
     }
+    @Test fun populatedLegacySectionsWithoutWrittenAtOmitOnlyTheAge() {
+        val legacy = report.copy(results = "Card view implemented", next = "Review the proof")
+        assertTrue(legacy.results.isNotBlank() && legacy.next.isNotBlank())
+        val undated = section.copy(writtenAt = null)
+        assertEquals("6 events since", reportSectionAge(undated, now))
+        assertEquals("needs update · Q121 answered", reportSectionStaleness(undated))
+        assertEquals("", reportSectionAge(undated.copy(eventsSince = 0), now))
+    }
     @Test fun reasonsOnlyAppearForStaleSections() {
         assertEquals("needs update · Q121 answered", reportSectionStaleness(section))
         assertEquals("needs update · Q121 answered; marked out of date", reportSectionStaleness(section.copy(reasons = listOf("Q121 answered", "marked out of date"))))

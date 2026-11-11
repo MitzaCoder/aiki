@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalContext
@@ -37,11 +38,13 @@ internal fun taskSearchState(context: ProjectScreenContext, tasks: List<BoardTas
     val state = remember(key) { projectSearches.getOrPut(key) { TaskSearchState(preferences.getString(key, "").orEmpty()) { preferences.edit().putString(key, it).apply() } } }
     val refs = LocalRefLinks.current
     val feedback = state.feedback.toMap()
-    val documents = remember(tasks, refs, feedback) { tasks.map { task ->
+    val connection by context.backend.client.state.collectAsStateWithLifecycle()
+    val activityEnabled = connection.supports("task-activity")
+    val documents = remember(tasks, refs, feedback, activityEnabled) { tasks.map { task ->
         TaskSearchDocument(task.id, task.title, task.refs.flatMap { ref ->
             val title = when (val status = refs?.status(ref)) { is RefStatusPull -> status.title; is RefStatusIssue -> status.title; is RefStatusJira -> status.title; else -> null }
             listOfNotNull(ref, title)
-        }, listOf(task.description, task.report.now, task.report.results, task.report.next, feedback[task.id]?.second.orEmpty()).joinToString("\n"), task.parent)
+        }, listOf(task.description, taskNowText(task, activityEnabled), task.report.results, task.report.next, feedback[task.id]?.second.orEmpty()).joinToString("\n"), task.parent)
     } }
     // A non-snapshot memoization cache, safe to recompute after an abandoned composition.
     // Documents exclude query; typing never updates or tokenizes the index.

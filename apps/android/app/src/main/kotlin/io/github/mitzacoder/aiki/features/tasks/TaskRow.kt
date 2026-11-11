@@ -39,7 +39,8 @@ internal fun TaskListRow(
     val searchHit = LocalTaskSearchHits.current[task.id]
     val needsYou = row.section == TaskSectionId.NeedsYou
     val warned = row.waiting.any(::isWarning)
-    val gist = rowGist(row)
+    val activity = taskActivity(task, LocalTaskActivityEnabled.current)
+    val gist = rowGist(row, LocalTaskActivityEnabled.current)
     val wash = when {
         needsYou && warned -> colors.warning.copy(alpha = .09f)
         needsYou -> colors.accent2.copy(alpha = .08f)
@@ -74,7 +75,11 @@ internal fun TaskListRow(
             }, style = TaskType.rowTitle, color = if (row.section == TaskSectionId.Closed) colors.fgMuted else colors.fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (!searchHit?.snippet.isNullOrEmpty()) Text(searchHit!!.snippet, style = TaskType.xs, color = colors.fgMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val summary = if (!searchHit?.snippet.isNullOrEmpty()) "" else if (task.status == "waiting") waitingSummary(task, now) else gist
-            if (linksEnabled) TaskFamilyMeta(family, nested, archived, summary, onToggle)
+            if (activity != null && searchHit?.snippet.isNullOrEmpty()) {
+                TaskActivityView(activity, maxLines = 2, inlineAge = true)
+                if (linksEnabled) TaskFamilyMeta(family, nested, archived, "", onToggle)
+            }
+            else if (linksEnabled) TaskFamilyMeta(family, nested, archived, summary, onToggle)
             else if (summary.isNotEmpty()) Text(
                 summary, style = if (task.status == "waiting") TaskType.xs else TextStyles.taskSm, color = colors.fgMuted,
                 maxLines = if (task.status == "waiting") Int.MAX_VALUE else 1, overflow = TextOverflow.Ellipsis,
