@@ -15,6 +15,8 @@
 	import BoardTaskEditor from '#lib/components/BoardTaskEditor.svelte';
 	import TaskCard from '#lib/components/TaskCard.svelte';
 	import TaskFilters from '#lib/components/TaskFilters.svelte';
+	import TaskSearchBox from './TaskSearchBox.svelte';
+	import { useTaskSearch } from '#lib/task-search.svelte.js';
 	import TaskMoveDialog from '#lib/components/TaskMoveDialog.svelte';
 	import TaskMoveMenu from '#lib/components/TaskMoveMenu.svelte';
 	import type { ProjectBoard } from '#lib/board.svelte.js';
@@ -105,7 +107,11 @@
 	});
 	const questions = $derived(board?.board?.questions ?? []);
 	/** The tasks the two filters let through; the "needs you" count and the To do order read every task. */
-	const shownTasks = $derived(applyTaskFilter(tasks, taskFilter.current));
+	const filtered = $derived(applyTaskFilter(tasks, taskFilter.current));
+	const search = useTaskSearch(() => tasks, () => board);
+	const searchHits = $derived(search.search(new Set(filtered.map(task => task.id))));
+	const searchHitById = $derived(new Map(searchHits.map(hit => [hit.id, hit])));
+	const shownTasks = $derived(search.query.trim() ? filtered.filter(task => searchHitById.has(task.id)) : filtered);
 	const canNarrow = $derived(tasks.some((task) => task.parent != null));
 	const columns = $derived(
 		kanbanColumns(
@@ -603,6 +609,8 @@
 				</button>
 			{/if}
 			<TaskFilters {canNarrow} />
+			<TaskSearchBox query={search.query} onchange={search.setQuery} />
+			{#if search.query.trim() && !searchHits.length}<p role="status">No tasks match your search.</p>{/if}
 			<span class="flex-1"></span>
 			{#if board !== undefined}
 				<Button
@@ -717,6 +725,7 @@
 							>
 								<TaskCard
 									{card}
+									searchHit={search.query.trim() ? searchHitById.get(card.task.id) : undefined}
 									tasks={board?.tasks ?? []}
 									archivedLinks={board?.archivedLinks}
 									{taskHref}

@@ -1,5 +1,13 @@
 # Continue
 
+## T114 integration on T113 (Q126)
+
+Rebased T114 onto T113 `pnyuzyvu` / `5ed27fea`, above T112 F20. Runtime files merge cleanly; the only conflict
+was the continuation introductions, all retained below. Q126 approves public push and main-bookmark deployment
+of the exact combined tree after full root/web/Android/public gates. No phone install, physical-device operation,
+manual deployment script or service restart is part of this integration. Prior T114 counts below describe its
+original isolated tree; combined gate results and the target hash are attached to T114.
+
 ## T113 integration on F20 (Q122)
 
 Rebased T113 onto F20 `vkxymkty` / `44f8dfaa`, preserving expanded-question answering and compact refs/keyboard-safe
@@ -7,6 +15,43 @@ replies. Runtime files merge cleanly; the only conflict was these continuation s
 Q122 approves the exact checked integration tree for public push and main-bookmark deployment. No phone install,
 physical-device operation or manual deployment script is part of this integration. Earlier test counts below are
 pre-integration evidence; the final combined gate log and outcome are attached to T113.
+
+## Combined task search (T114)
+
+Web and Android extend the existing task List/Board filters; no second list, graph changes or TaskSheet/header edits.
+List search is one ranked list with safe title-letter highlighting, body snippets, dimmed ancestor context, empty
+state, Escape/Clear and project/backend-scoped persisted queries. Existing top-level/linked/archive filters still
+apply. Search Show closed shares the recently-closed section choice. Board shares the query/matches/highlighting,
+but deliberately keeps its status columns and normal per-column order. Clearing search restores ordinary families.
+
+Own fuzzy + BM25 implementations were chosen over JS-only uFuzzy/MiniSearch so Kotlin has the same ranking,
+constants and shared fixture expectations without a second library's behavior. The scorer chooses the best
+subsequence, rewards starts/runs/early letters, and weights title above refs. Incremental BM25 indexes description,
+report now/results/next and feedback; last-word prefixes use AND semantics. Feedback is read asynchronously from
+existing timelines only for tasks with feedback, cached by timeline revision, not fetched per keystroke. Existing
+ref metadata supplies ref titles. DESIGN documents the exact disjoint score bands: exact 4, fuzzy 2–3, body 1–2.
+Shared JSON tests exercise scores, ranges, merge order, IDs/refs and family context in both languages; extra unit
+cases cover incremental updates/deletions, prefix boundaries, eligibility and cyclic parents.
+
+Synthetic 5,000-task warm Chromium engine benchmark (30 samples/query, ten queries) measured median 0.5–5.3 ms,
+worst query p95 6.3 ms and maximum 6.7 ms; initial indexing 114.3 ms. Most searches meet 5 ms, but the broad `tel`/
+`tele` prefixes do not consistently meet the requested sub-5 ms target. Android host-JVM unit benchmark measured
+median 2.50 ms, p95 5.65 ms, maximum 6.59 ms across 200 calls. These include scoring/merging/snippets/ranges, exclude
+UI rendering, and are not device CPU measurements. The synthetic board has repeated short titles, sparse PR refs,
+unique document words and no parent links; small shared fixtures separately verify family behavior.
+
+T114 artifacts hold desktop and phone-width web before/after in light/dark, Android emulator before/after, body
+snippet proof, actual web/emulator typing videos and web timing samples. Additional Board captures verify that
+switching views keeps the query; Android query also survived an APK update/relaunch. Proof uses only a createSetup
+throwaway backend with effective data/config/project paths printed, a headless Chromium session and an isolated
+emulator on a checked-free letter track. No physical phone, installed server data, push, main move or deployment.
+
+Checks pass: fresh Bun install; root 2,164 tests / 24,544 assertions and typecheck; web 946 tests / 13,799 assertions,
+zero check diagnostics and production build; Android 815 JVM tests / 108 suites / two opt-in skips / zero failures
+or errors, debug assembly and lint (42 warnings, zero errors). An initial lint error for a Unit-returning remember
+was fixed by making the non-snapshot index an explicit memoization cache; final Android gates pass. Public-source
+denylist/generic guard and Gitleaks pass. Benchmark/proof material is ignored workspace-local data, not source.
+Owned demo backend, web process and emulator were stopped by their recorded PIDs.
 
 ## Answer from expanded task questions (T112 / F20, awaiting review)
 

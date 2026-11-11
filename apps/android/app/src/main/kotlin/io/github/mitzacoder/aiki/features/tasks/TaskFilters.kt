@@ -13,26 +13,34 @@ import kotlinx.coroutines.launch
 
 /** Shared list/board filters. Top-level is per device; the linked task is per project's live board. */
 @Composable
-internal fun filteredTasks(context: ProjectScreenContext, tasks: List<BoardTask>): List<BoardTask> {
+internal fun filteredTasks(context: ProjectScreenContext, tasks: List<BoardTask>, includeSearch: Boolean = true): List<BoardTask> {
     val connection by context.backend.client.state.collectAsStateWithLifecycle()
     val settings by context.repository.settings.collectAsStateWithLifecycle()
     val focus by context.board.linkedTask.collectAsStateWithLifecycle()
-    return if (connection.supports(HarnessFeature.TASK_LINKS)) applyTaskFilter(tasks, settings.topLevelTasksOnly, focus) else tasks
+    val filtered = if (connection.supports(HarnessFeature.TASK_LINKS)) applyTaskFilter(tasks, settings.topLevelTasksOnly, focus) else tasks
+    val search = taskSearchState(context, tasks)
+    return if (includeSearch && search.query.isNotBlank()) {
+        val ids = search.index.search(search.query, filtered.map { it.id }.toSet()).map { it.id }.toSet()
+        filtered.filter { it.id in ids }
+    } else filtered
 }
 
 @Composable
 internal fun TaskFilters(context: ProjectScreenContext, tasks: List<BoardTask>) {
     val connection by context.backend.client.state.collectAsStateWithLifecycle()
-    if (!connection.supports(HarnessFeature.TASK_LINKS)) return
+    val search = taskSearchState(context, tasks)
     val settings by context.repository.settings.collectAsStateWithLifecycle()
     val focus by context.board.linkedTask.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        TaskSearchBox(search)
+        if (connection.supports(HarnessFeature.TASK_LINKS)) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (tasks.any { it.parent != null } || settings.topLevelTasksOnly) FilterChip(
             selected = settings.topLevelTasksOnly,
             onClick = { scope.launch { context.repository.setTopLevelTasksOnly(!settings.topLevelTasksOnly) } },
             label = { Text("Top-level only", style = TaskType.xs) },
         )
         focus?.let { id -> InputChip(selected = true, onClick = { context.board.showWithLinked(null) }, label = { Text("Linked to $id · Clear", style = TaskType.xs) }) }
+        }
     }
 }

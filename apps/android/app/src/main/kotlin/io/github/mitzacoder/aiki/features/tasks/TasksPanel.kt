@@ -72,7 +72,12 @@ fun TasksPanel(context: ProjectScreenContext, modifier: Modifier = Modifier, too
     }
     val loadedBoard = view.board
     val tasks = view.tasks
-    val sections = if (loadedBoard == null) emptyList() else taskSections(filteredTasks(context, tasks), view.questions, includeArchived = view.showArchived)
+    val sections = if (loadedBoard == null) emptyList() else taskSections(filteredTasks(context, tasks, includeSearch = false), view.questions, includeArchived = view.showArchived)
+    val search = taskSearchState(context, tasks)
+    val searching = search.query.isNotBlank()
+    val eligible = sections.flatMap { it.rows }.filter { !isSettled(it.task.status) || sectionExpansion[TaskSectionId.Closed.name] == true }.map { it.task.id }.toSet()
+    val searchHits = if (searching) search.index.search(search.query, eligible) else emptyList()
+    val searchRows = sections.flatMap { it.rows }.associateBy { it.task.id }
     val loose = if (loadedBoard == null) emptyList() else looseWaiting(loadedBoard.copy(tasks = tasks))
     val answered = view.questions.filter { it.status == "answered" }
     val decisions = loadedBoard?.decisions.orEmpty()
@@ -139,7 +144,25 @@ fun TasksPanel(context: ProjectScreenContext, modifier: Modifier = Modifier, too
                 }
             }
         }
-        sections.forEach { section ->
+        if (searching) item(key = "search-results") {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = sectionExpansion[TaskSectionId.Closed.name] == true, onCheckedChange = { sectionExpansion = sectionExpansion + (TaskSectionId.Closed.name to it) })
+                    Text("Show closed", style = TaskType.xs)
+                }
+                Text("${searchHits.count { !it.context }} matching tasks", style = TaskType.xs, color = colors.fgSubtle)
+                if (searchHits.isEmpty()) Text("No tasks match your search.", style = TaskType.xs, color = colors.fgMuted)
+                CompositionLocalProvider(LocalTaskSearchHits provides searchHits.associateBy { it.id }) {
+                    TaskGroup {
+                        searchHits.forEachIndexed { index, hit -> searchRows[hit.id]?.let { row ->
+                            if (index > 0) GroupHairline()
+                            TaskListRow(TaskFamily(row, emptyList(), false, true, 0), now, reducedMotion, connection.supports("task-links"), false, loadedBoard?.archivedLinks.orEmpty(), {}) { context.openTask(hit.id) }
+                        } }
+                    }
+                }
+            }
+        }
+        (if (searching) emptyList() else sections).forEach { section ->
             val open = sectionExpansion[section.id.name] ?: familySectionStartsOpen(section)
             val families = taskFamilies(section, expansion)
             item(key = "section-${section.id.name}") {

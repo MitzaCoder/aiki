@@ -1367,6 +1367,52 @@ animation is used; the existing reduced-motion setting also stops working-dot mo
 supply spoken labels and long-press tooltips instead of browser title tooltips. Explicit list filters and section
 folding remain user controls; attention sections start open. No protocol/backend change is needed.
 
+### Combined task search (T114)
+
+The existing List and Board filters now include one project/backend-scoped search field on web and Android.
+The list (including the narrow sidebar) switches from status groups to one relevance-ordered result list while
+searching. Board uses the same matches but retains its status columns and their normal sorting. Graph has its own
+search and is not involved. Empty queries restore the ordinary list, family disclosures and ordering.
+
+Both clients own the same small scorer and BM25 implementation, without a JS-only search dependency. Shared
+expectations in `packages/protocol/test-vectors/task-search.json` assert fuzzy scores, UTF-16 highlight ranges,
+exact IDs/refs, merged ordering and family context on TypeScript and Kotlin. Simple character lowercase preserves
+UTF-16 offsets; body tokens are Unicode letters/numbers. No stemming, accent removal or semantic expansion.
+
+**Ranking.** A whole trimmed query equal to `T112`/`112`, PR `#4316` or ticket `ABC-123` is an exact hit (case
+insensitive). PR and ticket keys are extracted from refs/labels, not arbitrary body occurrences. Title and ref
+labels/titles use a best-subsequence dynamic program: each letter earns 10, a word/camel-case start adds 8,
+consecutive letters add 6, and position `p` adds `2 / (p + 1)`. Whitespace in the fuzzy query is ignored. Title
+score has weight 1, refs 0.7; the strongest short-field score is `F`. Precomputed lowercase fields/boundaries and
+reused scratch arrays avoid retokenizing/reallocating per field on typing (web also visits only matching character
+positions). Best-path backtracking supplies title highlights; refs need scores only.
+
+Body BM25 indexes description, report now/results/next and feedback text. `k1 = 1.2`, `b = 0.75`,
+`idf = ln(1 + (N - df + 0.5) / (df + 0.5))`, and each term contributes
+`idf * tf * 2.2 / (tf + 1.2 * (0.25 + 0.75 * length / averageLength))`. All query words must match; only the
+last word expands to vocabulary prefixes, unless the query ends in whitespace. Prefix alternatives take their
+maximum contribution, not their sum. Words contribute additively to body score `B`. The merged score is:
+
+- exact: `4`;
+- fuzzy: `2 + F / (F + 40)`;
+- body-only: `1 + B / (B + 4)`.
+
+Thus body frequency never overtakes a short-field hit, nor fuzzy an exact identifier. Ties retain index insertion
+order. Updating the board compares document text, adjusts only changed/deleted postings and maintains document
+frequencies/length totals. The sorted vocabulary is refreshed after changes, never rebuilt for each keystroke.
+Feedback is absent from board DTOs: clients read timelines only for tasks with nonzero feedback counts and cache by
+timeline revision; reads run asynchronously with bounded concurrency, independently of the query. Failed reads retry
+on a later board update. Ref metadata enriches short fields when the existing ref-status watch supplies titles.
+
+**Context and controls.** Missing ancestor rows are inserted before their first matching descendant and dimmed;
+cycle guards prevent malformed families looping. Search does not fold away matching subtasks. Existing explicit
+top-level/linked filters and archived visibility remain authoritative, including for context ancestors. List
+“Show closed” reads/writes the existing recently-closed section expansion choice; closed tasks stay out until it is
+on. Board retains its existing Done/archived rules. Title letters are highlighted without HTML injection; body-only
+hits get a bounded one-line snippet. No matches has its own message. Escape and Clear empty the field. Queries persist
+per backend/project under web `aiki.task-search.v1:` keys and Android private `aiki.task-search.v1` preferences;
+no query, index or ranking is sent to the server. Changing search never alters tasks or their normal priority order.
+
 ### Animated task graph (T79)
 
 Bubble club is the chosen web graph: soft clusters and round worker creatures, without a look flag or alternate

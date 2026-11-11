@@ -1,5 +1,7 @@
 <script lang="ts">
 	import CardMarkdown from './markdown/CardMarkdown.svelte';
+	import TaskSearchBox from './TaskSearchBox.svelte';
+	import { useTaskSearch } from '#lib/task-search.svelte.js';
 	import { page } from '$app/state';
 	import TaskFamilyMeta from './TaskFamilyMeta.svelte';
 	import { familyExpansionKey, loadFamilyExpansion, needsFamilyAttention, saveFamilyExpansion, taskFamilies, type TaskFamily } from '#lib/task-families.js';
@@ -99,6 +101,14 @@
 	const tasks = $derived(board?.tasks ?? []);
 	/** The tasks the two filters let through; every other count reads the whole board. */
 	const shownTasks = $derived(applyTaskFilter(tasks, taskFilter.current));
+	const search = useTaskSearch(() => tasks, () => board);
+	const searching = $derived(search.query.trim().length > 0);
+	const searchHits = $derived(search.search(new Set(shownTasks.filter(task => (board?.showArchived || !task.archived) && (sectionOpen.closed === true || !['done', 'dropped'].includes(task.status))).map(task => task.id))));
+	const searchHitById = $derived(new Map(searchHits.map(hit => [hit.id, hit])));
+	const searchFamilies = $derived.by(() => {
+		const rows = new Map(sections.flatMap(section => section.rows.map(row => [row.task.id, row] as const)));
+		return searchHits.flatMap(hit => { const row = rows.get(hit.id); return row ? [{ row, children: [], canToggle: false, expanded: true, foldedCount: 0 } satisfies TaskFamily] : []; });
+	});
 	const canNarrow = $derived(tasks.some((task) => task.parent != null));
 	const sections = $derived(
 		board?.board === undefined
@@ -183,6 +193,7 @@
 			class="task-row {taskStatusToneClass(row.task.status)} group relative flex min-w-0 items-start gap-2.5 py-2.5 pr-2 pl-3"
 			class:task-row-warning={needsYou && warned}
 			class:task-row-question={needsYou && !warned}
+			class:search-context={searching && searchHitById.get(row.task.id)?.context}
 			data-task={row.task.id}
 		>
 			<span class="flex h-5 w-3.5 shrink-0 items-center justify-center" aria-hidden="true">
@@ -201,10 +212,11 @@
 					class="task-row-link line-clamp-2 text-[0.875rem] leading-5 font-medium break-words outline-none {row.section === 'closed'
 						? 'text-(--chat-fg-muted)'
 						: 'text-(--chat-fg)'}"
-					aria-label="Open {row.task.id}: {row.task.title}">{row.task.title}</a
+					aria-label="Open {row.task.id}: {row.task.title}">{#each row.task.title.split('') as letter, at}{#if searching && searchHitById.get(row.task.id)?.ranges.some(([start, end]) => at >= start && at < end)}<mark>{letter}</mark>{:else}{letter}{/if}{/each}</a
 				>
+				{#if searching && searchHitById.get(row.task.id)?.snippet}<p class="truncate text-xs text-(--chat-fg-muted)">{searchHitById.get(row.task.id)?.snippet}</p>{/if}
 				<TaskFamilyMeta task={row.task} {tasks} archivedLinks={board?.archivedLinks} nested={depth > 0} {taskHref} onopen={onopentask}
-					summary={row.task.status === 'waiting' ? waitingSummary(row.task) : gist}
+					summary={searching && searchHitById.get(row.task.id)?.snippet ? '' : row.task.status === 'waiting' ? waitingSummary(row.task) : gist}
 					canToggle={family.canToggle} expanded={family.expanded} foldedCount={family.foldedCount} ontoggle={() => toggleFamily(row.task.id)} />
 				{#if needsYou || refs.length > 0}
 					<span class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-[0.6875rem] leading-4 text-(--chat-fg-subtle)">
@@ -298,6 +310,15 @@
 					</Button>
 				</div>
 
+				<TaskSearchBox query={search.query} onchange={search.setQuery} />
+				{#if searching}
+					<label class="px-1 text-xs text-(--chat-fg-muted)"><input type="checkbox" checked={sectionOpen.closed === true} onchange={event => sectionOpen.closed = event.currentTarget.checked} /> Show closed</label>
+					<section aria-label="Search results" aria-live="polite">
+						<p class="mb-2 px-1 text-xs text-(--chat-fg-subtle)">{searchHits.filter(hit => !hit.context).length} matching tasks</p>
+						{#if searchFamilies.length}<ul class="task-group">{#each searchFamilies as family (family.row.task.id)}{@render taskRow(family)}{/each}</ul>{:else}<p class="px-1 text-sm text-(--chat-fg-muted)">No tasks match your search.</p>{/if}
+					</section>
+				{/if}
+
 				{#if !board.loaded}
 					<div class="flex flex-col gap-1.5" aria-hidden="true">
 						<div class="skeleton mx-1 h-3.5 w-24"></div>
@@ -328,7 +349,7 @@
 					</section>
 				{/if}
 
-				{#each familySections as entry (entry.section.id)}
+				{#each searching ? [] : familySections as entry (entry.section.id)}
 					{@const section = entry.section}
 					<section class="flex flex-col gap-1.5" data-section={section.id} aria-label={section.label}>
 						{#if section.collapsedByDefault}
@@ -432,6 +453,8 @@
 </div>
 
 <style>
+	.search-context { opacity: 0.5; }
+	mark { background: color-mix(in oklab, var(--accent-2) 22%, transparent); color: inherit; border-radius: 2px; }
 	.family-children { margin-left: 14px; border-left: 1px solid var(--chat-border); }
 	.family-depth-limit { margin-left: 0; }
 	/* A section's rows as one inset-grouped card, split by hairlines that start where the text does. */

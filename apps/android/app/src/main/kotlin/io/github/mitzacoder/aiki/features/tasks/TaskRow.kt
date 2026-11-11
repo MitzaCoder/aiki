@@ -7,6 +7,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -33,6 +36,7 @@ internal fun TaskListRow(
     val row = family.row
     val colors = Jarvis.colors
     val task = row.task
+    val searchHit = LocalTaskSearchHits.current[task.id]
     val needsYou = row.section == TaskSectionId.NeedsYou
     val warned = row.waiting.any(::isWarning)
     val gist = rowGist(row)
@@ -42,7 +46,7 @@ internal fun TaskListRow(
         else -> null
     }
     Row(
-        Modifier.fillMaxWidth()
+        Modifier.fillMaxWidth().alpha(if (searchHit?.context == true) .5f else 1f)
             .then(if (wash != null) Modifier.background(wash) else Modifier)
             .clickable(role = Role.Button, onClickLabel = "Open ${task.id}", onClick = onOpen)
             .semantics(mergeDescendants = true) {
@@ -64,8 +68,12 @@ internal fun TaskListRow(
             }
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(task.title, style = TaskType.rowTitle, color = if (row.section == TaskSectionId.Closed) colors.fgMuted else colors.fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            val summary = if (task.status == "waiting") waitingSummary(task, now) else gist
+            Text(buildAnnotatedString {
+                append(task.title)
+                searchHit?.ranges?.forEach { range -> addStyle(SpanStyle(background = colors.accent2.copy(alpha = .22f)), range.start, range.end) }
+            }, style = TaskType.rowTitle, color = if (row.section == TaskSectionId.Closed) colors.fgMuted else colors.fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (!searchHit?.snippet.isNullOrEmpty()) Text(searchHit!!.snippet, style = TaskType.xs, color = colors.fgMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val summary = if (!searchHit?.snippet.isNullOrEmpty()) "" else if (task.status == "waiting") waitingSummary(task, now) else gist
             if (linksEnabled) TaskFamilyMeta(family, nested, archived, summary, onToggle)
             else if (summary.isNotEmpty()) Text(
                 summary, style = if (task.status == "waiting") TaskType.xs else TextStyles.taskSm, color = colors.fgMuted,

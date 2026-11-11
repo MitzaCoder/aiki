@@ -34,7 +34,8 @@
 		onopentask,
 		menu,
 		ghost = false,
-		lifted = false
+		lifted = false,
+		searchHit
 	}: {
 		card: KanbanCard;
 		/** Every task on the board, to name what this one waits for. */
@@ -54,6 +55,7 @@
 		ghost?: boolean;
 		/** The card being dragged: its place stays, faded. */
 		lifted?: boolean;
+		searchHit?: import('#lib/task-search.js').TaskSearchHit;
 	} = $props();
 
 	const refLinks = useRefLinks();
@@ -80,6 +82,7 @@
 	class:task-card-dropped={task.status === 'dropped'}
 	class:task-card-ghost={ghost}
 	class:task-card-lifted={lifted}
+	class:search-context={searchHit?.context === true}
 	data-task={task.id}
 	aria-hidden={ghost ? 'true' : undefined}
 >
@@ -101,10 +104,11 @@
 			class="task-card-link line-clamp-3 pr-6 text-[0.875rem] leading-5 font-medium break-words outline-none {closed
 				? 'text-(--chat-fg-muted)'
 				: 'text-(--chat-fg)'}"
-			aria-label="Open {task.id}: {task.title}">{task.title}</a
+			aria-label="Open {task.id}: {task.title}">{#each task.title.split('') as letter, at}{#if searchHit?.ranges.some(([start, end]) => at >= start && at < end)}<mark>{letter}</mark>{:else}{letter}{/if}{/each}</a
 		>
 		{#if task.waiting}<p class="text-xs text-(--chat-fg-subtle)">{waitingSummary(task)}</p>{/if}
-{#if gist.length > 0 && task.status !== 'waiting'}
+{#if searchHit?.snippet}<p class="truncate text-xs text-(--chat-fg-muted)">{searchHit.snippet}</p>{/if}
+{#if !searchHit?.snippet && gist.length > 0 && task.status !== 'waiting'}
 			<p class="line-clamp-2 text-task-sm break-words text-(--chat-fg-muted)">{gist}</p>
 		{/if}
 		{#if needsYou && card.waiting.length > 1}
@@ -167,6 +171,8 @@
 </article>
 
 <style>
+	.search-context { opacity: 0.5; }
+	mark { background: color-mix(in oklab, var(--accent-2) 22%, transparent); color: inherit; }
 	.task-card {
 		border-color: color-mix(in oklab, var(--chat-border) 85%, transparent);
 		background: color-mix(in oklab, var(--chat-bg) 55%, var(--chat-surface));

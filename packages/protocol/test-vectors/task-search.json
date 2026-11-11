@@ -1,0 +1,230 @@
+{
+  "fuzzy": [
+    {
+      "text": "Fix Task Search",
+      "query": "fts",
+      "ranges": [
+        [
+          0,
+          1
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          9,
+          10
+        ]
+      ],
+      "score": 56.599999999999994
+    },
+    {
+      "text": "telescope",
+      "query": "tele",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ],
+      "score": 70.16666666666666
+    },
+    {
+      "text": "taskSearch",
+      "query": "ts",
+      "ranges": [
+        [
+          0,
+          1
+        ],
+        [
+          4,
+          5
+        ]
+      ],
+      "score": 38.4
+    },
+    {
+      "text": "banana",
+      "query": "bna",
+      "ranges": [
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          4
+        ]
+      ],
+      "score": 47.166666666666664
+    },
+    {
+      "text": "Search",
+      "query": "SEAR",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ],
+      "score": 70.16666666666666
+    },
+    {
+      "text": "no match",
+      "query": "xyz",
+      "ranges": null,
+      "score": null
+    },
+    {
+      "text": "anything",
+      "query": "",
+      "ranges": null,
+      "score": null
+    },
+    {
+      "text": "Café",
+      "query": "CAFÉ",
+      "ranges": [
+        [
+          0,
+          4
+        ]
+      ],
+      "score": 70.16666666666666
+    }
+  ],
+  "documents": [
+    {
+      "id": "T1",
+      "title": "Observatory family",
+      "refs": [],
+      "body": ""
+    },
+    {
+      "id": "T112",
+      "title": "Polish telescope lens",
+      "refs": [
+        "https://github.com/example/studio/pull/4316",
+        "Lens coating"
+      ],
+      "body": "",
+      "parent": "T1"
+    },
+    {
+      "id": "T3",
+      "title": "Tune telescope focus",
+      "refs": [
+        "https://tickets.example.com/browse/ABC-123"
+      ],
+      "body": "",
+      "parent": "T1"
+    },
+    {
+      "id": "T4",
+      "title": "Write field guide",
+      "refs": [],
+      "body": "Explain telescope calibration and chromatic aberration."
+    },
+    {
+      "id": "T5",
+      "title": "Pack the case",
+      "refs": [
+        "Telescope transport"
+      ],
+      "body": ""
+    },
+    {
+      "id": "T6",
+      "title": "Review colours",
+      "refs": [],
+      "body": "Chromatic chromatic aberration."
+    },
+    {
+      "id": "T7",
+      "title": "Release 112 examples",
+      "refs": [],
+      "body": ""
+    }
+  ],
+  "queries": [
+    {
+      "query": "t112",
+      "ids": [
+        "T1",
+        "T112"
+      ],
+      "contexts": [
+        "T1"
+      ]
+    },
+    {
+      "query": "112",
+      "ids": [
+        "T1",
+        "T112",
+        "T7"
+      ],
+      "contexts": [
+        "T1"
+      ]
+    },
+    {
+      "query": "#4316",
+      "ids": [
+        "T1",
+        "T112"
+      ],
+      "contexts": [
+        "T1"
+      ]
+    },
+    {
+      "query": "abc-123",
+      "ids": [
+        "T1",
+        "T3"
+      ],
+      "contexts": [
+        "T1"
+      ]
+    },
+    {
+      "query": "telescope",
+      "ids": [
+        "T1",
+        "T3",
+        "T112",
+        "T5",
+        "T4"
+      ],
+      "contexts": [
+        "T1"
+      ]
+    },
+    {
+      "query": "chromatic ab",
+      "ids": [
+        "T6",
+        "T4"
+      ],
+      "contexts": []
+    },
+    {
+      "query": "chromatic ab ",
+      "ids": [],
+      "contexts": []
+    },
+    {
+      "query": "xyz",
+      "ids": [],
+      "contexts": []
+    },
+    {
+      "query": "",
+      "ids": [],
+      "contexts": []
+    }
+  ]
+}

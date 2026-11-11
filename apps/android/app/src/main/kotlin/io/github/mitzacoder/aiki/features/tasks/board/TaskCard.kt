@@ -19,6 +19,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import io.github.mitzacoder.aiki.features.tasks.TaskSearchHit
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.mitzacoder.aiki.features.refs.RefChips
@@ -82,6 +85,7 @@ fun TaskCard(
     lifted: Boolean = false,
     pulse: Boolean = true,
     linksEnabled: Boolean = false,
+    searchHit: TaskSearchHit? = null,
 ) {
     val colors = Jarvis.colors
     val task = card.task
@@ -103,7 +107,7 @@ fun TaskCard(
     }
     Box(
         modifier
-            .alpha(if (lifted) .35f else if (dropped) .6f else 1f)
+            .alpha(if (lifted) .35f else if (searchHit?.context == true) .5f else if (dropped) .6f else 1f)
             .clip(cardShape)
             .background(background)
             .border(1.dp, border, cardShape)
@@ -119,7 +123,7 @@ fun TaskCard(
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    task.title,
+                    buildAnnotatedString { append(task.title); searchHit?.ranges?.forEach { addStyle(SpanStyle(background = colors.accent2.copy(alpha = .22f)), it.start, it.end) } },
                     Modifier.padding(end = if (menu != null) 28.dp else 0.dp),
                     style = textStyle(0.875f, 20f / 14f, weight = 500),
                     color = if (closed) colors.fgMuted else colors.fg,
@@ -128,6 +132,7 @@ fun TaskCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (task.status == "waiting") Text(io.github.mitzacoder.aiki.features.tasks.waitingSummary(task), style = TextStyles.taskSm, color = colors.fgMuted)
+            else if (!searchHit?.snippet.isNullOrEmpty()) Text(searchHit!!.snippet, style = TextStyles.taskSm, color = colors.fgMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             else if (gist.isNotEmpty()) Text(gist, style = TextStyles.taskSm, color = colors.fgMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (needsYou && card.waiting.size > 1) Text("+${card.waiting.size - 1} more waiting", style = small, color = colors.fgSubtle)
                 if (linksEnabled) TaskRelationChips(task)

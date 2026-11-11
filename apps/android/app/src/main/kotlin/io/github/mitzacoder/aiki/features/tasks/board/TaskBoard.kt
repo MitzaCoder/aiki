@@ -157,7 +157,10 @@ fun TaskBoard(
 
     fun withPending(tasks: List<BoardTask>) = if (pending.isEmpty()) tasks else tasks.map { task -> pending[task.id]?.let { task.copy(status = it) } ?: task }
     val tasks = withPending(view.tasks)
-    val visibleTasks = io.github.mitzacoder.aiki.features.tasks.filteredTasks(context, tasks)
+    val filtered = io.github.mitzacoder.aiki.features.tasks.filteredTasks(context, tasks, includeSearch = false)
+    val search = io.github.mitzacoder.aiki.features.tasks.taskSearchState(context, tasks)
+    val searchHits = if (search.query.isBlank()) emptyMap() else search.index.search(search.query, filtered.map { it.id }.toSet()).associateBy { it.id }
+    val visibleTasks = if (search.query.isBlank()) filtered else filtered.filter { it.id in searchHits }
     val questions = view.questions
     val columns = remember(visibleTasks, questions, view.showArchived, doneExpanded, onlyNeedsYou) {
         kanbanColumns(visibleTasks, questions, view.showArchived, if (doneExpanded) Int.MAX_VALUE else DONE_SHOWN, onlyNeedsYou)
@@ -343,6 +346,7 @@ fun TaskBoard(
         val hidden = glides.any { it.card.task.id == id }
         TaskCard(
             card, tasks, workers, threads, now,
+            searchHit = searchHits[id],
             linksEnabled = connection.supports(HarnessFeature.TASK_LINKS),
             modifier = itemModifier
                 .alpha(if (hidden) 0f else 1f)
@@ -406,6 +410,7 @@ fun TaskBoard(
                 }
             }
             io.github.mitzacoder.aiki.features.tasks.TaskFilters(context, view.tasks)
+            if (search.query.isNotBlank() && searchHits.isEmpty()) Text("No tasks match your search.", style = textStyle(0.8125f, 1.4f), color = colors.fgMuted)
             view.error?.let { error ->
                 Surface(Modifier.fillMaxWidth().padding(bottom = 8.dp), shape = RoundedCornerShape(10.dp), color = colors.danger.fade(10f), contentColor = colors.danger) {
                     Text(error, Modifier.padding(horizontal = 12.dp, vertical = 8.dp), style = textStyle(0.8125f, 1.4f))
