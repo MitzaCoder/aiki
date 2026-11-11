@@ -1,5 +1,29 @@
 # Continue
 
+## Readable expanded task questions (T112)
+
+Shared web `BoardQuestionCard` and Android `QuestionCard` now have a small expand icon, including warnings and
+pinned cards wherever those shared components appear. It opens a read-only dialog over the task/card. Inline
+Show more/less, suggested answers, free-text drafts, submission and conflict handling are unchanged. The dialog
+uses the existing safe rich-text renderer on the complete question source, not the compact folding component:
+18px/18sp body text, bounded responsive width/height, and a separate scrolling body. Web reuses Bits Dialog for
+focus trapping, keyboard activation, Escape and focus return; the scrolling region is keyboard-focusable. Android
+reuses Compose Dialog with a pane title, labelled Close, normal Back dismissal and a clipped scrolling viewport.
+
+T112 holds synthetic cramped-before/expanded-after screenshots for web desktop and Android phone, a narrow-web
+capture, full rich-text ending captures (including table/code), inline-control/draft evidence and actual browser
+and emulator interaction recordings. Browser assertions cover nested focus trapping in both directions, Escape
+returning focus to the trigger, bounded desktop/phone layouts, full source rendering and unsent-draft retention.
+Native assertions cover reaching the final sentence, Back/Close dismissal and unsent-draft retention. The proof
+used one temporary `createSetup` backend with effective data/config/agent paths printed and a retained `ViewClient`
+watch, a dedicated headless Chromium profile and an owned headless emulator. No physical phone or real data.
+
+Checks pass: fresh Bun install; root 2,136 tests / 24,467 assertions and typecheck; web 919 tests / 13,733 assertions,
+check with zero diagnostics and production build; Android 807 JVM tests / 106 suites / two opt-in skips / zero
+failures or errors, debug assembly and lint (41 warnings, zero errors); DTO generation check (337 DTOs / 91 requests);
+public-source guard and Gitleaks. Android builds used an explicit empty private-properties file. All owned demo
+processes and the emulator were stopped. No graph files, protocol, server behavior, push, main move or deployment.
+
 ## T97 review: final relay integration and quieter settings
 
 Rebased the full Android stack onto `wzpknwxq` (final relay deployment/admin stack). All continuation sections were

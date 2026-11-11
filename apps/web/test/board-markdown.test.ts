@@ -24,6 +24,21 @@ describe('board Markdown plain previews', () => {
 	test('cleans needs-you rows before the UI ellipsizes them', () => {
 		expect(rowGist({ section: 'needs_you', waiting: [{ text: '**Check:** `dry_run`' }], task: { status: 'todo' } } as Parameters<typeof rowGist>[0])).toBe('Check: dry_run');
 	});
+	test('question reader uses the shared modal and full rich text without changing inline answers', () => {
+		const card = readFileSync(new URL('../src/lib/components/BoardQuestionCard.svelte', import.meta.url), 'utf8');
+		const reader = card.slice(card.indexOf('<Dialog.Root>'), card.indexOf('</Dialog.Root>'));
+		expect(reader).toContain('<Dialog.Trigger>');
+		expect(reader).toContain('aria-label="Expand');
+		expect(reader).toContain('<Dialog.Title>');
+		expect(reader).toContain('max-h-[90dvh]');
+		expect(reader).toContain('overflow-y-auto');
+		expect(reader).toContain('<Markdown source={question.text} userMessage');
+		expect(reader).not.toContain('CardMarkdown');
+		expect(reader).not.toContain('source.slice');
+		expect(card).toContain('font-size: 1.125rem');
+		expect(card).toContain('aria-label={warning ? `Note for ${question.id}` : `Answer to ${question.id}`}');
+		expect(card).toContain('onclick={() => send(option)}');
+	});
 	test('all expanded board surfaces share the compact safe chat renderer', () => {
 		const component = (name: string) => readFileSync(new URL(`../src/lib/components/${name}.svelte`, import.meta.url), 'utf8');
 		for (const name of ['BoardQuestionCard', 'BoardPanel', 'TasksPanel', 'TaskSheet', 'chat/BoardCallCard']) expect(component(name)).toContain('CardMarkdown');

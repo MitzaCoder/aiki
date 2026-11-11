@@ -57,6 +57,7 @@ fun QuestionCard(
     var text by rememberSaveable(key) { mutableStateOf("") }
     var busy by remember(key) { mutableStateOf(false) }
     var problem by remember(key) { mutableStateOf<String?>(null) }
+    var readingExpanded by rememberSaveable(key) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val latest by rememberUpdatedState(question)
     fun send(answer: String) {
@@ -111,6 +112,9 @@ fun QuestionCard(
                 }
                 BoardMarkdown(question.text)
             }
+            IconButton(onClick = { readingExpanded = true }) {
+                LucideGlyph(ExpandQuestionIcon, size = 16.dp, contentDescription = "Expand ${if (warning) "warning" else "question"} ${question.id}")
+            }
         }
         if (!warning && question.options.isNotEmpty()) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -157,6 +161,7 @@ fun QuestionCard(
         }
         problem?.let { Text(it, style = TaskType.xs, color = colors.danger) }
     }
+    if (readingExpanded) QuestionReadingDialog(question, taskLabel, onDismiss = { readingExpanded = false })
 }
 
 /** The background thread that asked, as a small tinted label. */

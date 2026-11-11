@@ -1,5 +1,8 @@
 <script lang="ts">
 	import CardMarkdown from './markdown/CardMarkdown.svelte';
+	import Markdown from './markdown/Markdown.svelte';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import Maximize2Icon from '@lucide/svelte/icons/maximize-2';
 	import { markdownText } from '@aiki/protocol';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
@@ -105,6 +108,25 @@
 			</p>
 			<CardMarkdown source={question.text} />
 		</div>
+		<Dialog.Root>
+			<Dialog.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="ghost" size="icon-sm" class="shrink-0" aria-label="Expand {warning ? 'warning' : 'question'} {question.id}" title="Expand {warning ? 'warning' : 'question'}">
+						<Maximize2Icon class="size-4" aria-hidden="true" />
+					</Button>
+				{/snippet}
+			</Dialog.Trigger>
+			<Dialog.Content class="flex max-h-[90dvh] min-h-0 flex-col gap-4 sm:max-w-4xl" data-question-reading>
+				<Dialog.Header class="shrink-0 pr-8">
+					<Dialog.Title>{warning ? 'Warning' : 'Question'} {question.id}</Dialog.Title>
+					<Dialog.Description>{taskLabel ?? 'Read the full text. Close to answer on the card.'}</Dialog.Description>
+				</Dialog.Header>
+				<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard users need to scroll the full text.) -->
+				<div class="min-h-0 overflow-y-auto overscroll-contain px-1" tabindex="0" role="region" aria-label="Full text of {question.id}">
+					<Markdown source={question.text} userMessage class="question-reading-markdown" />
+				</div>
+			</Dialog.Content>
+		</Dialog.Root>
 	</div>
 
 	{#if !warning && question.options.length > 0}
@@ -153,6 +175,11 @@
 </div>
 
 <style>
+	:global(.md.question-reading-markdown) {
+		font-size: 1.125rem;
+		line-height: 1.7;
+	}
+
 	.asked-by {
 		color: var(--primary);
 		background: color-mix(in oklab, var(--primary) 12%, transparent);
