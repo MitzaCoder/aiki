@@ -562,6 +562,7 @@ data class ProjectsConfigureRequest(
     val `keepPromptCacheWarm`: Boolean? = null,
     val `promptCacheWarmHours`: Long? = null,
     val `uiProof`: String? = null,
+    val `integrationRef`: String? = null,
     val `links`: ProjectLinks? = null,
     val `archived`: Boolean? = null
 )
@@ -585,6 +586,7 @@ data class ProjectSummary(
     val `keepPromptCacheWarm`: Boolean? = null,
     val `promptCacheWarmHours`: Long? = null,
     val `uiProof`: String? = null,
+    val `integrationRef`: String? = null,
     val `links`: ProjectLinkSettings? = null,
     val `archived`: Boolean? = null,
     val `state`: String,

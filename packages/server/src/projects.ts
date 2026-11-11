@@ -44,6 +44,8 @@ export type Project = {
 	uiProof: UiProof;
 	/** Where ticket keys and PR numbers point, as the user set it; null: filled in automatically (`project-links.ts`). */
 	links: ProjectLinks | null;
+	/** auto (absent): main/master; null: disabled; otherwise a full Git ref. */
+	integrationRef?: string | null;
 	/** Archived: hidden from lists, schedules and event triggers paused, no notifications. Written only while true. */
 	archived?: true;
 };
@@ -63,6 +65,7 @@ export type ProjectChange = {
 	uiProof?: UiProof | null;
 	/** `null` goes back to filling them in automatically. */
 	links?: ProjectLinks | null;
+	integrationRef?: string | null;
 	/** `true` archives, `false` unarchives. */
 	archived?: boolean;
 };
@@ -136,6 +139,7 @@ function parseProject(value: unknown, id: string): Project | undefined {
 		promptCacheWarmHours: [1, 2, 4, 8].includes(record.promptCacheWarmHours as number) ? record.promptCacheWarmHours as 1 | 2 | 4 | 8 : 8,
 		uiProof: parseUiProof(record.uiProof),
 		links: cleanLinks(record.links),
+		integrationRef: typeof record.integrationRef === "string" || record.integrationRef === null ? record.integrationRef : "auto",
 		...(record.archived === true ? { archived: true as const } : {}),
 	};
 }
@@ -300,6 +304,9 @@ export class ProjectStore {
 	async update(id: string, change: ProjectChange): Promise<Project> {
 		return this.#write(async () => {
 			const project = await this.require(id);
+			if (typeof change.integrationRef === "string" && change.integrationRef !== "auto" && (!/^refs\/[A-Za-z0-9_./-]+$/.test(change.integrationRef) || change.integrationRef.includes(".."))) {
+				throw new ServerError("bad_request", "Integration ref must be auto, null, or a full Git ref");
+			}
 			const next: Project = {
 				...project,
 				name: change.name ?? project.name,
@@ -326,6 +333,7 @@ export class ProjectStore {
 						: (change.longPromptCache ?? DEFAULT_LONG_PROMPT_CACHE),
 				uiProof: change.uiProof === undefined ? project.uiProof : (change.uiProof ?? DEFAULT_UI_PROOF),
 				links: change.links === undefined ? project.links : cleanLinks(change.links),
+				integrationRef: change.integrationRef === undefined ? project.integrationRef : change.integrationRef,
 			};
 			if (change.archived !== undefined) {
 				if (change.archived) next.archived = true;

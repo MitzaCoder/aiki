@@ -92,6 +92,7 @@ import { ThreadService } from "./threads.ts";
 import { createToolCapExtension, DEFAULT_TOOL_CALL_CAP_MS } from "./tool-caps.ts";
 import { ToolCallDrain } from "./drain.ts";
 import { WorkerService } from "./workers.ts";
+import { TaskChangeObserver, TASK_CHANGES_FILE } from "./task-changes.ts";
 import { ProjectAttentionStore, boardAttention, workerAttention, threadAttention } from "./sidebar-attention.ts";
 import { readStoredAttention } from "./sidebar-attention-migration.ts";
 import type { ConversationIdentity, RequestLog } from "./request-log.ts";
@@ -157,6 +158,7 @@ type RuntimeEntry = {
 	/** Stops the worker-list watch of an open runtime. */
 	stopWorkersWatch?: () => Promise<void>;
 	stopBoardWatch?: () => Promise<void>;
+	stopTaskChanges?: () => Promise<void>;
 	/** Stops the background threads' watches of an open runtime. */
 	stopThreads?: () => Promise<void>;
 	/** Stops the extraction watch of an open runtime. */
@@ -265,6 +267,7 @@ function projectSummary(
 		keepPromptCacheWarm: project.keepPromptCacheWarm,
 		promptCacheWarmHours: project.promptCacheWarmHours,
 		uiProof: project.uiProof,
+		integrationRef: project.integrationRef ?? (project.integrationRef === null ? null : "auto"),
 		links,
 		state: state === "failed" ? "failed" : state === "open" ? "open" : "closed",
 		...(project.archived === true ? { archived: true } : {}),
@@ -1063,6 +1066,7 @@ export class ProjectManager {
 			await entry.stopWorkersWatch?.().catch(() => undefined);
 			await entry.stopBoardWatch?.().catch(() => undefined);
 			await entry.stopThreads?.().catch(() => undefined);
+			await entry.stopTaskChanges?.().catch(() => undefined);
 			await runtime.board.stop().catch(() => undefined);
 			await runtime.activity.stop().catch(() => undefined);
 			// Nothing runs once this process is done: the next process must not read a stale `working`.
@@ -1203,6 +1207,14 @@ export class ProjectManager {
 			wakeThread: (threadId) => threads.revive(threadId),
 			log: (message) => this.#log(`project ${project.id}: ${message}`),
 		});
+		const taskChanges = new TaskChangeObserver({
+			projectId: project.id, path: project.path,
+			file: join(this.store.projectDir(project.id), TASK_CHANGES_FILE),
+			integrationRef: () => entry.project.integrationRef,
+			taskIds: async () => (await board.state()).tasks.map(task => task.id),
+			onChangesLanded: fact => board.recordChangesLanded(fact),
+			log: message => this.#log(`project ${project.id}: ${message}`), now: () => this.#clock(),
+		});
 		const extraction = new MemoryExtractionService({
 			project: () => entry.project,
 			conversation,
@@ -1239,6 +1251,7 @@ export class ProjectManager {
 
 		const workers = new WorkerService({
 			project: () => entry.project,
+			taskChanges,
 			harness,
 			models: this.models,
 			coordinator: conversation,
@@ -1583,6 +1596,8 @@ export class ProjectManager {
 				this.#log(`project ${project.id}: board watch failed: ${errorMessage(error)}`);
 				return async () => undefined;
 			});
+		await taskChanges.start();
+		entry.stopTaskChanges = () => taskChanges.stop();
 		await threads.startWatches();
 		// Continue any run the last process left unfinished.
 		harness.resume();
@@ -1594,6 +1609,7 @@ export class ProjectManager {
 			current.state = end.kind === "failed" ? "failed" : "closed";
 			current.failure = end.kind === "failed" ? errorMessage(end.error) : undefined;
 			void (async () => {
+				await taskChanges.stop().catch(() => undefined);
 				await activity.stop().catch(() => undefined);
 				const closed = idleActivity(this.#activities.get(project.id) ?? DEFAULT_ACTIVITY);
 				this.#activities.set(project.id, closed);

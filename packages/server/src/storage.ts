@@ -195,14 +195,19 @@ export class ProjectStorage {
 	}
 
 	async #remove(candidate: Candidate): Promise<void> {
+		const worker = candidate.worker;
+		if (worker !== null) {
+			const record = (await this.#options.workers.state(BACKGROUND_CONTEXT, worker.conversationId)).workers[worker.workerId];
+			if (record) await this.#options.workers.recordWorkspaceChanges(candidate.path, record, candidate.threadId);
+		}
 		const repo = candidate.jjName === null ? undefined : await jjRoot(this.#options.projectPath());
 		if (repo !== undefined && candidate.jjName !== null) {
 			await removeJjWorkspace({ repo, name: candidate.jjName, path: candidate.path });
 		} else {
 			await rm(candidate.path, { recursive: true, force: true });
 		}
+		await this.#options.workers.workspaceRemoved(candidate.path);
 		this.#sizes.delete(candidate.path);
-		const worker = candidate.worker;
 		if (worker === null) return;
 		// The worker's record no longer points at a workspace; one that was only idle in a finished thread is forgotten.
 		await this.#options.workers.harness.commit(async (tx) => {

@@ -1284,6 +1284,53 @@ is where they talk.
   knows the number). The board tool's description and the coordinator prompt say so; nothing in the code limits a
   title's length.
 
+### Task changes and integration refs (T124)
+
+The backend observes repositories, not agent chat. `task-changes.json` beside `project.json` is an atomic,
+private, versioned project ledger, further scoped by canonical Git common-directory. It holds task/change
+attribution (`trailer`, `workspace`, `worker-declaration`, `manual`), optional thread/conversation/run,
+optional stable jj change ID and latest concrete hashes. A rewrite replaces hashes for that identity.
+Conflicting task sets produce diagnostics, never an automatic union; `declareChanges(..., "manual")`
+corrects attribution after verifying objects and board IDs. Structured worker declarations have the same
+verified internal API; no new prompt-heavy tool is added. No attribution is inferred from chat hashes.
+
+Portable trailers occupy the final message paragraph: repeat `Task: T1` or use `Tasks: T1, T2`.
+Keys/IDs are case-insensitive; IDs normalize to uppercase `T` plus a positive decimal number.
+Other Git trailers may coexist. Unknown project-board IDs are ignored with a diagnostic, not guessed.
+Squashes/merges must retain trailers. Task membership on a merge includes its newly reachable ancestors.
+
+`projects.configure.integrationRef` (feature `task-changes`) accepts `"auto"` (default: local main,
+then master), a full Git ref such as `refs/heads/integration`, or `null` to disable integration observation.
+Old clients keep working and preserve this setting when omitted. Missing repositories/refs do nothing.
+Attach and changing refs baseline without history backfill. Open projects poll every 10 seconds.
+Projects remain lazy across server restarts: previously attached projects catch up from their persisted
+tips when next opened, never by opening/resuming them solely for observation at startup.
+Disabled observation pauses the cursor; enabling the same ref catches up. No-ref gaps
+also retain the last tip. Ref deletion is not treated as a landing. Configured ref changes baseline anew.
+
+Git refs/objects supply reachability differences in both directions. Git-backed non-colocated jj workspaces
+also use their Git store. Stable jj IDs are optional metadata read only with `--ignore-working-copy`;
+observation never snapshots/imports a working copy. Removed ancestry is separate from conventional
+`This reverts commit <full hash>.` declarations, which retain ancestry and identify the undone change.
+Neither is a claim about pushed or deployed code. Non-Git-backed jj adapters, publication/tag observation
+and deploy feeds remain later work; remote refs may be explicitly selected but are not labelled as pushes.
+
+An isolated workspace captures its initial parent before the worker runs. Before forget (even if the
+workspace is kept) or storage cleanup, committed base→tip membership is recorded, excluding the current
+working-copy commit. Single-task workers get fallback provenance; retitled/reused, shared or multi-task
+work requires trailers. Missing historical bases never guess. Explicit invalid IDs cannot fall back.
+Bases live outside the checkout and have a private `.jj` marker to handle directory reuse; cleanup removes
+the cursor, not attributed changes. All worker provenance is durable before destructive cleanup.
+
+Each attributed ref move stores one structured fact: ID, repo/ref, previous/tip, task IDs, landed commits,
+unreachable commits, declared reversions and timestamp. An outbox retries after crashes. The observer's
+optional `onChangesLanded(fact: ChangesLanded): Promise<void> | void` defaults to no-op; consumers deduplicate
+`fact.id` (at-least-once). Runtime projects these facts into one existing `milestone` timeline row per task
+per advance, with hashes/subjects in detail, including archived/closed tasks without reopening. No new
+wire timeline fields: stage 3 can fold the durable structured facts into Delivery. Stage 1 should be wired
+at this callback to invalidate stale prose; this stage does not touch report rules or freshness reducers.
+No push notifications, publication or deploy outcomes are generated.
+
 ### Waiting tasks (D29, T42)
 
 - `waiting` means the work is finished but something outside the user's control, named by the user, remains

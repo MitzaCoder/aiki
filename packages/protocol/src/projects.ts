@@ -166,6 +166,8 @@ export const ProjectSummarySchema = Type.Object({
 	promptCacheWarmHours: Type.Optional(Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(4), Type.Literal(8)])),
 	/** Show UI changes (feature `ui-proof`). Absent on servers older than this field. */
 	uiProof: Type.Optional(UiProofSchema),
+	/** Feature task-changes: auto selects main/master; null disables observation. */
+	integrationRef: Type.Optional(Type.Union([Type.String(), Type.Null()])),
 	/** Where bare ticket keys and PR numbers point. Absent on servers older than this field. */
 	links: Type.Optional(ProjectLinkSettingsSchema),
 	/**
@@ -245,6 +247,9 @@ export const ProjectsConfigureRequestSchema = Type.Object({
 				'Show UI changes (feature ui-proof): whether agents prove visible UI work with screenshots or screenshots and videos; null restores the default ("screenshots-and-videos").',
 		}),
 	),
+	integrationRef: Type.Optional(Type.Union([Type.String({ pattern: "^(auto|refs/[A-Za-z0-9_./-]+)$" }), Type.Null()], {
+		description: 'Feature task-changes: "auto" selects main then master; full Git ref selects another; null turns observation off.',
+	})),
 	links: Type.Optional(
 		Type.Union([ProjectLinksSchema, Type.Null()], {
 			description: "Replaces where ticket keys and PR numbers point; null goes back to filling them in automatically.",
@@ -336,12 +341,13 @@ export const HARNESS_FEATURES = [
 	"device-auth-v1",
 	"device-pairing-v1",
 	"device-management-v1",
+	"task-changes",
 ] as const;
 export type HarnessFeature = (typeof HARNESS_FEATURES)[number];
 
 /** Missing hello.features is never evidence of device-auth support. */
 export const LEGACY_HARNESS_FEATURES = HARNESS_FEATURES.filter(
-	(feature) => feature !== "task-freshness" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
+	(feature) => feature !== "task-freshness" && feature !== "task-changes" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
 );
 
 export const HarnessFeatureSchema = Type.Union([
@@ -391,6 +397,7 @@ export const HarnessFeatureSchema = Type.Union([
 	Type.Literal("device-auth-v1"),
 	Type.Literal("device-pairing-v1"),
 	Type.Literal("device-management-v1"),
+	Type.Literal("task-changes"),
 ]);
 export type HarnessFeatureValue = Static<typeof HarnessFeatureSchema>;
 

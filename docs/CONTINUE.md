@@ -1,5 +1,40 @@
 # Continue
 
+## T124: task/change ledger and read-only integration observation
+
+Stage 4 backend implementation is in `task-changes.ts`; runtime attaches one observer per open project.
+Projects stay lazy across server restarts; persisted tips catch up when the project next opens, not by
+opening coordinators/resuming runs for observation at startup. The review fix removes startup
+reattachment and tests both closed/unchanged-ledger state after restart and catch-up on explicit reopen.
+Atomic private `task-changes.json` stores
+repository-scoped attribution, workspace bases, integration tips and structured durable/outbox facts.
+`integrationRef`: auto (main/master), full Git ref, or null (off). Repeated `Task: T1` and comma-separated
+`Tasks: T1, T2` trailers validate against the project's board. Stable jj IDs replace hashes on rewrite.
+Forget/storage cleanup records isolated single-task base→tip provenance before deleting workspaces;
+shared/reused/multi-task work requires explicit trailers. Git-only object/ref reads plus optional
+`jj --ignore-working-copy` metadata reads do not snapshot working copies.
+
+Integration seam: optional `onChangesLanded(fact: ChangesLanded): Promise<void> | void`, default no-op,
+at-least-once with durable `fact.id`. It includes landed/unreachable/reverted commit details and task IDs.
+Runtime currently calls `board.recordChangesLanded`: one legacy milestone/task/advance, idempotently.
+The coordinator must wire stage 1's fact/staleness entry point here after merging; stage 3 can consume
+structured ledger facts for Delivery. No report rules/stale reducer edits. No push/deploy claim or
+notification, no UI edits. Feature `task-changes` covers the optional integration-ref setting; Android
+DTOs regenerated. Publication/tag/deploy feeds and a non-Git-backed jj adapter are deferred. Internal
+verified declarations/manual corrections exist, but no new agent tool was added.
+
+Checks pass: root 2,229 tests and typecheck; web check (zero errors/warnings), 994 tests and production
+build; protocol generation/check (337 DTOs, 91 overloads); Android 819 JVM tests across 109 suites
+(two skipped, no failures/errors) and debug assembly; private public-source guard. Gradle daemons stopped.
+Sixteen new focused backend tests cover Git/jj trailers, rebase identity/hash replacement, squash/merge,
+force moves, revert, restart/outbox catch-up, no snapshot/unchanged jj operation, defaults/off/missing refs,
+legacy row dedupe and actual workspace cleanup. Initial root run exposed the expected new-process-site
+audit inventory; after explicitly auditing the scrubbed child environment and adding the site, the full
+rerun passed. That first attempt also exceeded its short command timeout. No known-flake failure remained.
+Review-fix checks: the task-changes suites plus server suite pass (41 tests, 246 assertions), and root
+typecheck passes. Only these requested checks were rerun after removing eager startup attachment.
+No push, main move or deployment.
+
 ## T121 Android: match web's quieter Report
 
 Moved “This looks out of date” into a speech-bubble alert icon at the Report header's right

@@ -1808,6 +1808,27 @@ export class BoardService {
 		});
 	}
 
+	/** Compatibility projection: one legacy milestone per task/ref advance; structured facts live in the change ledger. */
+	async recordChangesLanded(fact: import("./task-changes.ts").ChangesLanded): Promise<void> {
+		await this.#options.harness.commit(async tx => {
+			const state = await openBoard(tx, this.coordinator.id);
+			for (const taskId of fact.taskIds) {
+				const task = state.tasks.find(task => task.id === taskId);
+				if (!task) continue;
+				const history = await openTaskHistory(tx, this.coordinator.id, taskId);
+				if (history.events?.some(entry => entry.ref === fact.id)) continue;
+				const landed = fact.commits.filter(commit => commit.taskIds.includes(taskId));
+				const removed = fact.removed.filter(commit => commit.taskIds.includes(taskId));
+				const reverted = fact.reverted.filter(commit => commit.taskIds.includes(taskId));
+				const ref = fact.ref.replace(/^refs\/heads\//, "");
+				const label = [landed.length ? `${landed.length} change${landed.length === 1 ? "" : "s"} landed on ${ref}` : "",
+					removed.length ? `${removed.length} removed from ${ref}` : "", reverted.length ? `${reverted.length} reverted on ${ref}` : ""].filter(Boolean).join("; ");
+				addTimelineEvent(history, task, { at: fact.at, kind: "milestone", label, ref: fact.id, by: HARNESS_WRITER,
+					detail: [...landed.map(commit => `Landed ${commit.hash} ${commit.subject}`), ...removed.map(commit => `Removed ${commit.hash} ${commit.subject}`), ...reverted.map(commit => `Reverted ${commit.hash} ${commit.subject}`)].join("\n") }, fact.id);
+			}
+		}, BACKGROUND_CONTEXT);
+	}
+
 	/** Refuse a task the board does not have, archived ones included, with `unknown_task`. */
 	async requireTask(taskId: string): Promise<void> {
 		if (!(await this.state()).tasks.some((task) => task.id === taskId)) throw unknownTask(taskId);

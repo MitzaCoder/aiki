@@ -83,6 +83,7 @@ import {
 import { type CoordinatorPlace, Coordinators } from "./coordinators.ts";
 import { ServerError, errorMessage } from "./errors.ts";
 import { JjError, ensureJjWorkspace, jjRoot, removeJjWorkspace, workspacePath } from "./jj.ts";
+import type { TaskChangeObserver } from "./task-changes.ts";
 import {
 	type Notifier,
 	scheduleDoneNotification,
@@ -111,6 +112,8 @@ export type WorkerRecord = {
 	scheduleId?: string | null;
 	/** The board task the worker runs, when the coordinator named one; absent on workers started before the board. */
 	taskId?: string | null;
+	/** Retitled/reused workspaces require explicit trailers rather than single-task fallback. */
+	workspaceReused?: boolean;
 	spawnedByCallId: string | null;
 	createdAt: string;
 	updatedAt: string;
@@ -574,7 +577,7 @@ Stay responsive: the user is waiting on the other end of every turn, so answer q
 
 Work like this:
 1. Plan the change and decide how much can run at once.
-2. Delegate each independent piece with worker_spawn: a self-contained brief (goal, files, constraints, how to verify) and a title. Pick isolation per worker: "shared" for reading, searching and work that must touch the project checkout as it is; "workspace" when the worker needs its own jj workspace so its edits stay out of the project until you merge them. Workspace isolation needs a jj repository; if it fails, use "shared". Workers can do anything you can in a repository: commit, rebase, squash, rewrite history, push. Give that work to a worker like any other and say in the brief what to commit, how to split it and where it goes; do not do it yourself because you assume a worker cannot.
+2. Delegate each independent piece with worker_spawn: a self-contained brief (goal, files, constraints, how to verify) and a title. Pick isolation per worker: "shared" for reading, searching and work that must touch the project checkout as it is; "workspace" when the worker needs its own jj workspace so its edits stay out of the project until you merge them. Workspace isolation needs a jj repository; if it fails, use "shared". Workers can do anything you can in a repository: commit, rebase, squash, rewrite history, push. Add a \`Task: T…\` trailer to commit descriptions. Give that work to a worker like any other and say in the brief what to commit, how to split it and where it goes; do not do it yourself because you assume a worker cannot.
 3. Keep working or answer while workers run. Their reports arrive as messages starting with "[worker <id> reported]" or "[worker <id> failed: ...]". Only that report reaches you, never the worker's transcript.
 4. Review a report, then inspect the result yourself (jj log, jj diff, reading files). Merge an isolated worker's change by committing nothing in your own checkout but rebasing or squashing the worker's commit into it, for example \`jj squash --from <change> --into @\` to fold it into the working copy or \`jj rebase -s <change> -d @\` to keep it separate. A conflict is not yours to fight through: spawn a new worker with a brief that names the conflicting files and change IDs, and let it resolve them in its workspace.
 5. When a worker's work is merged and reported, release it with worker_forget (removes its workspace). Send more work to the same worker with worker_send while it lives: it remembers its earlier messages. When you hand it a new task, pass a new title too, so the worker list says what it does now. worker_stop aborts what it is doing and keeps it usable; worker_list shows every worker, its status, model, isolation and workspace.
@@ -663,6 +666,7 @@ export function workerInstructions(options: {
 	return `You are the worker "${id}" of the project "${project.name}", working on: ${title}
 
 ${workspace}
+Add a \`Task: T…\` trailer to commit descriptions.
 
 The coordinator sent you one brief. Do it, then answer with a report. Verification has diminishing returns: check what the brief asks for, then stop and report. You cannot start workers and nobody is waiting on your intermediate steps; do not ask questions you can answer yourself. If you are blocked, say what is missing.${task}
 
@@ -965,6 +969,8 @@ export type WorkerServiceOptions = {
 	coordinators?: Coordinators;
 	/** Directory for worker workspaces, inside the project's data directory and outside the repository. */
 	workspacesDir: string;
+	/** Records base/tip provenance before workspace cleanup. */
+	taskChanges?: Pick<TaskChangeObserver, "rememberWorkspace" | "recordWorkspace" | "forgetWorkspace">;
 	/**
 	 * Extensions a worker removes besides the worker tools: the coordinator's memory, compaction, history and schedule
 	 * tools, which workers never get. A function when one of them is built after this service (the schedule tools need
@@ -1706,6 +1712,7 @@ export class WorkerService {
 		await mkdir(place.workspacesDir, { recursive: true, mode: 0o700 });
 		try {
 			await ensureJjWorkspace({ repo, name: this.workspaceName(workerId, place), path });
+			await this.#options.taskChanges?.rememberWorkspace(path);
 		} catch (error) {
 			if (error instanceof JjError) throw new WorkerError(error.message);
 			throw error;
@@ -1713,11 +1720,23 @@ export class WorkerService {
 		return path;
 	}
 
+	async recordWorkspaceChanges(path: string, record: WorkerRecord, threadId: string): Promise<void> {
+		if (record.isolation !== "workspace") return;
+		await this.#options.taskChanges?.recordWorkspace(path, record.taskId && !record.workspaceReused ? [record.taskId] : [], {
+			threadId, conversationId: record.conversationId, ...(record.spawnedByCallId ? { runId: record.spawnedByCallId } : {}),
+		});
+	}
+
+	async workspaceRemoved(path: string): Promise<void> {
+		await this.#options.taskChanges?.forgetWorkspace(path);
+	}
+
 	async removeWorkspace(workerId: string, path: string, place: CoordinatorPlace = this.#mainPlace()): Promise<void> {
 		const repo = await jjRoot(this.project.path);
 		if (repo === undefined) throw new WorkerError(`Not a jj repository anymore: ${this.project.path}`);
 		try {
 			await removeJjWorkspace({ repo, name: this.workspaceName(workerId, place), path });
+			await this.workspaceRemoved(path);
 		} catch (error) {
 			if (error instanceof JjError) throw new WorkerError(error.message);
 			throw error;
@@ -2008,7 +2027,10 @@ function createWorkerExtension(service: WorkerService): Extension {
 						noteTaskFact(board, worker.taskId, { actor: "coordinator", kind: "worker_resume", reason: "worker resumed", at: new Date().toISOString() });
 					}
 					worker.status = "running";
-					if (args.title !== undefined) worker.title = args.title.slice(0, 120);
+					if (args.title !== undefined) {
+						if (worker.title !== args.title.slice(0, 120)) worker.workspaceReused = true;
+						worker.title = args.title.slice(0, 120);
+					}
 					worker.updatedAt = new Date().toISOString();
 				}
 				await tx.createTask(
@@ -2171,6 +2193,7 @@ function createWorkerExtension(service: WorkerService): Extension {
 
 			const remove = args.removeWorkspace !== false;
 			const path = record.workspacePath;
+			if (path !== null) await service.recordWorkspaceChanges(path, record, service.coordinators.placeOf(api.conversationId)?.threadId ?? "main");
 			await service.withReportAdmission(() => api.commit(async (tx) => {
 				const doc = await tx.doc(WorkersDoc, api.conversationId);
 				const inbox = await tx.doc(InboxDoc, record.conversationId as ConversationId);

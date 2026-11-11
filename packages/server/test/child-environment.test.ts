@@ -82,7 +82,7 @@ test("new host-process spawn sites require an environment audit", async () => {
 		expect(text).toContain("childEnvironment");
 	}
 	// Update only after reviewing every new site's explicit env. This is an inventory tripwire, not a parser.
-	expect(found).toEqual({ "artifacts.ts": 1, "host-commands.ts": 1, "jj.ts": 1, "memory.ts": 1, "terminals.ts": 2 });
+	expect(found).toEqual({ "artifacts.ts": 1, "host-commands.ts": 1, "jj.ts": 1, "memory.ts": 1, "task-changes.ts": 1, "terminals.ts": 2 });
 });
 
 test("one scrubber removes all current and future installation settings, retaining tooling", () => {
