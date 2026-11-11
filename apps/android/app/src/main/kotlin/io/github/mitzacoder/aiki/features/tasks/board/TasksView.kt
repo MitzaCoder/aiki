@@ -75,7 +75,7 @@ fun TasksViewSwitch(mode: TasksViewMode, onChange: (TasksViewMode) -> Unit) {
         Modifier.clip(RoundedCornerShape(10.dp)).background(colors.surface2.fade(70f)).padding(3.dp).semantics { contentDescription = "Show the tasks as" },
         horizontalArrangement = Arrangement.spacedBy(2.dp), verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        listOf(TasksViewMode.List to BoardGlyphs.List, TasksViewMode.Board to Lucide.Kanban, TasksViewMode.Graph to Lucide.Layers).forEach { (entry, icon) ->
+        listOf(TasksViewMode.List to BoardGlyphs.List, TasksViewMode.Board to Lucide.Kanban, TasksViewMode.Graph to Lucide.Network).forEach { (entry, icon) ->
             val selected = mode == entry
             val label = entry.name
             Row(

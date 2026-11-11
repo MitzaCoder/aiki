@@ -161,6 +161,49 @@ commit before authorized tagging. The publisher still reviews LGPL/relinking and
 Google/dependency terms; this work is not a legal certification.
 
 
+## Native graph canvas and live changes (T116)
+
+Rebased T115 onto the combined-search/web stack first; Android rebase gates passed (831 JVM tests, two skips).
+Graph now has a stable whole-project canvas beside the family reading view. The Kotlin layout mirrors the web engine:
+indented tree slots, two arrival reservations, retained hidden IDs/families, sticky reparent/overflow Regroup and
+collision-only displacement. Native geometry is larger for real system text; status, crew and reports are not inputs.
+Pan, pointer-anchored pinch, double-tap and 48dp Fit/+/- controls preserve world coordinates. Cards yield to readable
+one-line pills, then world-anchored family dots; asymmetric hysteresis and a touch-spacing minimum prevent tiny text
+and overlapping targets. Near-viewport nodes/crew alone compose. Solid/dotted/dashed-arrow/dash-dot routes preserve
+subtask/found-while/blocked-by/related meanings; nonparent routes are scoped to the selected family/task.
+
+The top is compact: counters under the view choice, icon search, network Graph icon, Show closed/overview/legend in
+overflow, shorter family header and a small connection state by Changes. Keyed creatures stand above cards, type/sway,
+breathe/rest with z, mark failure, travel on reassignment and fade on arrival/finish. A report produces one drawn spark.
+A changed card glows for 1.5s; closed work keeps a faded fill for 4.5s before hiding without releasing its named slot.
+Reduced motion/background lifecycle/obscuring phone dialogs stop decoration; Updated/report/status information stays.
+Changes keeps 50 session-only fixed-window batches, latest report lines, unseen count and task-focus links; off-screen
+changes reveal only by explicit tap. Back closes sheet, selection, canvas, then leaves family view. The board and
+panel stores now expose the socket generation of their completed reads, so reconnect baselines wait for board, workers
+and threads rather than a timer. Weak board-scoped bounded history survives responsive remounts; remounts reset baseline.
+
+`bun apps/android/scripts/graph-canvas-vectors.ts --check` compares shared synthetic layout and change vectors against
+the actual web engine. Fourteen new JVM tests cover exact geometry, named/reserved slots, no overlap, cycles/reparenting,
+frozen options, detail hysteresis, pointer/world anchoring, dot target spacing, change diff/batching/history bounds,
+reconnect baseline and Back stages. No protocol, backend or web source changed. The two internal read-generation tags
+are not wire fields and reuse shared reads. Board refresh includes the socket generation in its key, including fast
+reconnects that conflate the intervening non-ready state; generation tags are captured before each request, not at acceptance. No new dependency or production debug/injection hook was added.
+
+Checks pass: install; root 2,212 tests / 81,270 assertions, typecheck; both web-model vector checks; Android 845 tests
+in 111 suites, two opt-in skips, zero failures/errors; debug assembly and lint (43 warnings, four hints, zero errors).
+Builds use an explicit empty private-properties source. Public-source denylist/generic checks and Gitleaks pass.
+Web checks were not rerun for this Android/docs-only work. No flaky root retry. Native proof on T116 has light/dark
+cards/pills/dots, family-before/compact-after, Changes, a tablet canvas/side panel, 2.0 system text, reduced motion and
+stale data after backend closure. The final 24-second emulator recording uses real injected two-pointer MotionEvents:
+family to pills/dots, Fit, another family, report spark, reassignment, review glow, completion fading, arrival and Changes.
+The shell-only scratch gesture driver is outside the app/repository. No terminal/backend display is recorded.
+
+Proof used one scrubbed createSetup busy backend, an owned emulator only, native Settings to add its separate scratch
+address, and no physical phone or real task/provider data. Removing an adb reverse does not close its existing streams;
+that attempted reconnect probe stayed Live and is not claimed as a reconnect rehearsal. Baseline reset is unit-tested;
+actual backend closure separately proves stale data/connection state. No physical-device frame/battery measurement or
+full TalkBack session is claimed. Both backend and emulator are stopped, font scale restored, no push/deploy/main move.
+
 ## Android family graph, first part (T115)
 
 Based on web graph `qxxtnuzp`. Native Tasks now offers Graph beside List/Board, with backend/project-scoped view

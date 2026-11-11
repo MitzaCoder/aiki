@@ -27,6 +27,8 @@ internal class PanelData<T> {
     var value by mutableStateOf<T?>(null)
     var error by mutableStateOf<String?>(null)
     var loading by mutableStateOf(true)
+    /** Socket generation of the last completed authoritative read. */
+    var generation by mutableIntStateOf(-1)
     val refresh = Channel<Unit>(Channel.CONFLATED)
 }
 
@@ -49,9 +51,9 @@ internal fun <T> panelData(context: ProjectScreenContext, key: Any?, relevant: (
             latestPanelReads(
                 triggers = data.refresh.receiveAsFlow(),
                 ready = { client.state.value.status == ConnectionStatus.Ready },
-                read = { currentRead() },
+                read = { val generation = client.state.value.generation; currentRead() to generation },
                 loading = { data.loading = it },
-                accept = { data.value = it; data.error = null },
+                accept = { (value, generation) -> data.value = value; data.error = null; data.generation = generation },
                 failure = { data.error = panelError(it) },
             )
         }

@@ -82,8 +82,8 @@ class GraphModel(val details: Map<String, GraphTask>) {
         }.sortedWith(compareByDescending<GraphSearchResult> { it.score }.thenComparator { a, b -> graphCompareIds(a.taskId, b.taskId) })
     }
     /** Tree order bridges hidden ancestors, never drops cyclic components, and caps only visual indentation. */
-    fun families(showClosed: Boolean, selectedId: String? = null): List<GraphFamily> {
-        return counted.filter { showClosed || !graphClosed(it.task.status) || it.task.id == selectedId }.groupBy { it.familyId }.map { (familyId, cards) ->
+    fun families(showClosed: Boolean, selectedId: String? = null, retainedIds: Set<String> = emptySet()): List<GraphFamily> {
+        return counted.filter { showClosed || !graphClosed(it.task.status) || it.task.id == selectedId || it.task.id in retainedIds }.groupBy { it.familyId }.map { (familyId, cards) ->
             val visible = cards.map { it.task.id }.toSet()
             val parents = cards.associate { card ->
                 val seen = mutableSetOf(card.task.id)

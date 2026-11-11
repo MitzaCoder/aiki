@@ -18,6 +18,8 @@ data class BoardView(
     val showArchived: Boolean = false,
     /** The last failed read; cleared by the next good one. */
     val error: String? = null,
+    /** Socket generation of the last completed authoritative board read. */
+    val generation: Int = -1,
 ) {
     val loaded: Boolean get() = board != null
     /** Live tasks and, when asked for, the archived ones. */
@@ -75,7 +77,8 @@ class ProjectBoard(private val client: HarnessClient, val projectId: String, pri
         }
         // A reconnect loses the pushes sent while away, so read the board again.
         scope.launch {
-            client.state.map { it.status == ConnectionStatus.Ready && it.supports("board") }.distinctUntilChanged().collect { ready ->
+            // Generation is part of the key: a fast reconnect can conflate away the intervening non-ready state.
+            client.state.map { (it.status == ConnectionStatus.Ready && it.supports("board")) to it.generation }.distinctUntilChanged().collect { (ready, _) ->
                 if (ready) load()
             }
         }
@@ -84,12 +87,13 @@ class ProjectBoard(private val client: HarnessClient, val projectId: String, pri
     suspend fun load() {
         if (!client.supports("board") || client.state.value.status != ConnectionStatus.Ready) return
         val before = pushes
+        val generation = client.state.value.generation
         try {
             val board = client.request(BoardGetRequest(projectId = projectId, includeArchived = view.value.showArchived.takeIf { it })).board
             mutableView.update { current ->
                 val archived = if (current.showArchived) board.tasks.filter { it.archived } else current.archived
-                if (before != pushes) current.copy(archived = archived)
-                else current.copy(board = board.copy(tasks = board.tasks.filterNot { it.archived }), archived = archived, error = null)
+                if (before != pushes) current.copy(archived = archived, generation = generation)
+                else current.copy(board = board.copy(tasks = board.tasks.filterNot { it.archived }), archived = archived, error = null, generation = generation)
             }
         } catch (error: CancellationException) { throw error }
         catch (error: Exception) { mutableView.update { it.copy(error = error.message ?: "Could not read the board") } }

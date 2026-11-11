@@ -1,0 +1,5490 @@
+{
+  "layouts": [
+    {
+      "tasks": [
+        {
+          "id": "T1",
+          "parent": null,
+          "familyId": "T1",
+          "order": 0,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T2",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 1,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T3",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 2,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T4",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 3,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T5",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 4,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T6",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 5,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T7",
+          "parent": "T5",
+          "familyId": "T1",
+          "order": 6,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T8",
+          "parent": "T7",
+          "familyId": "T1",
+          "order": 7,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T9",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 8,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T10",
+          "parent": null,
+          "familyId": "T10",
+          "order": 9,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T11",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 10,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T12",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 11,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T13",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 12,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T14",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 13,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T15",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 14,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T16",
+          "parent": "T14",
+          "familyId": "T10",
+          "order": 15,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T17",
+          "parent": "T16",
+          "familyId": "T10",
+          "order": 16,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T18",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 17,
+          "createdAt": "2026-06-08T09:00:00Z"
+        }
+      ],
+      "cards": [
+        {
+          "id": "T1",
+          "familyId": "T1",
+          "parentId": null,
+          "depth": 0,
+          "box": {
+            "x": 24,
+            "y": 112,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 24,
+            "y": 80,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 24,
+            "y": 80,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 24,
+            "y": 80,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T2",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 352,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 320,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 320,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 166,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T3",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 592,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 560,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 560,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 252,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T4",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 832,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 800,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 800,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 338,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T5",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 1072,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 1040,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 1040,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 424,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T7",
+          "familyId": "T1",
+          "parentId": "T5",
+          "depth": 2,
+          "box": {
+            "x": 80,
+            "y": 1312,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 80,
+            "y": 1280,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 80,
+            "y": 1280,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 73.28,
+            "y": 510,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T8",
+          "familyId": "T1",
+          "parentId": "T7",
+          "depth": 3,
+          "box": {
+            "x": 108,
+            "y": 1552,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 108,
+            "y": 1520,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 108,
+            "y": 1520,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 97.92,
+            "y": 596,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T6",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 1792,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 1760,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 1760,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 682,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T9",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 2032,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 2000,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 2000,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 768,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T10",
+          "familyId": "T10",
+          "parentId": null,
+          "depth": 0,
+          "box": {
+            "x": 568,
+            "y": 112,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 568,
+            "y": 80,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 568,
+            "y": 80,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 568,
+            "y": 80,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T11",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 352,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 320,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 320,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 166,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T12",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 592,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 560,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 560,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 252,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T13",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 832,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 800,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 800,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 338,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T14",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 1072,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 1040,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 1040,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 424,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T16",
+          "familyId": "T10",
+          "parentId": "T14",
+          "depth": 2,
+          "box": {
+            "x": 624,
+            "y": 1312,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 624,
+            "y": 1280,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 624,
+            "y": 1280,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 617.28,
+            "y": 510,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T17",
+          "familyId": "T10",
+          "parentId": "T16",
+          "depth": 3,
+          "box": {
+            "x": 652,
+            "y": 1552,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 652,
+            "y": 1520,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 652,
+            "y": 1520,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 641.92,
+            "y": 596,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T15",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 1792,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 1760,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 1760,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 682,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T18",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 2032,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 2000,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 2000,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 768,
+            "width": 264,
+            "height": 72
+          }
+        }
+      ],
+      "families": [
+        {
+          "id": "T1",
+          "bounds": {
+            "x": 0,
+            "y": 0,
+            "width": 488,
+            "height": 2716
+          },
+          "header": {
+            "x": 0,
+            "y": 0,
+            "width": 488,
+            "height": 56
+          },
+          "slots": [
+            {
+              "taskId": "T1",
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 80
+            },
+            {
+              "taskId": "T2",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 320
+            },
+            {
+              "taskId": "T3",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 560
+            },
+            {
+              "taskId": "T4",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 800
+            },
+            {
+              "taskId": "T5",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 1040
+            },
+            {
+              "taskId": "T7",
+              "parentId": "T5",
+              "depth": 2,
+              "x": 80,
+              "y": 1280
+            },
+            {
+              "taskId": "T8",
+              "parentId": "T7",
+              "depth": 3,
+              "x": 108,
+              "y": 1520
+            },
+            {
+              "taskId": "T6",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 1760
+            },
+            {
+              "taskId": "T9",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 2000
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2240
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2480
+            }
+          ],
+          "taskIds": [
+            "T1",
+            "T2",
+            "T3",
+            "T4",
+            "T5",
+            "T7",
+            "T8",
+            "T6",
+            "T9"
+          ]
+        },
+        {
+          "id": "T10",
+          "bounds": {
+            "x": 544,
+            "y": 0,
+            "width": 488,
+            "height": 2716
+          },
+          "header": {
+            "x": 544,
+            "y": 0,
+            "width": 488,
+            "height": 56
+          },
+          "slots": [
+            {
+              "taskId": "T10",
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 80
+            },
+            {
+              "taskId": "T11",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 320
+            },
+            {
+              "taskId": "T12",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 560
+            },
+            {
+              "taskId": "T13",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 800
+            },
+            {
+              "taskId": "T14",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 1040
+            },
+            {
+              "taskId": "T16",
+              "parentId": "T14",
+              "depth": 2,
+              "x": 80,
+              "y": 1280
+            },
+            {
+              "taskId": "T17",
+              "parentId": "T16",
+              "depth": 3,
+              "x": 108,
+              "y": 1520
+            },
+            {
+              "taskId": "T15",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 1760
+            },
+            {
+              "taskId": "T18",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 2000
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2240
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2480
+            }
+          ],
+          "taskIds": [
+            "T10",
+            "T11",
+            "T12",
+            "T13",
+            "T14",
+            "T16",
+            "T17",
+            "T15",
+            "T18"
+          ]
+        }
+      ],
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1032,
+        "height": 2716
+      },
+      "needsRegroup": false,
+      "movedFamilyIds": []
+    },
+    {
+      "tasks": [
+        {
+          "id": "T1",
+          "parent": null,
+          "familyId": "T1",
+          "order": 0,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T2",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 1,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T4",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 3,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T5",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 4,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T6",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 5,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T7",
+          "parent": "T5",
+          "familyId": "T1",
+          "order": 6,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T8",
+          "parent": "T7",
+          "familyId": "T1",
+          "order": 7,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T9",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 8,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T10",
+          "parent": null,
+          "familyId": "T10",
+          "order": 9,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T11",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 10,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T12",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 11,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T13",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 12,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T14",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 13,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T15",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 14,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T16",
+          "parent": "T14",
+          "familyId": "T10",
+          "order": 15,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T17",
+          "parent": "T16",
+          "familyId": "T10",
+          "order": 16,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T18",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 17,
+          "createdAt": "2026-06-08T09:00:00Z"
+        }
+      ],
+      "cards": [
+        {
+          "id": "T1",
+          "familyId": "T1",
+          "parentId": null,
+          "depth": 0,
+          "box": {
+            "x": 24,
+            "y": 112,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 24,
+            "y": 80,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 24,
+            "y": 80,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 24,
+            "y": 80,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T2",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 352,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 320,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 320,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 166,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T4",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 832,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 800,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 800,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 338,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T5",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 1072,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 1040,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 1040,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 424,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T7",
+          "familyId": "T1",
+          "parentId": "T5",
+          "depth": 2,
+          "box": {
+            "x": 80,
+            "y": 1312,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 80,
+            "y": 1280,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 80,
+            "y": 1280,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 73.28,
+            "y": 510,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T8",
+          "familyId": "T1",
+          "parentId": "T7",
+          "depth": 3,
+          "box": {
+            "x": 108,
+            "y": 1552,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 108,
+            "y": 1520,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 108,
+            "y": 1520,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 97.92,
+            "y": 596,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T6",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 1792,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 1760,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 1760,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 682,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T9",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 2032,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 2000,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 2000,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 768,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T10",
+          "familyId": "T10",
+          "parentId": null,
+          "depth": 0,
+          "box": {
+            "x": 568,
+            "y": 112,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 568,
+            "y": 80,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 568,
+            "y": 80,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 568,
+            "y": 80,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T11",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 352,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 320,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 320,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 166,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T12",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 592,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 560,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 560,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 252,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T13",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 832,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 800,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 800,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 338,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T14",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 1072,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 1040,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 1040,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 424,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T16",
+          "familyId": "T10",
+          "parentId": "T14",
+          "depth": 2,
+          "box": {
+            "x": 624,
+            "y": 1312,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 624,
+            "y": 1280,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 624,
+            "y": 1280,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 617.28,
+            "y": 510,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T17",
+          "familyId": "T10",
+          "parentId": "T16",
+          "depth": 3,
+          "box": {
+            "x": 652,
+            "y": 1552,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 652,
+            "y": 1520,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 652,
+            "y": 1520,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 641.92,
+            "y": 596,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T15",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 1792,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 1760,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 1760,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 682,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T18",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 2032,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 2000,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 2000,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 768,
+            "width": 264,
+            "height": 72
+          }
+        }
+      ],
+      "families": [
+        {
+          "id": "T1",
+          "bounds": {
+            "x": 0,
+            "y": 0,
+            "width": 488,
+            "height": 2716
+          },
+          "header": {
+            "x": 0,
+            "y": 0,
+            "width": 488,
+            "height": 56
+          },
+          "slots": [
+            {
+              "taskId": "T1",
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 80
+            },
+            {
+              "taskId": "T2",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 320
+            },
+            {
+              "taskId": "T3",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 560
+            },
+            {
+              "taskId": "T4",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 800
+            },
+            {
+              "taskId": "T5",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 1040
+            },
+            {
+              "taskId": "T7",
+              "parentId": "T5",
+              "depth": 2,
+              "x": 80,
+              "y": 1280
+            },
+            {
+              "taskId": "T8",
+              "parentId": "T7",
+              "depth": 3,
+              "x": 108,
+              "y": 1520
+            },
+            {
+              "taskId": "T6",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 1760
+            },
+            {
+              "taskId": "T9",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 2000
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2240
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2480
+            }
+          ],
+          "taskIds": [
+            "T1",
+            "T2",
+            "T4",
+            "T5",
+            "T7",
+            "T8",
+            "T6",
+            "T9"
+          ]
+        },
+        {
+          "id": "T10",
+          "bounds": {
+            "x": 544,
+            "y": 0,
+            "width": 488,
+            "height": 2716
+          },
+          "header": {
+            "x": 544,
+            "y": 0,
+            "width": 488,
+            "height": 56
+          },
+          "slots": [
+            {
+              "taskId": "T10",
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 80
+            },
+            {
+              "taskId": "T11",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 320
+            },
+            {
+              "taskId": "T12",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 560
+            },
+            {
+              "taskId": "T13",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 800
+            },
+            {
+              "taskId": "T14",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 1040
+            },
+            {
+              "taskId": "T16",
+              "parentId": "T14",
+              "depth": 2,
+              "x": 80,
+              "y": 1280
+            },
+            {
+              "taskId": "T17",
+              "parentId": "T16",
+              "depth": 3,
+              "x": 108,
+              "y": 1520
+            },
+            {
+              "taskId": "T15",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 1760
+            },
+            {
+              "taskId": "T18",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 2000
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2240
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2480
+            }
+          ],
+          "taskIds": [
+            "T10",
+            "T11",
+            "T12",
+            "T13",
+            "T14",
+            "T16",
+            "T17",
+            "T15",
+            "T18"
+          ]
+        }
+      ],
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1032,
+        "height": 2716
+      },
+      "needsRegroup": false,
+      "movedFamilyIds": []
+    },
+    {
+      "tasks": [
+        {
+          "id": "T1",
+          "parent": null,
+          "familyId": "T1",
+          "order": 0,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T2",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 1,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T4",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 3,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T5",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 4,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T6",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 5,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T7",
+          "parent": "T5",
+          "familyId": "T1",
+          "order": 6,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T8",
+          "parent": "T7",
+          "familyId": "T1",
+          "order": 7,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T9",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 8,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T10",
+          "parent": null,
+          "familyId": "T10",
+          "order": 9,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T11",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 10,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T12",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 11,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T13",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 12,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T14",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 13,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T15",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 14,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T16",
+          "parent": "T14",
+          "familyId": "T10",
+          "order": 15,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T17",
+          "parent": "T16",
+          "familyId": "T10",
+          "order": 16,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T18",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 17,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T19",
+          "parent": "T4",
+          "familyId": "T1",
+          "order": 100,
+          "createdAt": "2026-06-12T12:00:00Z"
+        }
+      ],
+      "cards": [
+        {
+          "id": "T1",
+          "familyId": "T1",
+          "parentId": null,
+          "depth": 0,
+          "box": {
+            "x": 24,
+            "y": 112,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 24,
+            "y": 80,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 24,
+            "y": 80,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 24,
+            "y": 80,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T2",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 352,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 320,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 320,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 166,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T4",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 832,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 800,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 800,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 338,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T5",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 1072,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 1040,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 1040,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 424,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T7",
+          "familyId": "T1",
+          "parentId": "T5",
+          "depth": 2,
+          "box": {
+            "x": 80,
+            "y": 1312,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 80,
+            "y": 1280,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 80,
+            "y": 1280,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 73.28,
+            "y": 510,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T8",
+          "familyId": "T1",
+          "parentId": "T7",
+          "depth": 3,
+          "box": {
+            "x": 108,
+            "y": 1552,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 108,
+            "y": 1520,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 108,
+            "y": 1520,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 97.92,
+            "y": 596,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T6",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 1792,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 1760,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 1760,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 682,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T9",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 2032,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 2000,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 2000,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 768,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T19",
+          "familyId": "T1",
+          "parentId": "T4",
+          "depth": 2,
+          "box": {
+            "x": 80,
+            "y": 2272,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 80,
+            "y": 2240,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 80,
+            "y": 2240,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 73.28,
+            "y": 854,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T10",
+          "familyId": "T10",
+          "parentId": null,
+          "depth": 0,
+          "box": {
+            "x": 568,
+            "y": 112,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 568,
+            "y": 80,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 568,
+            "y": 80,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 568,
+            "y": 80,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T11",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 352,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 320,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 320,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 166,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T12",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 592,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 560,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 560,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 252,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T13",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 832,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 800,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 800,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 338,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T14",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 1072,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 1040,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 1040,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 424,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T16",
+          "familyId": "T10",
+          "parentId": "T14",
+          "depth": 2,
+          "box": {
+            "x": 624,
+            "y": 1312,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 624,
+            "y": 1280,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 624,
+            "y": 1280,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 617.28,
+            "y": 510,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T17",
+          "familyId": "T10",
+          "parentId": "T16",
+          "depth": 3,
+          "box": {
+            "x": 652,
+            "y": 1552,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 652,
+            "y": 1520,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 652,
+            "y": 1520,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 641.92,
+            "y": 596,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T15",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 1792,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 1760,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 1760,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 682,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T18",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 2032,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 2000,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 2000,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 768,
+            "width": 264,
+            "height": 72
+          }
+        }
+      ],
+      "families": [
+        {
+          "id": "T1",
+          "bounds": {
+            "x": 0,
+            "y": 0,
+            "width": 488,
+            "height": 2716
+          },
+          "header": {
+            "x": 0,
+            "y": 0,
+            "width": 488,
+            "height": 56
+          },
+          "slots": [
+            {
+              "taskId": "T1",
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 80
+            },
+            {
+              "taskId": "T2",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 320
+            },
+            {
+              "taskId": "T3",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 560
+            },
+            {
+              "taskId": "T4",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 800
+            },
+            {
+              "taskId": "T5",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 1040
+            },
+            {
+              "taskId": "T7",
+              "parentId": "T5",
+              "depth": 2,
+              "x": 80,
+              "y": 1280
+            },
+            {
+              "taskId": "T8",
+              "parentId": "T7",
+              "depth": 3,
+              "x": 108,
+              "y": 1520
+            },
+            {
+              "taskId": "T6",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 1760
+            },
+            {
+              "taskId": "T9",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 2000
+            },
+            {
+              "taskId": "T19",
+              "parentId": "T4",
+              "depth": 2,
+              "x": 80,
+              "y": 2240
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2480
+            }
+          ],
+          "taskIds": [
+            "T1",
+            "T2",
+            "T4",
+            "T5",
+            "T7",
+            "T8",
+            "T6",
+            "T9",
+            "T19"
+          ]
+        },
+        {
+          "id": "T10",
+          "bounds": {
+            "x": 544,
+            "y": 0,
+            "width": 488,
+            "height": 2716
+          },
+          "header": {
+            "x": 544,
+            "y": 0,
+            "width": 488,
+            "height": 56
+          },
+          "slots": [
+            {
+              "taskId": "T10",
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 80
+            },
+            {
+              "taskId": "T11",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 320
+            },
+            {
+              "taskId": "T12",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 560
+            },
+            {
+              "taskId": "T13",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 800
+            },
+            {
+              "taskId": "T14",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 1040
+            },
+            {
+              "taskId": "T16",
+              "parentId": "T14",
+              "depth": 2,
+              "x": 80,
+              "y": 1280
+            },
+            {
+              "taskId": "T17",
+              "parentId": "T16",
+              "depth": 3,
+              "x": 108,
+              "y": 1520
+            },
+            {
+              "taskId": "T15",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 1760
+            },
+            {
+              "taskId": "T18",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 2000
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2240
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2480
+            }
+          ],
+          "taskIds": [
+            "T10",
+            "T11",
+            "T12",
+            "T13",
+            "T14",
+            "T16",
+            "T17",
+            "T15",
+            "T18"
+          ]
+        }
+      ],
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1032,
+        "height": 2716
+      },
+      "needsRegroup": false,
+      "movedFamilyIds": []
+    },
+    {
+      "tasks": [
+        {
+          "id": "T1",
+          "parent": null,
+          "familyId": "T1",
+          "order": 0,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T2",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 1,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T4",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 3,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T5",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 4,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T6",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 5,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T7",
+          "parent": "T5",
+          "familyId": "T1",
+          "order": 6,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T8",
+          "parent": "T7",
+          "familyId": "T1",
+          "order": 7,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T9",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 8,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T10",
+          "parent": null,
+          "familyId": "T10",
+          "order": 9,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T11",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 10,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T12",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 11,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T13",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 12,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T14",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 13,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T15",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 14,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T16",
+          "parent": "T14",
+          "familyId": "T10",
+          "order": 15,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T17",
+          "parent": "T16",
+          "familyId": "T10",
+          "order": 16,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T18",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 17,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T19",
+          "parent": "T4",
+          "familyId": "T1",
+          "order": 100,
+          "createdAt": "2026-06-12T12:00:00Z"
+        },
+        {
+          "id": "T20",
+          "parent": "T4",
+          "familyId": "T1",
+          "order": 101,
+          "createdAt": "2026-06-12T12:00:00Z"
+        }
+      ],
+      "cards": [
+        {
+          "id": "T1",
+          "familyId": "T1",
+          "parentId": null,
+          "depth": 0,
+          "box": {
+            "x": 24,
+            "y": 112,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 24,
+            "y": 80,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 24,
+            "y": 80,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 24,
+            "y": 80,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T2",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 352,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 320,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 320,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 166,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T4",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 832,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 800,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 800,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 338,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T5",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 1072,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 1040,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 1040,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 424,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T7",
+          "familyId": "T1",
+          "parentId": "T5",
+          "depth": 2,
+          "box": {
+            "x": 80,
+            "y": 1312,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 80,
+            "y": 1280,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 80,
+            "y": 1280,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 73.28,
+            "y": 510,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T8",
+          "familyId": "T1",
+          "parentId": "T7",
+          "depth": 3,
+          "box": {
+            "x": 108,
+            "y": 1552,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 108,
+            "y": 1520,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 108,
+            "y": 1520,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 97.92,
+            "y": 596,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T6",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 1792,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 1760,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 1760,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 682,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T9",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 2032,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 2000,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 2000,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 768,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T19",
+          "familyId": "T1",
+          "parentId": "T4",
+          "depth": 2,
+          "box": {
+            "x": 80,
+            "y": 2272,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 80,
+            "y": 2240,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 80,
+            "y": 2240,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 73.28,
+            "y": 854,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T20",
+          "familyId": "T1",
+          "parentId": "T4",
+          "depth": 2,
+          "box": {
+            "x": 80,
+            "y": 2512,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 80,
+            "y": 2480,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 80,
+            "y": 2480,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 73.28,
+            "y": 940,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T10",
+          "familyId": "T10",
+          "parentId": null,
+          "depth": 0,
+          "box": {
+            "x": 568,
+            "y": 112,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 568,
+            "y": 80,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 568,
+            "y": 80,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 568,
+            "y": 80,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T11",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 352,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 320,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 320,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 166,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T12",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 592,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 560,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 560,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 252,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T13",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 832,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 800,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 800,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 338,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T14",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 1072,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 1040,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 1040,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 424,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T16",
+          "familyId": "T10",
+          "parentId": "T14",
+          "depth": 2,
+          "box": {
+            "x": 624,
+            "y": 1312,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 624,
+            "y": 1280,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 624,
+            "y": 1280,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 617.28,
+            "y": 510,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T17",
+          "familyId": "T10",
+          "parentId": "T16",
+          "depth": 3,
+          "box": {
+            "x": 652,
+            "y": 1552,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 652,
+            "y": 1520,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 652,
+            "y": 1520,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 641.92,
+            "y": 596,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T15",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 1792,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 1760,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 1760,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 682,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T18",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 2032,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 2000,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 2000,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 768,
+            "width": 264,
+            "height": 72
+          }
+        }
+      ],
+      "families": [
+        {
+          "id": "T1",
+          "bounds": {
+            "x": 0,
+            "y": 0,
+            "width": 488,
+            "height": 2716
+          },
+          "header": {
+            "x": 0,
+            "y": 0,
+            "width": 488,
+            "height": 56
+          },
+          "slots": [
+            {
+              "taskId": "T1",
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 80
+            },
+            {
+              "taskId": "T2",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 320
+            },
+            {
+              "taskId": "T3",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 560
+            },
+            {
+              "taskId": "T4",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 800
+            },
+            {
+              "taskId": "T5",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 1040
+            },
+            {
+              "taskId": "T7",
+              "parentId": "T5",
+              "depth": 2,
+              "x": 80,
+              "y": 1280
+            },
+            {
+              "taskId": "T8",
+              "parentId": "T7",
+              "depth": 3,
+              "x": 108,
+              "y": 1520
+            },
+            {
+              "taskId": "T6",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 1760
+            },
+            {
+              "taskId": "T9",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 2000
+            },
+            {
+              "taskId": "T19",
+              "parentId": "T4",
+              "depth": 2,
+              "x": 80,
+              "y": 2240
+            },
+            {
+              "taskId": "T20",
+              "parentId": "T4",
+              "depth": 2,
+              "x": 80,
+              "y": 2480
+            }
+          ],
+          "taskIds": [
+            "T1",
+            "T2",
+            "T4",
+            "T5",
+            "T7",
+            "T8",
+            "T6",
+            "T9",
+            "T19",
+            "T20"
+          ]
+        },
+        {
+          "id": "T10",
+          "bounds": {
+            "x": 544,
+            "y": 0,
+            "width": 488,
+            "height": 2716
+          },
+          "header": {
+            "x": 544,
+            "y": 0,
+            "width": 488,
+            "height": 56
+          },
+          "slots": [
+            {
+              "taskId": "T10",
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 80
+            },
+            {
+              "taskId": "T11",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 320
+            },
+            {
+              "taskId": "T12",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 560
+            },
+            {
+              "taskId": "T13",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 800
+            },
+            {
+              "taskId": "T14",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 1040
+            },
+            {
+              "taskId": "T16",
+              "parentId": "T14",
+              "depth": 2,
+              "x": 80,
+              "y": 1280
+            },
+            {
+              "taskId": "T17",
+              "parentId": "T16",
+              "depth": 3,
+              "x": 108,
+              "y": 1520
+            },
+            {
+              "taskId": "T15",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 1760
+            },
+            {
+              "taskId": "T18",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 2000
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2240
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2480
+            }
+          ],
+          "taskIds": [
+            "T10",
+            "T11",
+            "T12",
+            "T13",
+            "T14",
+            "T16",
+            "T17",
+            "T15",
+            "T18"
+          ]
+        }
+      ],
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1032,
+        "height": 2716
+      },
+      "needsRegroup": false,
+      "movedFamilyIds": []
+    },
+    {
+      "tasks": [
+        {
+          "id": "T1",
+          "parent": null,
+          "familyId": "T1",
+          "order": 0,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T2",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 1,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T4",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 3,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T5",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 4,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T6",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 5,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T7",
+          "parent": "T5",
+          "familyId": "T1",
+          "order": 6,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T8",
+          "parent": "T7",
+          "familyId": "T1",
+          "order": 7,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T9",
+          "parent": "T1",
+          "familyId": "T1",
+          "order": 8,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T10",
+          "parent": null,
+          "familyId": "T10",
+          "order": 9,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T11",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 10,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T12",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 11,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T13",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 12,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T14",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 13,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T15",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 14,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T16",
+          "parent": "T14",
+          "familyId": "T10",
+          "order": 15,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T17",
+          "parent": "T16",
+          "familyId": "T10",
+          "order": 16,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T18",
+          "parent": "T10",
+          "familyId": "T10",
+          "order": 17,
+          "createdAt": "2026-06-08T09:00:00Z"
+        },
+        {
+          "id": "T19",
+          "parent": "T4",
+          "familyId": "T1",
+          "order": 100,
+          "createdAt": "2026-06-12T12:00:00Z"
+        },
+        {
+          "id": "T20",
+          "parent": "T4",
+          "familyId": "T1",
+          "order": 101,
+          "createdAt": "2026-06-12T12:00:00Z"
+        },
+        {
+          "id": "T21",
+          "parent": "T4",
+          "familyId": "T1",
+          "order": 102,
+          "createdAt": "2026-06-12T12:00:00Z"
+        }
+      ],
+      "cards": [
+        {
+          "id": "T1",
+          "familyId": "T1",
+          "parentId": null,
+          "depth": 0,
+          "box": {
+            "x": 24,
+            "y": 112,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 24,
+            "y": 80,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 24,
+            "y": 80,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 24,
+            "y": 80,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T2",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 352,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 320,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 320,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 166,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T4",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 832,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 800,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 800,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 338,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T5",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 1072,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 1040,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 1040,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 424,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T7",
+          "familyId": "T1",
+          "parentId": "T5",
+          "depth": 2,
+          "box": {
+            "x": 80,
+            "y": 1312,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 80,
+            "y": 1280,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 80,
+            "y": 1280,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 73.28,
+            "y": 510,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T8",
+          "familyId": "T1",
+          "parentId": "T7",
+          "depth": 3,
+          "box": {
+            "x": 108,
+            "y": 1552,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 108,
+            "y": 1520,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 108,
+            "y": 1520,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 97.92,
+            "y": 596,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T6",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 1792,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 1760,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 1760,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 682,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T9",
+          "familyId": "T1",
+          "parentId": "T1",
+          "depth": 1,
+          "box": {
+            "x": 52,
+            "y": 2032,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 52,
+            "y": 2000,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 52,
+            "y": 2000,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 48.64,
+            "y": 768,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T19",
+          "familyId": "T1",
+          "parentId": "T4",
+          "depth": 2,
+          "box": {
+            "x": 80,
+            "y": 2272,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 80,
+            "y": 2240,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 80,
+            "y": 2240,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 73.28,
+            "y": 854,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T20",
+          "familyId": "T1",
+          "parentId": "T4",
+          "depth": 2,
+          "box": {
+            "x": 80,
+            "y": 2512,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 80,
+            "y": 2480,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 80,
+            "y": 2480,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 73.28,
+            "y": 940,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T21",
+          "familyId": "T1",
+          "parentId": "T4",
+          "depth": 2,
+          "box": {
+            "x": 80,
+            "y": 2752,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 80,
+            "y": 2720,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 80,
+            "y": 2720,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 73.28,
+            "y": 1026,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T10",
+          "familyId": "T10",
+          "parentId": null,
+          "depth": 0,
+          "box": {
+            "x": 568,
+            "y": 112,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 568,
+            "y": 80,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 568,
+            "y": 80,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 568,
+            "y": 80,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T11",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 352,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 320,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 320,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 166,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T12",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 592,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 560,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 560,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 252,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T13",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 832,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 800,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 800,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 338,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T14",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 1072,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 1040,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 1040,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 424,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T16",
+          "familyId": "T10",
+          "parentId": "T14",
+          "depth": 2,
+          "box": {
+            "x": 624,
+            "y": 1312,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 624,
+            "y": 1280,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 624,
+            "y": 1280,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 617.28,
+            "y": 510,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T17",
+          "familyId": "T10",
+          "parentId": "T16",
+          "depth": 3,
+          "box": {
+            "x": 652,
+            "y": 1552,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 652,
+            "y": 1520,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 652,
+            "y": 1520,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 641.92,
+            "y": 596,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T15",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 1792,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 1760,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 1760,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 682,
+            "width": 264,
+            "height": 72
+          }
+        },
+        {
+          "id": "T18",
+          "familyId": "T10",
+          "parentId": "T10",
+          "depth": 1,
+          "box": {
+            "x": 596,
+            "y": 2032,
+            "width": 300,
+            "height": 180
+          },
+          "occupiedBox": {
+            "x": 596,
+            "y": 2000,
+            "width": 300,
+            "height": 212
+          },
+          "creatureBox": {
+            "x": 596,
+            "y": 2000,
+            "width": 300,
+            "height": 32
+          },
+          "creatureCount": 0,
+          "pillBox": {
+            "x": 592.64,
+            "y": 768,
+            "width": 264,
+            "height": 72
+          }
+        }
+      ],
+      "families": [
+        {
+          "id": "T1",
+          "bounds": {
+            "x": 0,
+            "y": 0,
+            "width": 488,
+            "height": 2956
+          },
+          "header": {
+            "x": 0,
+            "y": 0,
+            "width": 488,
+            "height": 56
+          },
+          "slots": [
+            {
+              "taskId": "T1",
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 80
+            },
+            {
+              "taskId": "T2",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 320
+            },
+            {
+              "taskId": "T3",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 560
+            },
+            {
+              "taskId": "T4",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 800
+            },
+            {
+              "taskId": "T5",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 1040
+            },
+            {
+              "taskId": "T7",
+              "parentId": "T5",
+              "depth": 2,
+              "x": 80,
+              "y": 1280
+            },
+            {
+              "taskId": "T8",
+              "parentId": "T7",
+              "depth": 3,
+              "x": 108,
+              "y": 1520
+            },
+            {
+              "taskId": "T6",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 1760
+            },
+            {
+              "taskId": "T9",
+              "parentId": "T1",
+              "depth": 1,
+              "x": 52,
+              "y": 2000
+            },
+            {
+              "taskId": "T19",
+              "parentId": "T4",
+              "depth": 2,
+              "x": 80,
+              "y": 2240
+            },
+            {
+              "taskId": "T20",
+              "parentId": "T4",
+              "depth": 2,
+              "x": 80,
+              "y": 2480
+            },
+            {
+              "taskId": "T21",
+              "parentId": "T4",
+              "depth": 2,
+              "x": 80,
+              "y": 2720
+            }
+          ],
+          "taskIds": [
+            "T1",
+            "T2",
+            "T4",
+            "T5",
+            "T7",
+            "T8",
+            "T6",
+            "T9",
+            "T19",
+            "T20",
+            "T21"
+          ]
+        },
+        {
+          "id": "T10",
+          "bounds": {
+            "x": 544,
+            "y": 0,
+            "width": 488,
+            "height": 2716
+          },
+          "header": {
+            "x": 544,
+            "y": 0,
+            "width": 488,
+            "height": 56
+          },
+          "slots": [
+            {
+              "taskId": "T10",
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 80
+            },
+            {
+              "taskId": "T11",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 320
+            },
+            {
+              "taskId": "T12",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 560
+            },
+            {
+              "taskId": "T13",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 800
+            },
+            {
+              "taskId": "T14",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 1040
+            },
+            {
+              "taskId": "T16",
+              "parentId": "T14",
+              "depth": 2,
+              "x": 80,
+              "y": 1280
+            },
+            {
+              "taskId": "T17",
+              "parentId": "T16",
+              "depth": 3,
+              "x": 108,
+              "y": 1520
+            },
+            {
+              "taskId": "T15",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 1760
+            },
+            {
+              "taskId": "T18",
+              "parentId": "T10",
+              "depth": 1,
+              "x": 52,
+              "y": 2000
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2240
+            },
+            {
+              "taskId": null,
+              "parentId": null,
+              "depth": 0,
+              "x": 24,
+              "y": 2480
+            }
+          ],
+          "taskIds": [
+            "T10",
+            "T11",
+            "T12",
+            "T13",
+            "T14",
+            "T16",
+            "T17",
+            "T15",
+            "T18"
+          ]
+        }
+      ],
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1032,
+        "height": 2956
+      },
+      "needsRegroup": true,
+      "movedFamilyIds": []
+    }
+  ],
+  "changes": [
+    {
+      "snapshot": {
+        "tasks": {
+          "T1": {
+            "status": "in_progress",
+            "title": "Access & identity"
+          },
+          "T2": {
+            "status": "review",
+            "title": "Agree on the access rules · Access & identity"
+          },
+          "T3": {
+            "status": "in_progress",
+            "title": "Build the happy path · Access & identity"
+          },
+          "T4": {
+            "status": "blocked",
+            "title": "Handle reconnect safely · Access & identity"
+          },
+          "T5": {
+            "status": "todo",
+            "title": "Test concurrent changes · Access & identity"
+          },
+          "T6": {
+            "status": "waiting",
+            "title": "Review keyboard navigation · Access & identity"
+          },
+          "T7": {
+            "status": "blocked",
+            "title": "Resolve slow network failures · Access & identity"
+          },
+          "T8": {
+            "status": "todo",
+            "title": "Check the last edge cases · Access & identity"
+          },
+          "T9": {
+            "status": "done",
+            "title": "Write the release notes · Access & identity"
+          },
+          "T10": {
+            "status": "in_progress",
+            "title": "Reliable sync"
+          },
+          "T11": {
+            "status": "review",
+            "title": "Agree on the access rules · Reliable sync"
+          },
+          "T12": {
+            "status": "in_progress",
+            "title": "Build the happy path · Reliable sync"
+          },
+          "T13": {
+            "status": "blocked",
+            "title": "Handle reconnect safely · Reliable sync"
+          },
+          "T14": {
+            "status": "todo",
+            "title": "Test concurrent changes · Reliable sync"
+          },
+          "T15": {
+            "status": "waiting",
+            "title": "Review keyboard navigation · Reliable sync"
+          },
+          "T16": {
+            "status": "blocked",
+            "title": "Resolve slow network failures · Reliable sync"
+          },
+          "T17": {
+            "status": "todo",
+            "title": "Check the last edge cases · Reliable sync"
+          },
+          "T18": {
+            "status": "done",
+            "title": "Write the release notes · Reliable sync"
+          }
+        },
+        "questions": {
+          "Q1": {
+            "taskId": "T2",
+            "kind": "question",
+            "status": "open"
+          }
+        },
+        "crew": {
+          "worker:fern": {
+            "taskId": "T3",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "worker:moss": {
+            "taskId": "T3",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "worker:pip": {
+            "taskId": "T12",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "thread:sync-team": {
+            "taskId": "T10",
+            "status": "running",
+            "report": "Checking reconnect safety",
+            "title": "Sync crew"
+          }
+        }
+      },
+      "changes": [],
+      "now": 1000,
+      "entries": []
+    },
+    {
+      "snapshot": {
+        "tasks": {
+          "T1": {
+            "status": "in_progress",
+            "title": "Access & identity"
+          },
+          "T2": {
+            "status": "review",
+            "title": "Agree on the access rules · Access & identity"
+          },
+          "T3": {
+            "status": "review",
+            "title": "Build the happy path · Access & identity"
+          },
+          "T4": {
+            "status": "blocked",
+            "title": "Handle reconnect safely · Access & identity"
+          },
+          "T5": {
+            "status": "todo",
+            "title": "Test concurrent changes · Access & identity"
+          },
+          "T6": {
+            "status": "waiting",
+            "title": "Review keyboard navigation · Access & identity"
+          },
+          "T7": {
+            "status": "blocked",
+            "title": "Resolve slow network failures · Access & identity"
+          },
+          "T8": {
+            "status": "todo",
+            "title": "Check the last edge cases · Access & identity"
+          },
+          "T9": {
+            "status": "done",
+            "title": "Write the release notes · Access & identity"
+          },
+          "T10": {
+            "status": "in_progress",
+            "title": "Reliable sync"
+          },
+          "T11": {
+            "status": "review",
+            "title": "Agree on the access rules · Reliable sync"
+          },
+          "T12": {
+            "status": "in_progress",
+            "title": "Build the happy path · Reliable sync"
+          },
+          "T13": {
+            "status": "blocked",
+            "title": "Handle reconnect safely · Reliable sync"
+          },
+          "T14": {
+            "status": "todo",
+            "title": "Test concurrent changes · Reliable sync"
+          },
+          "T15": {
+            "status": "waiting",
+            "title": "Review keyboard navigation · Reliable sync"
+          },
+          "T16": {
+            "status": "blocked",
+            "title": "Resolve slow network failures · Reliable sync"
+          },
+          "T17": {
+            "status": "todo",
+            "title": "Check the last edge cases · Reliable sync"
+          },
+          "T18": {
+            "status": "done",
+            "title": "Write the release notes · Reliable sync"
+          }
+        },
+        "questions": {
+          "Q1": {
+            "taskId": "T2",
+            "kind": "question",
+            "status": "open"
+          }
+        },
+        "crew": {
+          "worker:fern": {
+            "taskId": "T3",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "worker:moss": {
+            "taskId": "T3",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "worker:pip": {
+            "taskId": "T12",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "thread:sync-team": {
+            "taskId": "T10",
+            "status": "running",
+            "report": "Checking reconnect safety",
+            "title": "Sync crew"
+          }
+        }
+      },
+      "changes": [
+        {
+          "kind": "status",
+          "key": "status:review",
+          "taskIds": [
+            "T3"
+          ],
+          "text": "T3 Build the happy path · Access & identity → Review",
+          "plural": "tasks moved to Review"
+        }
+      ],
+      "now": 1300,
+      "entries": [
+        {
+          "kind": "status",
+          "key": "status:review",
+          "taskIds": [
+            "T3"
+          ],
+          "text": "T3 Build the happy path · Access & identity → Review",
+          "plural": "tasks moved to Review",
+          "id": 1,
+          "serial": 1,
+          "at": 1300,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "snapshot": {
+        "tasks": {
+          "T1": {
+            "status": "in_progress",
+            "title": "Access & identity"
+          },
+          "T2": {
+            "status": "review",
+            "title": "Agree on the access rules · Access & identity"
+          },
+          "T3": {
+            "status": "review",
+            "title": "Build the happy path · Access & identity"
+          },
+          "T4": {
+            "status": "blocked",
+            "title": "Handle reconnect safely · Access & identity"
+          },
+          "T5": {
+            "status": "todo",
+            "title": "Test concurrent changes · Access & identity"
+          },
+          "T6": {
+            "status": "waiting",
+            "title": "Review keyboard navigation · Access & identity"
+          },
+          "T7": {
+            "status": "blocked",
+            "title": "Resolve slow network failures · Access & identity"
+          },
+          "T8": {
+            "status": "todo",
+            "title": "Check the last edge cases · Access & identity"
+          },
+          "T9": {
+            "status": "done",
+            "title": "Write the release notes · Access & identity"
+          },
+          "T10": {
+            "status": "in_progress",
+            "title": "Reliable sync"
+          },
+          "T11": {
+            "status": "review",
+            "title": "Agree on the access rules · Reliable sync"
+          },
+          "T12": {
+            "status": "in_progress",
+            "title": "Build the happy path · Reliable sync"
+          },
+          "T13": {
+            "status": "blocked",
+            "title": "Handle reconnect safely · Reliable sync"
+          },
+          "T14": {
+            "status": "todo",
+            "title": "Test concurrent changes · Reliable sync"
+          },
+          "T15": {
+            "status": "waiting",
+            "title": "Review keyboard navigation · Reliable sync"
+          },
+          "T16": {
+            "status": "blocked",
+            "title": "Resolve slow network failures · Reliable sync"
+          },
+          "T17": {
+            "status": "todo",
+            "title": "Check the last edge cases · Reliable sync"
+          },
+          "T18": {
+            "status": "done",
+            "title": "Write the release notes · Reliable sync"
+          }
+        },
+        "questions": {
+          "Q1": {
+            "taskId": "T2",
+            "kind": "question",
+            "status": "open"
+          }
+        },
+        "crew": {
+          "worker:fern": {
+            "taskId": "T4",
+            "status": "running",
+            "report": "Checked the lens.\nReady for review.",
+            "title": "Check reconnect and recovery"
+          },
+          "worker:moss": {
+            "taskId": "T3",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "worker:pip": {
+            "taskId": "T12",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "thread:sync-team": {
+            "taskId": "T10",
+            "status": "running",
+            "report": "Checking reconnect safety",
+            "title": "Sync crew"
+          }
+        }
+      },
+      "changes": [
+        {
+          "kind": "reassigned",
+          "key": "Worker:reassigned",
+          "taskIds": [
+            "T3",
+            "T4"
+          ],
+          "text": "Worker Check reconnect and recovery: T3 → T4",
+          "plural": "workers reassigned"
+        },
+        {
+          "kind": "report",
+          "key": "worker:fern:report",
+          "taskIds": [
+            "T4"
+          ],
+          "text": "fern reported on T4 · Ready for review.",
+          "plural": "worker reports",
+          "workerId": "fern"
+        }
+      ],
+      "now": 1600,
+      "entries": [
+        {
+          "kind": "report",
+          "key": "worker:fern:report",
+          "taskIds": [
+            "T4"
+          ],
+          "text": "fern reported on T4 · Ready for review.",
+          "plural": "worker reports",
+          "workerId": "fern",
+          "id": 3,
+          "serial": 3,
+          "at": 1600,
+          "count": 1
+        },
+        {
+          "kind": "reassigned",
+          "key": "Worker:reassigned",
+          "taskIds": [
+            "T3",
+            "T4"
+          ],
+          "text": "Worker Check reconnect and recovery: T3 → T4",
+          "plural": "workers reassigned",
+          "id": 2,
+          "serial": 2,
+          "at": 1600,
+          "count": 1
+        },
+        {
+          "kind": "status",
+          "key": "status:review",
+          "taskIds": [
+            "T3"
+          ],
+          "text": "T3 Build the happy path · Access & identity → Review",
+          "plural": "tasks moved to Review",
+          "id": 1,
+          "serial": 1,
+          "at": 1300,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "snapshot": {
+        "tasks": {
+          "T1": {
+            "status": "in_progress",
+            "title": "Access & identity"
+          },
+          "T2": {
+            "status": "review",
+            "title": "Agree on the access rules · Access & identity"
+          },
+          "T3": {
+            "status": "in_progress",
+            "title": "Build the happy path · Access & identity"
+          },
+          "T4": {
+            "status": "blocked",
+            "title": "Handle reconnect safely · Access & identity"
+          },
+          "T5": {
+            "status": "todo",
+            "title": "Test concurrent changes · Access & identity"
+          },
+          "T6": {
+            "status": "waiting",
+            "title": "Review keyboard navigation · Access & identity"
+          },
+          "T7": {
+            "status": "blocked",
+            "title": "Resolve slow network failures · Access & identity"
+          },
+          "T8": {
+            "status": "todo",
+            "title": "Check the last edge cases · Access & identity"
+          },
+          "T9": {
+            "status": "done",
+            "title": "Write the release notes · Access & identity"
+          },
+          "T10": {
+            "status": "in_progress",
+            "title": "Reliable sync"
+          },
+          "T11": {
+            "status": "review",
+            "title": "Agree on the access rules · Reliable sync"
+          },
+          "T12": {
+            "status": "in_progress",
+            "title": "Build the happy path · Reliable sync"
+          },
+          "T13": {
+            "status": "blocked",
+            "title": "Handle reconnect safely · Reliable sync"
+          },
+          "T14": {
+            "status": "todo",
+            "title": "Test concurrent changes · Reliable sync"
+          },
+          "T15": {
+            "status": "waiting",
+            "title": "Review keyboard navigation · Reliable sync"
+          },
+          "T16": {
+            "status": "blocked",
+            "title": "Resolve slow network failures · Reliable sync"
+          },
+          "T17": {
+            "status": "todo",
+            "title": "Check the last edge cases · Reliable sync"
+          },
+          "T18": {
+            "status": "done",
+            "title": "Write the release notes · Reliable sync"
+          },
+          "T19": {
+            "status": "todo",
+            "title": "Verify invite expiry recovery"
+          }
+        },
+        "questions": {
+          "Q1": {
+            "taskId": "T2",
+            "kind": "question",
+            "status": "open"
+          }
+        },
+        "crew": {
+          "worker:fern": {
+            "taskId": "T3",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "worker:moss": {
+            "taskId": "T3",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "worker:pip": {
+            "taskId": "T12",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "thread:sync-team": {
+            "taskId": "T10",
+            "status": "running",
+            "report": "Checking reconnect safety",
+            "title": "Sync crew"
+          }
+        }
+      },
+      "changes": [
+        {
+          "kind": "status",
+          "key": "status:in_progress",
+          "taskIds": [
+            "T3"
+          ],
+          "text": "T3 Build the happy path · Access & identity → Working",
+          "plural": "tasks moved to Working"
+        },
+        {
+          "kind": "arrival",
+          "key": "arrival",
+          "taskIds": [
+            "T19"
+          ],
+          "text": "T19 Verify invite expiry recovery arrived",
+          "plural": "tasks arrived"
+        },
+        {
+          "kind": "reassigned",
+          "key": "Worker:reassigned",
+          "taskIds": [
+            "T4",
+            "T3"
+          ],
+          "text": "Worker Check reconnect and recovery: T4 → T3",
+          "plural": "workers reassigned"
+        }
+      ],
+      "now": 1900,
+      "entries": [
+        {
+          "kind": "arrival",
+          "key": "arrival",
+          "taskIds": [
+            "T19"
+          ],
+          "text": "T19 Verify invite expiry recovery arrived",
+          "plural": "tasks arrived",
+          "id": 5,
+          "serial": 5,
+          "at": 1900,
+          "count": 1
+        },
+        {
+          "kind": "status",
+          "key": "status:in_progress",
+          "taskIds": [
+            "T3"
+          ],
+          "text": "T3 Build the happy path · Access & identity → Working",
+          "plural": "tasks moved to Working",
+          "id": 4,
+          "serial": 4,
+          "at": 1900,
+          "count": 1
+        },
+        {
+          "kind": "report",
+          "key": "worker:fern:report",
+          "taskIds": [
+            "T4"
+          ],
+          "text": "fern reported on T4 · Ready for review.",
+          "plural": "worker reports",
+          "workerId": "fern",
+          "id": 3,
+          "serial": 3,
+          "at": 1600,
+          "count": 1
+        },
+        {
+          "kind": "reassigned",
+          "key": "Worker:reassigned",
+          "taskIds": [
+            "T3",
+            "T4"
+          ],
+          "text": "Worker Check reconnect and recovery: T3 → T4",
+          "plural": "workers reassigned",
+          "id": 2,
+          "serial": 6,
+          "at": 1600,
+          "count": 2
+        },
+        {
+          "kind": "status",
+          "key": "status:review",
+          "taskIds": [
+            "T3"
+          ],
+          "text": "T3 Build the happy path · Access & identity → Review",
+          "plural": "tasks moved to Review",
+          "id": 1,
+          "serial": 1,
+          "at": 1300,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "snapshot": {
+        "tasks": {
+          "T1": {
+            "status": "in_progress",
+            "title": "Access & identity"
+          },
+          "T2": {
+            "status": "review",
+            "title": "Agree on the access rules · Access & identity"
+          },
+          "T3": {
+            "status": "done",
+            "title": "Build the happy path · Access & identity"
+          },
+          "T4": {
+            "status": "blocked",
+            "title": "Handle reconnect safely · Access & identity"
+          },
+          "T5": {
+            "status": "todo",
+            "title": "Test concurrent changes · Access & identity"
+          },
+          "T6": {
+            "status": "waiting",
+            "title": "Review keyboard navigation · Access & identity"
+          },
+          "T7": {
+            "status": "blocked",
+            "title": "Resolve slow network failures · Access & identity"
+          },
+          "T8": {
+            "status": "todo",
+            "title": "Check the last edge cases · Access & identity"
+          },
+          "T9": {
+            "status": "done",
+            "title": "Write the release notes · Access & identity"
+          },
+          "T10": {
+            "status": "in_progress",
+            "title": "Reliable sync"
+          },
+          "T11": {
+            "status": "review",
+            "title": "Agree on the access rules · Reliable sync"
+          },
+          "T12": {
+            "status": "in_progress",
+            "title": "Build the happy path · Reliable sync"
+          },
+          "T13": {
+            "status": "blocked",
+            "title": "Handle reconnect safely · Reliable sync"
+          },
+          "T14": {
+            "status": "todo",
+            "title": "Test concurrent changes · Reliable sync"
+          },
+          "T15": {
+            "status": "waiting",
+            "title": "Review keyboard navigation · Reliable sync"
+          },
+          "T16": {
+            "status": "blocked",
+            "title": "Resolve slow network failures · Reliable sync"
+          },
+          "T17": {
+            "status": "todo",
+            "title": "Check the last edge cases · Reliable sync"
+          },
+          "T18": {
+            "status": "done",
+            "title": "Write the release notes · Reliable sync"
+          }
+        },
+        "questions": {
+          "Q1": {
+            "taskId": "T2",
+            "kind": "question",
+            "status": "open"
+          }
+        },
+        "crew": {
+          "worker:fern": {
+            "taskId": "T3",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "worker:moss": {
+            "taskId": "T3",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "worker:pip": {
+            "taskId": "T12",
+            "status": "running",
+            "report": "",
+            "title": "Check reconnect and recovery"
+          },
+          "thread:sync-team": {
+            "taskId": "T10",
+            "status": "running",
+            "report": "Checking reconnect safety",
+            "title": "Sync crew"
+          }
+        }
+      },
+      "changes": [
+        {
+          "kind": "status",
+          "key": "status:done",
+          "taskIds": [
+            "T3"
+          ],
+          "text": "T3 Build the happy path · Access & identity → Done",
+          "plural": "tasks moved to Done"
+        }
+      ],
+      "now": 2200,
+      "entries": [
+        {
+          "kind": "status",
+          "key": "status:done",
+          "taskIds": [
+            "T3"
+          ],
+          "text": "T3 Build the happy path · Access & identity → Done",
+          "plural": "tasks moved to Done",
+          "id": 7,
+          "serial": 7,
+          "at": 2200,
+          "count": 1
+        },
+        {
+          "kind": "arrival",
+          "key": "arrival",
+          "taskIds": [
+            "T19"
+          ],
+          "text": "T19 Verify invite expiry recovery arrived",
+          "plural": "tasks arrived",
+          "id": 5,
+          "serial": 5,
+          "at": 1900,
+          "count": 1
+        },
+        {
+          "kind": "status",
+          "key": "status:in_progress",
+          "taskIds": [
+            "T3"
+          ],
+          "text": "T3 Build the happy path · Access & identity → Working",
+          "plural": "tasks moved to Working",
+          "id": 4,
+          "serial": 4,
+          "at": 1900,
+          "count": 1
+        },
+        {
+          "kind": "report",
+          "key": "worker:fern:report",
+          "taskIds": [
+            "T4"
+          ],
+          "text": "fern reported on T4 · Ready for review.",
+          "plural": "worker reports",
+          "workerId": "fern",
+          "id": 3,
+          "serial": 3,
+          "at": 1600,
+          "count": 1
+        },
+        {
+          "kind": "reassigned",
+          "key": "Worker:reassigned",
+          "taskIds": [
+            "T3",
+            "T4"
+          ],
+          "text": "Worker Check reconnect and recovery: T3 → T4",
+          "plural": "workers reassigned",
+          "id": 2,
+          "serial": 6,
+          "at": 1600,
+          "count": 2
+        },
+        {
+          "kind": "status",
+          "key": "status:review",
+          "taskIds": [
+            "T3"
+          ],
+          "text": "T3 Build the happy path · Access & identity → Review",
+          "plural": "tasks moved to Review",
+          "id": 1,
+          "serial": 1,
+          "at": 1300,
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

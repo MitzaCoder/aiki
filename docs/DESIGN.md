@@ -1527,25 +1527,51 @@ the existing task sheet. The view choice stays local under `tasks.view.v2:`. No 
   regions for vertical pan instead of shrinking their text. The stage-1 40%-stage bottom sheet with Expand/Peek stays.
   Offline retains the last board. Family identity follows hidden ancestors with cycle defense.
 
-**Android family graph (T115).**
+**Android family graph and project canvas (T115–T116).**
 
 Native Tasks offers List | Board | Graph, remembered per backend/project with the old global choice as a fallback.
 Graph starts at one readable family, preferring a linked selection, otherwise the most needs-you tasks after crew
 loads. Previous/next and a family picker preserve tree order. Hidden ancestors and cyclic parentage retain stable
 family identity; roots without subtasks still get their own group. Cards use status colours, marks and words, quiet
 subtask guides, overlapping reason marks, waiting dates, quiet age, family progress and unfinished holds-up totals.
-Small Compose creatures distinguish running (keyboard/hands), resting (closed eyes) and failed (cross) workers and
-non-main threads. These first-part drawings are static, including under disabled/reduced motion; canvas travel,
-report sparks, semantic zoom, whole-project gestures and change history belong to T116.
+Compose creatures stand above the card edge: rounded bodies, antennae, busy typing/sway, resting eyes/breathing/z,
+and a failure mark. Workers and non-main threads are keyed by identity; canvas reassignment travels in world space,
+arrivals/finishes fade, and a changed non-empty report emits one bounded drawn spark. Disabled animations, background
+lifecycle and obscuring phone dialogs stop decoration without dropping status, report text or Updated marks.
 
 The horizontal summary highlights rather than removes context, and offers the next matching family. Search ranks
 ID, title, family, worker and thread matches using the web weights. Picking a result reveals/selects it. Selection
 is stored by ID, so watched replacements update the scrollable native bottom sheet in place, including a missing-task
 notice; wide windows use a 360dp side panel. Relationship links select their endpoints, and Open task opens the
-existing TaskSheet. Back dismisses the sheet, then selection/highlight, then returns to List. Loading, empty,
+existing TaskSheet. Back dismisses the sheet, then selection/highlight, then the canvas to family view, then returns to List. Loading, empty,
 all-closed/Show closed, no-match and offline/reconnecting states keep stale content rather than clearing the board.
 Controls have 48dp targets, card semantic names include reasons/progress/crew, and the lazy list supplies tree-order
 TalkBack traversal. Text and sections scroll/wrap with system font scaling; the view switch wraps at large sizes.
+
+The compact native toolbar puts overlapping counters directly below the view choice, with icon search and an overflow
+for Show closed/overview/line legend. Live/Reconnecting/Offline sits beside Changes. A pinch out or All families opens
+the project canvas at readable cards; pan, pointer-anchored pinch, double-tap, Fit and 48dp +/− controls change only the
+camera. Native slots are larger than web slots to hold real system text. The pure layout port retains hidden named
+slots, two arrival reservations, family positions and ancestry until explicit Regroup; only overflowing growth can
+move a colliding region. Structural inputs exclude status, reports and crew. Shared web-generated layout vectors
+check exact card/pill/region/slot geometry through hiding, arrivals and overflow.
+
+Cards yield to single-line pills, then screen-sized family dots at world-anchored region centres. Detail hysteresis
+is asymmetric: leave cards below 12/14 zoom and pills below max(12/22,48/72); re-enter 8% higher. All text stays at
+least 12sp on screen. Dot fit frames anchors instead of tall hidden card bounds, limits zoom to keep targets apart,
+and truncates crowded labels without moving anchors; full names remain in TalkBack. Only nodes/crew within 180dp of
+the viewport compose. Solid subtask routes use branch gutters; found-while is dotted, blocked-by dashed with an arrow
+toward the prerequisite, related dash-dot. Nonparent routes are scoped to the selected task/family and cross-family
+routes use exterior corridors. Canvas nodes expose button semantics in tree/slot order; family view remains the
+complete linear reading path.
+
+Changes retains 50 session entries, fixed one-second batches, latest report lines and an unseen-entry count. Entry
+links explicitly reveal/select their task; incoming changes never refit the camera. Cards get a 1.5s glow/Updated
+mark; closed work lingers with a faded fill for 4.5s and keeps its named slot. An off-screen changes chip reveals
+only on a tap. Weak board-scoped session storage preserves bounded history through responsive remounts. First load,
+remount and reconnect establish a baseline after the shared board and crew reads complete for the current socket
+generation; no guessed delay or invented reconnect arrivals. The pause/clock handling is graph-local, not a new
+background service. Physical-device frame/battery budgets and a full TalkBack session remain unmeasured.
 
 Pure Kotlin semantics live under `features/tasks/graph/`. `apps/android/scripts/graph-vectors.ts` generates the shared
 synthetic `test-vectors/task-graph-v1.json` from the actual web model; `--check` detects parity drift. JVM tests compare
