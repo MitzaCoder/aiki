@@ -26,7 +26,7 @@ describe('board Markdown plain previews', () => {
 	});
 	test('question reader uses the shared modal and full rich text without changing inline answers', () => {
 		const card = readFileSync(new URL('../src/lib/components/BoardQuestionCard.svelte', import.meta.url), 'utf8');
-		const reader = card.slice(card.indexOf('<Dialog.Root>'), card.indexOf('</Dialog.Root>'));
+		const reader = card.slice(card.indexOf('<Dialog.Root'), card.indexOf('</Dialog.Root>'));
 		expect(reader).toContain('<Dialog.Trigger>');
 		expect(reader).toContain('aria-label="Expand');
 		expect(reader).toContain('<Dialog.Title>');
@@ -38,6 +38,21 @@ describe('board Markdown plain previews', () => {
 		expect(card).toContain('font-size: 1.125rem');
 		expect(card).toContain('aria-label={warning ? `Note for ${question.id}` : `Answer to ${question.id}`}');
 		expect(card).toContain('onclick={() => send(option)}');
+	});
+	test('expanded and inline answers use one draft, guarded action and bounded footer', () => {
+		const card = readFileSync(new URL('../src/lib/components/BoardQuestionCard.svelte', import.meta.url), 'utf8');
+		expect(card).toContain('{@render answerForm(true)}');
+		expect(card).toContain('{@render answerForm(false)}');
+		expect(card).toContain('bind:value={text}');
+		expect(card).toContain('busy || !canAnswer || onanswer === undefined');
+		expect(card).toContain("question.status === 'open' && onanswer !== undefined");
+		expect(card).toContain('{#if canAnswer && !warning}');
+		expect(card).toContain('data-question-answer-footer');
+		expect(card).toContain('flex shrink-0');
+		expect(card).toContain('max-height: min(7rem');
+		expect(card).toContain('fitQuestionDialogToViewport(readingDialog)');
+		expect(card).toContain("readingExpanded = false;");
+		expect(card).toContain('finally {');
 	});
 	test('all expanded board surfaces share the compact safe chat renderer', () => {
 		const component = (name: string) => readFileSync(new URL(`../src/lib/components/${name}.svelte`, import.meta.url), 'utf8');

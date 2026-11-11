@@ -1,5 +1,34 @@
 # Continue
 
+## Answer from expanded task questions (T112 / F20, awaiting review)
+
+F20 supersedes the original read-only question-dialog behavior below. Editable open questions now have a fixed
+answer footer in the expanded view on web and Android. Long rich text scrolls independently above it. Prepared
+answers have their own bounded scrolling area, including many/long choices, so the composer and send action stay
+available. Both presentations edit the same card-owned draft and invoke the same guarded send action/busy/error
+state. Successful answers clear the draft and dismiss the dialog; failures retain both draft and visible error.
+Warnings keep their existing inline note/acknowledgement only; resolved/read-only cards get no new answer controls.
+
+Web reuses a local form snippet for both presentations and fits only the question dialog to visualViewport height
+and offset, including overlay-keyboard panning. Resize/scroll listeners are removed with the dialog. The modal
+textarea uses 16px type. Android reuses `QuestionAnswerForm` with card-owned state; its edge-to-edge Dialog consumes
+safe drawing/IME insets, and bounds the choice area against the space above the real keyboard. Neither TaskSheet
+nor task-header/graph files changed, keeping this separate from T113.
+
+F20-tagged evidence on T112 has synthetic before/after screenshots, independently scrolled text/footer captures,
+mobile layouts and keyboard-footer views, plus browser and emulator recordings. The browser recording joins two
+actual captures: shared draft/choice/duplicate-send checks, then error retention/manual answering and keyboard
+viewport checks. Mobile-web keyboard geometry is emulated in real Chromium (layout-resize and visualViewport-only
+models); a desktop headless browser has no OS IME. Android proof uses the actual emulator keyboard, checks unchanged
+footer bounds while reading, reopens a shared draft and submits both prepared and manual answers to createSetup.
+All demo data/config paths were temporary and printed. No physical phone or real data was used.
+
+Checks pass: fresh frozen Bun install; root 2,142 tests / 24,500 assertions and typecheck; web 924 tests / 13,755
+assertions, zero check diagnostics and production build; Android 809 JVM tests / 107 suites / two opt-in skips /
+zero failures or errors, debug assembly and lint (41 warnings, zero errors); protocol check (337 DTOs / 91 requests).
+UI sources were unchanged after these gates. Owned demo processes/emulator are stopped. No push, deployment or main
+move. F20 remains handling until the result is reviewed.
+
 ## Readable expanded task questions (T112)
 
 Shared web `BoardQuestionCard` and Android `QuestionCard` now have a small expand icon, including warnings and

@@ -1,13 +1,9 @@
 package io.github.mitzacoder.aiki.features.tasks
 
-import io.github.mitzacoder.aiki.features.chat.markdownText
-
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -18,7 +14,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import io.github.mitzacoder.aiki.data.AnswerOutcome
@@ -28,7 +23,6 @@ import io.github.mitzacoder.aiki.ui.components.Lucide
 import io.github.mitzacoder.aiki.ui.components.LucideGlyph
 import io.github.mitzacoder.aiki.ui.theme.Jarvis
 import io.github.mitzacoder.aiki.ui.theme.JetBrainsMono
-import io.github.mitzacoder.aiki.ui.theme.Text as TextStyles
 import kotlinx.coroutines.launch
 
 /**
@@ -49,6 +43,7 @@ fun QuestionCard(
     taskLabel: String? = null,
     onOpenTask: (() -> Unit)? = null,
     compact: Boolean = false,
+    readOnly: Boolean = false,
 ) {
     val colors = Jarvis.colors
     val warning = isWarning(question)
@@ -62,13 +57,13 @@ fun QuestionCard(
     val latest by rememberUpdatedState(question)
     fun send(answer: String) {
         val trimmed = answer.trim()
-        if (trimmed.isEmpty() || busy) return
+        if (trimmed.isEmpty() || busy || !questionCanAnswer(latest, readOnly)) return
         busy = true
         problem = null
         scope.launch {
             val current = latest
             when (val outcome = context.board.answer(current.id, current.revision, trimmed)) {
-                is AnswerOutcome.Answered -> text = ""
+                is AnswerOutcome.Answered -> { text = ""; readingExpanded = false }
                 is AnswerOutcome.Conflict -> problem = when {
                     outcome.newer == null || outcome.newer.status != "open" ->
                         if (warning) "This warning was already acknowledged or withdrawn." else "This question was already answered or withdrawn."
@@ -116,52 +111,17 @@ fun QuestionCard(
                 LucideGlyph(ExpandQuestionIcon, size = 16.dp, contentDescription = "Expand ${if (warning) "warning" else "question"} ${question.id}")
             }
         }
-        if (!warning && question.options.isNotEmpty()) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                question.options.forEach { option ->
-                    Surface(
-                        onClick = { send(option) },
-                        enabled = !busy,
-                        shape = RoundedCornerShape(50),
-                        color = colors.surface,
-                        border = BorderStroke(1.dp, colors.border),
-                        modifier = Modifier.heightIn(min = 32.dp),
-                    ) {
-                        Box(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), contentAlignment = Alignment.CenterStart) {
-                            Text(markdownText(option), style = TaskType.xsMedium, color = colors.fg)
-                        }
-                    }
-                }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Bottom) {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                modifier = Modifier.weight(1f).semantics { contentDescription = if (warning) "Note for ${question.id}" else "Answer to ${question.id}" },
-                placeholder = { Text(if (warning) "Add a note (optional)" else if (question.options.isNotEmpty()) "Or answer in your own words" else "Your answer", style = TaskType.xs) },
-                textStyle = TextStyles.sm,
-                minLines = if (compact) 1 else 2,
-                maxLines = 5,
-                enabled = !busy,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                shape = RoundedCornerShape(10.dp),
-            )
-            if (warning) {
-                Button(onClick = { send(text.trim().ifEmpty { "Acknowledged" }) }, enabled = !busy, contentPadding = PaddingValues(horizontal = 12.dp)) {
-                    LucideGlyph(Lucide.Check, size = 16.dp)
-                    Spacer(Modifier.width(6.dp))
-                    Text("Acknowledge")
-                }
-            } else {
-                FilledIconButton(onClick = { send(text) }, enabled = !busy && text.isNotBlank()) {
-                    LucideGlyph(TaskIcons.Send, size = 16.dp, contentDescription = "Send the answer to ${question.id}")
-                }
-            }
-        }
-        problem?.let { Text(it, style = TaskType.xs, color = colors.danger) }
+        if (questionCanAnswer(question, readOnly)) QuestionAnswerForm(
+            question, text, { text = it }, busy, problem, ::send, compact = compact,
+        )
     }
-    if (readingExpanded) QuestionReadingDialog(question, taskLabel, onDismiss = { readingExpanded = false })
+    if (readingExpanded) QuestionReadingDialog(
+        question, taskLabel, onDismiss = { readingExpanded = false },
+        canAnswer = questionCanAnswerExpanded(question, readOnly),
+        answerFooter = { maxChoicesHeight ->
+            QuestionAnswerForm(question, text, { text = it }, busy, problem, ::send, expanded = true, maxChoicesHeight = maxChoicesHeight)
+        },
+    )
 }
 
 /** The background thread that asked, as a small tinted label. */
