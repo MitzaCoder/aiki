@@ -74,7 +74,19 @@ export function buildGraphModel(tasks: readonly BoardTask[], questions: readonly
 	const counted = [...details.values()].filter(d => !d.task.archived);
 	const statusCounts = Object.fromEntries(GRAPH_STATUSES.map(s => [s.key, counted.filter(d => d.task.status === s.key).length])) as Record<BoardTaskStatus, number>;
 	const reasonCounts = Object.fromEntries(GRAPH_REASONS.map(r => [r.key, counted.filter(d => d.reasons.includes(r.key)).length])) as Record<GraphReason, number>;
-	return { details, statusCounts, reasonCounts, unassignedQuestions: questions.filter(q => q.status === 'open' && !q.taskId) };
+	return { details, statusCounts, reasonCounts, quietCount: counted.filter(d => d.quiet).length, unassignedQuestions: questions.filter(q => q.status === 'open' && !q.taskId) };
+}
+
+/** One compact strip: each status/reason appears once; quiet remains distinct from failure. */
+export function graphSummaryCounters(model: GraphModel) {
+	return [
+		...GRAPH_REASONS.map(reason => ({...reason, key: `reason:${reason.key}`, count: model.reasonCounts[reason.key]})),
+		{key: 'quiet', label: 'Quiet', mark: '◴', tone: 'var(--tone-primary)', count: model.quietCount},
+		...['in_progress', 'todo', 'done', 'dropped'].flatMap(key => {
+			const status = GRAPH_STATUSES.find(status => status.key === key)!;
+			return key === 'dropped' && !model.statusCounts.dropped ? [] : [{...status, key: `status:${key}`, count: model.statusCounts[status.key]}];
+		}),
+	];
 }
 
 export type GraphSearchResult = { taskId: string; score: number; matched: string };

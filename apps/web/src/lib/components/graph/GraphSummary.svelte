@@ -1,23 +1,23 @@
 <script lang="ts">
-	import { GRAPH_STATUSES, GRAPH_REASONS, type GraphModel } from '#lib/task-graph-model.js';
+	import { graphSummaryCounters, type GraphModel } from '#lib/task-graph-model.js';
 	let { model, active, onchange }: { model: GraphModel; active: string | null; onchange: (key: string) => void } = $props();
+	const counters = $derived(graphSummaryCounters(model));
+	const description = $derived(`Counts include closed, not archived. Needs-you reasons overlap; do not add them together. Quiet means no task update for 48 hours.${model.unassignedQuestions.length ? ` ${model.unassignedQuestions.length} open questions have no task; see List.` : ''}`);
 </script>
-<div class="summary" aria-label="Graph summary">
-	<div class="counters" role="group" aria-label="Status counts, including closed tasks, excluding archived">
-		<span class="caption">Status</span>
-		{#each GRAPH_STATUSES as status}
-			<button aria-pressed={active === `status:${status.key}`} aria-label={`${status.label}: ${model.statusCounts[status.key]} tasks, including closed. Highlight matching tasks`} onclick={() => onchange(`status:${status.key}`)}><b style:color={status.tone} aria-hidden="true">{status.mark}</b> {status.label} <strong>{model.statusCounts[status.key]}</strong></button>
-		{/each}
-	</div>
-	<div class="counters" role="group" aria-label="Needs you reasons, overlapping task counts">
-		<span class="caption">Needs you</span>
-		{#each GRAPH_REASONS as reason}
-			<button aria-pressed={active === `reason:${reason.key}`} aria-label={`${reason.label}: ${model.reasonCounts[reason.key]} tasks. Reasons overlap. Highlight matching tasks`} onclick={() => onchange(`reason:${reason.key}`)}><b style:color={reason.tone} aria-hidden="true">{reason.mark}</b> {reason.label} <strong>{model.reasonCounts[reason.key]}</strong></button>
-		{/each}
-	</div>
-	<p>Counts include closed, not archived. Reasons overlap; do not add them together.{#if model.unassignedQuestions.length} {model.unassignedQuestions.length} open questions have no task; see List.{/if}</p>
+<div class="summary" role="group" aria-label="Task counts and needs-you reasons" aria-describedby="graph-count-description" title={description}>
+	<span id="graph-count-description" class="sr-only">{description}</span>
+	<span class="caption">Needs you</span>
+	{#each counters as counter}
+		{#if counter.key === 'status:in_progress'}<span class="separator" aria-hidden="true"></span>{/if}
+		<button aria-pressed={active === counter.key} aria-label={`${counter.label}: ${counter.count} tasks. Highlight matching tasks`} onclick={() => onchange(counter.key)}>
+			<b style:color={counter.tone} aria-hidden="true">{counter.mark}</b> {counter.label} <strong>{counter.count}</strong>
+		</button>
+	{/each}
 </div>
 <style>
-	.summary{padding:0 22px 8px;font-size:12px}.counters{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.caption{font-weight:600;min-width:72px}button{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;min-height:28px;border:1px solid var(--chat-border);border-radius:8px;background:var(--chat-surface);color:var(--chat-fg)}button[aria-pressed=true]{outline:2px solid var(--chat-fg);outline-offset:0;background:var(--chat-surface-2)}button:focus-visible{outline:3px solid var(--chat-fg);outline-offset:2px}b{font-size:15px}p{margin:2px 0;color:var(--chat-fg-muted);font-size:11px}
-	@media(max-width:640px){.summary{padding:0 12px 6px}.counters{flex-wrap:nowrap;overflow-x:auto;padding:3px}.caption{min-width:65px}button{flex-shrink:0;min-height:44px}p{font-size:11px}}
+	.summary{display:flex;align-items:center;gap:6px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;padding:6px 16px;font-size:12px;border-bottom:1px solid var(--chat-border)}
+	.summary::-webkit-scrollbar{display:none}.caption{font-weight:600;white-space:nowrap;margin-right:3px}.separator{border-left:1px solid var(--chat-border);height:20px;margin:0 3px}
+	button{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;padding:4px 8px;min-height:30px;border:1px solid var(--chat-border);border-radius:8px;background:var(--chat-surface);color:var(--chat-fg)}
+	button[aria-pressed=true]{outline:2px solid var(--chat-fg);outline-offset:-2px;background:var(--chat-surface-2)}button:focus-visible{outline:3px solid var(--chat-fg);outline-offset:-3px}b{font-size:15px}
+	@media(max-width:640px){.summary{padding:5px 10px}button{min-height:44px}}
 </style>

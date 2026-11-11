@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import type { BoardTask } from '@aiki/protocol';
 import { buildTaskGraph, reconcileGraphPositions } from '../src/lib/task-graph.ts';
 import { settledGraphPositions, interpolateGraphPositions } from '../src/lib/task-graph-layout.ts';
-import { fitGraphCamera, loadGraphCamera, saveGraphCamera, placeGraphLabels, boxesOverlap, truncatedGraphTitle } from '../src/lib/task-graph-camera.ts';
+import { focusGraphCamera, fitGraphCamera, loadGraphCamera, saveGraphCamera, placeGraphLabels, boxesOverlap, truncatedGraphTitle } from '../src/lib/task-graph-camera.ts';
 import { loadTasksViewMode, saveTasksViewMode } from '../src/lib/kanban.ts';
 function task(id:string,parent:string|null=null):BoardTask {
 	return {id,revision:1,title:`A deliberately long invented title for ${id} and its nested pieces`,description:'',acceptance:null,refs:[],status:'in_progress',blockedBy:[],blockedReason:null,writeScopes:[],workerIds:[],scheduleId:null,report:{now:'',results:'',next:'',revision:0,updatedAt:null,updatedBy:null},snapshots:0,order:1,createdBy:'coordinator',updatedBy:'coordinator',createdAt:'2026-01-01T00:00:00Z',updatedAt:'2026-01-01T00:00:00Z',settledAt:null,archived:false,parent};
@@ -62,6 +62,15 @@ describe('project-local framing and view choice',()=>{
 				expect(Math.abs(p.y-camera.y)*camera.zoom+p.radius*camera.zoom).toBeLessThan(h!/2);
 			}
 		}
+	});
+	it('focuses at readable zoom beside desktop details and above the phone peek',()=>{
+		const desktop=focusGraphCamera({x:100,y:200},{x:0,y:0,zoom:.2},1440,750);
+		expect(desktop.zoom).toBe(.9);
+		expect((100-desktop.x)*desktop.zoom+720).toBeCloseTo(550);
+		const phone=focusGraphCamera({x:100,y:200},{x:0,y:0,zoom:.2},390,650);
+		expect(phone.zoom).toBe(.9);
+		expect((200-phone.y)*phone.zoom+325).toBeCloseTo(195);
+		expect(focusGraphCamera({x:100,y:200},{x:0,y:0,zoom:2},390,650).zoom).toBe(2);
 	});
 	it('isolates camera and mode by backend/project and ignores malformed storage',()=>{
 		const saved=new Map<string,string>(),storage={getItem:(k:string)=>saved.get(k)??null,setItem:(k:string,v:string)=>{saved.set(k,v);}};

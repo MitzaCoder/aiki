@@ -19,6 +19,12 @@ export function fitGraphCamera(positions:Map<string,GraphPosition>,width:number,
 	const padding=width<600 ? 24 : 48;
 	return {x:(left+right)/2,y:(top+bottom)/2,zoom:Math.max(.08,Math.min(1.4,(width-padding*2)/(right-left),(height-padding*2)/(bottom-top)))};
 }
+/** Focus above the phone peek sheet or beside desktop details, never zooming out from a readable view. */
+export function focusGraphCamera(position: Pick<GraphPosition, 'x' | 'y'>, camera: GraphCamera, width: number, height: number): GraphCamera {
+	const zoom = Math.max(.9, camera.zoom);
+	return {x: position.x + (width > 640 ? 170 / zoom : 0), y: position.y + (width <= 640 ? height * .2 / zoom : 0), zoom};
+}
+
 export type GraphLabelBox = {x:number;y:number;width:number;height:number;text:string};
 export function boxesOverlap(a:Omit<GraphLabelBox,'text'>,b:Omit<GraphLabelBox,'text'>):boolean {
 	return a.x < b.x+b.width && a.x+a.width > b.x && a.y < b.y+b.height && a.y+a.height > b.y;

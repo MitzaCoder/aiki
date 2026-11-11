@@ -121,6 +121,28 @@ zero check diagnostics and production build; Android 811 JVM tests / 107 suites 
 debug assembly and lint (40 warnings, one hint, zero errors). Android builds use an explicit empty private-properties
 file. Public denylist/generic guard and Gitleaks pass. Main stayed untouched.
 
+## Task graph stage 1 polish (T106)
+
+One compact strip now shows each count once, including Quiet; zero Dropped is hidden. Scope/overlap text is accessible
+and in the tooltip rather than another row. The large heading is gone, search shares the toolbar (expandable icon on
+phone), results are a keyboard-navigated popover, zoom/Fit float on the canvas and phone's legend is a popover. Phone
+details peek at 40% of the graph stage and have an explicit Expand/Peek control. Matching tasks get full-opacity
+reason-coloured rings; nonmatches are 23% opaque, with a separate selection ring. Fit matches is explicit and counters
+never move the camera. Search/panel-link focus animates to at least .9 zoom and preserves closer zoom; reduced motion
+is immediate. Selected labels have a fallback slot. GraphLegend is split out; tests cover unique summary counts, Quiet,
+zero Dropped and readable desktop/phone focus.
+
+Measured in real Chromium: the 390×844 view has a 642px graph stage, with 385px left above its 257px peek. Clearing the
+saved camera before first open at 1440×1000 gave a 1175×831 stage; graph bounds filled 89.7% of width and 70.4% of height.
+Fit reproduces that framing. The earlier one-third-stage framing was not reproduced with a fresh camera. Review rings
+measure full opacity, nonmatches .23. The refreshed T106 after set is `polish-counter-*` / `polish-panel-*`; before is
+unchanged. A 9.35-second recording proves highlight, keyboard search popover, readable zoom, live panel/camera stability
+and phone peek→expand. Only offline was recaptured among the state screens, per the review request. Earlier after proof
+is historical. Keep capture/interaction in one CDP session as noted below.
+
+All rerun gates pass: root 2,146 tests / 24,523 assertions (no retry), web 928 / 13,778, web check zero errors/warnings,
+web build, root typecheck and public-source/Gitleaks. No protocol/Android/layout-engine changes, deployment or main move.
+
 ## Task graph stage 1 (T106)
 
 The bubble canvas now has marked status/overlapping reason counters, ranked task/family/worker/thread search and an

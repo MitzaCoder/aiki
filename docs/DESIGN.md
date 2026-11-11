@@ -1419,10 +1419,16 @@ Bubble club is the chosen web graph: soft clusters and round worker creatures, w
 renderers. Expanded Tasks offers List | Board | Graph; the narrow sidebar stays a list. The choice is local per
 backend/project under the name-neutral `tasks.view.v2:` key. Graph is read-only; tasks open the existing sheet.
 
-Stage 1 (T106, following option C / D56) keeps the bubble canvas and adds product chrome. Status counters include
-closed but not archived tasks; overlapping needs-you counters distinguish review, blocked, waiting, question/warning
-and worker failure. Each has a mark and a word. Counters and ranked ID/title/family/worker/thread search dim context
-without removing or repacking nodes. Enter/previous/next visits search results by panning, preserving zoom. The research
+Stage 1 (T106, following option C / D56) keeps the bubble canvas and adds compact product chrome. One strip includes
+review, blocked, waiting, question/warning, worker failure and quiet, then working/planned/done (dropped only if nonzero).
+Counts include closed but not archived tasks; needs-you reasons overlap. Marks and words accompany every count; scope
+and overlap are described accessibly and in the tooltip, not a second visible row. Phone uses one scrollbar-free row.
+Counters and ranked ID/title/family/worker/thread search dim context without removing or repacking nodes. Matching tasks
+have full-opacity reason-coloured rings, nonmatches are 23% opaque, and selection has its own strong ring. Fit matches is
+an explicit camera action: clicking a counter never moves the camera. Search lives with the view switch (an expandable
+icon on phone), with an arrow/Enter/Escape-navigable popover rather than a permanent results row. Focus pans and smoothly
+raises zoom to at least .9 so the selected label is readable; already-closer zoom is preserved. Reduced motion is immediate.
+Zoom/Fit controls float on the canvas, the large heading is removed, and phone's legend is behind a button. The research
 in `research/task-graph-product.md` is historical: prototypes and `/graph-lab` were not merged (D57).
 
 A tap selects by task ID; hover only previews. The right detail panel (bottom sheet at ≤640px) updates in place on
@@ -1430,7 +1436,9 @@ watch replacements and explains disappearing tasks instead of silently closing. 
 quiet activity (48 hours since the task update, never done/dropped), direct blockers/dependents, family, workers and
 threads. Family identity follows all available ancestors, even closed/archived parents, with cycle defense. Progress is
 **done / all non-dropped subtasks at every depth**, excluding the root, not a leaf percentage or effort estimate.
-Double-click, Enter or Open task uses the existing sheet route; Escape clears selection/search/counter. Loading, no
+Phone details open at a 40%-of-stage peek with title, status, reason marks and Open task; Expand/Peek switches to a
+full-stage scrollable sheet. Double-click, Enter or Open task uses the existing sheet route. Escape first closes the
+search popover, then clears selection/search/counter. Loading, no
 work yet, all closed, no visible matches and stale connection states are distinct; offline keeps the last board.
 Small footer text uses foreground; blocker arrows have full-opacity stronger strokes and status has its own legend.
 

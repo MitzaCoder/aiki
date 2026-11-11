@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { Value } from 'typebox/value';
 import { PROTOCOL_SCHEMAS } from '@aiki/protocol';
 const { Board: BoardSchema, WorkerSummary: WorkerSummarySchema, ThreadSummary: ThreadSummarySchema } = PROTOCOL_SCHEMAS;
-import { buildGraphModel, searchGraph } from '../src/lib/task-graph-model.ts';
+import { buildGraphModel, graphSummaryCounters, searchGraph } from '../src/lib/task-graph-model.ts';
 import { makeGraphFixture, FIXTURE_NOW, advanceGraphFixture } from './fixtures/task-graph-busy.ts';
 const now = Date.parse(FIXTURE_NOW);
 const build = (fixture = makeGraphFixture()) => buildGraphModel(fixture.board.tasks, fixture.board.questions, fixture.workers, fixture.threads, now);
@@ -70,6 +70,16 @@ describe('graph product model', () => {
 		expect(searchGraph(model, 'sync crew').map(r => r.taskId)).toContain('T10');
 		expect(searchGraph(model, 'not a task')).toEqual([]);
 		expect(searchGraph(model, ' ')).toEqual([]);
+	});
+	it('shows each summary count once, includes quiet, and hides zero dropped', () => {
+		const counters = graphSummaryCounters(build());
+		expect(counters.filter(c => c.label === 'Review')).toHaveLength(1);
+		expect(counters.filter(c => c.label === 'Blocked')).toHaveLength(1);
+		expect(counters.filter(c => c.label === 'Waiting')).toHaveLength(1);
+		expect(counters.find(c => c.key === 'quiet')?.count).toBe(10);
+		expect(counters.some(c => c.label === 'Dropped')).toBe(false);
+		const fixture = makeGraphFixture(); fixture.board.tasks[0]!.status = 'dropped';
+		expect(graphSummaryCounters(build(fixture)).find(c => c.label === 'Dropped')?.count).toBe(1);
 	});
 	it('keeps ID selection on replacement and exposes a disappeared selection as missing', () => {
 		const fixture = makeGraphFixture();
