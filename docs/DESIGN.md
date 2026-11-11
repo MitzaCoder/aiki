@@ -1351,6 +1351,12 @@ validation failures stay inline beside the field. ProjectSummary carries only th
 not feed health/last-attempt status, so the UI does not invent an observer-status line. Existing
 task-activity clients display the canonical Now line; legacy clients get its existing mirror and at
 most one milestone per attempt.
+Android Project settings includes a Delivery section when either `task-changes` or `task-deploys`
+is offered. Each control is independently feature-gated: Integration branch offers Automatic (main or master),
+Custom ref (bare branch names become `refs/heads/<name>`), and Off; Deploy status feed offers Off or
+an absolute file path. Picks save immediately and text saves on blur/Done, matching neighbouring settings,
+with per-field server errors inline. The summary currently carries no feed-health status, so none is invented.
+Existing task-activity clients display the canonical Now line; legacy clients get its existing mirror and at most one milestone per attempt.
 
 The JSON envelope is `{ version: 1, repository, projectId?, events: [...] }`. `repository` must
 equal the project's canonical Git common-directory (including Git-backed jj); optional projectId

@@ -1,5 +1,20 @@
 # Continue
 
+## T125: Android Delivery settings
+
+Project settings now offers Delivery when task-changes or task-deploys is advertised. Integration branch
+supports Automatic, Custom ref (plain names normalize to full local refs), and Off. Deploy status feed
+supports Off or a local file path; server validation errors stay inline. Each setting is gated separately,
+uses projects.configure with explicit null only for Off, and follows existing pick/blur/Done saves.
+The protocol summary has no deploy-feed health field; the UI does not invent one. JVM tests cover modes,
+normalization, feature availability, values and isolated null patches. Verification uses only a temporary
+createSetup backend/project and the assigned emulator, never live data or the owner's phone.
+Light/dark before/after screenshots, a short custom-ref/feed-path recording and inline rejection of a
+relative feed path are attached to T125. Verified persisted values through the real server. Gates pass:
+878 JVM tests (117 suites, 2 opt-in skips), assemble, lint (46 warnings, 4 hints, no errors), protocol
+check (345 DTOs / 92 overloads), and public-source guard. Emulator and scratch backend stopped;
+Gradle daemons stopped. No push, deployment, or main movement.
+
 ## T125 web: Delivery settings in Project General
 
 Added a Delivery group under Project settings → General. Integration branch (task-changes) offers

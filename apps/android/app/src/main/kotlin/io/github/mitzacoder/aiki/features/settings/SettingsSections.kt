@@ -30,6 +30,7 @@ enum class GeneralSection(override val id: String, override val label: String, o
 enum class ProjectSection(override val id: String, override val label: String, override val hint: String, override val icon: SettingsIcon) : SettingsSectionInfo {
     General("general", "General", "Name, folder, archive", SettingsIcon.Folder),
     Coordinator("coordinator", "Coordinator", "The model and how hard it thinks", SettingsIcon.Cpu),
+    Delivery("delivery", "Delivery", "Integration branch and deploy status feed", SettingsIcon.Server),
     Workers("workers", "Workers", "Worker models and check-ins", SettingsIcon.Users),
     Schedules("schedules", "Scheduled tasks", "Clocks and event triggers", SettingsIcon.CalendarClock),
     Tickets("tickets", "Tickets and pull requests", "Jira site, prefixes, repositories", SettingsIcon.Ticket),
@@ -47,6 +48,7 @@ data class ProjectSectionSupport(val supports: (String) -> Boolean, val links: B
 fun projectSectionAvailable(section: ProjectSection, has: ProjectSectionSupport): Boolean = when (section) {
     ProjectSection.General -> true
     ProjectSection.Coordinator -> has.supports("projects") && has.supports("models")
+    ProjectSection.Delivery -> has.supports("task-changes") || has.supports("task-deploys")
     ProjectSection.Workers -> has.supports("projects") && has.supports("models") && has.supports("workers")
     ProjectSection.Schedules -> has.supports("schedules")
     ProjectSection.Tickets -> has.links

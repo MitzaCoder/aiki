@@ -125,6 +125,7 @@ private fun ProjectSettingsContent(context: ProjectScreenContext, section: Proje
             when (projectSectionFor(active) ?: ProjectSection.General) {
                 ProjectSection.General -> ProjectGeneralSection(context, project)
                 ProjectSection.Coordinator -> CoordinatorSection(context, project, context.navigate)
+                ProjectSection.Delivery -> DeliverySection(context.backend, project)
                 ProjectSection.Workers -> WorkersSection(context, project)
                 ProjectSection.Schedules -> SchedulesSection(context, scheduleId)
                 ProjectSection.Tickets -> project.links?.let { TicketsSection(context, it) }
