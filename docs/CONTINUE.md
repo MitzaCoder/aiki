@@ -121,6 +121,31 @@ zero check diagnostics and production build; Android 811 JVM tests / 107 suites 
 debug assembly and lint (40 warnings, one hint, zero errors). Android builds use an explicit empty private-properties
 file. Public denylist/generic guard and Gitleaks pass. Main stayed untouched.
 
+## Compact cards and world-anchored overview (T108 follow-up)
+
+Resolved the earlier overview review point: dots now sit at each region's world-space centre. Every detail level
+uses the same translation/zoom camera. Only dot label font/dimensions stay screen-sized; nearest-neighbor spacing
+truncates title width and drops subtitles before overlap. `task-graph-family-dots.ts` owns anchors, collision-safe
+minimum zoom and Fit of all anchors with label padding. No screen-space shelf remains. Click/Enter still enters
+that family; actual background pan and wheel zoom move the dots. Phone layout detection uses the viewport media
+query, not a temporarily narrow desktop sidebar during its expansion animation.
+
+Bodies are 230×88px, with a fixed 12px crew reservation above (100px occupied total). The engine's new optional
+`creaturesAbove` geometry keeps body/occupied/creature boxes accurate. Creatures overlap the top-right border only
+when present, up to three then +N; no empty row or placeholder remains. ID/status, two title lines and one compact
+meta row fit the body. Progress is N/M visually, full wording accessibly. Geometry is still independent of crew count.
+Fresh desktop Chromium at 1440×1000 measured 16px titles at 1×, with 15 fully visible cards across three families.
+
+Five new tests cover world anchors/pan/pointer zoom, no overlapping fitted labels on desktop/phone, subtitle density,
+compact occupied boxes and stability across crew/status replacement. Refreshed only the four card after screenshots
+and dots shot; the before set is unchanged. A new 7.3-second recording crosses cards→pills→dots continuously, pans
+all ten anchors exactly 80×40px, re-enters a family, and verifies all 80 compact card transforms after live updates.
+Ignored script `.preview/compact-proof.ts` uses the same isolated busy-demo recipe, Vite 5197 and CDP 9397.
+
+Checks: root 2,163 tests / 80,673 assertions; web 945 tests / 69,928 assertions; web check zero errors/warnings;
+web build, root typecheck and public-source/Gitleaks pass. No retries, protocol/server/Android changes, push,
+deployment or main movement. Owned demo/Vite/Chromium processes stopped by PID. Earlier T108 notes below are history.
+
 ## Readable family cards (T108 / graph stage 2)
 
 `TaskGraph.svelte` now keeps the stage-1 chrome/model and delegates rendering to small `graph/Graph*` components.

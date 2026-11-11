@@ -1,5 +1,6 @@
-import { fitTaskFamilies, fitTaskFamily, revealFamilyCard, type FamilyCamera, type TaskFamilyLayout } from './task-graph-families.ts';
+import { fitTaskFamily, revealFamilyCard, type FamilyCamera, type TaskFamilyLayout } from './task-graph-families.ts';
 import { loadFamilyCamera, saveFamilyCamera } from './task-graph-cards.ts';
+import { fitFamilyDots } from './task-graph-family-dots.ts';
 
 /** Owns only the viewport. Family/card coordinates are never mutated by gestures. */
 export class GraphFamilyCamera {
@@ -8,6 +9,8 @@ export class GraphFamilyCamera {
 	height = $state(0);
 	reduced = $state(false);
 	touch = $state(false);
+	phone = $state(false);
+	minimumZoom = $state(.03);
 	dragged = false;
 	private framed = false;
 	private frame = 0;
@@ -41,28 +44,28 @@ export class GraphFamilyCamera {
 		if(!family)return;
 		// Tall families scroll vertically rather than shrinking their text to fit the phone.
 		target.zoom=Math.max(1,target.zoom);
-		target.x=(this.width<=640?(this.width-family.bounds.width*target.zoom)/2:24)-family.bounds.x*target.zoom;
-		target.y=(this.width<=640?120:64)-family.bounds.y*target.zoom;
+		target.x=(this.phone?(this.width-family.bounds.width*target.zoom)/2:24)-family.bounds.x*target.zoom;
+		target.y=(this.phone?120:64)-family.bounds.y*target.zoom;
 		if(animate)this.move(target);else this.camera=target;
 	}
 	first(layout:TaskFamilyLayout,id:string) {
 		if(this.framed||!this.width||!this.height||!layout.cards.size)return;
 		this.family(layout,id,false);
-		if(this.width>640)this.camera=loadFamilyCamera(this.scope,this.storage())??this.camera;
+		if(!this.phone)this.camera=loadFamilyCamera(this.scope,this.storage())??this.camera;
 		this.framed=true;
 	}
-	fit(layout:TaskFamilyLayout) {this.move(fitTaskFamilies(layout,this,30,1));}
+	fit(layout:TaskFamilyLayout) {this.move(fitFamilyDots(layout,this));}
 	reveal(layout:TaskFamilyLayout,id:string, panel=false) {
-		const viewport={width:Math.max(280,this.width-(panel&&this.width>640?330:0)),height:this.height*(panel&&this.width<=640?.6:1)};
+		const viewport={width:Math.max(280,this.width-(panel&&!this.phone?330:0)),height:this.height*(panel&&this.phone?.6:1)};
 		const zoom=Math.max(1,this.camera.zoom);
 		const target=revealFamilyCard(layout,id,{...this.camera,zoom},viewport,24);
 		const card=layout.cards.get(id);
-		if(this.width<=640&&card&&card.box.y*zoom+target.y<120)target.y=120-card.box.y*zoom;
+		if(this.phone&&card&&card.box.y*zoom+target.y<120)target.y=120-card.box.y*zoom;
 		this.move(target);
 	}
 	zoom(factor:number,x=this.width/2,y=this.height/2) {
 		this.stop();
-		const from=this.camera, zoom=Math.max(.03,Math.min(4,from.zoom*factor));
+		const from=this.camera, zoom=Math.max(this.minimumZoom,Math.min(4,from.zoom*factor));
 		this.camera={zoom,x:x-(x-from.x)*zoom/from.zoom,y:y-(y-from.y)*zoom/from.zoom};
 		this.remember();
 	}
@@ -98,14 +101,14 @@ export class GraphFamilyCamera {
 	}
 	pointerUp(event:PointerEvent) {this.pointers.delete(event.pointerId);this.origin=null;}
 	mount(element:HTMLElement) {
-		const motion=matchMedia('(prefers-reduced-motion: reduce)'), touch=matchMedia('(hover: none) and (pointer: coarse)');
+		const motion=matchMedia('(prefers-reduced-motion: reduce)'), touch=matchMedia('(hover: none) and (pointer: coarse)'), phone=matchMedia('(max-width: 640px)');
 		const update=()=>{
-			this.reduced=motion.matches;this.touch=touch.matches;
+			this.reduced=motion.matches;this.touch=touch.matches;this.phone=phone.matches;
 			if(this.reduced&&this.destination){this.camera=this.destination;this.stop();}
 		};
-		update();motion.addEventListener('change',update);touch.addEventListener('change',update);
+		update();motion.addEventListener('change',update);touch.addEventListener('change',update);phone.addEventListener('change',update);
 		const observer=new ResizeObserver(([entry])=>{if(entry){this.width=entry.contentRect.width;this.height=entry.contentRect.height;}});
 		observer.observe(element);
-		return ()=>{observer.disconnect();motion.removeEventListener('change',update);touch.removeEventListener('change',update);this.stop();clearTimeout(this.saveTimer);if(this.framed)saveFamilyCamera(this.scope,this.camera,this.storage());};
+		return ()=>{observer.disconnect();motion.removeEventListener('change',update);touch.removeEventListener('change',update);phone.removeEventListener('change',update);this.stop();clearTimeout(this.saveTimer);if(this.framed)saveFamilyCamera(this.scope,this.camera,this.storage());};
 	}
 }

@@ -1423,12 +1423,16 @@ the existing task sheet. The view choice stays local under `tasks.view.v2:`. No 
   14px at default 1× framing. Review, blocked, waiting, question/warning and worker failure have distinct marks;
   quiet is separate (48 hours without a task update, never done/dropped). Closed cards have neutral fills and
   dashed borders instead of unreadable translucent text. Parent progress counts done / all non-dropped descendants.
-  Family headers show title, the same progress contract, mixed-status bar and a unique needs-you count.
+  Card bodies are 230×88px, with a fixed 12px crew reservation above (100px total). Crew overlaps the top-right
+  border only when present; there is no empty crew row or placeholder. ID/status, two title lines and one compact
+  meta row fit the body. Progress displays N/M with the full wording in the accessible label. Family headers show
+  title, the same progress contract, mixed-status bar and a unique needs-you count.
 - The stage-1 summary, ranked search, live selected-task panel and loading/empty/closed/no-match/offline states remain.
   Counters count closed, not archived tasks; reasons overlap. Matches have strong rings; nonmatches lose colour, not
   text contrast. Fit matches explicitly frames all matching cards. Search/panel links use `revealFamilyCard` at
   readable cards zoom. Watch replacements update selection in place and never refit the camera.
-- `layoutTaskFamilies` retains the previous layout, hidden named slots and empty families. Fixed creature bands and
+- `layoutTaskFamilies` retains the previous layout, hidden named slots and empty families. The `creaturesAbove` option
+  puts the fixed crew reservation above the body, with body/occupied/creature boxes matching the renderer. Fixed bands and
   reserved arrival rows decouple worker/report/status changes from geometry. Overflow/reparenting sets sticky
   `needsRegroup`; the Regroup button explicitly discards reservations and ancestry pins. Geometry options freeze
   until regroup. No force simulation, bubble clusters, detached label placement or card dragging remains.
@@ -1437,9 +1441,12 @@ the existing task sheet. The view choice stays local under `tasks.view.v2:`. No 
   selected family and counter/search matches. The legend uses the same patterns; blocker strokes are full opacity.
 - `chooseFamilyDetail` uses actual minimum card text (14px), pill text (22px) and pill height (64px), with hysteresis.
   Cards become single-line pills, then one screen-sized family blob. Text never shrinks below 12 screen pixels;
-  pills stay ≥24px tall on desktop / ≥44px on touch. Overview targets use a screen-space shelf in family order,
-  preventing tall family bounds from collapsing titles onto one another. Click/Enter enters a family at cards level.
-  Detail changes fade quickly; reduced motion is immediate.
+  pills stay ≥24px tall on desktop / ≥44px on touch. Each dot is anchored at its family's world-space region centre:
+  pan and pointer-anchored zoom use the same camera at every level. Only label dimensions/fonts remain screen-sized.
+  Nearest-neighbor spacing limits title width; crowded labels lose subtitle lines, never move their anchors. A
+  geometry-derived minimum zoom prevents compact labels from colliding. Fit frames all family anchors with screen
+  padding for labels, even when the card regions are tall. Click/Enter enters that family at cards level. Detail
+  changes fade quickly; reduced motion is immediate.
 - Worker and non-main thread creatures attach to their task: up to three, then +N. Running creatures type/sway;
   idle ones rest; failures have a mark. A changed nonempty report produces one bounded spark. Reduced motion removes
   sway/typing/sparks without removing crew or status information. Card names expose all crew names/states.
@@ -1456,7 +1463,8 @@ the existing task sheet. The view choice stays local under `tasks.view.v2:`. No 
 
 Implementation: `TaskGraph.svelte` owns chrome/model; `graph/GraphFamilyCanvas.svelte` owns layout/LOD/focus; small
 card/family/edge/creature components render content. `graph-family-camera.svelte.ts` owns only the viewport, and
-`task-graph-cards.ts` holds pure presentation/navigation helpers. `task-graph-families*.ts` remains the geometry contract.
+`task-graph-cards.ts` holds pure presentation/navigation helpers; `task-graph-family-dots.ts` holds world-anchor,
+label-density, minimum-zoom and dot-fit calculations. `task-graph-families*.ts` remains the geometry contract.
 The isolated busy demo has 90 synthetic tasks, ten families and real worker/thread/report watches; no installed data,
 real worker tools, feature flag or prototype renderer is involved.
 

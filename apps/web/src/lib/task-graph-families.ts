@@ -15,6 +15,8 @@ export type FamilyLayoutOptions = {
 	cardHeight: number;
 	/** A fixed badge/count band, reserved even for tasks with no workers or threads. */
 	creatureHeight: number;
+	/** Reserve crew space above the body, allowing creatures to overlap its top edge. */
+	creaturesAbove: boolean;
 	gap: number;
 	indent: number;
 	padding: number;
@@ -31,6 +33,7 @@ export const DEFAULT_FAMILY_LAYOUT_OPTIONS: Readonly<FamilyLayoutOptions> = {
 	cardWidth: 236,
 	cardHeight: 100,
 	creatureHeight: 40,
+	creaturesAbove: false,
 	gap: 24,
 	indent: 36,
 	padding: 24,
@@ -168,7 +171,11 @@ function buildTaskTree(input: readonly LayoutTask[]): TaskTree {
 function layoutOptions(input?: Partial<FamilyLayoutOptions>): FamilyLayoutOptions {
 	const options = { ...DEFAULT_FAMILY_LAYOUT_OPTIONS, ...input };
 	for (const [name, amount] of Object.entries(options)) {
-		if (!Number.isFinite(amount) || amount < 0) throw new Error(`Invalid family layout option: ${name}`);
+		if (name === 'creaturesAbove') {
+			if (typeof amount !== 'boolean') throw new Error(`Invalid family layout option: ${name}`);
+			continue;
+		}
+		if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0) throw new Error(`Invalid family layout option: ${name}`);
 	}
 	for (const name of ['cardWidth', 'cardHeight', 'pillWidth', 'pillHeight', 'aspect'] as const) {
 		if (options[name] === 0) throw new Error(`Invalid family layout option: ${name}`);
@@ -344,12 +351,12 @@ export function layoutTaskFamilies(tasks: readonly LayoutTask[], input: FamilyLa
 			if (slot.taskId === null || !tree.tasks.has(slot.taskId)) continue;
 			family.taskIds.push(slot.taskId);
 			const x = family.bounds.x + slot.x, y = family.bounds.y + slot.y;
-			const box = { x, y, width: options.cardWidth, height: options.cardHeight };
+			const box = { x, y: y + (options.creaturesAbove ? options.creatureHeight : 0), width: options.cardWidth, height: options.cardHeight };
 			const parent = tree.parents.get(slot.taskId) ?? null;
 			cards.set(slot.taskId, {
 				id: slot.taskId, familyId: family.id, parentId: parent, depth: slot.depth, box,
-				occupiedBox: { ...box, height: options.cardHeight + options.creatureHeight },
-				creatureBox: { x, y: y + options.cardHeight, width: options.cardWidth, height: options.creatureHeight },
+				occupiedBox: { x, y, width: options.cardWidth, height: options.cardHeight + options.creatureHeight },
+				creatureBox: { x, y: options.creaturesAbove ? y : y + options.cardHeight, width: options.cardWidth, height: options.creatureHeight },
 				creatureCount: Math.max(0, input.creatureCounts?.get(slot.taskId) ?? 0),
 				pillBox: {
 					x: family.bounds.x + options.padding + slot.depth * options.indent * Math.min(1, options.pillWidth / options.cardWidth),
