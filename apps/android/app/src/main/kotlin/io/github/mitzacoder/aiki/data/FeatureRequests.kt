@@ -11,6 +11,7 @@ object HarnessFeature {
     const val STORAGE = "storage"
     const val TASK_REPORTS = "task-reports"
     const val TASK_LINKS = "task-links"
+    const val TASK_TIMELINE_GROUPS = "task-timeline-groups"
     const val CACHE_STATS = "cache-stats"
     const val REF_STATUS = "ref-status"
     const val BOARD_MOVES = "board-moves"
@@ -73,9 +74,10 @@ suspend fun HarnessClient.readTaskHistory(projectId: String, taskId: String): Li
 }
 
 /** Task feedback and timeline share one read. Needs task-links. */
-suspend fun HarnessClient.readTaskTimeline(projectId: String, taskId: String, kinds: List<String>? = null): BoardTaskTimelineResponse {
+suspend fun HarnessClient.readTaskTimeline(projectId: String, taskId: String, kinds: List<String>? = null, grouped: Boolean = false): BoardTaskTimelineResponse {
     requireFeature(HarnessFeature.TASK_LINKS)
-    return request(BoardTaskTimelineRequest(projectId = projectId, taskId = taskId, kinds = kinds))
+    return request(BoardTaskTimelineRequest(projectId = projectId, taskId = taskId, kinds = kinds,
+        grouped = true.takeIf { grouped && supports(HarnessFeature.TASK_TIMELINE_GROUPS) }))
 }
 suspend fun HarnessClient.setFeedbackState(projectId: String, taskId: String, feedbackId: String, state: String): BoardFeedback {
     requireFeature(HarnessFeature.TASK_LINKS)

@@ -181,6 +181,20 @@ class ProtocolRegressionTest {
         }
     }
 
+    @Test fun timelineGroupingRequiresExplicitCapabilityAndCarriesKindFilters() = runBlocking {
+        for (groupedCapability in listOf(false, true)) {
+            Stub(features = listOf("board", "task-links") + if (groupedCapability) listOf("task-timeline-groups") else emptyList(), onRequest = { _, ws, request ->
+                if (request.type == "board.task.timeline") reply(ws, request, """{"projectId":"p","taskId":"T1","entries":[],"feedback":[]}""")
+            }).use { stub ->
+                stub.ready()
+                stub.client.readTaskTimeline("p", "T1", listOf("worker"), grouped = true)
+                val request = stub.requests.map { it.second }.single { it.type == "board.task.timeline" }
+                assertEquals(if (groupedCapability) JsonPrimitive(true) else null, request["grouped"])
+                assertEquals(JsonArray(listOf(JsonPrimitive("worker"))), request["kinds"])
+            }
+        }
+    }
+
     @Test fun projectBoardLoadsOnConnectTakesPushesAndReportsConflicts() = runBlocking {
         fun board(id: String) = """{"tasks":[{"id":"$id","revision":1,"title":"$id","description":"","acceptance":null,"status":"todo","blockedBy":[],
             "blockedReason":null,"writeScopes":[],"workerIds":[],"scheduleId":null,"order":1,"createdBy":"user","updatedBy":"user",

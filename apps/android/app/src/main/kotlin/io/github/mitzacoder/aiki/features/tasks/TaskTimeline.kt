@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import io.github.mitzacoder.aiki.features.status.exactTime
 import io.github.mitzacoder.aiki.features.status.relativeTime
 import io.github.mitzacoder.aiki.protocol.BoardTimelineEntry
+import io.github.mitzacoder.aiki.protocol.BoardTimelineGroup
 import io.github.mitzacoder.aiki.protocol.BoardWriter
 import io.github.mitzacoder.aiki.ui.components.JarvisIconButton
 import io.github.mitzacoder.aiki.ui.components.Lucide
@@ -32,11 +33,16 @@ import io.github.mitzacoder.aiki.ui.theme.Jarvis
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun TaskTimeline(entries: List<BoardTimelineEntry>, newestFirst: Boolean, onToggleOrder: () -> Unit, writerName: (BoardWriter) -> String, now: Long) {
+internal fun TaskTimeline(entries: List<BoardTimelineEntry>, newestFirst: Boolean, onToggleOrder: () -> Unit, writerName: (BoardWriter) -> String, now: Long, groups: List<BoardTimelineGroup>? = null, onKindsChanged: (List<String>?) -> Unit = {}) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     var hidden by rememberSaveable { mutableStateOf(listOf<String>()) }
+    var openedGroups by rememberSaveable { mutableStateOf(listOf<String>()) }
+    var kindCounts by rememberSaveable { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    LaunchedEffect(entries, groups, hidden) {
+        if (hidden.isEmpty()) kindCounts = (groups?.flatMap { it.entries }?.map { it.kind } ?: entries.map { it.kind }).groupingBy { it }.eachCount()
+    }
     val direction = if (newestFirst) "Newest first" else "Oldest first"
-    TaskSection(TaskSectionKind.Timeline, count = entries.size.toString(), expanded = expanded, onToggle = { expanded = !expanded }, metadata = {
+    TaskSection(TaskSectionKind.Timeline, count = (groups?.sumOf { it.factCount } ?: entries.size).toString(), expanded = expanded, onToggle = { expanded = !expanded }, metadata = {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(direction) } }, state = rememberTooltipState()) {
                 JarvisIconButton(LucideIcon(if (newestFirst) "newest-first" else "oldest-first", if (newestFirst) "M4 3v18m-3-3 3 3 3-3" else "M4 21V3m-3 3 3-3 3 3", "M10 5h11", "M10 12h7", "M10 19h3"),
@@ -47,17 +53,45 @@ internal fun TaskTimeline(entries: List<BoardTimelineEntry>, newestFirst: Boolea
         if (expanded) {
             val colors = Jarvis.colors
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                TIMELINE_KINDS.filter { (kind, _) -> entries.any { it.kind == kind } }.forEach { (kind, label) ->
-                    FilterChip(selected = kind !in hidden, onClick = { hidden = if (kind in hidden) hidden - kind else hidden + kind },
-                        label = { Text("$label (${entries.count { it.kind == kind }})", style = TaskType.meta) })
+                TIMELINE_KINDS.filter { (kind, _) -> if (groups != null) kind in kindCounts else entries.any { it.kind == kind } }.forEach { (kind, label) ->
+                    FilterChip(selected = kind !in hidden, onClick = {
+                        hidden = if (kind in hidden) hidden - kind else hidden + kind
+                        if (groups != null) onKindsChanged(if (hidden.isEmpty()) null else TIMELINE_KINDS.map { it.first }.filterNot { it in hidden })
+                    }, label = { Text("$label (${if (groups != null) kindCounts[kind] ?: 0 else entries.count { it.kind == kind }})", style = TaskType.meta) })
                 }
             }
             val visible = remember(entries, hidden, newestFirst) { orderedTimeline(visibleTimeline(entries, hidden.toSet()), newestFirst) }
             val scroll = rememberLazyListState()
             LaunchedEffect(newestFirst, hidden) {
-                if (visible.isNotEmpty()) scroll.scrollToItem(if (newestFirst) 0 else visible.lastIndex)
+                if (groups == null && visible.isNotEmpty()) scroll.scrollToItem(if (newestFirst) 0 else visible.lastIndex)
             }
-            if (visible.isEmpty()) Text("No timeline entries.", style = TaskType.xs, color = colors.fgSubtle)
+            if (groups != null) {
+                val ordered = orderedTimelineGroups(groups.filter { group -> group.entries.any { it.kind !in hidden } }, newestFirst)
+                LaunchedEffect(newestFirst, hidden) {
+                    if (ordered.isNotEmpty()) scroll.scrollToItem(if (newestFirst) 0 else ordered.lastIndex)
+                }
+                if (ordered.isEmpty()) Text("No timeline entries.", style = TaskType.xs, color = colors.fgSubtle)
+                else LazyColumn(Modifier.fillMaxWidth().heightIn(max = minOf(400.dp, (LocalConfiguration.current.screenHeightDp * .36f).dp)), state = scroll) {
+                    itemsIndexed(ordered, key = { _, group -> group.id }) { index, group ->
+                        Column {
+                            val day = timelineDay(group.hour, now)
+                            if (index == 0 || timelineDay(ordered[index - 1].hour, now) != day) {
+                                Text(day, Modifier.fillMaxWidth().padding(vertical = 8.dp), style = TaskType.meta, color = colors.fgMuted)
+                                HorizontalDivider(color = colors.border)
+                            }
+                            val open = group.id in openedGroups
+                            TimelineGroup(group, open, { openedGroups = if (open) openedGroups - group.id else openedGroups + group.id })
+                            if (open) {
+                                val facts = group.entries.filterNot { it.kind in hidden }.sortedBy { it.at }.let { if (newestFirst) it.reversed() else it }
+                                facts.forEach { fact -> key(fact.id) {
+                                    TimelineEvent(fact.timelineEntry(), writerName, now, timelineRange(fact.at, fact.endAt))
+                                } }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (visible.isEmpty()) Text("No timeline entries.", style = TaskType.xs, color = colors.fgSubtle)
             else LazyColumn(Modifier.fillMaxWidth().heightIn(max = minOf(400.dp, (LocalConfiguration.current.screenHeightDp * .36f).dp)), state = scroll) {
                 itemsIndexed(visible) { index, entry ->
                     val day = timelineDay(entry.at, now)
@@ -76,7 +110,7 @@ internal fun TaskTimeline(entries: List<BoardTimelineEntry>, newestFirst: Boolea
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimelineEvent(entry: BoardTimelineEntry, writerName: (BoardWriter) -> String, now: Long) {
+private fun TimelineEvent(entry: BoardTimelineEntry, writerName: (BoardWriter) -> String, now: Long, range: String? = null) {
     val colors = Jarvis.colors
     val tone = when (timelineTone(entry)) {
         "danger" -> colors.danger
@@ -105,7 +139,7 @@ private fun TimelineEvent(entry: BoardTimelineEntry, writerName: (BoardWriter) -
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(entry.by?.let(writerName) ?: "Recorded event", Modifier.weight(1f), style = TaskType.meta, color = colors.fgSubtle, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = { PlainTooltip { Text(exactTime(entry.at)) } }, state = rememberTooltipState()) {
-                    Text(relativeTime(entry.at, now), style = TaskType.meta, color = colors.fgSubtle)
+                    Text(range ?: relativeTime(entry.at, now), style = TaskType.meta, color = colors.fgSubtle)
                 }
             }
             val status = if (entry.kind == "status") timelineStatus(entry.label) else null
@@ -116,7 +150,7 @@ private fun TimelineEvent(entry: BoardTimelineEntry, writerName: (BoardWriter) -
                         Text(label, Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = TaskType.meta, color = colors.fg)
                     }
                 }
-            } else Text(entry.label, style = TaskType.xsSemibold, color = colors.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            } else Text(entry.label, style = TaskType.xsSemibold, color = colors.fg, maxLines = if (range == null) 1 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
             entry.detail?.let { detail ->
                 var detailsOpen by rememberSaveable(entry.at, entry.label) { mutableStateOf(false) }
                 Text("${if (detailsOpen) "⌄" else "›"} ${timelineDetail(detail)}", Modifier.fillMaxWidth().semantics { stateDescription = if (detailsOpen) "Expanded" else "Collapsed" }.clickable(onClickLabel = if (detailsOpen) "Hide event details" else "Show event details") { detailsOpen = !detailsOpen },

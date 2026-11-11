@@ -162,14 +162,18 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
     var closing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val linksEnabled = connection.supports(HarnessFeature.TASK_LINKS)
+    val timelineGroupsEnabled = connection.supports(HarnessFeature.TASK_TIMELINE_GROUPS)
+    var timelineKinds by rememberSaveable(taskId) { mutableStateOf<List<String>?>(null) }
     var timeline by remember(taskId) { mutableStateOf<BoardTaskTimelineResponse?>(null) }
     var timelineProblem by remember(taskId) { mutableStateOf<String?>(null) }
     var feedbackBusy by remember(taskId) { mutableStateOf(false) }
     var timelineRefresh by remember(taskId) { mutableIntStateOf(0) }
-    LaunchedEffect(linksEnabled, connection.status, task.timelineRevision, task.feedback, task.status, task.report.revision, timelineRefresh) {
+    LaunchedEffect(linksEnabled, timelineGroupsEnabled, timelineKinds, connection.status, task.timelineRevision, task.feedback, task.status, task.report.revision, timelineRefresh) {
         if (!linksEnabled) return@LaunchedEffect
         try {
-            timeline = context.backend.client.readTaskTimeline(project, taskId)
+            val response = context.backend.client.readTaskTimeline(project, taskId, timelineKinds, grouped = timelineGroupsEnabled)
+            // Empty wire kinds means no server filter; all chips off means no matching groups in the UI.
+            timeline = if (timelineGroupsEnabled && timelineKinds?.isEmpty() == true && response.groups != null) response.copy(groups = emptyList()) else response
             timelineProblem = null
         } catch (cause: CancellationException) { throw cause }
         catch (cause: Exception) { timelineProblem = cause.message ?: "Could not read timeline" }
@@ -262,7 +266,7 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
             decisions.size, linksEnabled,
             if (task.feedback != null) openFeedbackCount(task).toInt()
             else timeline?.feedback.orEmpty().count { it.state == "open" || it.state == "handling" },
-            timeline?.entries.orEmpty().size,
+            timeline?.groups?.takeIf { timelineGroupsEnabled }?.sumOf { it.factCount }?.toInt() ?: timeline?.entries.orEmpty().size,
             workers.count { it.id in task.workerIds && it.status == "running" },
         )
         var sectionSelection by remember(task.id) { mutableStateOf(TaskSectionSelection()) }
@@ -374,7 +378,8 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
                                 }
                             }
                             TaskSectionKind.Timeline -> {
-                                TaskTimeline(timeline?.entries.orEmpty(), deviceSettings.timelineNewestFirst, { scope.launch { context.repository.setTimelineNewestFirst(!deviceSettings.timelineNewestFirst) } }, ::writerName, now)
+                                TaskTimeline(timeline?.entries.orEmpty(), deviceSettings.timelineNewestFirst, { scope.launch { context.repository.setTimelineNewestFirst(!deviceSettings.timelineNewestFirst) } }, ::writerName, now,
+                                    groups = timeline?.groups.takeIf { timelineGroupsEnabled }, onKindsChanged = { timelineKinds = it })
                             }
                             TaskSectionKind.History -> {
                                 if (task.snapshots > 0) {

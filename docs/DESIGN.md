@@ -2088,7 +2088,17 @@ server-authored. Expanded facts retain T118's rich rows, focusable entries and d
 outcome times for evolving sources. Newest-first/order toggle, local day headings and the 400px/48dvh
 scroll region are retained; groups sort by starting hour/start, never evolving end. Grouped history reads
 follow task.timelineRevision while the sheet is open (plus reconnect/task changes), not report/activity
-pushes. Missing capability preserves the T118 flat UI. Android display is a separate follow-up.
+pushes. Missing capability preserves the T118 flat UI. The Android contract follows below.
+display retain the T118 order/toggle/bounded-height/day-group/richer-row contract.
+
+Android requests groups only when the capability is explicit, otherwise leaving T118 unchanged. Groups replace
+flat rows (including successful empty results), start collapsed and retain expansion by opaque ID across refreshes.
+Each 48dp-or-larger button announces its local time range, category, fact count, label and expanded state to TalkBack.
+Failures and open questions keep warning tones/icons in collapsed labels. Expanded rows retain actor, local start/end,
+start → outcome and inspectable evidence. Kind filters are sent to the server so ranges, counts and labels reflect
+only matching entries; filter choices remain available while filtering. The sheet rereads on `timelineRevision`,
+including folded source updates, without forcing a scroll jump. The existing persisted reading direction, local day
+headings and bounded nested scroll remain. The web contract is described above.
 
 Each group is `{ id, kind, hour, range: { start, end }, revision, factCount, label, entries }`.
 Kinds `work`, `decisions`, `delivery` mean Work, Decisions and feedback, Delivery. The bucket is the

@@ -1,5 +1,68 @@
 # Continue
 
+## T123: remaining T120 stages integrated and checked
+
+The remaining stages are linear above the unchanged ship tip `tvpnwyzq`:
+report audit/settings (6), automatic Now (2), deployment feeds/settings (5),
+then hourly timeline groups (3). Empty idle workspace children are not stages.
+No main move, push or deployment was performed.
+
+Resolved documentation conflicts oldest first, keeping every continuation line
+from the original Android/web Delivery and server/web/Android timeline changes;
+a multiset comparison against each original document found no lost nonempty lines.
+DESIGN retains both client contracts. The client test conflict retains both Delivery
+configuration and grouped-timeline tests. No generated Kotlin conflict occurred;
+all four protocol generation checks exited zero. Existing feature lists and both
+clients' Delivery/report-check groups merged without conflicts.
+
+The timeline server change now displays the first 12 hash characters for landed,
+removed and reverted changes and deploy attempted/serving details and summary labels.
+Structured hashes, source identity and refs remain full-length. Regression coverage
+checks all three change outcomes and deployment details. The first stack gate found
+old full-hash/seven-character expectations; those were corrected in the same server
+change. A subsequent run caught an accidentally shortened negative assertion; it was
+corrected there too. The final full root run passes; no flaky-file retries or runtime
+fixes outside the hash display change were needed.
+
+Sequential boundary gates (root tests / assertions; web tests / assertions):
+- Stage 6: 2,305 / 90,744; 1,016 / 79,499.
+- Stage 2: 2,343 / 90,908; 1,022 / 79,544.
+- Stage 5: 2,365 / 91,139; 1,028 / 79,585.
+- Stack tip: 2,401 / 91,263; 1,035 / 79,612.
+Each boundary also passed install, root typecheck, web check (zero diagnostics),
+web production build, protocol check, private public-source/Gitleaks guard, Android
+unit tests, debug assembly and lint. Both explicit deployment suites passed 84 tests
+and 622 assertions. Final Android XML: 885 tests across 118 suites, two opt-in skips,
+zero failures/errors. Gradle daemons were stopped after every boundary.
+
+T123 proof uses the earlier synthetic createSetup recipe with production landing and
+deployment helpers: desktop before `mwcmzxm8-896d88b9dc`, final expanded Delivery after
+`mwcn2cey-46bb919450`, and interaction recording `mwcn2kiy-ed09bcc5b3` (frames held for
+readability). The final screenshot supersedes a smaller detached-emulation capture.
+Visible DOM assertions verify 12-character landed/attempted/serving hashes and no
+40-character hashes. Scratch data/scripts stay outside the repository; owned backend,
+Vite and Chromium processes were stopped by their recorded PIDs. No live data used.
+
+## T123 Android: hourly timeline groups (stage 3 of T120)
+
+Android now explicitly opts into `task-timeline-groups` only with that capability. Groups replace flat entries;
+absent groups retains T118 and empty groups stays empty. Work, Decisions and feedback, and Delivery begin collapsed,
+show local range/count/server summary, and retain expansion by opaque ID across revision refreshes. Expanded rows
+show start → outcome with existing actor/detail styling. Failures/open questions retain attention tones/icons.
+TalkBack buttons announce range, kind, count and expanded state; targets are at least 48dp. Existing newest-first
+preference/toggle, day headings and bounded scrolling remain. Filters go to the server to recompute grouped labels,
+ranges and counts, with available chips retained. The existing task `timelineRevision` effect refreshes the open sheet.
+
+Proof on T123: isolated emulator, real createSetup server, synthetic busy release (three workers, answered question,
+addressed feedback, three landed changes and one deployment attempt). Light/dark flat-before and expanded-after
+screenshots plus expansion/collapse/order recording are attached. The seed used printed temporary data/config paths,
+not live data. No physical device, push, main move or deployment. Track chosen only after checking available devices.
+
+Checks: 879 JVM tests / 117 suites, two opt-in skips, zero failures/errors; debug assembly and lint (zero errors,
+47 warnings); generated protocol --check (348 DTOs / 92 overloads); public-source/Gitleaks guard. Seven new JVM tests
+cover grouping/formatting and explicit capability/filter request gating. Gradle daemons and owned emulator/server
+are stopped before handoff. Web display remains the parallel worker's responsibility.
+
 ## T123 web: hourly folded Timeline
 
 The sheet requests grouped history only with explicit task-timeline-groups support. Groups replace flat

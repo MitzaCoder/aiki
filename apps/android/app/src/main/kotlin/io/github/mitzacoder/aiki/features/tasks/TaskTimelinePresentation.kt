@@ -1,6 +1,8 @@
 package io.github.mitzacoder.aiki.features.tasks
 
 import io.github.mitzacoder.aiki.protocol.BoardTimelineEntry
+import io.github.mitzacoder.aiki.protocol.BoardTimelineFact
+import io.github.mitzacoder.aiki.protocol.BoardTimelineGroup
 import io.github.mitzacoder.aiki.features.chat.markdownText
 import java.time.Instant
 import java.time.ZoneId
@@ -31,4 +33,42 @@ internal fun timelineTone(entry: BoardTimelineEntry): String = when {
     entry.kind == "status" || entry.kind == "worker" -> "activity"
     entry.kind == "milestone" -> "success"
     else -> "accent"
+}
+
+
+internal fun orderedTimelineGroups(groups: List<BoardTimelineGroup>, newestFirst: Boolean): List<BoardTimelineGroup> {
+    val sorted = groups.sortedWith(compareBy({ Instant.parse(it.hour) }, { Instant.parse(it.range.start) }, { it.id }))
+    return if (newestFirst) sorted.reversed() else sorted
+}
+
+internal fun timelineRange(start: String, end: String, zone: ZoneId = ZoneId.systemDefault()): String {
+    val format = DateTimeFormatter.ofPattern("HH:mm").withZone(zone)
+    return "${format.format(Instant.parse(start))}–${format.format(Instant.parse(end))}"
+}
+
+internal fun timelineGroupKind(kind: String): String = when (kind) {
+    "work" -> "Work"
+    "decisions" -> "Decisions and feedback"
+    "delivery" -> "Delivery"
+    else -> kind
+}
+
+internal fun timelineGroupTone(group: BoardTimelineGroup): String = when {
+    group.entries.any { it.outcome == "failed" || it.outcome == "rolled_back" } -> "danger"
+    group.entries.any { it.kind == "question" && it.outcome == "open" } -> "warning"
+    group.kind == "delivery" -> "success"
+    else -> "activity"
+}
+
+internal fun BoardTimelineFact.timelineEntry(): BoardTimelineEntry {
+    val start = when {
+        source == "worker" || source == "thread" -> "started"
+        kind == "question" -> "asked"
+        kind == "feedback" -> "received"
+        source == "deploy" -> "queued"
+        else -> null
+    }
+    val subject = if (source == "deploy") label else actor?.name ?: ref ?: label
+    val evolvingLabel = if (start != null && factCount > 1 && outcome != "running") "$subject · $start → ${outcome.replace('_', ' ')}" else label
+    return BoardTimelineEntry(at, kind, evolvingLabel, detail, ref, state, by)
 }
