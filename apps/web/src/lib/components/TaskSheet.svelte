@@ -1,8 +1,8 @@
 <script lang="ts">
 	import CardMarkdown from './markdown/CardMarkdown.svelte';
+	import { taskSheetViewport } from '#lib/task-sheet-viewport.js';
 	import { overlayScroll } from '#lib/scrollbars.js';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import LayersIcon from '@lucide/svelte/icons/layers';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import XIcon from '@lucide/svelte/icons/x';
@@ -29,15 +29,15 @@
 	import TaskHistory from '#lib/components/TaskHistory.svelte';
 	import TaskRelations from '#lib/components/TaskRelations.svelte';
 	import TaskTimeline from '#lib/components/TaskTimeline.svelte';
-	import RefChip from '#lib/components/RefChip.svelte';
+	import TaskRefs from '#lib/components/TaskRefs.svelte';
 	import { useRefLinks } from '#lib/ref-links.svelte.js';
-	import { refHref, refStatusToneClass, refStatusWords, refTooltip, splitRefMentions } from '#lib/refs.js';
+	import { splitRefMentions } from '#lib/refs.js';
 	import { useArtifactFeed } from '#lib/artifacts.svelte.js';
 	import { blockersOf, decisionsFor, draftFromTask, draftToInput } from '#lib/board.js';
 	import type { ProjectBoard } from '#lib/board.svelte.js';
 	import type { BackendConnection } from '#lib/harness.svelte.js';
 	import { exactTime, relativeTime } from '#lib/relative-time.js';
-	import { REPORT_SECTIONS, refLabel, shortWriterLabel, taskFromUrl, taskRefs, waitingOn, withTask } from '#lib/tasks.js';
+	import { REPORT_SECTIONS, shortWriterLabel, taskFromUrl, taskRefs, waitingOn, withTask } from '#lib/tasks.js';
 	import { questionAskedBy, taskOwner, threadName } from '#lib/threads.js';
 	import SelectionQuote from '#lib/components/chat/SelectionQuote.svelte';
 	import type {
@@ -82,6 +82,11 @@
 	const refLinks = useRefLinks();
 
 	let body = $state<HTMLDivElement | null>(null);
+	let sheet = $state<HTMLElement | null>(null);
+	$effect(() => {
+		if (!sheet) return;
+		return taskSheetViewport(sheet).destroy;
+	});
 	/** A quote taken from the sheet, handed over once the sheet has closed so the composer keeps the focus. */
 	let pendingQuote: string | undefined;
 
@@ -254,6 +259,7 @@
 	}}
 >
 	<Dialog.Content
+		bind:ref={sheet}
 		showCloseButton={false}
 		data-task-sheet
 		onCloseAutoFocus={(event) => {
@@ -285,7 +291,7 @@
 			{/if}
 		{:else}
 			<header
-				class="task-header flex shrink-0 flex-col gap-2 border-b border-(--chat-border) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3"
+				class="task-header flex max-h-[35%] shrink-0 flex-col overflow-y-auto overscroll-contain gap-2 border-b border-(--chat-border) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3"
 			>
 				<div class="flex items-center gap-2">
 					<span class="font-mono text-xs text-(--chat-fg-subtle)">{task.id}</span>
@@ -312,57 +318,9 @@
 								class="underline decoration-(--chat-border-strong) underline-offset-2 hover:decoration-current">{piece.text}</a
 							>{:else}{piece.text}{/if}{/each}</Dialog.Title
 				>
-				{#if taskRefs(task).length > 0}
-					{@const links = refLinks()?.links}
-					{@const refs = taskRefs(task)}
-					{@const anyStatus = refs.some((ref) => refLinks()?.status(ref) !== undefined)}
-					{#if anyStatus}
-						<!-- With live state, each ref is a line: its chip, where it stands, its title. -->
-						<ul class="flex flex-col gap-0.5" aria-label="Tickets and pull requests">
-							{#each refs as ref (ref)}
-								{@const status = refLinks()?.status(ref)}
-								{@const href = status?.url ?? refHref(ref, links)}
-								{@const label = refLabel(ref, links)}
-								<li class="flex min-w-0">
-									<svelte:element
-										this={href === undefined ? 'span' : 'a'}
-										{href}
-										target={href === undefined ? undefined : '_blank'}
-										rel={href === undefined ? undefined : 'noopener noreferrer'}
-										class="ref-line group/ref flex min-w-0 flex-1 items-center gap-2 rounded-md py-1.5 text-xs sm:py-1 {href === undefined
-											? ''
-											: 'hover:bg-(--chat-surface-2)/70'}"
-										title={href === undefined ? refTooltip(ref, label, links, status) : undefined}
-									>
-										<span class="task-ref max-w-[9rem] shrink-0 truncate group-hover/ref:text-(--chat-fg)">{label}</span>
-										{#if status}
-											<span
-												class="inline-flex shrink-0 items-center gap-1.5 font-medium text-(--chat-fg-muted) {refStatusToneClass(status)}"
-											>
-												<span class="task-status-dot" aria-hidden="true"></span>{refStatusWords(status)}
-											</span>
-											{#if status.title}
-												<span class="min-w-0 truncate text-(--chat-fg-subtle)">{status.title}</span>
-											{/if}
-										{/if}
-										{#if href !== undefined}
-											<ExternalLinkIcon
-												class="ml-auto size-3 shrink-0 text-(--chat-fg-subtle) opacity-70 group-hover/ref:opacity-100"
-												aria-hidden="true"
-											/>
-										{/if}
-									</svelte:element>
-								</li>
-							{/each}
-						</ul>
-					{:else}
-						<ul class="flex flex-wrap items-center gap-1.5" aria-label="Tickets and pull requests">
-							{#each refs as ref (ref)}
-								<li class="flex min-w-0"><RefChip {ref} {links} status={undefined} class="max-w-[16rem]" /></li>
-							{/each}
-						</ul>
-					{/if}
-				{/if}
+				{#key task.id}
+					{#if taskRefs(task).length > 0}<TaskRefs refs={taskRefs(task)} />{/if}
+				{/key}
 				<p class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-(--chat-fg-subtle)">
 					{#if task.inProgressMinutes !== undefined && (task.inProgressMinutes > 0 || task.status === 'in_progress')}
 						<span data-in-progress>{formatMinutes(task.inProgressMinutes)} in progress</span>
@@ -647,7 +605,7 @@
 			</div>
 
 			{#if !editing}
-				<footer class="shrink-0 border-t border-(--chat-border)" data-task-reply>
+				<footer class="max-h-[45%] shrink-0 overflow-y-auto border-t border-(--chat-border)" data-task-reply>
 					<div class="mx-auto w-full max-w-3xl">
 						{#key `${backend.id}/${projectId}/${task.id}`}
 							<TaskReply {backend} {projectId} taskId={task.id} />
@@ -663,6 +621,10 @@
 </Dialog.Root>
 
 <style>
+	/* Leave room for send controls even with a long draft and an IME-reduced visual viewport. */
+	:global([data-task-composer] textarea) {
+		max-height: max(2.5rem, calc(var(--task-viewport-height, 100dvh) * 0.2));
+	}
 	:global(.report-md.md) {
 		font-size: var(--text-task);
 		line-height: 1.6;

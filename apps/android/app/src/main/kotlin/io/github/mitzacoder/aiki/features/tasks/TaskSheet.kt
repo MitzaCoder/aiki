@@ -3,6 +3,8 @@ package io.github.mitzacoder.aiki.features.tasks
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.*
@@ -49,7 +51,6 @@ import io.github.mitzacoder.aiki.features.chat.messageLimitError
 import io.github.mitzacoder.aiki.features.chat.rememberImageIntake
 import io.github.mitzacoder.aiki.features.chat.sha256Hex
 import io.github.mitzacoder.aiki.features.chat.LocalQuoteHandler
-import io.github.mitzacoder.aiki.features.refs.RefLines
 import io.github.mitzacoder.aiki.features.refs.refLinkedText
 import io.github.mitzacoder.aiki.navigation.ProjectScreenContext
 import io.github.mitzacoder.aiki.protocol.*
@@ -209,9 +210,16 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
         }
     }
 
-    Column(Modifier.fillMaxSize().then(insets).imePadding()) {
+    // Budget from the space ABOVE the IME, not the full display. Non-weighted headers used to consume all
+    // Column constraints before the reply was measured, leaving a focused but invisible input/send button.
+    BoxWithConstraints(Modifier.fillMaxSize().then(insets).imePadding()) {
+    val headerMaxHeight = minOf(360.dp, maxHeight * .35f, (maxHeight - 220.dp).coerceAtLeast(56.dp))
+    val refsMaxHeight = minOf(240.dp, maxHeight * .25f)
+    val replyInputMaxHeight = (maxHeight * .20f).coerceIn(40.dp, 160.dp)
+    val shortViewport = maxHeight < 400.dp
+    Column(Modifier.fillMaxSize()) {
         // The header: ID, status, edit and close; the title, its tickets, when it moved; what the user can do with it.
-        Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().heightIn(max = headerMaxHeight).verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 4.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(task.id, style = TaskType.xs.copy(fontFamily = JetBrainsMono), color = colors.fgSubtle)
                 TaskStatusMenu(task.status, connection.supports("task-waiting"), !closing) { status ->
@@ -225,7 +233,7 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
             }
             Column(Modifier.padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(refLinkedText(task.title), Modifier.semantics { heading() }, style = TextStyles.lg.copy(fontWeight = FontWeight.SemiBold), color = colors.fg)
-                if (task.refs.isNotEmpty()) RefLines(task.refs)
+                if (task.refs.isNotEmpty()) TaskRefs(task.refs, refsMaxHeight)
                 Text(
                     listOfNotNull(
                         inProgressLine(task),
@@ -279,7 +287,8 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
             }
         }
         Column(Modifier.weight(1f).fillMaxWidth()) {
-            if (!editing) TaskSectionNav(sections, currentSection, reducedMotion) { kind ->
+            // On a short IME/landscape viewport, keep space for the actual sections rather than only their nav.
+            if (!editing && !shortViewport) TaskSectionNav(sections, currentSection, reducedMotion) { kind ->
                 sectionSelection = sectionSelection.select(kind)
                 navigationJob?.cancel()
                 navigationJob = scope.launch {
@@ -290,7 +299,7 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
             }
             LazyColumn(
                 state = bodyState, modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp),
+                contentPadding = PaddingValues(if (shortViewport) 8.dp else 16.dp), verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 if (editing) item(key = "editor") { TaskEditor(context, task, view.tasks, onBack = { editing = false }, scrolls = false) }
                 else {
@@ -398,8 +407,9 @@ private fun TaskSheetContent(context: ProjectScreenContext, taskId: String, wide
         }
         if (!editing) {
             HorizontalDivider(color = colors.border)
-            ReplyBox(context, task, owner, onDismiss)
+            ReplyBox(context, task, owner, onDismiss, replyInputMaxHeight)
         }
+    }
     }
 }
 
@@ -445,7 +455,7 @@ private fun ReportSectionView(task: BoardTask, now: Long, writerName: (BoardWrit
  */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun ReplyBox(context: ProjectScreenContext, task: BoardTask, owner: TaskOwner, onDismiss: () -> Unit) {
+private fun ReplyBox(context: ProjectScreenContext, task: BoardTask, owner: TaskOwner, onDismiss: () -> Unit, inputMaxHeight: androidx.compose.ui.unit.Dp) {
     val colors = Jarvis.colors
     // Typed in a text field's own state, so the field can take pasted and keyboard images; kept per task.
     val reply = key(task.id) { rememberTextFieldState() }
@@ -513,7 +523,7 @@ private fun ReplyBox(context: ProjectScreenContext, task: BoardTask, owner: Task
             sendEnabled = !sending && !attaching && (reply.text.isNotBlank() || images.isNotEmpty()),
             onSend = ::send,
             modifier = Modifier.fillMaxWidth(),
-            fieldModifier = Modifier.contentReceiver(intake.receiver).semantics { contentDescription = "Message about ${task.id}" },
+            fieldModifier = Modifier.heightIn(max = inputMaxHeight).contentReceiver(intake.receiver).semantics { contentDescription = "Message about ${task.id}" },
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         )
         when {

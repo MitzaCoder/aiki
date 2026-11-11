@@ -2620,6 +2620,18 @@ follows the same visual hierarchy in D28, using its existing Jarvis theme and sh
   into the wrapping header metadata; subtask done/total also lives there, including zero done and archived/absent links.
   Workers' section/nav count includes both total and currently running workers when nonzero. Blocked reasons and
   dependency links remain in the existing blocked callout. No information depends on expanding History or Timeline.
+- **Compact refs and keyboard space (T113).** Refs start collapsed per opened task. A small disclosure shows kind
+  counts (including unknown state) and prioritizes failing/running PR checks; otherwise it shows open/closed/unknown
+  totals. Historical checks on merged/closed PRs do not demand attention. No extra status/needs-you strip or chip wall.
+  Expanded refs have their own scroll viewport, capped at 15rem/240dp and a quarter of the available height. Every ref
+  remains reachable. The header itself is bounded and scrollable for long titles and short screens; reply and body
+  retain space independently of refs. Web follows the visual viewport above mobile keyboards, caps the task draft
+  field to 20% of that height, and keeps the existing per-task draft state. Android budgets from the inset/IME-reduced
+  constraints (header at most 35%, reserving 220dp outside it on short windows; draft field at most 20%/160dp); this fixes the non-weighted header consuming all
+  height before the reply could be measured. The inset policy and shared chat composer are unchanged. Multiline
+  input scrolls internally without discarding text; expanding refs or changing keyboard size never recreates it.
+  Below 400dp available Android height, section chips temporarily yield their space to the scrollable body and its
+  padding is reduced; normal-height windows retain the existing section navigation.
 - **One column at every width (T43).** Questions comes immediately after the header/navigation, then Report, Feedback and Files.
   Related, Workers, Decisions, Timeline, History and Brief follow. Existing visibility rules remain; empty reference
   sections do not leave blank cards. History, Timeline and Brief retain their existing folding behaviour.
@@ -2683,9 +2695,9 @@ ellipsis treatment (T31). Foldable sections retain heading/button semantics and 
 - T29's link navigation, Show with linked, feedback state actions, retry, timeline filters and empty Feedback/Timeline
   placeholders are retained. Report/question/decision/worker actions and their state owners are unchanged. Report
   uses Next, Now, Results; Next retains its accent inset. Folded History and Brief remain independently foldable.
-- **The T32 reply box and `features/chat/MessageComposer.kt` are unchanged**, including their current text/image state,
-  paste intake and sending rules. This visual port does not add web-style task draft sync or change Android keyboard
-  behaviour. Those would be separate functional changes.
+- **The T32 reply box keeps its text/image state, paste intake and sending rules.** T113 adds task-local layout
+  constraints above the keyboard, without changing the shared `features/chat/MessageComposer.kt` or adding web-style
+  task draft sync. See Compact refs and keyboard space above.
 
 Android code: `TaskSheet.kt`, `TaskSection.kt`, `TaskSheetMeta.kt`, `TaskRelationsSection.kt`, `TaskFeedback.kt`,
 `TaskTimeline.kt`, `TaskSectionNav.kt` and `media/MediaCarousel.kt`. JVM tests cover compact context in

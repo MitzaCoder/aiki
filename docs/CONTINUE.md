@@ -1,5 +1,13 @@
 # Continue
 
+## T113 integration on F20 (Q122)
+
+Rebased T113 onto F20 `vkxymkty` / `44f8dfaa`, preserving expanded-question answering and compact refs/keyboard-safe
+replies. Runtime files merge cleanly; the only conflict was these continuation sections, both retained below.
+Q122 approves the exact checked integration tree for public push and main-bookmark deployment. No phone install,
+physical-device operation or manual deployment script is part of this integration. Earlier test counts below are
+pre-integration evidence; the final combined gate log and outcome are attached to T113.
+
 ## Answer from expanded task questions (T112 / F20, awaiting review)
 
 F20 supersedes the original read-only question-dialog behavior below. Editable open questions now have a fixed
@@ -28,6 +36,45 @@ assertions, zero check diagnostics and production build; Android 809 JVM tests /
 zero failures or errors, debug assembly and lint (41 warnings, zero errors); protocol check (337 DTOs / 91 requests).
 UI sources were unchanged after these gates. Owned demo processes/emulator are stopped. No push, deployment or main
 move. F20 remains handling until the result is reviewed.
+
+## Compact task refs and keyboard-safe replies (T113)
+
+Based on T112 `xmswpkqr` / `ed2314a8` (now main), through an empty integration parent. No graph or question-card
+files changed. Web `TaskRefs` and Android `TaskRefs` start folded per opened task: kind counts, an explicit unknown
+count, and failing/running PR checks first; otherwise open/closed/unknown totals. Closed/merged PR checks are historical.
+The disclosure replaces the full ref wall without another status strip. Expanded refs have internal scrolling, capped
+at 15rem/240dp and a quarter of available height; every ref remains reachable, with existing links/cards preserved.
+
+The Android IME bug was independently reproduced with a real emulator keyboard: safeDrawing/imePadding already
+removed keyboard space, but Column measured the non-weighted, unbounded header before the reply. The header consumed
+all reduced height, so a focused text field and its send control had no visible space. Collapsing refs alone would
+leave the same failure for expanded refs or long titles. The fix budgets from actual inset-reduced constraints:
+scrollable header at most 35%/360dp (also reserving 220dp outside it on short screens), task-local input at most
+20%/160dp, and the body gets the remainder. Below 400dp available height section chips temporarily yield to the body
+and its padding becomes 8dp. The actual sections remain scrollable; no draft state is recreated. Shared chat composer,
+IME policy, image intake and sending semantics are unchanged. This does not add Android task-draft backend sync.
+
+Web similarly bounds the header at 35%, follows visualViewport height/offset above mobile keyboards, caps only the
+task reply textarea at 20% of that height, and cleans up listeners on close. Existing task draft sync is unchanged.
+Pure web/JVM regressions cover summaries, historical checks and unknown state; web also tests viewport updates/cleanup.
+`apps/web/scripts/task-sheet-fixture.ts` is a synthetic long title and twelve mixed PR/issue refs, including failing,
+running, draft, merged, closed and missing state. Proof used isolated createSetup storage/config/agent paths, a fake
+host gh in a temporary PATH, retained ViewClient watch, dedicated headless Chromium and emulator-only Android.
+
+T113 artifacts contain before/after desktop/phone web screenshots and interaction recordings; Android full-header and
+real-IME hidden-composer baselines, compact/expanded/last-ref after states, multiline retention and actual send above
+IME, plus recordings. Browser assertions cover 1280x900, 390x740, 320x568 and short 420px visual viewports, all 12 refs,
+keyboard disclosure, bounded scroll, no horizontal overflow, long drafts, visible send and per-task disclosure reset.
+A separate 343dp-wide Android proof scrolls the body above the real IME, preserves all six draft lines across keyboard
+hide/show, sends successfully, then repeats typing/body scrolling/send on a no-ref task. Short windows trade section
+chips for actual content. Proof moved from the initially free emulator to another owned emulator when T112 reused it;
+T112's device was left alone. The owned final emulator, Chromium and synthetic backend were stopped after capture.
+No real task/provider data, physical device, push, bookmark move, deployment or protocol/server behavior change.
+
+Checks: fresh Bun install; root 2,137 tests / 24,478 assertions and typecheck; web 924 tests / 13,743 assertions,
+zero check diagnostics and production build; Android 811 JVM tests / 107 suites / two opt-in skips / zero failures,
+debug assembly and lint (40 warnings, one hint, zero errors). Android builds use an explicit empty private-properties
+file. Public denylist/generic guard and Gitleaks pass. Main stayed untouched.
 
 ## Readable expanded task questions (T112)
 
