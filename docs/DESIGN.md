@@ -1423,8 +1423,10 @@ the existing task sheet. The view choice stays local under `tasks.view.v2:`. No 
   14px at default 1× framing. Review, blocked, waiting, question/warning and worker failure have distinct marks;
   quiet is separate (48 hours without a task update, never done/dropped). Closed cards have neutral fills and
   dashed borders instead of unreadable translucent text. Parent progress counts done / all non-dropped descendants.
-  Card bodies are 230×88px, with a fixed 12px crew reservation above (100px total). Crew overlaps the top-right
-  border only when present; there is no empty crew row or placeholder. ID/status, two title lines and one compact
+  Card bodies are 230×88px, with a fixed 12px crew reservation above (100px total). Crew stands wholly above the
+  top-right edge, using that reservation plus the fixed 24px inter-card gap; bodies are about 25px at default zoom.
+  A tighter SVG frame/short antenna preserves recognizable busy/resting/failed faces without covering ID/status.
+  There is no empty crew row or placeholder. ID/status, two title lines and one compact
   meta row fit the body. Progress displays N/M with the full wording in the accessible label. Family headers show
   title, the same progress contract, mixed-status bar and a unique needs-you count.
 - The stage-1 summary, ranked search, live selected-task panel and loading/empty/closed/no-match/offline states remain.

@@ -121,6 +121,16 @@ zero check diagnostics and production build; Android 811 JVM tests / 107 suites 
 debug assembly and lint (40 warnings, one hint, zero errors). Android builds use an explicit empty private-properties
 file. Public denylist/generic guard and Gitleaks pass. Main stayed untouched.
 
+## Crew readability polish (T108)
+
+Crew bodies now measure about 25px at default cards zoom, using a tighter SVG frame and shorter antenna. Their
+36px art stands wholly above the top-right edge, in the existing 12px crew reservation plus 24px fixed gap. Card,
+family and pill geometry is unchanged; up to three creatures then +N, with busy/resting/failed faces retained.
+Real Chromium measured 25.1–25.7px bodies and at least 6px clearance from ID/status on desktop dark and phone light.
+Only those two requested after screenshots were refreshed. Web check: zero errors/warnings; web tests: 945 pass /
+69,928 assertions; public-source/Gitleaks pass. No root/build rerun for this timeboxed art/CSS fix, no protocol or
+server changes, main movement, push or deployment. Owned demo/Vite/Chromium processes stopped by PID.
+
 ## Compact cards and world-anchored overview (T108 follow-up)
 
 Resolved the earlier overview review point: dots now sit at each region's world-space centre. Every detail level
