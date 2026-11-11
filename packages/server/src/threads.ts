@@ -226,7 +226,7 @@ export function threadInstructions(options: {
 	const task =
 		options.taskId === undefined || options.taskId === null
 			? ""
-			: `\n\nYou were started for the board task ${options.taskId} and hold it. The user reads that task, not this conversation: keep its report current with the \`board\` action \`write_report\`, and move it to review when it is ready for them.`;
+			: `\n\nYou were started for the board task ${options.taskId} and hold it. The user reads that task, not this conversation: keep Results and Next current with the \`board\` action \`write_report\` (Now is automatic), and move it to review when it is ready for them.`;
 	const workspace =
 		checkoutKind === "jj"
 			? `Your workspace is ${checkout}, a jj workspace of the project's repository, started from main's working copy. Do your work and merge your workers' changes there, and commit it; name the change IDs in your summary. Add an \`Aiki-Task: T…\` trailer to commit descriptions.`
@@ -472,6 +472,12 @@ export class ThreadService {
 			const doc = await tx.doc(ThreadsDoc, this.#mainId);
 			doc.createdAt ??= new Date(now).toISOString();
 			sweepArchive(doc, now);
+   const board = await openBoard(tx, this.#mainId);
+   for (const record of Object.values(doc.threads)) {
+    if (!record.taskId || !board.tasks.some(task => task.id === record.taskId && task.ownerThreadId === record.id)) continue;
+    board.taskFocus ??= {};
+    board.taskFocus[record.id] ??= record.taskId;
+   }
 		}, BACKGROUND_CONTEXT);
 		for (const record of Object.values((await this.state()).threads)) {
 			this.#options.coordinators.add(this.placeFor(record));

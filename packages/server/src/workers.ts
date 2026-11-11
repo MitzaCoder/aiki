@@ -1,3 +1,4 @@
+import { activityTracking, endActivitySource } from "./task-activity.ts";
 import { noteTaskFact } from "./task-freshness.ts";
 import { stateKind } from "./state-identity.ts";
 /**
@@ -22,6 +23,7 @@ import { stateKind } from "./state-identity.ts";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { Context } from "@earendil-works/chord/context";
 import type { AssistantMessage, Models } from "@earendil-works/pi-ai";import {
+ GenerationTask, hook,
 	AssistantEntry,
 	type Conversation,
 	type ConversationId,
@@ -69,6 +71,7 @@ import {
 	normalizeBoard,
 	inProgressMinutes,
 	moveTaskForWorker,
+ inferCoordinatorTaskFocusIn,
 	openBoard,
 	openTaskHistory,
 	recordScheduledReport,
@@ -100,6 +103,7 @@ export const KEPT_DONE_WORKERS = 20;
 export const NO_NEW_WORKER_REPORT = "Nothing new.";
 
 export type WorkerRecord = {
+ activityRunId?: string;
 	id: string;
 	title: string;
 	conversationId: number;
@@ -122,6 +126,43 @@ export type WorkerRecord = {
 	/** The background task that owns the worker's conversation, so its work outlives the coordinator's turns. */
 	anchorTaskId: number;
 };
+
+/** Project-local actor identity survives name reuse and distinguishes resumed runs. */
+export async function syncWorkerActivity(tx: Tx, service: WorkerService, worker: WorkerRecord, coordinatorId: number): Promise<void> {
+ if (!worker.taskId) return;
+ const board = await openBoard(tx, service.mainId as ConversationId);
+ const tracking = activityTracking(board, worker.taskId);
+ const threadId = service.coordinators.threadIdOf(coordinatorId) ?? "main";
+ const previous = Object.values(tracking.sources).sort((a,b) => b.since.localeCompare(a.since)).find(s => s.actor.kind === "worker" && s.actor.threadId === threadId && s.actor.conversationId === worker.conversationId);
+ if (worker.status === "running" && (!worker.activityRunId || (previous?.state !== "running" && previous?.actor.runId === worker.activityRunId))) worker.activityRunId = worker.updatedAt;
+ const runId = worker.activityRunId ?? worker.createdAt;
+ const id = `${threadId}:${worker.conversationId}:${runId}`;
+ if (worker.status === "running") {
+  for (const source of Object.values(tracking.sources)) if (source.actor.kind === "worker" && source.actor.threadId === threadId && source.actor.name === worker.id && source.actor.id !== id) {
+   if (source.state === "failed" && source.actor.conversationId === worker.conversationId) source.state = "ended"; // Retry of this conversation, not reuse of a worker name.
+   endActivitySource(tracking, source.actor.id, worker.updatedAt);
+  }
+  if (tracking.sources[id]?.state !== "running") tracking.sources[id] = { actor: { id, kind: "worker", name: worker.id, threadId, conversationId: worker.conversationId, runId }, state: "running", title: worker.title, since: worker.updatedAt };
+ } else if (worker.status === "failed") {
+  tracking.sources[id] = { actor: { id, kind: "worker", name: worker.id, threadId, conversationId: worker.conversationId, runId }, state: "failed", title: worker.title, since: worker.updatedAt, failure: worker.failure ?? "no reason given" };
+  tracking.lastEndedAt = worker.updatedAt;
+ } else endActivitySource(tracking, id, worker.updatedAt);
+}
+
+/** Read-only on subsequent requests in the same run; no transaction or document writes. */
+export async function syncWorkerActivityRun(service: WorkerService, conversationId: number, runId: string, context: Context = BACKGROUND_CONTEXT): Promise<void> {
+ const place = await service.workerOf(conversationId, context);
+ const owner = place && service.coordinators.placeOfThread(place.threadId);
+ if (!place?.record.taskId || !owner || place.record.activityRunId === runId) return;
+ await service.harness.commit(async tx => {
+  const doc = await tx.doc(WorkersDoc, owner.conversationId as ConversationId);
+  const worker = doc.workers[place.record.id];
+  if (!worker || worker.conversationId !== conversationId || worker.status === "stopped" || worker.status === "done" || worker.activityRunId === runId) return;
+  worker.activityRunId = runId;
+  worker.updatedAt = new Date().toISOString();
+  await syncWorkerActivity(tx, service, { ...worker, status: "running" }, owner.conversationId);
+ }, context);
+}
 
 export type WorkersState = {
 	workers: Record<string, WorkerRecord>;
@@ -250,8 +291,10 @@ function createWorkerReporter(service: WorkerService): Task<ReporterInput, Repor
 							const board = await openBoard(tx, service.mainId as ConversationId);
 							noteTaskFact(board, worker.taskId, { actor: "coordinator", kind: "worker_resume", reason: "worker resumed", at: new Date().toISOString() });
 						}
-						worker.status = "running";
+						if (worker.status !== "running") worker.activityRunId = callId;
+      worker.status = "running";
 						worker.updatedAt = new Date().toISOString();
+      await syncWorkerActivity(tx, service, worker, runtime.conversationId);
 					}, context);
 					if (forgotten) return null;
 					const worker = await runtime.conversation(conversationId as ConversationId, context);
@@ -409,7 +452,11 @@ function createWorkerReporter(service: WorkerService): Task<ReporterInput, Repor
 							pruneDone(state);
 						}
 					}
-					// Admission, the timeline and task completion share one commit. A restart cannot replay one
+					if (worker !== undefined && !forgotten) {
+      const live = await tx.doc(LiveDoc, worker.conversationId as ConversationId);
+      await syncWorkerActivity(tx, service, live.run && !live.run.afterRun && worker.status !== "stopped" && worker.status !== "done" ? { ...worker, status: "running", failure: null } : worker, runtime.conversationId);
+     }
+     // Admission, the timeline and task completion share one commit. A restart cannot replay one
 					// without the others, and a second reporter for this answer finds the existing submission.
 					if (report !== null) {
 						await owner.submit(tx, recorded ? {
@@ -533,7 +580,7 @@ const WRITING_RULE = `Write for a busy reader: plain words, short sentences, no 
  * How a coordinator (main or a thread) keeps the task reports and moves tasks; byte-stable. The user reads the tasks,
  * so the rules are here and in the tool descriptions, not in code: nothing limits a report's length.
  */
-const REPORT_RULES = `Each task has a short report the user reads instead of the chat: \`now\` (what is happening right now), \`results\` (what came out of it, with evidence: commit, artifact, test run) and \`next\` (what comes next, and who does it). Write it with the \`board\` action \`write_report\`. A write replaces the sections you name, so rewrite them in place and keep them short: never append, never repeat what is already there or what the board already shows. Terse plain English, nothing made up. Pass a \`milestone\` (a few words) only when something meaningful happened, such as a first version merged, a blocker found or a decision made. A question or a warning for the user is not report text: put it on the board with action \`ask\` (kind \`question\` or \`warning\`), so a rewrite cannot lose it.
+const REPORT_RULES = `Each task has a short report the user reads instead of the chat. Now is written automatically. Holding a task alone is not activity. Keep \`results\` (what came out of it, with evidence: commit, artifact, test run) and \`next\` (what comes next, and who does it). Write it with the \`board\` action \`write_report\`. A write replaces the sections you name, so rewrite them in place and keep them short: never append, never repeat what is already there or what the board already shows. Terse plain English, nothing made up. Pass a \`milestone\` (a few words) only when something meaningful happened, such as a first version merged, a blocker found or a decision made. A question or a warning for the user is not report text: put it on the board with action \`ask\` (kind \`question\` or \`warning\`), so a rewrite cannot lose it.
 
 A message starting with "[reports]" names task reports that went out of date. Read each task with show_task and rewrite only the stale Results or Next, with evidence. When you read a task earlier and write later, pass the eventSeq show_task gave you as coveredEventSeq, so anything that happened since stays marked.
 
@@ -585,7 +632,7 @@ Work like this:
 
 ${WORKER_MESSAGE_RULES}
 
-Every subject the user raises is a task on the project's board, kept with the \`board\` tool. Before you reply to a message, find its task or add one with add_task, and say in your reply which task it is filed under. Title a task with a short, plain outcome, such as "Complete the example change"; its tickets and pull requests go in its refs as full links (look up the link with gh or acli when you only know the key or number), never in the title. Your replies in the chat are a line or two that name the task; the detail goes in the task's report, because the user reads the tasks and uses the chat to talk. A message starting with "[task T12, feedback F3] " is feedback F3 on that task. Do not copy it into the description: mark it handling with the \`board\` action \`feedback\` when you act on it, and addressed, with a note of what addressed it (a commit, a result, "answered in chat"), when done. When a background thread holds the task, pass the message on with thread_send. A task you find while working on another (a bug, more to build, an analysis) always gets \`foundWhile\` set to that task; a planned piece of a bigger task gets \`parent\`; a see-also gets \`related\`. Add further tasks for the pieces when you plan, and pass the task's ID as taskId to worker_spawn: the harness moves it to in_progress when the worker starts and to blocked when it fails, and the worker keeps the task's \`now\` current.
+Every subject the user raises is a task on the project's board, kept with the \`board\` tool. Before you reply to a message, find its task or add one with add_task, and say in your reply which task it is filed under. Title a task with a short, plain outcome, such as "Complete the example change"; its tickets and pull requests go in its refs as full links (look up the link with gh or acli when you only know the key or number), never in the title. Your replies in the chat are a line or two that name the task; the detail goes in the task's report, because the user reads the tasks and uses the chat to talk. A message starting with "[task T12, feedback F3] " is feedback F3 on that task. Do not copy it into the description: mark it handling with the \`board\` action \`feedback\` when you act on it, and addressed, with a note of what addressed it (a commit, a result, "answered in chat"), when done. When a background thread holds the task, pass the message on with thread_send. A task you find while working on another (a bug, more to build, an analysis) always gets \`foundWhile\` set to that task; a planned piece of a bigger task gets \`parent\`; a see-also gets \`related\`. Add further tasks for the pieces when you plan, and pass the task's ID as taskId to worker_spawn: the harness moves it to in_progress when the worker starts and to blocked when it fails, and the harness writes Now automatically.
 
 ${REPORT_RULES}
 
@@ -615,7 +662,7 @@ You never work in the project checkout at ${project.path}: that is main's. You h
 
 Work like this:
 1. You were started for one board task, which you hold and which your instructions name; the user reads that task, not this conversation. Put each piece of the work on the project's board with the \`board\` tool. The board is shared with main and the other threads: claim a task (action \`claim\`) before you or your workers work on it, never work on a task another thread holds, and release or hand over (\`handoff\`) what you stop working on.
-2. Delegate each independent piece with worker_spawn: a self-contained brief (goal, files, constraints, how to verify), a title, and the task's ID as taskId. Its worker keeps the task's \`now\` current. Pick isolation per worker: "shared" runs it in your own workspace; "workspace" gives it a jj workspace of its own (needs a jj repository).
+2. Delegate each independent piece with worker_spawn: a self-contained brief (goal, files, constraints, how to verify), a title, and the task's ID as taskId. The harness writes Now automatically. Pick isolation per worker: "shared" runs it in your own workspace; "workspace" gives it a jj workspace of its own (needs a jj repository).
 3. Reports arrive as messages starting with "[worker <id> reported]" or "[worker <id> failed: ...]". Only that report reaches you, never the worker's transcript.
 4. Review a report, then inspect the result yourself. Verification has diminishing returns: verify what a task's acceptance asks for, then stop. Do not re-check what is already shown. Merge an isolated worker's change into your workspace, for example \`jj squash --from <change> --into @\` or \`jj rebase -s <change> -d @\`; hand a conflict to a new worker.
 5. Release a worker whose work is merged with worker_forget; worker_send gives a live worker more work (pass a new title when it is a new task), worker_stop aborts what it does, worker_list and worker_peek show your workers.
@@ -653,7 +700,7 @@ export function workerInstructions(options: {
 	const task =
 		options.taskId === undefined || options.taskId === null
 			? ""
-			: `\n\nYou were started for the board task ${options.taskId}. The user reads that task, not this conversation. Keep its report current with task_progress: \`now\` is what you are doing at this moment, rewritten whole each time so it replaces the last one (never append, never repeat); \`addResult\` adds one finished thing with its evidence (commit, artifact, test run); pass a \`milestone\` (a few words) only when something meaningful just happened. Terse plain English, nothing made up. A question or a warning for the user is not report text: put it in your final report and the coordinator puts it on the board.`;
+			: `\n\nYou were started for the board task ${options.taskId}. The user reads that task, not this conversation. Keep its report current with task_progress: Now is written automatically. Use optional \`now\` only for a few-word phase when the phase really changes, not a running commentary; \`addResult\` adds one finished thing with its evidence (commit, artifact, test run); pass a \`milestone\` (a few words) only when something meaningful just happened. Terse plain English, nothing made up. A question or a warning for the user is not report text: put it in your final report and the coordinator puts it on the board.`;
 	const thread = options.threadId === undefined || options.threadId === "main" ? undefined : options.threadId;
 	const shared =
 		thread === undefined
@@ -1567,13 +1614,16 @@ export class WorkerService {
 			scheduleId: input.scheduleId,
 			taskId: input.taskId,
 			spawnedByCallId: input.spawnedByCallId,
+   activityRunId: input.callId,
 			createdAt: now,
 			updatedAt: now,
 			lastReport: null,
 			failure: null,
 			anchorTaskId: anchor,
 		};
-		pruneDone(doc);
+		await syncWorkerActivity(tx, this, doc.workers[input.id]!, coordinatorId);
+  if (input.taskId) await inferCoordinatorTaskFocusIn(tx, this.mainId as ConversationId, coordinatorId, place?.threadId ?? "main", input.taskId, now);
+  pruneDone(doc);
 		if (board !== undefined && input.taskId !== null) {
 			const before = statusesOf(board);
 			const moved = moveTaskForWorker(board, {
@@ -2026,13 +2076,16 @@ function createWorkerExtension(service: WorkerService): Extension {
 						const board = await openBoard(tx, service.mainId as ConversationId);
 						noteTaskFact(board, worker.taskId, { actor: "coordinator", kind: "worker_resume", reason: "worker resumed", at: new Date().toISOString() });
 					}
-					worker.status = "running";
+					if (worker.status !== "running") worker.activityRunId = api.callId;
+     worker.status = "running";
 					if (args.title !== undefined) {
 						if (worker.title !== args.title.slice(0, 120)) worker.workspaceReused = true;
 						worker.title = args.title.slice(0, 120);
 					}
 					worker.updatedAt = new Date().toISOString();
+     await syncWorkerActivity(tx, service, worker, api.conversationId);
 				}
+    if (worker?.taskId) await inferCoordinatorTaskFocusIn(tx, service.mainId as ConversationId, api.conversationId, service.coordinators.threadIdOf(api.conversationId) ?? "main", worker.taskId, new Date().toISOString());
 				await tx.createTask(
 					service.reporterTask,
 					{
@@ -2092,6 +2145,7 @@ function createWorkerExtension(service: WorkerService): Extension {
 				}
 				current.status = "stopped";
 				current.updatedAt = new Date().toISOString();
+    await syncWorkerActivity(tx, service, current, api.conversationId);
 			}, context);
 			await api.details({ workerId: args.id, conversationId: record.conversationId }, context);
 			return toolText(`Stopped worker "${args.id}". It keeps its conversation; worker_send wakes it up again.`, {
@@ -2201,6 +2255,7 @@ function createWorkerExtension(service: WorkerService): Extension {
 				if (current === undefined) return;
 				current.status = "done";
 				current.updatedAt = new Date().toISOString();
+    await syncWorkerActivity(tx, service, current, api.conversationId);
 				if (remove && current.isolation === "workspace") current.workspacePath = null;
 				// Withdraw only waiting inputs. Running answers/tools and passive writes are untouched.
 				for (const item of inbox.items) {
@@ -2243,18 +2298,18 @@ function createWorkerExtension(service: WorkerService): Extension {
 	});
 }
 
-/** `task_progress`: a worker spawned for a board task rewrites that task's `now` and adds to its `results`. */
+/** `task_progress`: optional run phase and evidenced Results; Now is automatic. */
 function createWorkerTaskExtension(service: WorkerService): Extension {
 	const progressTool = defineTool({
 		name: "task_progress",
 		description:
 			"Keep the report of the board task you were started for current; the user reads it instead of your conversation. " +
-			"`now` replaces what the report says is happening now, `addResult` adds one finished thing to its results, " +
+			"Now is written automatically. Optional `now` is a few-word phase, only when it really changes; `addResult` adds one finished thing to Results, " +
 			"`milestone` saves a snapshot of the task. Questions and warnings go in your final report, not here. " +
 			"With no report fields, reads the task and its eventSeq. You can pass that as coveredEventSeq when writing later, so anything that happened since stays marked.",
 		parameters: Type.Object({
 			now: Type.Optional(
-				Type.String({ description: "What you are doing at this moment, in a line or two; replaces the last one whole. Empty clears it." }),
+				Type.String({ description: "Optional few-word phase, only when it really changes. Expires with this run. Now is automatic; empty clears the phase." }),
 			),
 			addResult: Type.Optional(
 				Type.String({ minLength: 1, description: "One finished thing with its evidence (commit, artifact, test run), added as a bullet." }),
@@ -2308,5 +2363,22 @@ function createWorkerTaskExtension(service: WorkerService): Extension {
 		},
 	});
 
-	return defineExtension({ name: "worker-task-tools", tools: [progressTool] as ToolRegistration[] });
+	return defineExtension({ name: "worker-task-tools", tools: [progressTool] as ToolRegistration[], hooks: [hook(GenerationTask, {
+  beforeRequest: async (_request, api, context) => {
+   const live = await service.harness.snapshot(LiveDoc, api.conversationId, context);
+   if (live?.run && !live.run.afterRun) await syncWorkerActivityRun(service, api.conversationId, String(live.run.first ?? live.run.taskId), context);
+   return undefined;
+  },
+  afterRun: async (run, api, context) => {
+   const place = await service.workerOf(api.conversationId, context);
+   if (!place?.record.taskId) return undefined;
+   await service.harness.commit(async tx => {
+    const state = await openBoard(tx, service.mainId as ConversationId);
+    const tracking = activityTracking(state, place.record.taskId!);
+    const id = `${place.threadId}:${api.conversationId}:${run.first}`;
+    endActivitySource(tracking, id, new Date().toISOString());
+   }, context);
+   return undefined;
+  },
+ })] });
 }

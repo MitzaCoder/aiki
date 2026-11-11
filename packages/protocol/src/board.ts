@@ -93,7 +93,7 @@ export type BoardReportSection = Static<typeof BoardReportSectionSchema>;
 export const BoardTaskReportSchema = Type.Object({
 	freshness: Type.Optional(Type.Object({ results: BoardReportSectionSchema, next: BoardReportSectionSchema }, { description: "task-freshness capability: section metadata, independent of Now and the shared report timestamp." })),
 
-	now: Type.String({ description: "What is happening right now, in a few lines. Empty when nothing is." }),
+	now: Type.String({ description: "Canonical automatic activity text on task-activity backends; legacy mirror without ages." }),
 	results: Type.String({
 		description: "What the task produced so far, as short bullets with evidence (commit, artifact, test run).",
 	}),
@@ -175,7 +175,28 @@ export const BoardTaskWaitingSchema = Type.Object({
 });
 export type BoardTaskWaiting = Static<typeof BoardTaskWaitingSchema>;
 
+/** task-activity: text is canonical and contains no age. Render since locally; refs are source IDs. */
+export const BoardActivityActorSchema = Type.Object({
+ id: Type.String({ description: "Project-local thread + conversation + run identity; never a worker name alone." }),
+ kind: Type.Union([Type.Literal("worker"), Type.Literal("coordinator"), Type.Literal("thread")]),
+ name: Type.String(),
+ threadId: Type.String(),
+ conversationId: Type.Integer(),
+ runId: Type.String(),
+});
+export type BoardActivityActor = Static<typeof BoardActivityActorSchema>;
+export const BoardTaskActivitySchema = Type.Object({
+ kind: Type.Union([Type.Literal("failure"), Type.Literal("question"), Type.Literal("deploy"), Type.Literal("working"), Type.Literal("feedback"), Type.Literal("blocked"), Type.Literal("waiting"), Type.Literal("review"), Type.Literal("delivery"), Type.Literal("done"), Type.Literal("dropped"), Type.Literal("not_started"), Type.Literal("idle"), Type.Literal("unknown")]),
+ text: Type.String(),
+ since: Type.String({ description: "ISO phase/state start; not a heartbeat. Tick elapsed time locally, not by server writes." }),
+ refs: Type.Array(Type.String()),
+ actor: Type.Optional(BoardActivityActorSchema),
+ count: Type.Optional(Type.Integer({ minimum: 0 })),
+});
+export type BoardTaskActivity = Static<typeof BoardTaskActivitySchema>;
+
 export const BoardTaskSchema = Type.Object({
+ activity: Type.Optional(BoardTaskActivitySchema),
 	eventSeq: Type.Optional(Type.Integer({ minimum: 0, description: "Persisted per-task sequence of meaningful facts. Pass the value read by show_task as coveredEventSeq when rewriting; never use a newer unread value." })),
 
 	id: Type.String({ minLength: 1, description: 'Short and stable, e.g. "T12".' }),
@@ -236,6 +257,8 @@ export const BoardTaskSchema = Type.Object({
 export type BoardTask = Static<typeof BoardTaskSchema>;
 
 export const BoardQuestionSchema = Type.Object({
+ blocksWork: Type.Optional(Type.Boolean({ description: "Questions default true, warnings false. Only blocking open entries replace task activity." })),
+ activitySourceId: Type.Optional(Type.String({ description: "Warning acknowledgement clears only this linked failure source." })),
 	id: Type.String({ minLength: 1, description: 'e.g. "Q3".' }),
 	revision: Revision,
 	kind: Type.Optional(

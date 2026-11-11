@@ -1996,6 +1996,7 @@ data class RefDetailsJiraParent(
 
 @Serializable
 data class BoardTask(
+    val `activity`: BoardTaskActivity? = null,
     val `eventSeq`: Long? = null,
     val `id`: String,
     val `revision`: Long,
@@ -2034,6 +2035,8 @@ data class BoardTask(
 
 @Serializable
 data class BoardQuestion(
+    val `blocksWork`: Boolean? = null,
+    val `activitySourceId`: String? = null,
     val `id`: String,
     val `revision`: Long,
     val `kind`: String? = null,
@@ -2189,6 +2192,26 @@ data class BoardReportStaleResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "board.report.stale",
     val `id`: String,
     val `task`: BoardTask
+)
+
+@Serializable
+data class BoardTaskActivity(
+    val `kind`: String,
+    val `text`: String,
+    val `since`: String,
+    val `refs`: List<String>,
+    val `actor`: BoardActivityActor? = null,
+    val `count`: Long? = null
+)
+
+@Serializable
+data class BoardActivityActor(
+    val `id`: String,
+    val `kind`: String,
+    val `name`: String,
+    val `threadId`: String,
+    val `conversationId`: Long,
+    val `runId`: String
 )
 
 @Serializable

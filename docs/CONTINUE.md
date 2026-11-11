@@ -1,5 +1,79 @@
 # Continue
 
+## T121: freshness stack on the current bubble-graph main
+
+The fifteen T120 changes are one linear stack above main `1d24f8d7`, with
+`tvpnwyzq` the stage 1+4 ship boundary and `tlspuuvr` the full stack boundary.
+Only CONTINUE and DESIGN required conflict resolution: retain all continuation
+sections newest-first, keep the one-tap request contract alongside the audit,
+and keep both web and Android report-check settings descriptions. Continuation
+insertions were checked by a script for retained parent lines and added lines;
+the one-tap change intentionally updates the earlier dialog description.
+No task-sheet or settings code needed manual merging; existing worker UI proof
+still applies. Main's graph and README changes remain intact. All fifteen commit
+descriptions end with Aiki-Task trailers; the trailer prompt grammar and its
+assertions are corrected in the trailer-attribution change. Empty workspace
+changes remain outside the stack. No main move, push or deployment is authorized.
+Exact-tip sequential gate results are recorded in the T121 integration report.
+
+## T122 review: infer focus; read-only worker request fast path
+
+Removed the focus instruction and board action. Coordinator focus now follows durable
+task-scoped submissions (including feedback), the running thread's own task, and successful
+task moves, report writes, worker spawn/send, questions and decisions. Actions add focus in
+their existing transaction, with no extra tool call. Own/touched tasks stay focused through
+the turn; merely claimed tasks do not. Thread defaults also reconcile on project reopen.
+The real-thread regression caught a newly assigned raw map not tracking its nested update;
+initial task focus now reads back the document-owned map before setting its entry.
+
+The old worker hook entered a transaction on every request. The harness discards genuinely
+empty transactions before storage/publication, so those do not bump document revisions or
+broadcast. The new fast path is read-only regardless: compare the stored run marker first,
+then commit only a changed marker with a transaction recheck. A spy regression verifies
+zero commit calls for repeated same-run requests and one for a new run. No protocol change.
+
+Requested root run executed once: 2,311 passed, one existing background-thread question
+routing test exposed a new deadlock (resolving a conversation through Harness from inside
+its own commit). Resolution now happens before the transaction. After that fix, all 63
+activity/report/prompt/thread tests pass, including the failed regression; typecheck passes.
+The root suite was not repeated, respecting the requested single run. No protocol fields
+changed, so no generator rerun was needed. No earlier stack changes, main movement, push,
+deployment or UI work.
+
+## T122 server: automatic task activity (client handoff)
+
+Stage 2 adds `task-activity` (excluded from legacy support) and optional `task.activity`:
+`{ kind, text, since, refs, actor?, count? }`. Actor: `{ id, kind, name, threadId,
+conversationId, runId }`. Text has no age. Render `since` locally; use elapsed time for work
+and optionally local “since” time/date for waiting/review/done/dropped. Search text, not ages.
+Missing feature/field keeps old-backend rendering. The legacy `report.now` wire mirror is
+canonical text only and does not refresh report/Results/Next timestamps or coverage. No
+settings/display edits here. Kotlin DTOs are generated from the new optional fields.
+
+Precedence: unresolved failure; blocking Q; reserved active-deploy slot; live focused run;
+open feedback; blocked/waiting/review; landing within 24 h; closure/not-started/idle (unknown
+when a source cannot be reached). No configured deploys yet: “3 changes landed on main”,
+not “not deployed yet”. `since` is a state/phase start, not token liveness. Phases do not
+produce timeline rows. Closed tasks ignore lingering work but keep failures/delivery.
+
+Workers' optional `task_progress.now` is a short changed phase, expiring with the actual run;
+`addResult`/milestones remain. Legacy coordinator `write_report.now` becomes a phase and
+focus for that task, expiring at turn end or release/stop. Focus is inferred from task-scoped
+submissions, the thread's own initial task, and task moves, report writes, worker spawn/send,
+and linked questions/decisions. Touched tasks remain focused for the rest of that turn.
+Claim/ownership alone never activates all held tasks; no prompted/manual focus call remains. All project prompts ask only
+for Results/Next and explain automatic Now. Existing old Now is not interpreted as a phase.
+
+Sequential final gates pass: root 2,307 tests / 81,849 assertions; typecheck; web check
+zero diagnostics, 1,003 tests / 70,570 assertions, production build; protocol --check
+(345 DTOs / 92 request overloads); private public-source guard; Android 860 JVM tests
+across 114 suites, two skipped, zero failures/errors, debug assembly. Gradle daemons
+stopped. The new suite has 27 tests, including prompt assertions; tests are this backend
+change's proof. The initial full run caught the old scheduled Now expectation; a later
+stale-button timeout was a reproducible detached transaction-result bug, fixed by copying
+the projected task before returning it. Focused regressions and the final full sequence
+pass; no known flaky test needed a rerun. No main move, push or deployment.
+
 ## Android Report check settings (T126)
 
 Completed the interrupted Report check group in Project settings → Coordinator. Automatic/Off/custom

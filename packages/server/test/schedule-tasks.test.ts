@@ -214,7 +214,7 @@ describe("one board task per clock schedule", () => {
 
 		// A `record` run's report puts the run into the task and moves it to review, quietly.
 		const reported = await untilReported(client, projectId, "T1", firstRun.workerId!);
-		expect(reported.report.now).toBe("");
+		expect(reported.report.now).toBe("Ready for your review");
 		expect(reported.report.results).toContain("Outcome: done");
 		const history = await client.request({ type: "board.task.history", projectId, taskId: "T1" });
 		if (history.type !== "board.task.history") throw errorOf(history);

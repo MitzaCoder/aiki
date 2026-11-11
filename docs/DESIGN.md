@@ -1374,6 +1374,72 @@ outcomes are generated.
   with no date removes a previous deadline. Repeated waiting edits save their own history snapshot and timeline
   detail. Undoing a kanban move out of Waiting restores its note and date through the normal save path.
 
+### Automatic task activity (T122, stage 2 of T120)
+
+`task-activity` advertises optional `task.activity`: `{ kind, text, since, refs, actor?, count? }`.
+`text` is canonical, plain, and has no age or clock time. `since` is an ISO state/phase start,
+not a heartbeat. Clients render elapsed time locally; waiting/review/done/dropped may say
+“since” with a local time/date. Search text, not a rendered age. `refs` names Q/F/task/run/change
+sources. `actor` is `{ id, kind, name, threadId, conversationId, runId }`; kind is worker,
+coordinator or thread. IDs include thread, conversation and run: worker names are reusable.
+`count` is the question count, live worker count or landed change count, depending on kind.
+Missing flag or activity retains the old-backend display; never infer activity from old prose.
+There are no client display changes in this stage.
+
+A pure project-local reducer reads durable source records and board facts, first match wins:
+1. Unresolved worker/thread failure (reserved typed deploy-failure slot first).
+2. Blocking open question; questions default blocking, warnings nonblocking. `blocksWork`
+   can override that. “Waiting for your answer to Q131 and 1 more · 2 workers still running”.
+3. Attributed deploy in progress (typed slot only; no deploy feed configured yet).
+4. Live task-focused worker/coordinator/thread. Latest phase/state start wins; ties sort by
+   actor ID. “fern is working on Card view” or “fern is testing the card view · +1 worker”.
+5. Unhandled (open, not handling) feedback: “Feedback F8 is waiting for the coordinator”.
+6. Unresolved task blockers, then blocked/waiting/review state. “Blocked by T42”,
+   “Waiting for external review”, “Ready for your review”. The time is separate in `since`.
+7. Latest attributed landing for 24 hours unless newer work supersedes it. This stage has
+   **no configured deploys**: “3 changes landed on main”, never “not deployed yet” or “live”.
+   Ref removals/reverts without a new landing clear that delivery fallback. One expiry timer
+   republishes a changed view, without a storage write; there are no per-second writes.
+8. Done/Dropped (settledAt), Not started (creation), or Idle (last linked run ended, else creation).
+   An unreachable source gives “Status unknown” rather than an unsupported work claim.
+
+Closed tasks ignore lingering work/focus, but retain failures and delivery. Retry of a source's
+conversation clears its earlier failure; reusing its name in another conversation does not.
+An optional warning `activitySourceId` links acknowledgement to exactly one failed source.
+Answering/withdrawing a question and handling feedback change activity immediately. Stop,
+forget, release and handoff end only their own source, not other workers. A thread release
+ends its coordinator focus, not its independently running workers. On opening a project,
+persisted worker records and durable transcript run control reconcile sources: idle/stopped/
+finished transcripts cannot claim working. Missing transcripts become unknown. Legacy Now
+is never a phase; existing historical snapshots keep their original prose.
+
+Worker title is the initial work description. Optional `task_progress.now` remains compatible
+but is a short phase, whitespace-normalized/bounded to 160 characters, changed only when the
+phase really changes. It expires with that run, including queued/resumed runs. Generation
+hooks use durable first-entry run identity, not token/tool activity. Worker request hooks
+read the stored run marker first and enter a transaction only when it changes (with a
+transactional recheck); subsequent requests in the same run are read-only. A truly empty
+harness transaction is discarded before storage/publication, but avoiding the transaction
+also avoids opening/normalizing the board on every model request. Workers keep evidenced
+`addResult` and explicit milestones. Coordinators keep writing Results/Next; legacy
+`write_report.now` sets that coordinator's turn-local phase and task focus. Task-tagged
+submissions establish focus, including feedback and further task-scoped inputs placed in
+the same turn. Moving a task, writing its report, spawning/sending its worker, or asking/
+deciding on it also implies focus in the action's existing transaction. These touched tasks
+stay focused for the rest of the turn. A background thread's own initial taskId is focused
+while it runs a turn, not every task it holds. Ownership/claim alone is not activity.
+Focus/phase ends on turn end, failure, stop or release; no phase carries into a later turn.
+There is no prompted focus action or extra agent call.
+All project prompts state that Now is automatic and ask agents for Results/Next, not prose Now.
+
+Every emitted task mirrors `activity.text` into legacy `report.now` for old clients. This is a
+read projection, not a report rewrite: `report.updatedAt`, `updatedBy`, `revision`, Results/Next
+section dates/versions/coverage and task eventSeq are untouched. Raw legacy strings in stored
+reports are ignored for live rendering; history/snapshots remain immutable. Phase/activity
+changes add no timeline rows, snapshots, freshness facts, nudges or model calls. Ordinary
+board document transitions push immediately; clients tick ages without polling writes.
+The scheduled-report path still records Results and review state; it cannot leave prose Now.
+
 ### Report freshness (T121, stage 1 of T120)
 
 The web Report section shows section-local ages (ticking locally every 30 seconds), uncovered event
@@ -1385,7 +1451,7 @@ the header wraps the confirmation rather than overlapping its title. Empty finis
 omits the repeated missing-write/work-finished explanation. Now and Timeline
 remain unchanged. Missing metadata retains the original Report rendering, without inferred ages.
 
-`task-freshness` advertises deterministic Results/Next coverage. Now stays agent-written in this stage;
+`task-freshness` advertises deterministic Results/Next coverage. Now stayed agent-written in stage 1; stage 2 above replaces it;
 report rewrites and stale marks add no timeline rows. `task.eventSeq` is a persisted monotonic count of
 meaningful task facts, independent of the bounded timeline. The optional `report.freshness.results` and
 `.next` each contain `writtenAt` (nullable ISO date), `writtenBy` (nullable BoardWriter), `version`,
@@ -1984,7 +2050,7 @@ brief and instructions, same report — with the schedule's title, brief, model,
   board task, "Scheduled: <schedule title>", made by the harness on the first run. Its description says it collects
   the schedule's runs and names `settings#schedule-<id>` (plain text: the server does not know the app's backend ID,
   so it cannot write a link that resolves). Every run's worker (or thread) is given that task, so the task lists the
-  runs' workers and shows what the running one is doing (`now`, from `task_progress`).
+  runs' workers and shows the running one's automatic activity (`task_progress.now` supplies only a short run phase).
   - **Where the link lives.** The board's `task.scheduleId` is the link, and it is how the harness finds the task: the
     schedule's task is the open (todo, in_progress, blocked, review) task with that `scheduleId`. It already was that
     for `thread` schedules and for the "needs attention" task a failed run opens; those are now the same task, titled

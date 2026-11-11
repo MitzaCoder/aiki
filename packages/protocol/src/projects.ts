@@ -357,6 +357,7 @@ export const HARNESS_FEATURES = [
 	"task-links",
 	"task-waiting",
 	"task-freshness",
+ "task-activity",
 	"report-audit",
 	"sidebar-attention",
 	"cache-keep-warm",
@@ -369,7 +370,7 @@ export type HarnessFeature = (typeof HARNESS_FEATURES)[number];
 
 /** Missing hello.features is never evidence of device-auth support. */
 export const LEGACY_HARNESS_FEATURES = HARNESS_FEATURES.filter(
-	(feature) => feature !== "report-audit" && feature !== "task-freshness" && feature !== "task-changes" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
+	(feature) => feature !== "task-activity" && feature !== "report-audit" && feature !== "task-freshness" && feature !== "task-changes" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
 );
 
 export const HarnessFeatureSchema = Type.Union([
@@ -414,6 +415,7 @@ export const HarnessFeatureSchema = Type.Union([
 	Type.Literal("task-links"),
 	Type.Literal("task-waiting"),
 	Type.Literal("task-freshness"),
+ Type.Literal("task-activity"),
 	Type.Literal("report-audit"),
 	Type.Literal("sidebar-attention"),
 	Type.Literal("cache-keep-warm"),

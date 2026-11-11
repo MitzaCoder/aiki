@@ -258,7 +258,7 @@ describe("reports through the tools", () => {
 		if (board.type !== "board.get") throw errorOf(board);
 		const task = board.board.tasks.find((candidate) => candidate.id === "T1") as BoardTask;
 		expect(task.report).toMatchObject({
-			now: "Reading the README.",
+			now: task.activity?.text,
 			results: "- README read",
 			revision: 1,
 			updatedBy: { author: "worker", threadId: "main", workerId: "reader" },
