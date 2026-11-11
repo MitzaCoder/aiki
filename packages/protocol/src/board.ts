@@ -76,7 +76,23 @@ export type BoardWriter = Static<typeof BoardWriterSchema>;
  * write that names it. Questions and warnings are not part of it; they are board questions linked to the task, so a
  * rewrite cannot drop them.
  */
+/** Section-local age and coverage; optional container means an older backend. No timeline row is created. */
+export const BoardReportSectionSchema = Type.Object({
+	writtenAt: Type.Union([Type.String(), Type.Null()], { description: "ISO date, null when never written. Show written 2 h ago; prefix approximate dates with about." }),
+	writtenBy: Type.Union([BoardWriterSchema, Type.Null()]),
+	version: Type.Integer({ minimum: 0, description: "Changes only for a substantive rewrite of this section; no-op writes do not rearm nudges." }),
+	coveredEventSeq: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()], { description: "Highest task event sequence covered by the rewrite. Omitted agent coverage defaults to the sequence at write time; null is unknown legacy coverage." }),
+	approximate: Type.Boolean({ description: "Legacy date inferred from the shared report timestamp, not a known section write." }),
+	stale: Type.Boolean({ description: "Preserve the prose but show needs update. Empty Results at review/done: No results yet · work finished." }),
+	eventsSince: Type.Integer({ minimum: 0, description: "Uncovered meaningful facts, not timeline rows. Show 6 events since; counts keep updating after the one nudge." }),
+	reasons: Type.Array(Type.String(), { description: "Short deterministic causes, e.g. Q121 answered; work advanced. Empty when current." }),
+	waitsOn: Type.Optional(Type.Array(Type.String(), { description: "Next only: explicit Q/task/change/deploy IDs. Without it any answered/withdrawn task question invalidates nonempty Next." })),
+});
+export type BoardReportSection = Static<typeof BoardReportSectionSchema>;
+
 export const BoardTaskReportSchema = Type.Object({
+	freshness: Type.Optional(Type.Object({ results: BoardReportSectionSchema, next: BoardReportSectionSchema }, { description: "task-freshness capability: section metadata, independent of Now and the shared report timestamp." })),
+
 	now: Type.String({ description: "What is happening right now, in a few lines. Empty when nothing is." }),
 	results: Type.String({
 		description: "What the task produced so far, as short bullets with evidence (commit, artifact, test run).",
@@ -160,6 +176,8 @@ export const BoardTaskWaitingSchema = Type.Object({
 export type BoardTaskWaiting = Static<typeof BoardTaskWaitingSchema>;
 
 export const BoardTaskSchema = Type.Object({
+	eventSeq: Type.Optional(Type.Integer({ minimum: 0, description: "Persisted per-task sequence of meaningful facts. Pass the value read by show_task as coveredEventSeq when rewriting; never use a newer unread value." })),
+
 	id: Type.String({ minLength: 1, description: 'Short and stable, e.g. "T12".' }),
 	revision: Revision,
 	title: Type.String({ minLength: 1, description: 'A short, plain outcome, e.g. "Complete the example change".' }),
@@ -407,6 +425,23 @@ export const BoardFeedbackSetRequestSchema = Type.Object({
 	note: Type.Optional(Type.String({ maxLength: 2000 })),
 });
 export type BoardFeedbackSetRequest = Static<typeof BoardFeedbackSetRequestSchema>;
+
+/** Feature task-freshness. Marks prose stale, queues one rewrite nudge, never changes status. */
+export const BoardReportStaleRequestSchema = Type.Object({
+	type: Type.Literal("board.report.stale"),
+	id: RequestIdSchema,
+	projectId: ProjectIdSchema,
+	taskId: Type.String({ minLength: 1 }),
+	sections: Type.Optional(Type.Array(Type.Union([Type.Literal("results"), Type.Literal("next")]), { minItems: 1, uniqueItems: true, description: "Omitted means both sections." })),
+	reason: Type.Optional(Type.String({ minLength: 1, maxLength: 160, description: "Optional short explanation; plain text, never an instruction." })),
+});
+export type BoardReportStaleRequest = Static<typeof BoardReportStaleRequestSchema>;
+export const BoardReportStaleResponseSchema = Type.Object({
+	type: Type.Literal("board.report.stale"),
+	id: RequestIdSchema,
+	task: BoardTaskSchema,
+});
+export type BoardReportStaleResponse = Static<typeof BoardReportStaleResponseSchema>;
 
 // --- responses ---------------------------------------------------------------------------------------------------
 

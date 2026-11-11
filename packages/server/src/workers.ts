@@ -1,3 +1,4 @@
+import { noteTaskFact } from "./task-freshness.ts";
 import { stateKind } from "./state-identity.ts";
 /**
  * Workers: background, restart-safe child conversations the project's coordinator delegates work to.
@@ -63,6 +64,9 @@ import {
 	type BoardState,
 	HARNESS_WRITER,
 	addTimelineEvent,
+	boardView,
+	describeTaskInFull,
+	normalizeBoard,
 	inProgressMinutes,
 	moveTaskForWorker,
 	openBoard,
@@ -239,6 +243,10 @@ function createWorkerReporter(service: WorkerService): Task<ReporterInput, Repor
 						const worker = state.workers[workerId];
 						forgotten = worker === undefined || worker.status === "done" || worker.conversationId !== conversationId;
 						if (forgotten || worker === undefined) return;
+						if (worker.status !== "running" && worker.taskId != null) {
+							const board = await openBoard(tx, service.mainId as ConversationId);
+							noteTaskFact(board, worker.taskId, { kind: "worker_resume", reason: "worker resumed", at: new Date().toISOString() });
+						}
 						worker.status = "running";
 						worker.updatedAt = new Date().toISOString();
 					}, context);
@@ -378,12 +386,12 @@ function createWorkerReporter(service: WorkerService): Task<ReporterInput, Repor
 										key,
 									);
 								} else if (text !== null) {
-									addTimelineEvent(
+									if (addTimelineEvent(
 										history,
 										task,
 										{ at: now, kind: "worker", label: `Worker ${workerId} reported`, detail: reportGist(text), ref: workerId, by: HARNESS_WRITER },
 										key,
-									);
+									) && !recordsRun) noteTaskFact(board, task.id, { kind: "worker_report", reason: "worker reported; work advanced", at: now });
 								}
 							}
 						}
@@ -523,6 +531,8 @@ const WRITING_RULE = `Write for a busy reader: plain words, short sentences, no 
  * so the rules are here and in the tool descriptions, not in code: nothing limits a report's length.
  */
 const REPORT_RULES = `Each task has a short report the user reads instead of the chat: \`now\` (what is happening right now), \`results\` (what came out of it, with evidence: commit, artifact, test run) and \`next\` (what comes next, and who does it). Write it with the \`board\` action \`write_report\`. A write replaces the sections you name, so rewrite them in place and keep them short: never append, never repeat what is already there or what the board already shows. Terse plain English, nothing made up. Pass a \`milestone\` (a few words) only when something meaningful happened, such as a first version merged, a blocker found or a decision made. A question or a warning for the user is not report text: put it on the board with action \`ask\` (kind \`question\` or \`warning\`), so a rewrite cannot lose it.
+
+A message starting with "[reports]" names task reports that went out of date. Read each task with show_task and rewrite only the stale Results or Next, with evidence. When you read a task earlier and write later, pass the eventSeq show_task gave you as coveredEventSeq, so anything that happened since stays marked.
 
 Only the user closes a task. Move a task to \`review\` when it is ready for them and say in \`next\` what they should check; you cannot set \`done\` or \`dropped\`. When a task's work is done but it waits on something outside the user's control that the user named (a review, a release, a reply), move it to waiting with that waitingFor note instead of leaving it in review. A worker's report does not move its task: check the work, then move the task yourself. When you keep screenshots or videos for a task with artifact_save, pass its taskId and tag them by platform and state, for example \`web, phone, dark\` (a before/after pair differs only in \`before\` and \`after\`).`;
 
@@ -1993,6 +2003,10 @@ function createWorkerExtension(service: WorkerService): Extension {
 				const doc = await tx.doc(WorkersDoc, api.conversationId);
 				const worker = doc.workers[args.id];
 				if (worker !== undefined) {
+					if (worker.status !== "running" && worker.taskId != null) {
+						const board = await openBoard(tx, service.mainId as ConversationId);
+						noteTaskFact(board, worker.taskId, { kind: "worker_resume", reason: "worker resumed", at: new Date().toISOString() });
+					}
 					worker.status = "running";
 					if (args.title !== undefined) worker.title = args.title.slice(0, 120);
 					worker.updatedAt = new Date().toISOString();
@@ -2050,6 +2064,10 @@ function createWorkerExtension(service: WorkerService): Extension {
 				const doc = await tx.doc(WorkersDoc, api.conversationId);
 				const current = doc.workers[args.id];
 				if (current === undefined) return;
+				if (current.status !== "stopped" && current.taskId != null) {
+					const board = await openBoard(tx, service.mainId as ConversationId);
+					noteTaskFact(board, current.taskId, { kind: "worker_stop", reason: "worker stopped", at: new Date().toISOString() });
+				}
 				current.status = "stopped";
 				current.updatedAt = new Date().toISOString();
 			}, context);
@@ -2209,7 +2227,8 @@ function createWorkerTaskExtension(service: WorkerService): Extension {
 		description:
 			"Keep the report of the board task you were started for current; the user reads it instead of your conversation. " +
 			"`now` replaces what the report says is happening now, `addResult` adds one finished thing to its results, " +
-			"`milestone` saves a snapshot of the task. Questions and warnings go in your final report, not here.",
+			"`milestone` saves a snapshot of the task. Questions and warnings go in your final report, not here. " +
+			"With no report fields, reads the task and its eventSeq. You can pass that as coveredEventSeq when writing later, so anything that happened since stays marked.",
 		parameters: Type.Object({
 			now: Type.Optional(
 				Type.String({ description: "What you are doing at this moment, in a line or two; replaces the last one whole. Empty clears it." }),
@@ -2217,6 +2236,7 @@ function createWorkerTaskExtension(service: WorkerService): Extension {
 			addResult: Type.Optional(
 				Type.String({ minLength: 1, description: "One finished thing with its evidence (commit, artifact, test run), added as a bullet." }),
 			),
+			coveredEventSeq: Type.Optional(Type.Integer({ minimum: 0, description: "Optional: the eventSeq from when you read the task, so anything that happened since stays marked. If omitted, a changed section covers events up to this write." })),
 			milestone: Type.Optional(
 				Type.String({ minLength: 1, description: 'A few words naming something meaningful that just happened, e.g. "Tests pass". Saves a snapshot.' }),
 			),
@@ -2230,7 +2250,12 @@ function createWorkerTaskExtension(service: WorkerService): Extension {
 				});
 			}
 			if (args.now === undefined && args.addResult === undefined) {
-				return toolText("Pass `now`, `addResult` or both.", { isError: true });
+				const stored = await service.harness.snapshot(BoardDoc, service.mainId as ConversationId, context);
+				if (stored === undefined) return toolText("The task no longer exists.", { isError: true });
+				const state = normalizeBoard(JSON.parse(JSON.stringify(stored)) as BoardState);
+				const board = boardView(state, Date.now(), true);
+				const task = board.tasks.find((candidate) => candidate.id === taskId);
+				return task === undefined ? toolText("The task no longer exists.", { isError: true }) : toolText(describeTaskInFull(task, board, []), { details: { taskId } });
 			}
 			try {
 				const at = new Date().toISOString();
@@ -2243,6 +2268,7 @@ function createWorkerTaskExtension(service: WorkerService): Extension {
 								taskId,
 								sections: { now: args.now },
 								addResult: args.addResult,
+								coveredEventSeq: args.coveredEventSeq,
 								by: workerWriter(place.threadId, place.record.id),
 								milestone: args.milestone,
 							},

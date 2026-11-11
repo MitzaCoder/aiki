@@ -1,5 +1,43 @@
 # Continue
 
+## T121 review: ordinary rewrites clear stale coverage
+
+Changed-prose writes now cover the current task event sequence when `coveredEventSeq` is omitted.
+Explicit coverage still preserves the earlier-read race boundary; no-op prose still covers nothing.
+The report-message explanation follows the main report paragraph, in plain words, and tool descriptions
+say coverage is optional. Added omitted-coverage/no-op/rearming and coordinator-paragraph-order tests.
+Review checks pass: 32 targeted freshness/prompt/worker/cache tests / 186 assertions; root run once,
+2,228 tests / 81,400 assertions / zero failures; typecheck. Protocol generation --check exits zero.
+The sibling attribution change was not edited. Earlier full web/Android/public gates below describe
+the initial stage-1 implementation; this review changed no wire fields or UI.
+
+## T121: stage 1 report freshness server/protocol
+
+Implemented D59/D60's deterministic Results/Next freshness, without removing Now or changing the timeline.
+`task-freshness` gates detection and the `board.report.stale` request. Optional `task.eventSeq` and
+`report.freshness.results/next` carry section dates/writers/versions/coverage, approximate legacy dates,
+stale flags, event counts and short causes; Next has optional `waitsOn` IDs. DESIGN's Report freshness
+section is the as-built wire/coverage/outbox contract for the web and Android workers. Kotlin DTOs are
+regenerated (341 typed DTOs, 92 request overloads); existing Android sources still compile unchanged.
+
+Agents read `show_task`'s eventSeq and pass `coveredEventSeq` with substantive rewrites. Workers can
+read their task with an empty `task_progress` call. A changed-prose rewrite without coverage covers the
+current task sequence at write time; an explicit earlier sequence keeps concurrent newer facts stale.
+No-op prose never advances coverage, clears stale state or rearms nudges. Lifecycle reducers, conservative turn-end chat mentions,
+hourly-at-most two-hour age backstop, and the user/audit stale-mark path share durable admission.
+The nudge outbox freezes task + both section versions + burst, batches by owning live coordinator
+(otherwise main), and submits a durable follow-up, never a steer. Overflow waits for the previous
+input's receipt. Replays reuse admission IDs; quiet restarts/migration create no fact or nudge.
+Future verified commit/deploy adapters call `noteTaskFact`; the small-model audit is not implemented.
+
+Checks pass in the requested order: root 2,226 tests / 81,384 assertions (including 13 new freshness
+replays/integration tests), typecheck; web check (zero diagnostics), 994 tests / 70,525 assertions,
+production build; public tree guard and Gitleaks; Android 819 JVM tests / 109 suites / two skips /
+zero failures or errors, debug assembly. Protocol generation and --check both exit zero. No flaky
+rerun was needed. Gradle daemons stopped. Backend-only evidence is tests; no UI work, push, main move,
+deployment, or live-data access. UI workers must detect both the feature and optional metadata, keep
+Now for stage 1, and use the documented request rather than changing status to flag an old report.
+
 ## T120: task freshness design (no implementation)
 
 `docs/research/task-freshness.md` proposes automatic Now, three folded timeline groups

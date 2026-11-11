@@ -1,3 +1,4 @@
+import { initializeTaskFreshness, coverReportSection, noteTaskFact, markReportStale, prepareReportNudges, acknowledgeReportNudge, reportDueAt, sweepReportAge, substantiveTaskMentions, REPORT_SWEEP_MS, type ReportSection, type TaskFact, type TaskReportTracking, type ReportOutbox } from "./task-freshness.ts";
 import { stateKind } from "./state-identity.ts";
 /**
  * The board: the coordinator's tasks, questions for the user and decisions, kept as a durable document on the
@@ -20,7 +21,7 @@ import { stateKind } from "./state-identity.ts";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { Context } from "@earendil-works/chord/context";
 import type { Conversation, ConversationId, Extension, Harness, JsonObject, ToolRegistration, Tx } from "@earendil-works/pi-durable";
-import { defineDoc, defineDocFamily, defineExtension, defineTool } from "@earendil-works/pi-durable";
+import { GenerationTask, hook, defineDoc, defineDocFamily, defineExtension, defineTool } from "@earendil-works/pi-durable";
 import {
 	BOARD_PREFIX,
 	type InputContent,
@@ -68,6 +69,12 @@ const SUMMARY_DECISIONS = 10;
 const SUMMARY_NOW_CHARS = 200;
 
 export type BoardState = {
+	taskFreshnessEnabled?: boolean;
+	reportTracking?: Record<string, TaskReportTracking>;
+	reportOutbox?: ReportOutbox[];
+	reportInFlight?: Record<string, number>;
+	reportChatCandidates?: Record<string, { text: string; key: string }[]>;
+	lastReportSweep?: number;
 	tasks: BoardTask[];
 	questions: BoardQuestion[];
 	decisions: BoardDecision[];
@@ -141,6 +148,7 @@ export function normalizeBoard<T extends BoardState>(state: T): T {
 		task.parent ??= null;
 		task.foundWhile ??= null;
 		task.related ??= [];
+		initializeTaskFreshness(state, task);
 	}
 	return state;
 }
@@ -297,6 +305,8 @@ export type ReportWrite = {
 	addResult?: string | undefined;
 	by: BoardWriter;
 	now: string;
+	coveredEventSeq?: number | undefined;
+	waitsOn?: string[] | undefined;
 };
 
 /**
@@ -311,6 +321,8 @@ export function writeReport(state: BoardState, input: ReportWrite): BoardTask {
 		throw new ServerError("bad_request", "A report write names at least one of now, results and next");
 	}
 	const report = (task.report ??= emptyReport());
+	initializeTaskFreshness(state, task);
+	const previous = { results: report.results, next: report.next };
 	if (now !== undefined) report.now = now.trim();
 	if (results !== undefined) report.results = results.trim();
 	if (next !== undefined) report.next = next.trim();
@@ -320,6 +332,9 @@ export function writeReport(state: BoardState, input: ReportWrite): BoardTask {
 		// The same line twice in a row is a rerun after a restart, not two results.
 		if (report.results === "") report.results = bullet;
 		else if (report.results.split("\n").pop() !== bullet) report.results = `${report.results}\n${bullet}`;
+	}
+	for (const name of ["results", "next"] as const) {
+		coverReportSection(state, task, name, { previous: previous[name], by: input.by, at: input.now, coveredEventSeq: input.coveredEventSeq, waitsOn: input.waitsOn });
 	}
 	report.revision += 1;
 	report.updatedAt = input.now;
@@ -340,7 +355,22 @@ export async function writeReportIn(
 	at: string,
 ): Promise<BoardTask> {
 	const state = await openBoard(tx, mainId);
-	const written = writeReport(state, { ...input, now: at });
+	let coverage = input.coveredEventSeq;
+	if (input.milestone?.trim()) {
+		const task = state.tasks.find((task) => task.id === input.taskId);
+		const before = task?.eventSeq ?? 0;
+		const unchanged = (["results", "next"] as const).filter((name) => {
+			const prose = input.sections[name]?.trim() ?? task?.report[name] ?? "";
+			if (prose !== task?.report[name]) return false;
+			if (name !== "results" || input.addResult === undefined) return true;
+			const line = input.addResult.trim();
+			const bullet = /^[-*] /.test(line) ? line : `- ${line}`;
+			return prose.split("\n").pop() === bullet;
+		});
+		noteTaskFact(state, input.taskId, { kind: "milestone", reason: input.milestone, at, sections: unchanged });
+		if (coverage === before) coverage += 1; // The writer authored this fact, but cannot cover an earlier unseen gap.
+	}
+	const written = writeReport(state, { ...input, coveredEventSeq: coverage, now: at });
 	const label = input.milestone?.trim() ?? "";
 	if (label === "") return written;
 	return snapshotMilestone(tx, mainId, state, { taskId: input.taskId, label, by: input.by, at, key });
@@ -422,6 +452,7 @@ export function recordFeedback(
 	}
 	task.feedback = feedbackCounts(entries);
 	state.updatedAt = input.now;
+	noteTaskFact(state, task.id, { kind: "feedback", reason: `${entry.id} received`, at: input.now });
 	bumpTimeline(history, task);
 	return plain(entry);
 }
@@ -451,6 +482,7 @@ export function setFeedbackState(
 	entry.note = nextNote;
 	entry.updatedAt = input.now;
 	entry.changes.push({ state: input.state, at: input.now, by: input.by, note });
+	if (input.state === "addressed") noteTaskFact(state, task.id, { kind: "feedback_addressed", reason: `${entry.id} addressed`, at: input.now });
 	task.feedback = feedbackCounts(history.feedback ?? []);
 	state.updatedAt = input.now;
 	bumpTimeline(history, task);
@@ -651,6 +683,7 @@ export function changeLink(
 		}
 	}
 	state.updatedAt = input.now;
+	if (before.blockedBy.some((id) => !task.blockedBy.includes(id))) noteTaskFact(state, task.id, { kind: "blocker_resolved", reason: "blocker resolved", at: input.now });
 	return { before, after: plain(task) };
 }
 
@@ -981,6 +1014,8 @@ export function saveTask(
 		// Inside a commit the pushed task is the document's own copy, not `created`: change it through the board.
 		const stored = state.tasks.find((task) => task.id === id) as BoardTask;
 		setRelated(state, stored, fields.related ?? []);
+		initializeTaskFreshness(state, stored);
+		if (stored.status === "review" || stored.status === "done") noteTaskFact(state, stored.id, { kind: "status", reason: `Results empty at ${stored.status}`, at: now });
 		state.updatedAt = now;
 		return { before: null, after: plain(stored) };
 	}
@@ -1019,6 +1054,12 @@ export function saveTask(
 	existing.updatedBy = author;
 	existing.updatedAt = now;
 	state.updatedAt = now;
+	if (before.status !== existing.status) {
+		noteTaskFact(state, existing.id, { kind: "status", reason: `stage changed to ${existing.status}`, at: now });
+		if (existing.status === "done") for (const dependent of state.tasks.filter((task) => task.blockedBy.includes(existing.id))) noteTaskFact(state, dependent.id, { kind: "blocker_resolved", reason: `${existing.id} resolved`, ref: existing.id, at: now });
+	}
+	if (before.status === existing.status && JSON.stringify(before.waiting) !== JSON.stringify(existing.waiting)) noteTaskFact(state, existing.id, { kind: "status", reason: "waiting stage changed", at: now });
+	if (before.blockedBy.some((id) => !existing.blockedBy.includes(id)) || (before.blockedReason !== null && existing.blockedReason === null)) noteTaskFact(state, existing.id, { kind: "blocker_resolved", reason: "blocker resolved", at: now });
 	return { before, after: plain(existing) };
 }
 
@@ -1058,6 +1099,7 @@ export function askQuestion(
 		answeredAt: null,
 	};
 	state.questions.push(question);
+	if (input.taskId !== null) noteTaskFact(state, input.taskId, { kind: "question_asked", reason: `${question.id} asked`, ref: question.id, at: input.now });
 	state.updatedAt = input.now;
 	return plain(question);
 }
@@ -1082,6 +1124,7 @@ export function settleQuestion(
 	question.answer = input.answer;
 	question.answeredAt = input.now;
 	question.revision += 1;
+	if (question.taskId !== null) noteTaskFact(state, question.taskId, { kind: "question_settled", reason: `${question.id} ${question.status}`, ref: question.id, at: input.now });
 	state.updatedAt = input.now;
 	return plain(question);
 }
@@ -1101,6 +1144,7 @@ export function addDecision(
 		at: input.now,
 	};
 	state.decisions.push(decision);
+	if (input.taskId !== null) noteTaskFact(state, input.taskId, { kind: "decision", reason: `${decision.id} recorded`, ref: decision.id, at: input.now });
 	state.updatedAt = input.now;
 	return plain(decision);
 }
@@ -1147,6 +1191,7 @@ export function changeOwner(
 	}
 	const before = plain(task);
 	task.ownerThreadId = change.kind === "claim" ? change.threadId : change.kind === "release" ? null : change.to;
+	if (owner !== task.ownerThreadId) noteTaskFact(state, task.id, { kind: "thread_handoff", reason: "thread handoff", at: input.now });
 	task.revision += 1;
 	task.updatedBy = "coordinator";
 	task.updatedAt = input.now;
@@ -1170,6 +1215,7 @@ function touchByHarness(state: BoardState, task: BoardTask, status: BoardTask["s
 	if (status !== task.status) {
 		clockStatus(state, task, status, now);
 		task.status = status;
+		noteTaskFact(state, task.id, { kind: "status", reason: `stage changed to ${status}`, at: now });
 		task.settledAt = SETTLED.has(status) ? now : null;
 		task.archived = false;
 	}
@@ -1195,6 +1241,7 @@ export function moveTaskForWorker(
 	const task = state.tasks.find((candidate) => candidate.id === input.taskId);
 	if (task === undefined || !claimHarnessKey(state, input.key)) return undefined;
 	const { move, now } = input;
+	noteTaskFact(state, task.id, { kind: move.kind === "spawned" ? "worker_start" : "worker_fail", reason: move.kind === "spawned" ? "work advanced" : "worker failed", at: now });
 	if (move.kind !== "spawned" && isSettled(task)) return undefined;
 	const before = plain(task);
 	if (move.kind === "spawned") {
@@ -1223,6 +1270,7 @@ export function recordScheduledReport(
 	// Only the schedule's own collecting task: an event run's task (no `scheduleId`) is the coordinator's and the user's.
 	if (task === undefined || task.scheduleId !== input.scheduleId || isSettled(task) || !claimHarnessKey(state, input.key)) return undefined;
 	const before = plain(task);
+	noteTaskFact(state, task.id, { kind: "worker_report", reason: "worker reported; work advanced", at: input.now });
 	// One line of plain words: the report's own headings (`## Report`) would read as stray hashes inside a bullet.
 	const summary = input.text.replace(/(^|\s)#{1,6}\s+/g, "$1").replace(/\s+/g, " ").trim();
 	const clipped = summary.length <= 300 ? summary : `${summary.slice(0, 299)}…`;
@@ -1230,6 +1278,7 @@ export function recordScheduledReport(
 		taskId: task.id,
 		sections: { now: "", results: `- ${input.now.slice(0, 16).replace("T", " ")} UTC, worker ${input.workerId} reported: ${clipped}` },
 		by: HARNESS_WRITER,
+		coveredEventSeq: task.eventSeq,
 		now: input.now,
 	});
 	if (task.status === "in_progress") touchByHarness(state, task, "review", input.now);
@@ -1263,6 +1312,7 @@ export function claimTaskForThread(
 	if (!claimHarnessKey(state, input.key)) return undefined;
 	const before = plain(task);
 	task.ownerThreadId = input.threadId;
+	noteTaskFact(state, task.id, { kind: "thread_handoff", reason: "thread started work", at: input.now });
 	task.blockedReason = null;
 	touchByHarness(state, task, "in_progress", input.now);
 	return { before, after: plain(task) };
@@ -1497,6 +1547,8 @@ export function describeTaskInFull(task: BoardTask, board: Board, snapshots: rea
 	if (task.acceptance !== null) lines.push(`done when: ${task.acceptance.trim()}`);
 	const report = task.report;
 	lines.push(`Report (r${report.revision}${report.updatedAt === null ? ", never written" : `, updated ${report.updatedAt}`}):`);
+	if (task.eventSeq !== undefined) lines.push(`eventSeq: ${task.eventSeq} (pass as coveredEventSeq after reading this task; only rewritten sections cover it)`);
+	if (report.freshness !== undefined) for (const name of ["results", "next"] as const) lines.push(`${name} freshness: ${JSON.stringify(report.freshness[name])}`);
 	lines.push(`now: ${report.now === "" ? "(empty)" : report.now}`);
 	lines.push(`results: ${report.results === "" ? "(empty)" : report.results}`);
 	lines.push(`next: ${report.next === "" ? "(empty)" : report.next}`);
@@ -1665,6 +1717,9 @@ export type BoardServiceOptions = {
 	now(): number;
 	/** Quiet period before the user's edits reach the coordinator. Default `BOARD_EDIT_DEBOUNCE_MS`. */
 	editDebounceMs?: number;
+	taskFreshness?: boolean;
+	threadIsLive?: (threadId: string) => Promise<boolean>;
+	reportTimings?: { trailingMs?: number; maxBurstMs?: number; ageMs?: number; sweepMs?: number; maxTokens?: number };
 	/** Called after an input reached a background thread, so a finished or stopped one counts as working again. */
 	wakeThread?: (threadId: string) => Promise<void>;
 	log(message: string): void;
@@ -1683,6 +1738,10 @@ export class BoardService {
 	#waitingTimer: ReturnType<typeof setTimeout> | undefined;
 	#waitingRun: Promise<void> | undefined;
 	#stopped = false;
+	#reportTimer: ReturnType<typeof setTimeout> | undefined;
+	#reportRun: Promise<void> | undefined;
+	#reportWaiters = new Set<number>();
+	#reportOwners = new Map<string, string>();
 
 	constructor(options: BoardServiceOptions) {
 		this.#options = options;
@@ -1735,9 +1794,9 @@ export class BoardService {
 		const state = await this.#options.harness.snapshot(BoardDoc, this.coordinator.id, context);
 		if (state === undefined) return emptyBoardState();
 		const stored = state as BoardState;
-		return {
-			...stored,
-			tasks: stored.tasks.map((task) => ({
+		return normalizeBoard({
+			...plain(stored),
+			tasks: plain(stored.tasks).map((task) => ({
 				...task,
 				report: task.report ?? emptyReport(),
 				snapshots: task.snapshots ?? 0,
@@ -1746,7 +1805,7 @@ export class BoardService {
 				foundWhile: task.foundWhile ?? null,
 				related: task.related ?? [],
 			})),
-		};
+		});
 	}
 
 	/** Refuse a task the board does not have, archived ones included, with `unknown_task`. */
@@ -1852,8 +1911,13 @@ export class BoardService {
 
 	/** Create the document if this project never had one, so a change watch can attach to it. */
 	async ensureDocument(): Promise<void> {
-		await this.#options.harness.commit((tx) => tx.doc(BoardDoc, this.coordinator.id), BACKGROUND_CONTEXT);
+		await this.#options.harness.commit(async (tx) => {
+			const state = await openBoard(tx, this.#mainId);
+			state.taskFreshnessEnabled = this.#options.taskFreshness !== false;
+			state.lastReportSweep ??= this.#options.now();
+		}, BACKGROUND_CONTEXT);
 		await this.checkWaiting();
+		await this.checkReports();
 	}
 
 	/** The board; a task whose 7 days passed is archived in storage on the way. */
@@ -2001,17 +2065,28 @@ export class BoardService {
 	 * A thread stopped or finished: the open tasks it still holds become unclaimed, so main (or another thread) can take
 	 * them over. Settled tasks keep their owner as history. Returns the released task IDs.
 	 */
-	async releaseThread(threadId: string): Promise<string[]> {
+	async releaseThread(threadId: string, key?: string, primaryTaskId?: string | null): Promise<string[]> {
 		const now = this.#iso();
 		return this.#commit(HARNESS_WRITER, (state) => {
 			const released: string[] = [];
+			if (key !== undefined && !claimHarnessKey(state, `report-release:${key}`)) return released;
 			for (const task of state.tasks) {
-				if ((task.ownerThreadId ?? null) !== threadId || isSettled(task)) continue;
+				const owned = task.ownerThreadId === threadId;
+				if (!owned && task.id !== primaryTaskId) continue;
+				noteTaskFact(state, task.id, { kind: "thread_finish", reason: "thread finished or stopped", at: now });
+				if (!owned || isSettled(task)) continue;
 				task.ownerThreadId = null;
 				touchByHarness(state, task, task.status, now);
 				released.push(task.id);
 			}
 			return released;
+		});
+	}
+
+	async noteThreadOutcome(threadId: string, key: string, reason: string, taskId?: string | null): Promise<void> {
+		await this.#commit(HARNESS_WRITER, (state) => {
+			if (!claimHarnessKey(state, `report-thread:${key}`)) return;
+			for (const task of state.tasks) if (task.ownerThreadId === threadId || task.id === taskId) noteTaskFact(state, task.id, { kind: "thread_finish", reason, at: this.#iso() });
 		});
 	}
 
@@ -2099,6 +2174,7 @@ export class BoardService {
 			current = encoded;
 			onChange(board, openQuestionCount(state));
 			this.#armWaiting(state);
+			this.#armReports(state);
 		};
 		publish(watch.value);
 		watch.start(async (call) => {
@@ -2214,10 +2290,126 @@ export class BoardService {
 		}
 	}
 
+
+ /** Future commit/deploy adapters use this entry point only after attribution is verified. */
+ async noteTaskFact(taskId: string, fact: TaskFact): Promise<void> {
+  await this.requireTask(taskId);
+  await this.#commit(HARNESS_WRITER, (state) => noteTaskFact(state, taskId, fact));
+ }
+
+ async markReportStale(taskId: string, sections?: readonly ReportSection[], reason?: string): Promise<BoardTask> {
+  await this.requireTask(taskId);
+  return this.#commit(USER_WRITER, (state) => {
+   markReportStale(state, taskId, sections, reason, this.#iso());
+   return plain(state.tasks.find((task) => task.id === taskId)!);
+  });
+ }
+
+ /** Preserve outgoing thread messages too, including tools called through code mode. Consume at the sender's turn end. */
+ async recordReportChat(threadId: string, text: string, key: string): Promise<void> {
+  if (this.#options.taskFreshness === false) return;
+  await this.#commit(HARNESS_WRITER, (state) => {
+   if (substantiveTaskMentions(text, new Set(state.tasks.map((task) => task.id))).length === 0) return;
+   state.reportChatCandidates ??= {};
+   const candidates = state.reportChatCandidates[threadId] ?? [];
+   if (candidates.some((candidate) => candidate.key === key)) return;
+   state.reportChatCandidates[threadId] = [...candidates, { text: text.slice(0, 4000), key }].slice(-20);
+  });
+ }
+
+ /** Called once at run end; no chat text or report rewrite is added to the timeline. */
+ async noteChat(content: string, written: ReadonlySet<string>, key: string, threadId = "main"): Promise<void> {
+  if (this.#options.taskFreshness === false) return;
+  await this.#commit(HARNESS_WRITER, (state) => {
+   if (!claimHarnessKey(state, key)) return;
+   const sources = [{ text: content, key }, ...(state.reportChatCandidates?.[threadId] ?? [])];
+   if (state.reportChatCandidates !== undefined) delete state.reportChatCandidates[threadId];
+   const valid = new Set(state.tasks.map((task) => task.id));
+   const mentioned = new Set<string>();
+   for (const source of sources) for (const id of substantiveTaskMentions(source.text, valid)) {
+    if (written.has(id) || mentioned.has(id)) continue;
+    mentioned.add(id);
+    noteTaskFact(state, id, { kind: "chat", reason: "discussed in chat", at: this.#iso() });
+    const tracking = state.reportTracking?.[id];
+    if (tracking !== undefined) tracking.chatEvidence = [...(tracking.chatEvidence ?? []), { snippet: source.text.replace(/\s+/g, " ").slice(0, 240), source: source.key }].slice(-2);
+   }
+  });
+ }
+
+ #armReports(state: Readonly<BoardState>): void {
+  if (this.#reportTimer !== undefined) clearTimeout(this.#reportTimer);
+  if (this.#stopped || state.taskFreshnessEnabled === false) return;
+  const timings = this.#options.reportTimings;
+  const due = Object.entries(state.reportTracking ?? {}).flatMap(([id, tracking]) => {
+   const task = state.tasks.find((candidate) => candidate.id === id);
+   const owner = this.#reportOwners.get(id) ?? task?.ownerThreadId ?? "main";
+   return tracking.pending === undefined || state.reportInFlight?.[owner] !== undefined ? [] : [reportDueAt(tracking.pending, timings?.trailingMs, timings?.maxBurstMs)];
+  });
+  due.push((state.lastReportSweep ?? this.#options.now()) + (timings?.sweepMs ?? REPORT_SWEEP_MS));
+  const delay = (state.reportOutbox?.length ?? 0) > 0 ? 10 : Math.max(10, Math.min(...due) - this.#options.now());
+  this.#reportTimer = setTimeout(() => {
+   this.#reportTimer = undefined;
+   void this.checkReports().catch((error) => this.#options.log(`board: report nudge failed: ${errorMessage(error)}`));
+  }, delay);
+  this.#reportTimer.unref?.();
+ }
+
+ /** Injectable clock/timings; the outbox is frozen before submit, acknowledged afterwards. */
+ checkReports(): Promise<void> {
+  if (this.#reportRun !== undefined) return this.#reportRun;
+  this.#reportRun = this.#deliverReports().finally(async () => {
+   this.#reportRun = undefined;
+   this.#armReports(await this.state());
+  });
+  return this.#reportRun;
+ }
+
+ async #deliverReports(): Promise<void> {
+  if (this.#options.taskFreshness === false) return;
+  const timings = this.#options.reportTimings;
+  const state = await this.state();
+  const live = new Set<string>(["main"]);
+  for (const owner of new Set(state.tasks.map((task) => task.ownerThreadId ?? "main"))) {
+   if (this.knowsThread(owner) && (this.#options.threadIsLive === undefined || await this.#options.threadIsLive(owner))) live.add(owner);
+  }
+  for (const task of state.tasks) this.#reportOwners.set(task.id, live.has(task.ownerThreadId ?? "main") ? task.ownerThreadId ?? "main" : "main");
+  await this.#commit(HARNESS_WRITER, (state) => {
+   sweepReportAge(state, this.#options.now(), timings?.ageMs, timings?.sweepMs);
+   prepareReportNudges(state, this.#options.now(), (task) => {
+    const owner = task.ownerThreadId ?? "main";
+    return live.has(owner) ? owner : "main";
+   }, timings);
+  });
+  for (const batch of (await this.state()).reportOutbox ?? []) {
+   const conversation = await this.#conversationOf(batch.owner);
+   const submission = await conversation.submit({ type: "input", content: batch.content, whenBusy: "followUp", requestId: batch.key }, BACKGROUND_CONTEXT);
+   await this.#woke(batch.owner);
+   await this.#commit(HARNESS_WRITER, (state) => acknowledgeReportNudge(state, batch.key, submission.id));
+  }
+  for (const [owner, id] of Object.entries((await this.state()).reportInFlight ?? {})) this.#waitForReport(owner, id);
+ }
+
+ #waitForReport(owner: string, id: number): void {
+  if (this.#reportWaiters.has(id) || this.#stopped) return;
+  this.#reportWaiters.add(id);
+  void (async () => {
+   const submission = await this.#options.harness.submission(id as Parameters<Harness["submission"]>[0], BACKGROUND_CONTEXT);
+   await submission?.wait(BACKGROUND_CONTEXT);
+   if (this.#stopped) return;
+   await this.#commit(HARNESS_WRITER, (state) => {
+    if (state.reportInFlight?.[owner] === id) delete state.reportInFlight[owner];
+   });
+   await this.#reportRun;
+   if (!this.#stopped) await this.checkReports();
+  })().catch((error) => { if (!this.#stopped) this.#options.log(`board: report receipt failed: ${errorMessage(error)}`); }).finally(() => this.#reportWaiters.delete(id));
+ }
+
 	/** Deliver edits still waiting, then stop the timer; called before the project closes. */
 	async stop(): Promise<void> {
 		this.#stopped = true;
 		if (this.#waitingTimer !== undefined) clearTimeout(this.#waitingTimer);
+		if (this.#reportTimer !== undefined) clearTimeout(this.#reportTimer);
+		await this.#reportRun;
 		await this.#waitingRun;
 		await this.flushEdits();
 	}
@@ -2301,6 +2493,8 @@ const BoardToolParameters = Type.Object({
 		}),
 	),
 	options: Type.Optional(Type.Array(Type.String(), { description: "ask: suggested answers." })),
+	coveredEventSeq: Type.Optional(Type.Integer({ minimum: 0, description: "write_report: optional eventSeq from when you read the task, so anything that happened since stays marked. If omitted, a changed section covers events up to this write." })),
+	waitsOn: Type.Optional(Type.Array(Type.String(), { description: "write_report Next: explicit IDs of Q/task/change/deploy dependencies. Omitted means any task answer can invalidate Next." })),
 	now: Type.Optional(Type.String({ description: "write_report: what is happening right now, rewritten whole; empty when nothing is." })),
 	results: Type.Optional(Type.String({ description: "write_report: what came out of the task, as short bullets with evidence (commit, artifact, test run), rewritten whole." })),
 	next: Type.Optional(Type.String({ description: "write_report: what comes next and who does it, rewritten whole." })),
@@ -2514,6 +2708,8 @@ function createBoardExtension(service: BoardService): Extension {
 								sections: { now: input.now, results: input.results, next: input.next },
 								by: writer,
 								milestone: input.milestone,
+							coveredEventSeq: input.coveredEventSeq,
+							waitsOn: input.waitsOn,
 							},
 							callKey,
 						);
@@ -2603,5 +2799,31 @@ function createBoardExtension(service: BoardService): Extension {
 		},
 	});
 
-	return defineExtension({ name: "board-tools", tools: [boardTool] as ToolRegistration[] });
+	return defineExtension({ name: "board-tools", tools: [boardTool] as ToolRegistration[], hooks: [hook(GenerationTask, {
+  afterRun: async (run, api, context) => {
+   if (!service.isCoordinator(api.conversationId)) return undefined;
+   const written = new Set<string>();
+   let cursor;
+   const texts: string[] = [];
+   do {
+    const page = await api.entries({ minEntryId: run.first, maxEntryId: run.last }, 200, cursor, context);
+    for (const entry of page.items) for (const message of entry.model ?? []) {
+     if (message.role === "toolResult" && message.toolName === "board" && !message.isError) {
+      for (const block of message.content) if (block.type === "text") {
+       const id = /^Rewrote the report of (T[1-9]\d*)\b/.exec(block.text)?.[1];
+       if (id !== undefined) written.add(id);
+      }
+     }
+     if (message.role !== "assistant") continue;
+     for (const block of message.content) {
+      if (block.type === "text") texts.push(block.text);
+      if (block.type === "toolCall" && block.name === "thread_send" && typeof block.arguments.message === "string") texts.push(block.arguments.message);
+     }
+    }
+    cursor = page.next;
+   } while (cursor !== undefined);
+   await service.noteChat(texts.join("\n"), written, `report-chat:${api.conversationId}:${run.first}:${run.last}`, service.threadIdOf(api.conversationId));
+   return undefined;
+  },
+ })] });
 }

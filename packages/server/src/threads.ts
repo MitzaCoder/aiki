@@ -738,6 +738,7 @@ export class ThreadService {
 			current.status = "failed";
 			current.failure = reason;
 		});
+		await this.#options.board.noteThreadOutcome(record.id, `failed:${key}`, "thread failed", record.taskId);
 		await this.#post(record, `[thread ${record.id} failed: ${reason}]`, `thread-failed:${key}`);
 		const project = this.project;
 		this.#options.notifications?.notify(
@@ -1004,7 +1005,7 @@ export class ThreadService {
 			await conversation.abort(BACKGROUND_CONTEXT, { background: true }).catch((error: unknown) => {
 				this.#options.log(`thread ${threadId}: abort failed: ${errorMessage(error)}`);
 			});
-			await this.#options.board.releaseThread(threadId);
+			await this.#options.board.releaseThread(threadId, `stopped:${threadId}:${record.updatedAt}`, record.taskId);
 		}
 		return this.summaryOf((await this.record(threadId)) as ThreadRecord);
 	}
@@ -1087,7 +1088,7 @@ export class ThreadService {
 			current.finishedAt = now;
 		});
 		await this.#post(record, `[thread ${record.id} finished]\n${summary}`, `thread-finished:${record.id}:${callId}`);
-		await this.#options.board.releaseThread(record.id);
+		await this.#options.board.releaseThread(record.id, `finished:${record.id}:${callId}`, record.taskId);
 		const project = this.project;
 		this.#options.notifications?.notify(
 			threadFinishedNotification({
@@ -1142,10 +1143,12 @@ export class ThreadService {
 				},
 				BACKGROUND_CONTEXT,
 			);
+			await this.#options.board.recordReportChat(input.sender, input.message, requestId);
 			return "written";
 		}
 		if (!input.reply) await this.revive(input.receiver);
 		await conversation.submit({ type: "input", content, whenBusy: "steer", requestId }, BACKGROUND_CONTEXT);
+		await this.#options.board.recordReportChat(input.sender, input.message, requestId);
 		return "steered";
 	}
 

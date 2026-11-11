@@ -527,6 +527,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	// Read by main's check-ins; the monitor starts once the status service it pushes through exists.
 	let diskMonitor: DiskMonitor | undefined;
 	const manager = new ProjectManager({
+		taskFreshness: features.includes("task-freshness"),
 		diskWarnings: () => diskMonitor?.warnings() ?? [],
 		store,
 		artifacts,

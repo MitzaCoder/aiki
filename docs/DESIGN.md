@@ -1324,6 +1324,69 @@ is where they talk.
   with no date removes a previous deadline. Repeated waiting edits save their own history snapshot and timeline
   detail. Undoing a kanban move out of Waiting restores its note and date through the normal save path.
 
+### Report freshness (T121, stage 1 of T120)
+
+`task-freshness` advertises deterministic Results/Next coverage. Now stays agent-written in this stage;
+report rewrites and stale marks add no timeline rows. `task.eventSeq` is a persisted monotonic count of
+meaningful task facts, independent of the bounded timeline. The optional `report.freshness.results` and
+`.next` each contain `writtenAt` (nullable ISO date), `writtenBy` (nullable BoardWriter), `version`,
+`coveredEventSeq` (nullable for legacy), `approximate`, `stale`, `eventsSince`, and `reasons` (up to three
+short causes). Next can also carry `waitsOn: string[]` for explicit Q/task/change/deploy dependencies.
+Clients show “written 2 h ago · 6 events since · needs update”; approximate dates say “about”. Empty
+Results at review/done say “No results yet · work finished”. Shared report dates/revisions remain for
+old clients; refreshing Now never refreshes either section date. Missing feature or missing freshness
+metadata means the old backend UI, never an inferred freshness claim. Missing hello.features does not
+imply this feature. All existing wire fields and requests remain valid.
+
+`board.report.stale` takes `projectId`, `taskId`, optional `sections: ["results", "next"]` (omitted means
+both; a nonempty subset is allowed), and optional `reason` (1–160 characters). It returns the task and
+broadcasts normal board state. It never changes status. The request and automatic detection are gated
+by the feature; disabling it does not delete existing prose or metadata. Small-model auditing is not
+implemented; a later audit uses the same `markReportStale` path as this action.
+
+`show_task` prints `eventSeq`; `board.write_report` and worker `task_progress` accept optional
+`coveredEventSeq`. Workers can call `task_progress` without report fields to read their task and sequence
+before writing. A changed-prose rewrite that omits coverage covers the task's current sequence at write
+time, so ordinary agent rewrites clear stale badges even after a task was read through list or discussed
+in chat. Agents that read earlier and write later can pass the sequence they read: explicit coverage is
+clamped to the current sequence without regressing prior coverage, and concurrent newer facts stay stale.
+A no-op covers nothing, whether coverage is omitted or explicit. A substantive rewrite
+bumps only that section's version and date; identical prose does not clear staleness or rearm nudges.
+A covered rewrite clears its stale causes and rearms that section. An uncovered rewrite retains its
+pending admission or delivered suppression, rather than creating a nag loop. Milestones are authored
+facts: they invalidate only sections not substantively rewritten with the milestone; they may advance
+explicit coverage over their own event only when no unseen sequence gap precedes it.
+
+The reducer `noteTaskFact(state, taskId, fact)` (and BoardService method) is the entry point for lifecycle
+facts and later verified commit/deploy adapters. Next invalidates on answers/withdrawals (nonempty Next;
+any task question without waitsOn), resolved blockers, worker start/resume/outcome/stop, handoff/thread
+outcome, stage changes and feedback. Results invalidates on outcomes, decisions and addressed feedback,
+not starts; review/done with empty Results requires a rewrite. All meaningful facts bump uncovered counts,
+even after a nudge has been suppressed. Causes preserve the first important reasons and latest cause.
+No individual tool/progress/poll is a fact. Legacy dates are approximate from the shared report timestamp,
+coverage unknown: normalization itself neither creates a fact nor queues a nudge.
+
+At turn end an outgoing coordinator reply or delivered thread message mentioning valid task IDs outside
+quotes/code/transport prefixes/templates, with at least 40 other characters, flags reports not written in
+that run as “discussed in chat”. Successful board tool results, including nested tool results, establish
+same-run writes. Outgoing thread messages are durably held until the sender's run ends so a later write
+in that turn can cover them. Two bounded snippet/source references are retained internally; no chat is
+added to the timeline. The age backstop runs at most hourly per project (last sweep persisted), only for
+in_progress/review/waiting and only when meaningful activity is newer than a section at least two hours
+old. Quiet old reports never wake anyone; the sweep is a coverage warning, not another counted fact.
+
+Stale marks are synchronous. Nudge defaults are 30 s trailing and a 2 min maximum from the first trigger;
+BoardService `reportTimings` injects trailing/max/age/sweep/token limits in tests. Pending task sections and
+versions merge into a durable burst. Due tasks batch by owning running/idle coordinator, otherwise main,
+in one `[reports]` line of approximately 100 tokens. Overflow stays pending; a durable in-flight receipt
+prevents another batch to that coordinator until the previous input settles. The frozen outbox stores the
+exact content, target and admission key (task + both section versions + burst), before submit. Delivery
+reuses the board's durable `whenBusy: "followUp"` path: idle coordinators wake, busy turns are never steered
+or interrupted. Replay after admission reuses the same request ID, then acknowledges the outbox; startup
+reconstructs timers and receipt waits without inventing activity. Delivery suppresses unchanged versions
+of both sections even if another cause becomes stale just afterward. Badges/counts continue updating;
+only a covered rewrite rearms. No model tokens are spent on detection and there are no freshness pushes.
+
 ### Tasks board
 
 Decided with the user on 2026-11-06. Web only; protocol addition: the optional `note` on `board.task.save` (feature

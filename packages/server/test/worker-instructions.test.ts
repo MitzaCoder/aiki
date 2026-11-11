@@ -33,6 +33,18 @@ describe("workerInstructions", () => {
 		expect(text).toContain("Do not repeat the full report or do more checks. This line is recorded without waking the coordinator.");
 	});
 
+	it("explains stale report messages after introducing reports, for both coordinators", () => {
+		for (const text of [coordinatorSection(project()), threadCoordinatorSection(project())]) {
+			const report = text.indexOf("Each task has a short report");
+			const stale = text.indexOf('A message starting with "[reports]" names task reports that went out of date.');
+			expect(report).toBeGreaterThanOrEqual(0);
+			expect(stale).toBeGreaterThan(report);
+			expect(stale).toBeLessThan(text.indexOf("Only the user closes a task."));
+			expect(text).toContain("rewrite only the stale Results or Next, with evidence");
+			expect(text).toContain("pass the eventSeq show_task gave you as coveredEventSeq, so anything that happened since stays marked");
+		}
+	});
+
 	it("tells a worker to use read instead of cat chains, and how grep/rg exit", () => {
 		const text = workerInstructions({
 			id: "fixer",

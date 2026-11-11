@@ -208,6 +208,7 @@ export type ProjectManagerOptions = {
 	onThreadsState?: (projectId: string, threads: ThreadSummary[]) => void;
 	/** How long the user's board edits wait for another before they reach the coordinator. Default 3 s. */
 	boardEditDebounceMs?: number;
+	taskFreshness?: boolean;
 	/**
 	 * The backend's memory scopes. Default: one over the store's data directory, without change notifications, which only
 	 * the server needs.
@@ -283,6 +284,7 @@ export class ProjectManager {
 	readonly #onBoardState: ((projectId: string, board: Board) => void) | undefined;
 	readonly #onThreadsState: ((projectId: string, threads: ThreadSummary[]) => void) | undefined;
 	readonly #boardEditDebounceMs: number | undefined;
+	readonly #taskFreshness: boolean;
 	readonly #onWorkersState:
 		| ((projectId: string, workers: WorkerSummary[], defaults: WorkerDefaults) => void)
 		| undefined;
@@ -330,6 +332,7 @@ export class ProjectManager {
 		this.#onBoardState = options.onBoardState;
 		this.#onThreadsState = options.onThreadsState;
 		this.#boardEditDebounceMs = options.boardEditDebounceMs;
+		this.#taskFreshness = options.taskFreshness !== false;
 		this.#now = options.now;
 		this.#setTimer = options.setTimer;
 		this.#agentDir = options.agentDir ?? resolveAgentDir();
@@ -662,6 +665,11 @@ export class ProjectManager {
 	async board(projectId: string, includeArchived: boolean): Promise<Board> {
 		const { runtime } = await this.open(projectId);
 		return runtime.board.get(includeArchived);
+	}
+
+	async markBoardReportStale(projectId: string, input: { taskId: string; sections?: readonly ("results" | "next")[] | undefined; reason?: string | undefined }) {
+		const { runtime } = await this.open(projectId);
+		return runtime.board.markReportStale(input.taskId, input.sections, input.reason);
 	}
 
 	/** A board task's snapshots, oldest first; `unknown_task` when the board has no such task. */
@@ -1178,6 +1186,12 @@ export class ProjectManager {
 		});
 		const history = new HistoryService({ conversation, coordinators });
 		const board = new BoardService({
+			taskFreshness: this.#taskFreshness,
+			threadIsLive: async (id) => {
+				if (id === "main") return true;
+				const record = await threads.record(id);
+				return record !== undefined && !record.archived && (record.status === "running" || record.status === "idle");
+			},
 			project: () => entry.project,
 			harness,
 			coordinator: conversation,

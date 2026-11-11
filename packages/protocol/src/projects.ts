@@ -330,6 +330,7 @@ export const HARNESS_FEATURES = [
 	"ui-proof",
 	"task-links",
 	"task-waiting",
+	"task-freshness",
 	"sidebar-attention",
 	"cache-keep-warm",
 	"device-auth-v1",
@@ -340,7 +341,7 @@ export type HarnessFeature = (typeof HARNESS_FEATURES)[number];
 
 /** Missing hello.features is never evidence of device-auth support. */
 export const LEGACY_HARNESS_FEATURES = HARNESS_FEATURES.filter(
-	(feature) => feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
+	(feature) => feature !== "task-freshness" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
 );
 
 export const HarnessFeatureSchema = Type.Union([
@@ -384,6 +385,7 @@ export const HarnessFeatureSchema = Type.Union([
 	Type.Literal("ui-proof"),
 	Type.Literal("task-links"),
 	Type.Literal("task-waiting"),
+	Type.Literal("task-freshness"),
 	Type.Literal("sidebar-attention"),
 	Type.Literal("cache-keep-warm"),
 	Type.Literal("device-auth-v1"),

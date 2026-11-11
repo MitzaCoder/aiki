@@ -1974,6 +1974,7 @@ data class RefDetailsJiraParent(
 
 @Serializable
 data class BoardTask(
+    val `eventSeq`: Long? = null,
     val `id`: String,
     val `revision`: Long,
     val `title`: String,
@@ -2139,13 +2140,50 @@ data class BoardWriter(
 )
 
 @Serializable
+data class BoardReportSection(
+    val `writtenAt`: String?,
+    val `writtenBy`: BoardWriter?,
+    val `version`: Long,
+    val `coveredEventSeq`: Long?,
+    val `approximate`: Boolean,
+    val `stale`: Boolean,
+    val `eventsSince`: Long,
+    val `reasons`: List<String>,
+    val `waitsOn`: List<String>? = null
+)
+
+@Serializable
+data class BoardReportStaleRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "board.report.stale",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `projectId`: String,
+    val `taskId`: String,
+    val `sections`: List<String>? = null,
+    val `reason`: String? = null
+)
+
+@Serializable
+data class BoardReportStaleResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "board.report.stale",
+    val `id`: String,
+    val `task`: BoardTask
+)
+
+@Serializable
 data class BoardTaskReport(
+    val `freshness`: BoardTaskReportFreshness? = null,
     val `now`: String,
     val `results`: String,
     val `next`: String,
     val `revision`: Long,
     val `updatedAt`: String?,
     val `updatedBy`: BoardWriter?
+)
+
+@Serializable
+data class BoardTaskReportFreshness(
+    val `results`: BoardReportSection,
+    val `next`: BoardReportSection
 )
 
 @Serializable

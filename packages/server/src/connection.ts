@@ -717,6 +717,12 @@ export class ClientConnection {
 					this.#respond({ type: "board.get", id: request.id, board });
 					return;
 				}
+				case "board.report.stale": {
+					if (!this.#features.includes("task-freshness")) return this.#unknownRequest(request);
+					const task = await this.#manager.markBoardReportStale(request.projectId, { taskId: request.taskId, sections: request.sections, reason: request.reason });
+					this.#respond({ type: "board.report.stale", id: request.id, task });
+					return;
+				}
 				case "board.task.history": {
 					const snapshots = await this.#manager.boardTaskHistory(request.projectId, request.taskId);
 					this.#respond({ type: "board.task.history", id: request.id, taskId: request.taskId, snapshots });
