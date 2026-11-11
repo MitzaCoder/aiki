@@ -1,5 +1,23 @@
 # Continue
 
+## T121 F24: one-tap report update request
+
+Replaced the web dialog with one header action: no section picker or reason input. A successful tap
+shows a check and “Asked the agent to update” for four seconds, with a polite live announcement;
+failures use a dismissible error toast. Header confirmation wraps safely at phone width. Now, Timeline
+and task status are unchanged. Protocol optional fields remain valid for older clients.
+
+Explicit owner requests default to “you asked for an update”, skip automatic debounce, and rearm
+already-delivered section versions. Pending/frozen/in-flight repeats are no-ops; completed receipts
+allow a new deliberate request. Done/dropped tasks accept owner requests without reopening; automatic
+facts still do not nudge closed tasks. Requests survive normalization until prose is rewritten.
+New reducer/wire tests cover immediate admission, coalescing, re-request, batching, closed tasks and
+missing finished Results. Root suite run once: 2,272 tests / 81,653 assertions, zero failures; typecheck;
+web check zero diagnostics, 1,004 tests / 70,571 assertions, build; generator --check (341 DTOs / 92
+overloads); public guard/Gitleaks all pass. Before dialog proof was reused; T121 has eight new settled
+control/confirmation screenshots (desktop/390px, light/dark) and a five-second one-tap recording.
+Synthetic createSetup/faux data only; no live providers, push, main move or deployment.
+
 ## T124: namespaced commit trailers
 
 Task attribution now reads only case-insensitive `Aiki-Task:` trailers, including repeated lines and
@@ -110,8 +128,11 @@ not a Report style change. The normal nested-dialog backdrop still dims/blurs th
 
 Report-only web changes add locally ticking Results/Next ages, approximate dates, uncovered event
 counts, quiet stale reasons and the empty finished Results explanation. Both `task-freshness` and
-metadata are required; otherwise the existing UI is retained. The report action opens a section selector
-and optional 160-character reason dialog, calls `board.report.stale`, and reports success/error inline.
+metadata are required; otherwise the existing UI is retained. After F24, the report action is one tap:
+it calls `board.report.stale` without sections/reason, shows “Asked the agent to update” with a check
+for four seconds, and reports failures in a dismissible toast. No dialog or further input is needed.
+Owner requests are immediately due and can ask again after a delivered nudge; pending/in-flight taps
+coalesce. Done/dropped requests are allowed without reopening; automatic closure rules are unchanged.
 Now, Timeline and section order are unchanged. Three pure formatting/gating tests add 15 assertions.
 
 Checks: web check zero diagnostics, 997 tests / 70,540 assertions, build; root 2,231 tests / 81,415

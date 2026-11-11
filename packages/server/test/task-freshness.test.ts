@@ -100,6 +100,78 @@ it("coordinator review with empty Results nudges only Results, but done never nu
 	expect(meta(state).results.stale).toBe(false);
 });
 
+it("owner tap is due now, changes no status, and coalesces repeated pending/frozen taps", () => {
+	const state = task(); write(state, { results: "Tests", next: "Review" });
+	markReportStale(state, "T1", undefined, undefined, at(), "user");
+	expect(reportDueAt(tracking(state).pending!)).toBe(START);
+	for (const name of ["results", "next"] as const) expect(meta(state)[name]).toMatchObject({ stale: true, reasons: ["you asked for an update"] });
+	const once = structuredClone(state);
+	markReportStale(state, "T1", undefined, undefined, at(1), "user");
+	expect(state).toEqual(once);
+	prepareReportNudges(state, START, owner);
+	expect(state.reportOutbox).toHaveLength(1);
+	markReportStale(state, "T1", undefined, undefined, at(2), "user");
+	prepareReportNudges(state, START + 2, owner);
+	expect(state.reportOutbox).toHaveLength(1);
+	expect(state.tasks[0]!.status).toBe("in_progress");
+});
+
+it("owner tap expedites automatic pending work and batches with other due tasks", () => {
+	const state = task(); write(state, { next: "Review" }); fact(state, "worker_report");
+	task(state); write(state, { next: "Other review" }, 0, "T2"); fact(state, "worker_report", 0, "T2");
+	markReportStale(state, "T1", undefined, undefined, at(30_000), "user");
+	prepareReportNudges(state, START + 30_000, owner);
+	expect(state.reportOutbox).toHaveLength(1);
+	expect(state.reportOutbox![0]!.admissions.map(a => a.taskId)).toEqual(["T1", "T2"]);
+});
+
+it("owner tap rearms delivered automatic versions, but adds nothing while a receipt is in flight", () => {
+	const state = task(); write(state, { results: "Tests", next: "Review" }); fact(state, "worker_report");
+	prepareReportNudges(state, START + 30_000, owner);
+	acknowledgeReportNudge(state, state.reportOutbox![0]!.key, 101);
+	const inFlight = structuredClone(state);
+	markReportStale(state, "T1", undefined, undefined, at(31_000), "user");
+	expect(state).toEqual(inFlight);
+	delete state.reportInFlight!.main; // durable receipt completed
+	markReportStale(state, "T1", undefined, undefined, at(32_000), "user");
+	prepareReportNudges(state, START + 32_000, owner);
+	expect(state.reportOutbox).toHaveLength(1);
+	expect(state.reportOutbox![0]!.content).toContain("you asked for an update");
+	acknowledgeReportNudge(state, state.reportOutbox![0]!.key, 102);
+	const requested = structuredClone(state);
+	markReportStale(state, "T1", undefined, undefined, at(33_000), "user");
+	expect(state).toEqual(requested);
+	delete state.reportInFlight!.main;
+	markReportStale(state, "T1", undefined, undefined, at(34_000), "user");
+	prepareReportNudges(state, START + 34_000, owner);
+	expect(state.reportOutbox).toHaveLength(1); // another deliberate request after the prior receipt
+});
+
+it.each(["done", "dropped"] as const)("owner can request an update on %s without reopening it, including after normalization", status => {
+	const state = task(); write(state, { results: "Tests", next: "Review" }); move(state, status);
+	markReportStale(state, "T1", undefined, undefined, at(), "user");
+	normalizeBoard(state);
+	prepareReportNudges(state, START, owner);
+	expect(state.reportOutbox).toHaveLength(1);
+	expect(meta(state).results.stale).toBe(true);
+	expect(meta(state).next.stale).toBe(true);
+	expect(state.tasks[0]!.status).toBe(status);
+	acknowledgeReportNudge(state, state.reportOutbox![0]!.key);
+	normalizeBoard(state);
+	expect(meta(state).results.stale).toBe(true);
+	write(state, { results: "Updated tests", next: "Updated review" });
+	expect(tracking(state).userRequested).toBeUndefined();
+});
+
+it.each(["review", "done"] as const)("empty Results at %s needs a write, but unwritten Next is not marked", status => {
+	const state = task(); move(state, status, "coordinator");
+	markReportStale(state, "T1", undefined, undefined, at(), "user");
+	prepareReportNudges(state, START, owner);
+	expect(meta(state).results.stale).toBe(true);
+	expect(meta(state).next.stale).toBe(false);
+	expect(state.reportOutbox![0]!.content).toContain("T1 Results stale");
+});
+
 it("worker outcomes still invalidate both written sections and queue a nudge", () => {
 	const state = task(); write(state, { results: "Historical tests", next: "Continue" });
 	noteTaskFact(state, "T1", { actor: "worker", kind: "worker_report", reason: "worker reported", at: at() });
@@ -313,6 +385,22 @@ it("button request reaches durable storage, preserves status, rejects old backen
  const old = await integration(HARNESS_FEATURES.filter((feature) => feature !== "task-freshness"));
  expect(await old.client.request({ type: "board.report.stale", projectId: old.projectId, taskId: "T1" })).toMatchObject({ type: "error", error: { code: "unknown_request" } });
  expect((await old.runtime.board.state()).tasks[0]!.report.freshness).toBeUndefined();
+}, 15_000);
+
+it("one-tap wire request submits an immediate follow-up without optional input or status changes", async () => {
+ const { client, runtime, projectId } = await integration();
+ await runtime.harness.commit(async tx => {
+  const state = await tx.doc(BoardDoc, runtime.conversation.id);
+  writeReport(state as BoardState, { taskId: "T1", sections: { results: "Tests passed", next: "Review the tests" }, by, now: at() });
+ }, BACKGROUND_CONTEXT);
+ const response = await client.request({ type: "board.report.stale", projectId, taskId: "T1" });
+ expect(response).toMatchObject({ type: "board.report.stale", task: { status: "in_progress", report: { freshness: { results: { stale: true, reasons: ["you asked for an update"] }, next: { stale: true, reasons: ["you asked for an update"] } } } } });
+ await runtime.board.checkReports(); // same clock instant: no 30-second advance
+ await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
+ const entries = await runtime.conversation.entries({}, 100, undefined, BACKGROUND_CONTEXT);
+ const inputs = entries.items.filter(entry => entry.kind === "pi.user").map(entry => JSON.stringify(entry.model));
+ expect(inputs.filter(text => text.includes("[reports]") && text.includes("you asked for an update"))).toHaveLength(1);
+ expect((await runtime.board.state()).tasks[0]!.status).toBe("in_progress");
 }, 15_000);
 
 it("restart: crash after durable admission but before acknowledgement delivers exactly once, and quiet migration never wakes", async () => {

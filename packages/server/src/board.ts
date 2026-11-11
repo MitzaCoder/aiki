@@ -2421,6 +2421,9 @@ export class BoardService {
    if (this.#stopped) return;
    await this.#commit(HARNESS_WRITER, (state) => {
     if (state.reportInFlight?.[owner] === id) delete state.reportInFlight[owner];
+    for (const tracking of Object.values(state.reportTracking ?? {})) {
+     if (tracking.inFlight?.owner === owner && tracking.inFlight.submissionId === id) delete tracking.inFlight;
+    }
    });
    await this.#reportRun;
    if (!this.#stopped) await this.checkReports();

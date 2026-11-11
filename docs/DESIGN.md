@@ -1378,9 +1378,11 @@ outcomes are generated.
 
 The web Report section shows section-local ages (ticking locally every 30 seconds), uncovered event
 counts and quiet “needs update” reasons only when both the capability and freshness metadata exist.
-The Report header’s “This looks out of date” icon opens an accessible dialog for both sections or
-either one, with an optional 160-character reason; inline success/error feedback accompanies the stale
-request. Empty finished Results metadata omits the repeated missing-write/work-finished explanation. Now and Timeline
+The Report header’s icon is a one-tap “This looks out of date — ask the agent to update” action:
+no dialog, section choice or reason field. Success shows a check and “Asked the agent to update” for
+four seconds, also announced politely; errors appear in a dismissible error toast. On narrow screens
+the header wraps the confirmation rather than overlapping its title. Empty finished Results metadata
+omits the repeated missing-write/work-finished explanation. Now and Timeline
 remain unchanged. Missing metadata retains the original Report rendering, without inferred ages.
 
 `task-freshness` advertises deterministic Results/Next coverage. Now stays agent-written in this stage;
@@ -1405,8 +1407,14 @@ or failure inline without changing status. Selection rows and actions have 48 dp
 selection semantics. Without the feature the Report retains its earlier display.
 
 `board.report.stale` takes `projectId`, `taskId`, optional `sections: ["results", "next"]` (omitted means
-both; a nonempty subset is allowed), and optional `reason` (1–160 characters). It returns the task and
-broadcasts normal board state. It never changes status. The request and automatic detection are gated
+both written sections, plus empty Results at review/done; a nonempty explicit subset is still allowed),
+and optional `reason` (1–160 characters), retained for existing clients. The web sends neither optional
+field. User requests default to “you asked for an update”, are immediately due (no trailing debounce),
+and rearm delivered-version suppression. They merge with anything already due; repeated taps while
+one request is pending/frozen/in flight add no fact or nudge. After the prior receipt completes, a
+new deliberate tap can ask again even without a rewrite. Explicit owner requests are allowed on done
+and dropped tasks without reopening them; only written sections and empty Results on done need work.
+It returns the task and broadcasts normal board state. It never changes status. The request and automatic detection are gated
 by the feature; disabling it does not delete existing prose or metadata. Small-model auditing is not
 implemented; a later audit uses the same `markReportStale` path as this action.
 
@@ -1425,8 +1433,10 @@ explicit coverage over their own event only when no unseen sequence gap precedes
 
 The reducer `noteTaskFact(state, taskId, fact)` (and BoardService method) is the entry point for lifecycle
 facts and later verified commit/deploy adapters. Internal facts carry an actor (user, coordinator, worker,
-or harness; omitted/unknown attribution conservatively means harness). Done/dropped tasks never become
-stale or nudge: closing clears stale causes, pending admissions and undelivered batches; other tasks in
+or harness; omitted/unknown attribution conservatively means harness). Automatic facts on done/dropped
+tasks never become stale or nudge: closing clears automatic stale causes, pending admissions and
+undelivered batches. An explicit owner request survives normalization/closure until its prose is
+updated. Other tasks in
 cancelled batches remain pending for rebatching. Reopening does not retroactively invalidate old facts.
 Coordinator-authored facts (main or any thread) only count, except moving to review with empty Results:
 that real gap invalidates Results and may nudge. Worker start/resume never invalidates either section.
@@ -1450,7 +1460,8 @@ old. Coordinator-authored facts and starts/resumes do not refresh that activity 
 cannot turn them into delayed self-nudges. Quiet old reports never wake anyone; the sweep is a coverage
 warning, not another counted fact.
 
-Stale marks are synchronous. Nudge defaults are 30 s trailing and a 2 min maximum from the first trigger;
+Stale marks are synchronous. Automatic nudge defaults are 30 s trailing and a 2 min maximum from the
+first trigger; explicit owner requests are due immediately but use the same durable follow-up queue;
 BoardService `reportTimings` injects trailing/max/age/sweep/token limits in tests. Pending task sections and
 versions merge into a durable burst. Due tasks batch by owning running/idle coordinator, otherwise main,
 in one `[reports]` line of approximately 100 tokens. Overflow stays pending; a durable in-flight receipt

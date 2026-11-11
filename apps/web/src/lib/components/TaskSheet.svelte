@@ -647,6 +647,10 @@
 </Dialog.Root>
 
 <style>
+	/* Let a long update confirmation wrap within the header, never across its title. */
+	:global([data-report] .section-heading h3) {
+		min-width: max-content;
+	}
 	/* Leave room for send controls even with a long draft and an IME-reduced visual viewport. */
 	:global([data-task-composer] textarea) {
 		max-height: max(2.5rem, calc(var(--task-viewport-height, 100dvh) * 0.2));

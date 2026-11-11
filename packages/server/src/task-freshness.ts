@@ -21,8 +21,11 @@ export type TaskFact = {
 	sections?: readonly ReportSection[] | undefined;
 };
 type SectionInvalidation = { seq: number; reason: string };
-type PendingReport = { burst: number; first: number; last: number; sections: Partial<Record<ReportSection, number>> };
+type PendingReport = { burst: number; first: number; last: number; immediate?: boolean; sections: Partial<Record<ReportSection, number>> };
 export type TaskReportTracking = {
+	/** Explicit owner requests survive closing a task until its prose is updated. */
+	userRequested?: boolean;
+	inFlight?: { owner: string; submissionId: number };
 	activityAt: string | null;
 	chatEvidence?: { snippet: string; source: string }[];
 	invalidated: Partial<Record<ReportSection, SectionInvalidation>>;
@@ -47,7 +50,7 @@ export function initializeTaskFreshness(state: BoardState, task: BoardTask): voi
 	}
 	state.reportTracking ??= {};
 	state.reportTracking[task.id] ??= { activityAt: null, invalidated: {}, suppressed: {} };
-	if (task.status === "done" || task.status === "dropped") {
+	if ((task.status === "done" || task.status === "dropped") && !state.reportTracking[task.id]!.userRequested) {
 		const tracking = state.reportTracking[task.id]!;
 		delete tracking.pending;
 		tracking.activityAt = null;
@@ -63,7 +66,7 @@ export function initializeTaskFreshness(state: BoardState, task: BoardTask): voi
 }
 
 function invalidatedSections(task: BoardTask, fact: TaskFact): readonly ReportSection[] {
-	if (task.status === "done" || task.status === "dropped") return [];
+	if ((task.status === "done" || task.status === "dropped") && !(fact.kind === "stale" && fact.actor === "user")) return [];
 	if (fact.kind === "worker_start" || fact.kind === "worker_resume") return [];
 	if (fact.actor === "coordinator") {
 		// Missing review evidence is a real gap, even when the coordinator made the move.
@@ -149,6 +152,7 @@ export function coverReportSection(state: BoardState, task: BoardTask, name: Rep
 			if (Object.keys(tracking.pending.sections).length === 0) delete tracking.pending;
 		}
 	}
+	if (REPORT_SECTIONS.every(name => !task.report.freshness![name].stale)) delete tracking.userRequested;
 }
 
 /** Hourly maximum, persisted across restarts. Quiet old prose is not meaningful activity. */
@@ -172,13 +176,26 @@ export function sweepReportAge(state: BoardState, now: number, ageMs = REPORT_AG
 	}
 }
 
-/** Audit and UI action share this path, without changing the task's status or timeline. */
-export function markReportStale(state: BoardState, taskId: string, sections: readonly ReportSection[] = REPORT_SECTIONS, reason = "marked out of date", at: string, actor: TaskFactActor = "harness"): void {
-	noteTaskFact(state, taskId, { actor, kind: "stale", reason, sections, at });
+/** Explicit owner requests bypass debounce and delivered-version suppression, but coalesce pending/in-flight taps. */
+export function markReportStale(state: BoardState, taskId: string, sections: readonly ReportSection[] | undefined = undefined, reason: string | undefined = undefined, at: string, actor: TaskFactActor = "harness"): void {
+	if (state.taskFreshnessEnabled === false) return;
+	const task = state.tasks.find(candidate => candidate.id === taskId);
+	if (!task) return;
+	initializeTaskFreshness(state, task);
+	const tracking = state.reportTracking![taskId]!;
+	if (actor === "user") {
+		if (tracking.pending?.immediate || (tracking.inFlight !== undefined && state.reportInFlight?.[tracking.inFlight.owner] === tracking.inFlight.submissionId)) return;
+		sections ??= REPORT_SECTIONS.filter(name => task.report[name].trim() !== "" || (name === "results" && (task.status === "review" || task.status === "done")));
+		if (sections.length === 0) return;
+		tracking.userRequested = true;
+		for (const name of sections) delete tracking.suppressed[name];
+	}
+	noteTaskFact(state, taskId, { actor, kind: "stale", reason: reason ?? (actor === "user" ? "you asked for an update" : "marked out of date"), sections: sections ?? REPORT_SECTIONS, at });
+	if (actor === "user" && tracking.pending) tracking.pending.immediate = true;
 }
 
 export function reportDueAt(pending: PendingReport, trailingMs = REPORT_TRAILING_MS, maxBurstMs = REPORT_MAX_BURST_MS): number {
-	return Math.min(pending.last + trailingMs, pending.first + maxBurstMs);
+	return pending.immediate ? pending.first : Math.min(pending.last + trailingMs, pending.first + maxBurstMs);
 }
 
 /** Freeze each short batch before delivery. Replay uses identical content and admission key. Overflow stays pending. */
@@ -224,6 +241,7 @@ export function acknowledgeReportNudge(state: BoardState, key: string, submissio
  for (const admission of batch.admissions) {
   const tracking = state.reportTracking?.[admission.taskId];
   if (tracking === undefined) continue;
+  if (submissionId !== undefined) tracking.inFlight = { owner: batch.owner, submissionId };
   for (const name of REPORT_SECTIONS) {
    const version = admission.sections[name];
    if (version === undefined) continue;
