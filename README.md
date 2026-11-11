@@ -18,7 +18,7 @@ Aiki is a personal AI workbench. Talk to one coordinator that plans the work, de
 
 *A living map of the work. Real app, [synthetic demo](docs/assets/readme/README.md).*
 
-**Early pilot.** Linux tested; macOS and Windows through WSL are experimental. Android is a native app installed via APK. Phone push for other users is not ready yet.
+**First pilot: `v0.1.0-pilot.1`.** Linux tested; macOS and Windows through WSL are experimental. Android is a native app installed via APK. No phone push in this pilot.
 
 ## Why Aiki?
 
@@ -36,14 +36,16 @@ Durable runs resume after backend restarts. Open the same projects in the web ap
 
 ## Try Aiki
 
-There is no published release yet. For the pilot, install from a source checkout after reviewing the installer:
+Use the [first pilot prerelease](https://github.com/MitzaCoder/aiki/releases/tag/v0.1.0-pilot.1); downloads become available when it is published. Download and review its installer:
 
 ```sh
-git clone https://github.com/MitzaCoder/aiki.git
-cd aiki
-sh install.sh --ref "$(git rev-parse HEAD)" --no-service
+curl -fL https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.1/install.sh -o install.sh
+# Review install.sh before running it.
+sh install.sh --version v0.1.0-pilot.1 --no-service
 aiki start
 ```
+
+Keep the explicit `--version`: `/releases/latest` and unqualified updates ignore prereleases. Use this release's checksums to verify downloads.
 
 In another terminal:
 
@@ -56,7 +58,9 @@ Open the one-time pairing URL in the same browser and confirm device sign-in. Th
 
 The installer brings its own pinned Bun and zellij, plus the web app. No root or global runtime install. You need git; install **jj** for isolated worker workspaces and the tools your project uses. If `aiki` is not found, follow the installer's PATH instruction.
 
-[Full install guide](docs/INSTALL.md) · [Android APK/build instructions](apps/android/README.md)
+[Download the signed Android APK](https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.1/aiki-v0.1.0-pilot.1-android-universal.apk) (Android 12+). Your phone needs your own backend reachable over HTTPS, for example with assisted Tailscale setup. The APK is not a tunnel.
+
+[Full install guide](docs/INSTALL.md) · [Pilot notes and limits](docs/releases/v0.1.0-pilot.1.md) · [Android build instructions](apps/android/README.md)
 
 ## One plan, different views
 

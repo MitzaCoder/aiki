@@ -7,13 +7,15 @@ keeps loopback binding; network/Tailscale HTTPS setup is separate. Do not forwar
 
 ## Install
 
-Once the first tagged release is published:
+The first pilot is the `v0.1.0-pilot.1` prerelease; its downloads become available when published:
 
 ```sh
-curl -fsSL https://github.com/MitzaCoder/aiki/releases/latest/download/install.sh | sh
+curl -fL https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.1/install.sh -o install.sh
+# Read install.sh before running it.
+sh install.sh --version v0.1.0-pilot.1
 ```
 
-To inspect before running, download `install.sh`, read it, then run `sh install.sh`. HTTPS checksums detect download
+Keep `--version` explicit: `/releases/latest` and unqualified updates select stable releases, not this pilot. HTTPS checksums detect download
 corruption; they are not a signature or protection against a compromised publisher. Bun 1.4.4 and zellij 0.45.1
 archive hashes are pinned in the installer. They are private to Aiki and never replace your global tools.
 The release archive and its sibling `.sha256` come from the same GitHub Release.
@@ -28,7 +30,7 @@ The default tries to install and start a **user** service. Without a user system
 launchd GUI session (macOS), continue in the foreground instead:
 
 ```sh
-curl -fsSL https://github.com/MitzaCoder/aiki/releases/latest/download/install.sh | sh -s -- --no-service
+sh install.sh --version v0.1.0-pilot.1 --no-service
 export PATH="$HOME/.local/bin:$PATH"   # if the installer says it is missing
 aiki start                             # keep this terminal open
 # In another terminal:
@@ -58,7 +60,7 @@ paid API keys are the straightforward alternative. A saved credential is not pro
 - `aiki service install|remove`: user unit `aiki-local.service`, or launch agent
   `io.github.mitzacoder.aiki.local`. `--print` generates the platform's definition without writing or running it.
   Linux users who want startup before login may choose to enable linger themselves; Aiki never does so.
-- `aiki update [--version v0.1.0]`: latest stable GitHub release by default, or an exact tag.
+- `aiki update --version v0.1.0-pilot.1`: select the exact pilot tag. Without `--version`, updates select latest stable.
 - `aiki rollback`: select the retained previous release, swapping it with current.
 
 Default installation root: `${XDG_DATA_HOME:-~/.local/share}/aiki`; runtime under `runtime/`, immutable releases
@@ -109,7 +111,7 @@ by this CLI. The local service refuses to overwrite an unrelated unit/agent at i
 
 ## Development and release testing
 
-Before a public release exists, use an explicit git ref (not a moving `main` watcher):
+For source testing instead of a published release, use an explicit git ref (not a moving `main` watcher):
 
 ```sh
 sh install.sh --ref COMMIT_OR_TAG --dir "$HOME/aiki-test" --no-service
@@ -130,12 +132,14 @@ aiki rollback
 The builder uses an explicit source allow-list, a clean staging directory, frozen dependencies and a neutral web
 build; no `deploy/local`, Android config, node_modules or environment files enter the tarball. Dependencies retain
 their notices when installed; Bun and zellij keep their upstream licences. `.github/workflows/release.yml` runs
-checks on a `vMAJOR.MINOR.PATCH` tag and attaches the tarball, checksum and installer. The workflow does not create
-tags. GitHub's latest non-prerelease is the only automatic update channel.
+checks on a `vMAJOR.MINOR.PATCH[-pilot.N]` tag and stages a draft with the tarball, checksum, installer and installer checksum.
+The owner attaches the locally signed APK and notices before publication; see [RELEASE.md](RELEASE.md).
+The workflow does not create tags. GitHub's latest non-prerelease is the only automatic update channel.
 
 ### Troubleshooting
 
-- No releases yet / GitHub 404: use `--ref` or a locally built `--archive` until a first tag is published.
+- Pilot download returns 404: confirm the exact prerelease is published and its asset name matches. `/latest` ignores pilots.
+  For pre-publication testing, use `--ref` or a locally built `--archive`.
 - Permission errors: choose an empty user-owned `--dir`; do not run as root.
 - Checksum mismatch: retry on a trusted connection; do not bypass verification.
 - Bun cannot execute: verify OS/architecture and Linux libc compatibility. x64 uses the baseline build (no AVX2

@@ -1,5 +1,22 @@
 # Continue
 
+## T71 pilot integration and tag authorization (Q130, part 1)
+
+The owner approved integrating and tagging `v0.1.0-pilot.1` as a prerelease, retaining
+the existing signing identity. The five release changes were rebased onto the approved
+README/graph/search main `puntwxmt` / `b07b7b94`. CONTINUE retains every section from
+both sides; DESIGN combines the pilot contract and graph/search design, and the
+README keeps the selected graph-led homepage. README/INSTALL now use the exact pilot
+installer and explicit `--version`, with signed APK/release links and honest platform,
+HTTPS and no-phone-push limits. Downloads appear only once the draft is published.
+
+Part 1 freezes and checks the integrated tip, pushes that exact commit and annotated
+tag using the approved account, then moves main through the watcher-only deployment
+path. Exact-tip gate results and the final hash are recorded on T71; earlier counts
+below are historical. Part 2 will wait for the workflow draft, rebuild/sign/attach the
+exact tagged APK/checksums/notices, and present the verified draft before publication.
+No signing key replacement, physical-phone action or manual deployment is authorized.
+
 ## T71: first pilot release preparation (not authorized to publish)
 
 Imported the earlier `yoopyppp` audit onto the then-current main as the first local
