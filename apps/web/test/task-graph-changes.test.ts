@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { makeGraphFixture, FIXTURE_NOW } from './fixtures/task-graph-busy.ts';
-import { GraphChangeBaseline, GraphAnnouncementQueue, graphSnapshot, diffGraphSnapshots, batchGraphChanges, graphChangeText, graphAnnouncement, graphHoldsUp, graphWaitingDate, quietGraphAge } from '../src/lib/task-graph-changes.ts';
+import { GraphChangeBaseline, GraphAnnouncementQueue, graphSnapshot, diffGraphSnapshots, batchGraphChanges, graphChangeText, graphAnnouncement, graphHoldsUp, graphDependencyIndex, graphWaitingDate, quietGraphAge } from '../src/lib/task-graph-changes.ts';
 const now=Date.parse(FIXTURE_NOW);
 const fixture=()=>makeGraphFixture();
 const snapshot=(f:ReturnType<typeof fixture>)=>graphSnapshot(f.board.tasks,f.board.questions,f.workers,f.threads);
@@ -24,7 +24,7 @@ describe('graph changes',()=>{
 		const f=fixture(),before=snapshot(f);f.board.tasks[2]!.status='done';
 		f.board.tasks.push({...f.board.tasks[2]!,id:'T999',status:'todo'});
 		const changes=diffGraphSnapshots(before,snapshot(f));
-		expect(changes.map(c=>c.text)).toEqual(['T3 moved to Done','T999 arrived']);
+		expect(changes.map(c=>c.text)).toEqual(['T3 Build the happy path · Access & identity → Done','T999 Build the happy path · Access & identity arrived']);
 	});
 	test('worker reassignment includes old and new task, report only on changed nonempty text',()=>{
 		const f=fixture(),before=snapshot(f),w=f.workers[0]!;const old=w.taskId;
@@ -32,6 +32,7 @@ describe('graph changes',()=>{
 		const changes=diffGraphSnapshots(before,snapshot(f));
 		expect(changes.find(c=>c.kind==='reassigned')?.taskIds).toEqual([old!,'T8']);
 		expect(changes.find(c=>c.kind==='report')?.workerId).toBe(w.id);
+		expect(changes.find(c=>c.kind==='report')?.text).toBe('fern reported on T8 · Checked sample');
 		const reported=snapshot(f);w.lastReport='  ';
 		expect(diffGraphSnapshots(reported,snapshot(f))).toEqual([]);
 	});
@@ -95,6 +96,22 @@ describe('graph changes',()=>{
 		expect(graphHoldsUp(tasks,'A')).toEqual({direct:2,total:2});
 		expect(graphHoldsUp(tasks,'B')).toEqual({direct:1,total:2});
 		expect(graphHoldsUp(tasks,'missing')).toEqual({direct:0,total:0});
+	});
+	test('dependency indexes are shared, immutable snapshots with cycle-safe lazy counts',()=>{
+		const tasks=fixture().board.tasks,index=graphDependencyIndex(tasks);
+		for(const task of tasks)expect(index(task.id)).toEqual(graphHoldsUp(tasks,task.id));
+		expect(index('T2')).toBe(index('T2'));
+		tasks[3]!.blockedBy=[];
+		expect(index('T2').direct).toBe(2);
+		expect(graphDependencyIndex(tasks)('T2').direct).toBe(1);
+	});
+	test('batched reports keep the latest worker ID, task and report line',()=>{
+		const f=fixture(),before=snapshot(f);f.workers[0]!.lastReport='First';
+		const first=diffGraphSnapshots(before,snapshot(f)),reported=snapshot(f);
+		f.workers[0]!.lastReport='Earlier line\nLatest line';
+		const entries=batchGraphChanges(batchGraphChanges([],first,now,0),diffGraphSnapshots(reported,snapshot(f)),now+100,1);
+		expect(entries[0]!.count).toBe(2);
+		expect(graphChangeText(entries[0]!)).toBe('fern reported on T3 · Latest line');
 	});
 	test('waiting is overdue only after the date; quiet is a whole-day age',()=>{
 		expect(graphWaitingDate(FIXTURE_NOW,now)).toStartWith('until ');

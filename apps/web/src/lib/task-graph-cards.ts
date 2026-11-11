@@ -1,4 +1,4 @@
-import { quietGraphAge, graphHoldsUp, graphWaitingDate } from './task-graph-changes.ts';
+import { quietGraphAge, graphDependencyIndex, graphWaitingDate } from './task-graph-changes.ts';
 import type { GraphModel, GraphTaskDetails } from './task-graph-model.ts';
 import { GRAPH_REASONS, GRAPH_STATUSES } from './task-graph-model.ts';
 import type { FamilyBox, FamilyCamera, FamilyEdge, TaskFamilyLayout } from './task-graph-families.ts';
@@ -30,8 +30,16 @@ export function familySummary(model: GraphModel, familyId: string) {
 	};
 }
 
+// One dependency index per immutable derived model, shared by labels and visible metadata.
+const dependencyIndexes = new WeakMap<GraphModel, ReturnType<typeof graphDependencyIndex>>();
+export function graphModelHoldsUp(model: GraphModel, id: string) {
+	let index = dependencyIndexes.get(model);
+	if (!index) { index = graphDependencyIndex([...model.details.values()].map(d=>d.task)); dependencyIndexes.set(model,index); }
+	return index(id);
+}
+
 export function familyCardLabel(details: GraphTaskDetails, model: GraphModel, now=Date.now()): string {
-	const holds=graphHoldsUp([...model.details.values()].map(d=>d.task),details.task.id);
+	const holds=graphModelHoldsUp(model,details.task.id);
 	return [details.task.id, details.task.title, GRAPH_STATUSES.find(s => s.key === details.task.status)!.label,
 		...details.reasons.map(reason => GRAPH_REASONS.find(r => r.key === reason)!.label), details.quiet ? quietGraphAge(details.task.updatedAt,now) : '',
 		details.task.status==='waiting'?graphWaitingDate(details.task.waiting?.until,now):'',
@@ -84,6 +92,12 @@ export function fitFamilyCardMatches(layout: TaskFamilyLayout, ids: ReadonlySet<
 	const width=Math.max(...boxes.map(b=>b.x+b.width))-left, height=Math.max(...boxes.map(b=>b.y+b.height))-top;
 	const zoom=Math.max(.03,Math.min(1,(viewport.width-48)/width,(viewport.height-48)/height));
 	return {zoom,x:(viewport.width-width*zoom)/2-left*zoom,y:(viewport.height-height*zoom)/2-top*zoom};
+}
+
+/** Screen-space overscan keeps edge cards ready without mounting the whole board. */
+export function familyBoxInViewport(box: FamilyBox, camera: FamilyCamera, viewport: {width:number;height:number}, overscan=180): boolean {
+	return (box.x+box.width)*camera.zoom+camera.x >= -overscan && box.x*camera.zoom+camera.x <= viewport.width+overscan
+		&& (box.y+box.height)*camera.zoom+camera.y >= -overscan && box.y*camera.zoom+camera.y <= viewport.height+overscan;
 }
 
 const cameraKey = (scope: string) => 'task-graph.camera.v2:' + encodeURIComponent(scope);

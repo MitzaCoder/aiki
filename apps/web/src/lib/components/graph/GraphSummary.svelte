@@ -16,10 +16,11 @@
 	{/each}
 </div>
 <style>
-	.summary{display:flex;align-items:center;gap:6px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;padding:6px 16px;font-size:12px;border-bottom:1px solid var(--chat-border)}
-	.freshness{white-space:nowrap;color:var(--chat-fg-muted);padding-right:4px}
+	.summary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0;padding:6px 16px;font-size:12px;border-bottom:1px solid var(--chat-border)}
+	.freshness{white-space:nowrap;color:var(--graph-muted);padding-right:4px}
 	.summary::-webkit-scrollbar{display:none}.caption{font-weight:600;white-space:nowrap;margin-right:3px}.separator{border-left:1px solid var(--chat-border);height:20px;margin:0 3px}
 	button{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;padding:4px 8px;min-height:30px;border:1px solid var(--chat-border);border-radius:8px;background:var(--chat-surface);color:var(--chat-fg)}
 	button[aria-pressed=true]{outline:2px solid var(--chat-fg);outline-offset:-2px;background:var(--chat-surface-2)}button:focus-visible{outline:3px solid var(--chat-fg);outline-offset:-3px}b{font-size:15px}
-	@media(max-width:640px){.summary{padding:5px 10px}button{min-height:44px}}
+	@media (hover:none) and (pointer:coarse){button{min-height:44px}}
+	@media(max-width:640px){.summary{padding:5px 10px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}button{min-height:44px}}
 </style>

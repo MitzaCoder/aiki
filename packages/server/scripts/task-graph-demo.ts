@@ -6,12 +6,14 @@ import { BoardDoc } from '../src/board.ts';
 import { WorkersDoc, type WorkerRecord } from '../src/workers.ts';
 import type { BoardTaskInput } from '@aiki/protocol';
 import { FIXTURE_NOW, makeGraphFixture } from '../../../apps/web/test/fixtures/task-graph-busy.ts';
+import { makeLargeGraphFixture } from '../../../apps/web/test/fixtures/task-graph-large.ts';
 
 const origin = process.env.GRAPH_WEB_ORIGIN ?? 'http://localhost:5173';
 const output = process.env.GRAPH_DEMO_OUTPUT ?? '/tmp/task-graph-demo.json';
 const test = await createSetup({ allowedOrigins:[origin], terminals:false });
 console.log(JSON.stringify({dataDir:test.dataDir,configDir:test.configDir,pid:process.pid}));
-const busy = process.env.GRAPH_DEMO_SCENARIO === 'busy' ? makeGraphFixture() : null;
+const busy = process.env.GRAPH_DEMO_SCENARIO === 'large' ? makeLargeGraphFixture(Number(process.env.GRAPH_DEMO_TASKS ?? 500))
+	: process.env.GRAPH_DEMO_SCENARIO === 'busy' ? makeGraphFixture() : null;
 if(busy) {
 	// Keep old task activity without letting the real waiting/archive timers consume the demo on start.
 	const offset=Date.now()-Date.parse(FIXTURE_NOW);
@@ -45,7 +47,7 @@ for(let i=0;i<(busy ? 0 : titles.length);i++) {
 if(busy) await runtime.harness.commit(async tx=>{
 	const doc=await tx.doc(BoardDoc,runtime.conversation.id);
 	doc.tasks=JSON.parse(JSON.stringify(busy.board.tasks.map(task=>({...task,ownerThreadId:'main'}))));
-	doc.counters.task=90;
+	doc.counters.task=busy.board.tasks.length;
 	doc.questions=busy.board.questions.map(q=>({...q,askedAt:new Date().toISOString()}));
 	doc.counters.question=doc.questions.length;
 	doc.updatedAt=new Date().toISOString();
@@ -79,6 +81,10 @@ const controls=Bun.serve({port:0,hostname:'127.0.0.1',async fetch(request){
 		if(!busy) return new Response('busy scenario required',{status:400});
 		await runtime.harness.commit(async tx=>{const doc=await tx.doc(BoardDoc,runtime.conversation.id);doc.tasks=path==='/empty'?[]:JSON.parse(JSON.stringify(busy.board.tasks.map(task=>path==='/close-all'?{...task,status:'done' as const}:task)));},BACKGROUND_CONTEXT);
 		return new Response('board changed');
+	}
+	if(path==='/status' || path==='/batch') {
+		await runtime.harness.commit(async tx=>{const doc=await tx.doc(BoardDoc,runtime.conversation.id);for(const id of path==='/batch'?['T3','T4']:['T3']){const task=doc.tasks.find(t=>t.id===id)!;task.status=task.status==='review'?'in_progress':'review';task.revision++;task.updatedAt=new Date().toISOString();}},BACKGROUND_CONTEXT);
+		return new Response('status changed');
 	}
 	if(path==='/review') {
 		await runtime.harness.commit(async tx=>{const doc=await tx.doc(BoardDoc,runtime.conversation.id);const task=doc.tasks.find(t=>t.id==='T3')!;task.status='review';task.updatedAt=new Date().toISOString();},BACKGROUND_CONTEXT);

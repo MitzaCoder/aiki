@@ -1,20 +1,20 @@
 import type { BoardQuestion, BoardTask, BoardTaskStatus, ThreadSummary, WorkerSummary } from '@aiki/protocol';
 
 export const GRAPH_STATUSES: { key: BoardTaskStatus; label: string; mark: string; tone: string }[] = [
-	{ key: 'todo', label: 'Planned', mark: '○', tone: 'var(--chat-fg-muted)' },
-	{ key: 'in_progress', label: 'Working', mark: '▶', tone: 'var(--tone-accent-1)' },
-	{ key: 'review', label: 'Review', mark: '◇', tone: 'var(--tone-ring)' },
-	{ key: 'blocked', label: 'Blocked', mark: '⊣', tone: 'var(--tone-danger)' },
-	{ key: 'waiting', label: 'Waiting', mark: '◷', tone: 'var(--tone-warning)' },
-	{ key: 'done', label: 'Done', mark: '✓', tone: 'var(--tone-success)' },
-	{ key: 'dropped', label: 'Dropped', mark: '−', tone: 'var(--chat-fg-muted)' },
+	{ key: 'todo', label: 'Planned', mark: '○', tone: 'var(--graph-muted)' },
+	{ key: 'in_progress', label: 'Working', mark: '▶', tone: 'var(--graph-working)' },
+	{ key: 'review', label: 'Review', mark: '◇', tone: 'var(--graph-review)' },
+	{ key: 'blocked', label: 'Blocked', mark: '⊣', tone: 'var(--graph-blocked)' },
+	{ key: 'waiting', label: 'Waiting', mark: '◷', tone: 'var(--graph-waiting)' },
+	{ key: 'done', label: 'Done', mark: '✓', tone: 'var(--graph-done)' },
+	{ key: 'dropped', label: 'Dropped', mark: '−', tone: 'var(--graph-muted)' },
 ];
 export const GRAPH_REASONS = [
-	{ key: 'review', label: 'Review', mark: '◇', tone: 'var(--tone-ring)' },
-	{ key: 'blocked', label: 'Blocked', mark: '⊣', tone: 'var(--tone-danger)' },
-	{ key: 'waiting', label: 'Waiting', mark: '◷', tone: 'var(--tone-warning)' },
-	{ key: 'question', label: 'Question / warning', mark: '?', tone: 'var(--tone-accent-1)' },
-	{ key: 'failed', label: 'Worker failed', mark: '!', tone: 'var(--tone-danger)' },
+	{ key: 'review', label: 'Review', mark: '◇', tone: 'var(--graph-review)' },
+	{ key: 'blocked', label: 'Blocked', mark: '⊣', tone: 'var(--graph-blocked)' },
+	{ key: 'waiting', label: 'Waiting', mark: '◷', tone: 'var(--graph-waiting)' },
+	{ key: 'question', label: 'Question / warning', mark: '?', tone: 'var(--graph-working)' },
+	{ key: 'failed', label: 'Worker failed', mark: '!', tone: 'var(--graph-blocked)' },
 ] as const;
 export type GraphReason = typeof GRAPH_REASONS[number]['key'];
 export type GraphTaskDetails = {
@@ -54,12 +54,30 @@ export function buildGraphModel(tasks: readonly BoardTask[], questions: readonly
 		if (task.id !== root && task.status !== 'dropped') { count.total++; if (task.status === 'done') count.done++; }
 		progress.set(root, count);
 	}
+	// Index associations once. In particular main.ownedTasks can contain the entire board;
+	// filtering threads with includes per card is quadratic (and costly on watched proxies).
+	const questionsByTask = new Map<string, BoardQuestion[]>();
+	for (const q of questions) if (q.status === 'open' && q.taskId) {
+		const group = questionsByTask.get(q.taskId) ?? []; group.push(q); questionsByTask.set(q.taskId,group);
+	}
+	const workerTasks = new Map<string,string[]>(), ownerTasks = new Map<string,string[]>();
+	for (const task of tasks) {
+		for (const id of task.workerIds) { const group=workerTasks.get(id)??[];group.push(task.id);workerTasks.set(id,group); }
+		if (task.ownerThreadId) { const group=ownerTasks.get(task.ownerThreadId)??[];group.push(task.id);ownerTasks.set(task.ownerThreadId,group); }
+	}
+	const workersByTask = new Map<string,WorkerSummary[]>(), threadsByTask = new Map<string,ThreadSummary[]>();
+	for (const worker of workers) for (const id of worker.taskId?[worker.taskId]:workerTasks.get(worker.id)??[]) {
+		const group=workersByTask.get(id)??[];group.push(worker);workersByTask.set(id,group);
+	}
+	for (const thread of threads) for (const id of new Set([...(thread.taskId?[thread.taskId]:[]),...thread.ownedTasks,...(ownerTasks.get(thread.id)??[])])) {
+		const group=threadsByTask.get(id)??[];group.push(thread);threadsByTask.set(id,group);
+	}
 	const details = new Map<string, GraphTaskDetails>();
 	for (const task of tasks) {
 		const familyId = familyById.get(task.id)!;
 		const count = progress.get(familyId)!;
-		const taskQuestions = questions.filter(q => q.status === 'open' && q.taskId === task.id);
-		const taskWorkers = workers.filter(w => w.taskId === task.id || (!w.taskId && task.workerIds.includes(w.id)));
+		const taskQuestions = questionsByTask.get(task.id) ?? [];
+		const taskWorkers = workersByTask.get(task.id) ?? [];
 		const reasons: GraphReason[] = [];
 		if (task.status === 'review' || task.status === 'blocked' || task.status === 'waiting') reasons.push(task.status);
 		if (taskQuestions.length) reasons.push('question');
@@ -68,7 +86,7 @@ export function buildGraphModel(tasks: readonly BoardTask[], questions: readonly
 			progress: `${count.done} of ${count.total} subtasks done`, reasons, questions: taskQuestions,
 			quiet: !['done', 'dropped'].includes(task.status) && now - Date.parse(task.updatedAt) >= 48 * 3600000,
 			blocks: blocks.get(task.id) ?? [], children: children.get(task.id) ?? [], workers: taskWorkers,
-			threads: threads.filter(t => t.taskId === task.id || t.ownedTasks.includes(task.id) || task.ownerThreadId === t.id),
+			threads: threadsByTask.get(task.id) ?? [],
 		});
 	}
 	const counted = [...details.values()].filter(d => !d.task.archived);
@@ -81,7 +99,7 @@ export function buildGraphModel(tasks: readonly BoardTask[], questions: readonly
 export function graphSummaryCounters(model: GraphModel) {
 	return [
 		...GRAPH_REASONS.map(reason => ({...reason, key: `reason:${reason.key}`, count: model.reasonCounts[reason.key]})),
-		{key: 'quiet', label: 'Quiet', mark: '◴', tone: 'var(--tone-primary)', count: model.quietCount},
+		{key: 'quiet', label: 'Quiet', mark: '◴', tone: 'var(--graph-quiet)', count: model.quietCount},
 		...['in_progress', 'todo', 'done', 'dropped'].flatMap(key => {
 			const status = GRAPH_STATUSES.find(status => status.key === key)!;
 			return key === 'dropped' && !model.statusCounts.dropped ? [] : [{...status, key: `status:${key}`, count: model.statusCounts[status.key]}];

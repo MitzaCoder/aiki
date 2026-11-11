@@ -121,6 +121,44 @@ zero check diagnostics and production build; Android 811 JVM tests / 107 suites 
 debug assembly and lint (40 warnings, one hint, zero errors). Android builds use an explicit empty private-properties
 file. Public denylist/generic guard and Gitleaks pass. Main stayed untouched.
 
+## Graph hardening (T110 / stage 4)
+
+The isolated demo accepts `GRAPH_DEMO_SCENARIO=large GRAPH_DEMO_TASKS=500` (100–5,000 tasks). Its deterministic fixture
+covers varied families, a 12-level chain, a 42-task family, long unbroken titles/URLs, 36 questions and crowded crew.
+`/status` toggles T3; `/batch` toggles T3/T4 together. All remain throwaway test-setup writes, not graph actions.
+
+Viewport culling mounts only cards/pills and crew within 180 screen pixels; dots mount no cards. Association indexes
+replace per-task ownedTasks scans; one lazy dependency index per model replaces repeated graphHoldsUp walks. Layout
+and route signatures retain geometry through status/clock-only replacements. Roving arrows use logical boxes, not
+only DOM; keyboard reveal is immediate before focusing a newly mounted card. These were measured fixes, not a renderer
+rewrite. Standard 100/500/1,000-task Chromium mount times: 52/155/381ms; 2Hz batch-update p95: 35/63/113ms; interaction
+p95: ~16.8ms at all sizes. The 100-task budget passes. Heap/DOM/raw timings and method are in T110's artifacts.
+
+Known limit: a broad 500-task search exposing many cross-family routes still has 117ms pan / 83ms zoom p95, despite
+~65–70ms update p95. Software-rendering traces mostly show browser/program work. Viewport-sized SVG and removing
+card grayscale trials did not improve it and were reverted. Dense-route paint needs another focused pass; do not claim
+60fps for every filter. The 1,000-task updates also exceed the smaller-board 100ms target. No physical-phone frame
+budget or real assistive-technology user certification was attempted.
+
+Graph-only contrast tones cover Jarvis/Neutral light/dark, including muted text; stronger subtask strokes match the
+legend. Summary counters wrap on desktop and reserve Changes space; phone keeps horizontal scrolling. Controls wrap
+under 200%-equivalent layout/20px root fonts. Touch view/legend controls are ≥44px. Long titles wrap before clamping;
+reason marks/progress no longer shrink into each other. The static Updated mark now appears only under reduced motion
+(the old selector accidentally overrode display:none). Changes focuses its named dialog and returns focus on Escape;
+reports say worker ID + task ID + latest line, even in a batch; status entries include short titles.
+
+Real Chromium proof: before/after desktop/phone light/dark, Neutral contrast pairs, long-panel and 200% shots, an 11.8s
+desktop tour and 10.4s touch tour. Touch pan/pinch, family switching, tap selection and sheet scrolling passed; scrolling
+never moved the camera. Keyboard crossed culled regions, opened the existing task sheet and returned from Changes.
+AX controls were named; computed contrast audits had no sampled failures; reduced-motion styles retained information.
+All five states passed with cards. Actual prefers-color-scheme dark did not reproduce a light washed-out selected
+project row; the existing faint sidebar subtitle was not changed. No prototype route or old bubble renderer remains.
+
+Checks: root 2,180 tests / 81,194 assertions; web 962 / 70,449. Web check zero errors/warnings; web build, root typecheck,
+and public-source/Gitleaks pass. No flaky retries, protocol/Android changes, live data, push, deployment or main move.
+Ignored `.preview/s4-*.ts` drivers and `.preview/s4/` measurements/proof reuse Vite 5199, CDP 9399, the isolated demo,
+and the same stage-3 localStorage recipe. The task's handoff artifact has exact commands and the remaining limits.
+
 ## Live graph changes and crew activity (T109 / stage 3)
 
 The graph has a bounded session-only Changes popover/phone sheet with unseen-entry counts, fixed one-second burst

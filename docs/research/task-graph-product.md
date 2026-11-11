@@ -1,5 +1,13 @@
 # Taking the task graph from prototype to product (T103)
 
+## Status
+
+Stages 1–4 (T106–T110) are built: summary/search/live panel, stable family cards and zoom detail, crew/change history,
+and scale/touch/accessibility hardening. The final contract is in DESIGN.md. Headless desktop 100-task update/frame
+budgets pass; 500/1,000-task measurements and limits are in T110's artifacts. Physical mid-range phone performance,
+real assistive-technology user testing and Android implementation are not certified by these web checks. The study
+and prototype descriptions below remain historical, not shipped routes or current behavior.
+
 > Build note: the owner chose option C (D56). The prototypes and `/graph-lab` were not merged (D57);
 > they live only in changes umlnmuqr/lvwtoskk. Production work follows stages T106–T111.
 > The study below is preserved as research, not the current implementation contract.

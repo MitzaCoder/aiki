@@ -2,7 +2,7 @@ import type { BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@ai
 import { GRAPH_STATUSES } from './task-graph-model.ts';
 
 export type GraphSnapshot = {
-	tasks: ReadonlyMap<string, { status: string }>;
+	tasks: ReadonlyMap<string, { status: string; title: string }>;
 	questions: ReadonlyMap<string, { taskId: string | null; kind: string; status: string }>;
 	crew: ReadonlyMap<string, { taskId: string | null; status: string; report: string; title: string }>;
 };
@@ -12,7 +12,7 @@ export type GraphChangeEntry = GraphChange & { id: number; at: number; count: nu
 /** Copy the watched fields: a mutable caller cannot rewrite the previous baseline. */
 export function graphSnapshot(tasks: readonly BoardTask[], questions: readonly BoardQuestion[], workers: readonly WorkerSummary[], threads: readonly ThreadSummary[]): GraphSnapshot {
 	return {
-		tasks: new Map(tasks.filter(t=>!t.archived).map(t=>[t.id,{status:t.status}])),
+		tasks: new Map(tasks.filter(t=>!t.archived).map(t=>[t.id,{status:t.status,title:t.title}])),
 		questions: new Map(questions.map(q=>[q.id,{taskId:q.taskId,kind:q.kind??'question',status:q.status}])),
 		crew: new Map([
 			...workers.map(w=>['worker:'+w.id,{taskId:w.taskId??tasks.find(t=>t.workerIds.includes(w.id))?.id??null,status:w.status,report:w.lastReport?.trim()??'',title:w.title}] as const),
@@ -39,10 +39,11 @@ export function diffGraphSnapshots(previous: GraphSnapshot | null, next: GraphSn
 	}
 	for(const [id,task] of next.tasks){
 		const before=previous.tasks.get(id);
-		if(!before)add('arrival','arrival',[id],`${id} arrived`,'tasks arrived');
+		const taskName=`${id} ${task.title.length>48?task.title.slice(0,47)+'…':task.title}`;
+		if(!before)add('arrival','arrival',[id],`${taskName} arrived`,'tasks arrived');
 		else if(before.status!==task.status){
 			const label=GRAPH_STATUSES.find(s=>s.key===task.status)?.label??task.status;
-			add('status','status:'+task.status,[id],`${id} moved to ${label}`,`tasks moved to ${label}`);
+			add('status','status:'+task.status,[id],`${taskName} → ${label}`,`tasks moved to ${label}`);
 		}
 	}
 	for(const [id,q] of next.questions){
@@ -59,7 +60,7 @@ export function diffGraphSnapshots(previous: GraphSnapshot | null, next: GraphSn
 			const action=crew.status==='failed'?'failed':terminal(crew.status)?'finished':crew.status==='running'?'started':'resting';
 			add('crew',subject+':'+action,[crew.taskId??before.taskId],`${subject} ${crew.title} ${action}`,`${subject.toLowerCase()}s ${action}`);
 		}
-		if(before&&crew.report&&crew.report!==before.report)add('report',id+':report',[crew.taskId],`${subject} ${crew.title}: ${crew.report.split('\n').filter(Boolean).at(-1)!.slice(0,180)}`,`${subject.toLowerCase()} reports`,worker?id.slice(7):undefined);
+		if(before&&crew.report&&crew.report!==before.report)add('report',id+':report',[crew.taskId],`${worker?id.slice(7):crew.title} reported on ${crew.taskId} · ${crew.report.split('\n').filter(Boolean).at(-1)!.slice(0,180)}`,`${subject.toLowerCase()} reports`,worker?id.slice(7):undefined);
 	}
 	for(const [id,crew] of previous.crew)if(!next.crew.has(id)&&!terminal(crew.status))add('crew',id.split(':')[0]+':removed',[crew.taskId],`${crew.title} finished`,'crew finished');
 	return changes;
@@ -70,12 +71,12 @@ export function batchGraphChanges(entries: readonly GraphChangeEntry[], changes:
 	const next=entries.map(entry=>({...entry,taskIds:[...entry.taskIds]}));
 	for(const change of changes){
 		const entry=next.find(e=>e.key===change.key&&now-e.at<1000);
-		if(entry){entry.count++;entry.taskIds=[...new Set([...entry.taskIds,...change.taskIds])];entry.serial=++serial;}
+		if(entry){entry.count++;if(change.kind==='report')entry.text=change.text;entry.taskIds=[...new Set([...entry.taskIds,...change.taskIds])];entry.serial=++serial;}
 		else next.unshift({...change,id:++serial,serial,at:now,count:1});
 	}
 	return next.slice(0,50);
 }
-export const graphChangeText = (entry:GraphChangeEntry) => entry.count===1?entry.text:`${entry.count} ${entry.plural}`;
+export const graphChangeText = (entry:GraphChangeEntry) => entry.count===1||entry.kind==='report'?entry.text:`${entry.count} ${entry.plural}`;
 export function graphAnnouncement(changes: readonly GraphChange[]):string {
 	const counts=new Map<string,number>();
 	for(const c of changes)counts.set(c.plural,(counts.get(c.plural)??0)+1);
@@ -95,12 +96,21 @@ export class GraphAnnouncementQueue {
 }
 
 /** Only unfinished dependents count; cycles and diamonds must never double count. */
-export function graphHoldsUp(tasks: readonly BoardTask[], id:string):{direct:number;total:number} {
+export function graphDependencyIndex(tasks: readonly BoardTask[]) {
 	const dependents=new Map<string,string[]>();
-	for(const task of tasks)if(!task.archived&&!['done','dropped'].includes(task.status))for(const blocker of task.blockedBy)dependents.set(blocker,[...(dependents.get(blocker)??[]),task.id]);
-	const direct=new Set((dependents.get(id)??[]).filter(child=>child!==id)),seen=new Set([id]),pending=[...direct];
-	while(pending.length){const child=pending.pop()!;if(seen.has(child))continue;seen.add(child);pending.push(...(dependents.get(child)??[]));}
-	return {direct:direct.size,total:seen.size-1};
+	for(const task of tasks)if(!task.archived&&!['done','dropped'].includes(task.status))for(const blocker of task.blockedBy) {
+		const children=dependents.get(blocker)??[];children.push(task.id);dependents.set(blocker,children);
+	}
+	const counts=new Map<string,{direct:number;total:number}>();
+	return (id:string) => {
+		const cached=counts.get(id);if(cached)return cached;
+		const direct=new Set((dependents.get(id)??[]).filter(child=>child!==id)),seen=new Set([id]),pending=[...direct];
+		while(pending.length){const child=pending.pop()!;if(seen.has(child))continue;seen.add(child);pending.push(...(dependents.get(child)??[]));}
+		const count={direct:direct.size,total:seen.size-1};counts.set(id,count);return count;
+	};
+}
+export function graphHoldsUp(tasks: readonly BoardTask[], id:string):{direct:number;total:number} {
+	return graphDependencyIndex(tasks)(id);
 }
 export function quietGraphAge(updatedAt:string,now:number):string { return `quiet ${Math.floor(Math.max(0,now-Date.parse(updatedAt))/86400000)} d`; }
 export function graphWaitingDate(until:string|null|undefined,now:number):string {

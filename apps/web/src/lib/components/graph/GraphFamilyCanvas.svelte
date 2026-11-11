@@ -3,7 +3,7 @@
 	import { fade } from 'svelte/transition';
 	import type { GraphModel } from '#lib/task-graph-model.js';
 	import { layoutTaskFamilies, regroupTaskFamilies, chooseFamilyDetail, type TaskFamilyLayout, type FamilyDetail, type FamilyBox } from '#lib/task-graph-families.js';
-	import { familySummary, familyRelationships, spatialFamilyNeighbor, fitFamilyCardMatches } from '#lib/task-graph-cards.js';
+	import { familySummary, familyRelationships, spatialFamilyNeighbor, fitFamilyCardMatches, familyBoxInViewport } from '#lib/task-graph-cards.js';
 	import { familyDotTargets, minimumFamilyDotZoom } from '#lib/task-graph-family-dots.js';
 	import { GraphFamilyCamera } from '#lib/graph-family-camera.svelte.js';
 	import GraphCard from './GraphCard.svelte';
@@ -34,13 +34,19 @@
 	const families=$derived(layout?.families.filter(f=>f.taskIds.length)??[]);
 	const phone=$derived(view.phone);
 	const shownFamilies=$derived(phone&&detail!=='dots'?families.filter(f=>f.id===familyId):families);
-	const shownCards=$derived([...(layout?.cards.values()??[])].filter(c=>!phone||c.familyId===familyId));
+	const familyCards=$derived([...(layout?.cards.values()??[])].filter(c=>!phone||c.familyId===familyId));
+	const shownCards=$derived(detail==='dots'?[]:familyCards.filter(c=>familyBoxInViewport(detail==='pills'?c.pillBox:c.occupiedBox,view.camera,view)));
+	const shownCardIds=$derived(new Set(shownCards.map(c=>c.id)));
 	const summaries=$derived(new Map(families.map(f=>[f.id,familySummary(model,f.id)])));
 	const dotTargets=$derived(new Map((layout?familyDotTargets(layout,view.camera):[]).map(target=>[target.id,target])));
-	const edges=$derived(layout?familyRelationships(model,layout,selectedTaskId,matches):[]);
-	const tabStop=$derived(focusId??(detail==='dots'?'family:'+families[0]?.id:shownCards[0]?.id));
+	const relationships=$derived(layout?familyRelationships(model,layout,selectedTaskId,matches):[]);
+	const edges=$derived(relationships.filter(edge=>shownCardIds.has(edge.from)||shownCardIds.has(edge.to)));
+	const headerTabStop=$derived(shownFamilies.some(f=>'family:'+f.id===focusId&&familyBoxInViewport(f.header,view.camera,view,0)));
+	const tabStop=$derived(detail==='dots'?(focusId??'family:'+families[0]?.id):headerTabStop||shownCardIds.has(focusId??'')?focusId:shownCards[0]?.id??'family:'+shownFamilies[0]?.id);
+	const layoutRevision=$derived(JSON.stringify(tasks));
 	$effect(()=>{
-		const next=tasks;
+		layoutRevision;
+		const next=untrack(()=>tasks);
 		layout=layoutTaskFamilies(next,{previous:untrack(()=>layout),options:{cardWidth:230,cardHeight:88,creatureHeight:12,creaturesAbove:true,gap:24,indent:12,padding:16,headerHeight:88,pillWidth:230,pillHeight:64,aspect:1.6}});
 	});
 	$effect(()=>{if(layout&&view.width&&view.height)view.minimumZoom=minimumFamilyDotZoom(layout,view);});
@@ -58,7 +64,7 @@
 		untrack(()=>{familyId=layout!.cards.get(id)!.familyId;focusId=id;view.reveal(layout!,id,true);onrevealed();});
 	});
 	// A level/family change must not leave every rendered target at tabindex=-1.
-	$effect(()=>{const targets=detail==='dots'?families.map(f=>'family:'+f.id):[...shownCards.map(c=>c.id),...shownFamilies.map(f=>'family:'+f.id)];if(!targets.includes(focusId??''))focusId=targets[0]??null;});
+	$effect(()=>{const targets=detail==='dots'?families.map(f=>'family:'+f.id):[...familyCards.map(c=>c.id),...shownFamilies.map(f=>'family:'+f.id)];if(!targets.includes(focusId??''))focusId=targets[0]??null;});
 	onMount(()=>{const cleanup=host?view.mount(host):()=>{};return cleanup;});
 	function enterFamily(id:string){if(!layout)return;familyId=id;focusId='family:'+id;view.family(layout,id);}
 	function switchFamily(direction:number){const index=families.findIndex(f=>f.id===familyId);const family=families[(index+direction+families.length)%families.length];if(family)enterFamily(family.id);}
@@ -70,7 +76,7 @@
 	function select(id:string){if(!view.dragged){focusId=id;onselect(id);}}
 	async function focusTarget(id:string){
 		focusId=id;
-		if(layout){if(!id.startsWith('family:'))view.reveal(layout,id,!!selectedTaskId);else if(detail!=='dots')view.family(layout,id.slice(7));}
+		if(layout){if(!id.startsWith('family:'))view.reveal(layout,id,!!selectedTaskId,false);else if(detail!=='dots')view.family(layout,id.slice(7));}
 		await tick();host?.querySelector<HTMLElement>(`[data-focus-id="${CSS.escape(id)}"]`)?.focus({preventScroll:true});
 	}
 	function keyboard(event:KeyboardEvent,id:string){
@@ -81,7 +87,11 @@
 		if(!event.key.startsWith('Arrow'))return;
 		event.preventDefault();
 		const boxes=new Map<string,FamilyBox>();
-		for(const target of host?.querySelectorAll<HTMLElement>('[data-focus-id]')??[]){const rect=target.getBoundingClientRect();boxes.set(target.dataset.focusId!,{x:rect.x,y:rect.y,width:rect.width,height:rect.height});}
+		if(detail==='dots')for(const target of dotTargets.values())boxes.set('family:'+target.id,{x:target.x,y:target.y,width:target.width,height:target.height});
+		else {
+			for(const card of familyCards)boxes.set(card.id,detail==='pills'?card.pillBox:card.box);
+			for(const family of shownFamilies)boxes.set('family:'+family.id,family.header);
+		}
 		const next=spatialFamilyNeighbor(boxes,id,event.key);if(next)void focusTarget(next);
 	}
 	function fitMatches(){
@@ -117,8 +127,9 @@
 	</div>
 </div>
 <style>
-	.canvas-host{position:absolute;inset:0}.canvas{position:absolute;inset:0;touch-action:none;user-select:none;overflow:hidden;cursor:grab;background:radial-gradient(ellipse at 40% 35%,color-mix(in srgb,var(--tone-accent-1) 5%,transparent),transparent 65%)}.canvas:active{cursor:grabbing}.world{position:absolute;left:0;top:0;transform-origin:0 0}.detail-layer{position:absolute;inset:0}.controls{position:absolute;top:12px;right:12px;z-index:3;display:flex;gap:5px}.controls button,.family-switcher button{height:36px;min-width:36px;border:1px solid var(--chat-border);border-radius:10px;background:var(--chat-surface);color:var(--chat-fg);font-size:14px;padding:0 9px;box-shadow:var(--tone-shadow);cursor:pointer}.controls button:focus-visible,.family-switcher button:focus-visible{outline:3px solid var(--chat-fg);outline-offset:2px}.family-overview{position:absolute;inset:0}.family-switcher{position:absolute;top:62px;left:8px;right:8px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--chat-border);border-radius:14px;background:var(--chat-bg);padding:2px 4px;color:var(--chat-fg)}.family-switcher>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}.family-switcher small{font-size:12px;margin-left:8px}.sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-	.offscreen{position:absolute;bottom:12px;left:12px;z-index:3;min-height:36px;padding:6px 12px;border:1px solid var(--chat-fg-muted);border-radius:12px;background:var(--chat-surface);color:var(--chat-fg);box-shadow:var(--tone-shadow);font-size:13px}.offscreen:focus-visible{outline:3px solid var(--chat-fg)}
+	.canvas-host{position:absolute;inset:0}.canvas{position:absolute;inset:0;touch-action:none;user-select:none;overflow:hidden;cursor:grab;background:radial-gradient(ellipse at 40% 35%,color-mix(in srgb,var(--tone-accent-1) 5%,transparent),transparent 65%)}.canvas:active{cursor:grabbing}.world{position:absolute;left:0;top:0;transform-origin:0 0}.detail-layer{position:absolute;inset:0}.controls{position:absolute;top:12px;right:12px;left:12px;z-index:3;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px;pointer-events:none}.controls button{pointer-events:auto}.controls button,.family-switcher button{height:36px;min-width:36px;border:1px solid var(--chat-border);border-radius:10px;background:var(--chat-surface);color:var(--chat-fg);font-size:14px;padding:0 9px;box-shadow:var(--tone-shadow);cursor:pointer}.controls button:focus-visible,.family-switcher button:focus-visible{outline:3px solid var(--chat-fg);outline-offset:2px}.family-overview{position:absolute;inset:0}.family-switcher{position:absolute;top:62px;left:8px;right:8px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--chat-border);border-radius:14px;background:var(--chat-bg);padding:2px 4px;color:var(--chat-fg)}.family-switcher>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}.family-switcher small{font-size:12px;margin-left:8px}.sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+	.offscreen{position:absolute;bottom:12px;left:12px;z-index:3;min-height:36px;padding:6px 12px;border:1px solid var(--graph-muted);border-radius:12px;background:var(--chat-surface);color:var(--chat-fg);box-shadow:var(--tone-shadow);font-size:13px}.offscreen:focus-visible{outline:3px solid var(--chat-fg)}
+	@media (hover:none) and (pointer:coarse){.controls button,.family-switcher button{min-height:44px;min-width:44px}}
 	@media(max-width:640px){.offscreen{min-height:44px}.controls{top:8px;right:8px}.controls button,.family-switcher button{min-height:44px;min-width:44px}}
 	@media(prefers-reduced-motion:reduce){.detail-layer{transition:none}}
 </style>

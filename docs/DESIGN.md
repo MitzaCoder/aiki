@@ -1413,7 +1413,7 @@ hits get a bounded one-line snippet. No matches has its own message. Escape and 
 per backend/project under web `aiki.task-search.v1:` keys and Android private `aiki.task-search.v1` preferences;
 no query, index or ranking is sent to the server. Changing search never alters tasks or their normal priority order.
 
-### Animated task graph (T79, family cards T108)
+### Animated task graph (T79, connected work T106–T110)
 
 Option C / D56 replaces bubbles directly with readable cards in soft family regions. Expanded Tasks offers
 List | Board | Graph; the narrow sidebar stays a list. This is read-only: Enter, double-click and Open task use
@@ -1455,10 +1455,17 @@ the existing task sheet. The view choice stays local under `tasks.view.v2:`. No 
   produces one bounded spark, never periodic traffic; the panel keeps the report line. Reduced motion removes travel,
   sway/typing/sparks and card glow without removing information. Hidden tabs pause decoration and the display clock;
   an intersection observer also pauses off-screen creatures. Card names expose all crew names/states.
+- Summary counters wrap on desktop, keeping Changes in a separate nonshrinking space; the phone keeps a horizontal
+  counter scroller. Toolbar/legend controls wrap under browser zoom and larger default fonts. Graph-local status and
+  muted tones meet text contrast in Jarvis/Neutral light/dark without changing the application's theme. Meaningful
+  subtask strokes use a stronger foreground mix; the legend uses the actual edge patterns and tones.
 - Changes beside the summary opens a desktop popover or phone sheet. Successive board/worker/thread snapshots produce
   at most 50 session-only entries: arrivals, status transitions/completions, task questions/warnings and their answers,
   reports and crew lifecycle/reassignments. Like events within a fixed one-second window batch into one entry. Entries
-  have relative times and task focus links; the unseen-entry count clears on opening. First load, remount and reconnect
+  have relative times and task focus links; the unseen-entry count clears on opening. Reports say worker ID,
+  task ID and the last report line (for example, `pip reported on T3 · Checked the lens`); a report burst retains the
+  latest line. Single status entries include a short task title. Opening the list focuses its named dialog;
+  Escape/Close returns focus to Changes. First load, remount and reconnect
   establish a baseline without invented history. Reconnect waits for authoritative board, worker and thread reads,
   not a guessed delay. Selection, entries and their read state live in a backend/project-scoped in-memory store so
   responsive sidebar remounts do not erase them. Reload starts a new graph session; this is not durable replay.
@@ -1471,9 +1478,15 @@ the existing task sheet. The view choice stays local under `tasks.view.v2:`. No 
 - Live / Reconnecting / Offline with last-data time sits next to the summary; its tooltip gives update age in seconds.
   One polite live region batches meaningful changes at most once per five seconds, never creature motion. Connection
   freshness has its own quiet status. Unassigned questions remain available through the summary's List guidance.
+- Only cards/pills within 180 screen pixels of the viewport mount, including their crew; dots mount no card DOM.
+  Edge rendering is scoped to relationships with at least one near-viewport endpoint.
+  Association indexes replace per-task scans of main-thread owned tasks; dependency walks share one lazy index per
+  derived model. Structural layout and routes invalidate only when their inputs actually change, not on every clock
+  tick/status replacement or camera frame. No worker, spatial index or Canvas/WebGL renderer is needed for this scope.
 - One roving graph Tab stop supports spatial arrows, Enter to open, Space to select, Home to the family header and
   Escape to clear selection then return to families. Spoken card names include ID/title/status/reasons/quiet/progress/
-  crew. Focus has a strong foreground outline separated by background. Instructions identify List as the complete path.
+  crew. Navigation uses all logical card boxes, not just mounted DOM; keyboard reveal is immediate before focusing
+  a newly mounted card. Focus has a strong foreground outline separated by background. Instructions identify List as the complete path.
 - Background pan, pointer-anchored wheel zoom, pinch, +/− and Fit only change the viewport. Storage is
   `task-graph.camera.v2:`; v1 is ignored because screen = world × zoom + translation now. First desktop open shows
   readable family columns, not 90 tiny cards; Fit gives the project overview.
@@ -1489,7 +1502,20 @@ label-density, minimum-zoom and dot-fit calculations. `task-graph-changes.ts` ow
 change diffing/batching, announcement throttling, dates and dependency counts; `task-graph-session.svelte.ts` owns
 only the scoped session presentation state. `task-graph-families*.ts` remains the geometry contract.
 The isolated busy demo has 90 synthetic tasks, ten families and real worker/thread/report watches; no installed data,
-real worker tools, feature flag or prototype renderer is involved.
+real worker tools, feature flag or prototype renderer is involved. `GRAPH_DEMO_SCENARIO=large GRAPH_DEMO_TASKS=500`
+adds 100–5,000 deterministic synthetic tasks, varied families, a 12-level chain, 36 questions, crowded crew and long
+unbroken/URL content. Card titles wrap anywhere before their deliberate two-line clamp; full content stays in the
+panel and accessible name. Reason marks/progress do not shrink over each other; optional metadata ellipsizes.
+Touch controls are at least 44px, including the view switch and legend. Sheet scrolling is contained, outside the
+canvas's touch-action:none surface. Reduced motion keeps a static Updated mark without sparks, travel or glow.
+
+T110 desktop Chromium development measurements at 100/500/1,000 tasks: renderer mount 52/155/381ms; 2Hz batched
+update-to-two-RAF p95 35/63/113ms; pan p95 16.8ms at each size, zoom p95 16.7/16.7/16.8ms. The 100-task budget passes;
+1,000 tasks exceed that smaller-board update budget and occasional maximum frames still exceed 20ms. These are
+headless software-rendering samples, not production compositor timings or physical phone/screen-reader certification.
+A 500-task broad search that exposes many cross-family routes still misses the interaction budget (117ms pan p95);
+viewport card culling does not solve that dense-route paint cost. This remains a measured limit, not a 60fps claim.
+See the task's measurement artifact for sample counts, heap/DOM and limitations.
 
 ### Ticket and pull request links
 

@@ -25,9 +25,9 @@ export class GraphFamilyCamera {
 		this.saveTimer = setTimeout(()=>saveFamilyCamera(this.scope,this.camera,this.storage()),180);
 	}
 	stop() {cancelAnimationFrame(this.frame); this.destination=null;}
-	move(target: FamilyCamera) {
+	move(target: FamilyCamera, interpolate=true) {
 		this.stop();
-		if (this.reduced) {this.camera=target;this.remember();return;}
+		if (this.reduced||!interpolate) {this.camera=target;this.remember();return;}
 		this.destination=target;
 		const from=this.camera, start=performance.now();
 		const animate=(time:number)=>{
@@ -55,13 +55,13 @@ export class GraphFamilyCamera {
 		this.framed=true;
 	}
 	fit(layout:TaskFamilyLayout) {this.move(fitFamilyDots(layout,this));}
-	reveal(layout:TaskFamilyLayout,id:string, panel=false) {
+	reveal(layout:TaskFamilyLayout,id:string, panel=false, animate=true) {
 		const viewport={width:Math.max(280,this.width-(panel&&!this.phone?330:0)),height:this.height*(panel&&this.phone?.6:1)};
 		const zoom=Math.max(1,this.camera.zoom);
 		const target=revealFamilyCard(layout,id,{...this.camera,zoom},viewport,24);
 		const card=layout.cards.get(id);
 		if(this.phone&&card&&card.box.y*zoom+target.y<120)target.y=120-card.box.y*zoom;
-		this.move(target);
+		this.move(target,animate);
 	}
 	zoom(factor:number,x=this.width/2,y=this.height/2) {
 		this.stop();
