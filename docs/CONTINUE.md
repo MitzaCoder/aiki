@@ -1,5 +1,24 @@
 # Continue
 
+## T121: freshness stack integration
+
+The eight T120 freshness changes are linear on the Android graph/timeline main: design,
+server freshness, noise fix, web, Android (stage 1), attribution, landing freshness, audit.
+Additive CONTINUE conflicts retain both sides with newer sections first; audit/integration
+project fields and legacy feature exclusions are combined. Kotlin DTOs were regenerated,
+not hand-merged. DESIGN and both task sheets merged automatically, retaining T118 Timeline
+placement, controls and behavior plus Report freshness. Existing worker UI proof still applies;
+no new UI behavior or screenshots were introduced by integration.
+
+Sequential gates passed at both stage 1 and audit tips, without test reruns or code fixes.
+Stage 1: root 2,244 tests / 81,510 assertions; web 1,003 / 70,570; Android 860 tests across
+114 suites, two skipped, zero failures/errors. Audit tip: root 2,280 / 81,753; web and Android
+counts unchanged. Both also pass root typecheck, web check (zero diagnostics) and production
+build, protocol generation --check, public-source guard, Android assembly and lint. Gradle
+daemons stopped after each gate. No main move, push, deployment or device interaction.
+Unrelated release-work siblings on main were left alone; the freshness ancestry has no empty
+changes between its eight entries. All original descriptions and task trailers are retained.
+
 ## T126 review: one admitted audit per hour, including idle
 
 Every audit trigger now observes persisted `lastAttempt` spacing: at least one hour between
