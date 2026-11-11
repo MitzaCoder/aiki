@@ -200,13 +200,15 @@ function failed_target() { # <message>
 function failed_host() { # <message>
 	failed "host backend: $1"
 	record_host_status failed "$1"
+	journal_event host failed
 }
 
 # Checks or the build failed on the deploying host: nothing is published anywhere, and every backend target says so.
 function checks_failed() { # <message>
 	local index
 	QUIET=0
-	if ((!PARTIAL)); then record_host_status failed "$1"; fi
+	if ((!PARTIAL)); then journal_event web failed; journal_event host failed; record_host_status failed "$1"; fi
+	for index in "${ACTIVE[@]}"; do journal_event "${TARGET_NAMES[index]}" failed; done
 	for index in "${ACTIVE[@]}"; do
 		use_target "$index"
 		record_target_status failed "$1"
@@ -280,6 +282,11 @@ SHA=$(git rev-parse --verify --quiet "$REV^{commit}") || die "cannot resolve $RE
 SUBJECT=$(git log -1 --format=%s "$SHA")
 NAME=$(date -u +%Y%m%dT%H%M%SZ)-${SHA:0:7}
 
+# Optional observation; never change deployment when the journal tooling is absent/broken.
+function journal_event() { return 0; }
+source "$REPO_DIR/deploy/journal.sh" 2>/dev/null || true
+journal_event
+
 # What a target has: the commit it runs and how the last attempt there went, from one ssh. Prints
 # "<running commit>|<last attempt's state>|<last attempt's commit>"; fails when the target does not answer.
 function remote_deploy_state() {
@@ -306,10 +313,12 @@ if ((CATCH_UP)); then
 		if [[ $running_commit == "$SHA" ]] || [[ $last_commit == "$SHA" && $last_state == ok ]]; then
 			QUIET=0
 			log "$T_LABEL backend: answers again and already has ${SHA:0:12}; no longer pending"
+			journal_event "$T_NAME" ok "$running_commit" remote
 			pending_clear
 		elif [[ $last_commit == "$SHA" && ($last_state == failed || $last_state == rolled_back) ]]; then
 			QUIET=0
 			log "$T_LABEL backend: the deploy of ${SHA:0:12} already $last_state there; not retrying it until main moves"
+			journal_event "$T_NAME" "$last_state" "$running_commit" remote
 			pending_clear
 		else
 			BEHIND+=("$index")
@@ -334,6 +343,8 @@ if ((PARTIAL)); then
 	for index in "${ACTIVE[@]}"; do only_names+=" ${TARGET_NAMES[index]}"; done
 	log "only:$only_names (no app, no host backend)"
 fi
+
+if ((!PARTIAL)); then journal_event web running; journal_event host running; fi
 
 STAGE=$(mktemp -d "${TMPDIR:-/tmp}/aiki-deploy-check.XXXXXX")
 function cleanup() { rm -rf "$STAGE"; }
@@ -368,10 +379,13 @@ if ((PARTIAL)); then
 	:
 elif [[ ! -d $APP_ROOT ]]; then
 	log "app: $APP_ROOT does not exist yet (nix-config creates it); skipping app deploy"
+	journal_event web pending
 elif AIKI_WEB_ROOT=$APP_ROOT DEPLOY_KEEP_RELEASES=$KEEP bash "$REPO_DIR/deploy/web.sh" release "$NAME" "$STAGE/apps/web/build"; then
 	log "app: deployed $NAME"
+	journal_event web ok
 else
 	failed "app: $APP_ROOT was not updated"
+	journal_event web failed
 fi
 
 # 4. The backend on this host. Its system unit comes from nix-config, which is not applied yet on some machines.
@@ -388,8 +402,10 @@ function publish_host() {
 	if AIKI_PORT=$PORT DEPLOY_KEEP_RELEASES=$KEEP \
 		bash "$REPO_DIR/deploy/backend.sh" system release "$NAME" "$SHA" "$SUBJECT"; then
 		log "host backend: deployed $NAME"
+		journal_event host ok "${HOST_RUNNING:-}" "$HOST_ROOT"
 	else
 		failed "host backend: did not end up healthy"
+		journal_event host failed "${HOST_RUNNING:-}" "$HOST_ROOT"
 	fi
 }
 
@@ -397,6 +413,7 @@ if ((PARTIAL)); then
 	:
 elif ! systemctl cat "$HOST_SERVICE" >/dev/null 2>&1; then
 	log "host backend: $HOST_SERVICE is not installed (nix-config adds it); skipping host backend deploy"
+	journal_event host pending
 else
 	mkdir -p "$HOST_ROOT/tools" "$HOST_ROOT/incoming" || failed "host backend: cannot create $HOST_ROOT"
 	# The tooling is updated whether or not the release changes, so the next rollback or status uses this deploy's copy.
@@ -407,6 +424,7 @@ else
 	if ((HOST_ENV_CHANGED == 0)) && backend_unchanged "host backend" "$HOST_RUNNING" &&
 		AIKI_PORT=$PORT bash "$REPO_DIR/deploy/backend.sh" system unchanged "$SHA" "$SUBJECT"; then
 		log "host backend: still runs ${HOST_RUNNING:0:12}; recorded ${SHA:0:12} as deployed without a restart"
+		journal_event host ok "$HOST_RUNNING" "$HOST_ROOT"
 	else
 		publish_host
 	fi
@@ -503,7 +521,10 @@ function deploy_target() {
 
 for index in "${ACTIVE[@]}"; do
 	use_target "$index"
+	journal_event "$T_NAME" running
 	deploy_target
+	if [[ $TARGET_STATE == skipped ]]; then journal_event "$T_NAME" pending;
+	else journal_event "$T_NAME" "${TARGET_STATE:-failed}" "" remote; fi
 	[[ $TARGET_STATE == ok ]] && pending_clear
 
 	# 6. The tailnet is how devices reach the backend. This is a warning, not a rollback trigger: the release itself

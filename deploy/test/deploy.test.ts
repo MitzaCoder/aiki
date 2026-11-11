@@ -823,6 +823,24 @@ describe("deploy.sh", () => {
 
 	type RecordedStatus = { state: string; commit: string; message: string | null; backendUnchanged?: boolean };
 
+	test.each([false, true])("journal writer failure preserves deployment exit code (checks fail: %s)", async (checksFail) => {
+		const machine = makeMachine(); const sshLog = addSshStub(machine);
+		const { dir, sha: running } = await makeRepository();
+		const sha = await commitChanges(dir, ["README.md"]);
+		seedRunning(machine.root, running); seedRunning(vmRoot(machine), running);
+		const backend = startBackend({ release: release(running) });
+		const environment = fullDeployEnvironment(machine, sshLog, backend);
+		// Both the observer executable and its output are unusable; neither is on the deploy's critical path.
+		writeFileSync(join(dir, "deploy/deploy-journal.ts"), 'throw new Error("synthetic journal failure");');
+		const state = join(machine.dir, "state/aiki-deploy"); mkdirSync(state, { recursive: true });
+		mkdirSync(join(state, "deploy-journal.json"));
+		if (checksFail) writeScript(join(machine.bin, "bun"), `if [[ \${1:-} == test ]]; then exit 7; fi\nexec ${BUN} "$@"`);
+		const result = await run(["bash", join(dir, "deploy/deploy.sh"), sha], environment);
+		expect(result.code).toBe(checksFail ? 1 : 0);
+		expect(result.stdout).toContain(checksFail ? "tests failed on" : "deployed");
+		expect(restarts(machine)).toEqual([]);
+	}, 30_000);
+
 	test("installs private server env files outside releases and preserves a remote service/root", async () => {
 		const machine = makeMachine(); const sshLog = addSshStub(machine);
 		const { dir, sha: running } = await makeRepository();

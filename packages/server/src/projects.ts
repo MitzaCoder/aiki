@@ -48,6 +48,8 @@ export type Project = {
 	links: ProjectLinks | null;
 	/** auto (absent): main/master; null: disabled; otherwise a full Git ref. */
 	integrationRef?: string | null;
+	/** Trusted local JSON file only. No command execution. */
+	deployFeed?: string | null;
 	/** Archived: hidden from lists, schedules and event triggers paused, no notifications. Written only while true. */
 	archived?: true;
 };
@@ -69,6 +71,7 @@ export type ProjectChange = {
 	/** `null` goes back to filling them in automatically. */
 	links?: ProjectLinks | null;
 	integrationRef?: string | null;
+	deployFeed?: string | null;
 	/** `true` archives, `false` unarchives. */
 	archived?: boolean;
 };
@@ -144,6 +147,7 @@ function parseProject(value: unknown, id: string): Project | undefined {
 		uiProof: parseUiProof(record.uiProof),
 		reportAudit: parseReportAudit(record.reportAudit),
 		links: cleanLinks(record.links),
+		deployFeed: typeof record.deployFeed === "string" ? record.deployFeed : null,
 		integrationRef: typeof record.integrationRef === "string" || record.integrationRef === null ? record.integrationRef : "auto",
 		...(record.archived === true ? { archived: true as const } : {}),
 	};
@@ -321,6 +325,7 @@ export class ProjectStore {
 			if (typeof change.integrationRef === "string" && change.integrationRef !== "auto" && (!/^refs\/[A-Za-z0-9_./-]+$/.test(change.integrationRef) || change.integrationRef.includes(".."))) {
 				throw new ServerError("bad_request", "Integration ref must be auto, null, or a full Git ref");
 			}
+			if (typeof change.deployFeed === "string" && (!change.deployFeed.startsWith("/") || change.deployFeed.length > 4096 || change.deployFeed.includes("\0"))) throw new ServerError("bad_request", "Deploy feed must be an absolute local file path or null");
 			const next: Project = {
 				...project,
 				name: change.name ?? project.name,
@@ -349,6 +354,7 @@ export class ProjectStore {
 				uiProof: change.uiProof === undefined ? project.uiProof : (change.uiProof ?? DEFAULT_UI_PROOF),
 				links: change.links === undefined ? project.links : cleanLinks(change.links),
 				integrationRef: change.integrationRef === undefined ? project.integrationRef : change.integrationRef,
+				deployFeed: change.deployFeed === undefined ? project.deployFeed : change.deployFeed,
 			};
 			if (change.archived !== undefined) {
 				if (change.archived) next.archived = true;

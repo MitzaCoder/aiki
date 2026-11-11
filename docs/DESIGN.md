@@ -1313,7 +1313,8 @@ also use their Git store. Stable jj IDs are optional metadata read only with `--
 observation never snapshots/imports a working copy. Removed ancestry is separate from conventional
 `This reverts commit <full hash>.` declarations, which retain ancestry and identify the undone change.
 Neither is a claim about pushed or deployed code. Non-Git-backed jj adapters, publication/tag observation
-and deploy feeds remain later work; remote refs may be explicitly selected but are not labelled as pushes.
+remain later work; remote refs may be explicitly selected but are not labelled as pushes. Deployment feeds
+are a separate opt-in observer described below.
 
 An isolated workspace captures its initial parent before the worker runs. Before forget (even if the
 workspace is kept) or storage cleanup, committed base→tip membership is recorded, excluding the current
@@ -1333,6 +1334,92 @@ with counts and ref in the reason (landed, removed or reverted). The existing ti
 also deduplicates freshness and nudge admission: retries neither increment eventSeq nor re-nudge, even
 after outbox admission. Unattributed changes do nothing. No push notifications, publication or deploy
 outcomes are generated.
+
+### Project deployment feeds (T125, stage 5 of T120)
+
+Feature `task-deploys` adds optional `projects.configure.deployFeed`: an absolute trusted local
+file path, or `null`/absent (default: no deployment observation). Omitted settings preserve it.
+Only file feeds are supported. A settings-configured command would give the settings API remote
+code execution; the harness never executes one, invokes deployment, or moves an integration ref.
+There is no new settings UI in this stage. Existing task-activity clients display the canonical
+Now line; legacy clients get its existing mirror and at most one milestone per attempt.
+
+The JSON envelope is `{ version: 1, repository, projectId?, events: [...] }`. `repository` must
+equal the project's canonical Git common-directory (including Git-backed jj); optional projectId
+must match too. Each event is a **complete attempt snapshot**, not a target delta:
+`{ attemptId, sequence, intendedCommit, expectedTargets, targets, observedAt, taskIds?, changeIds? }`.
+Sequence is a positive, strictly increasing safe integer across the journal. Attempt IDs and target
+names are bounded ASCII identifiers. Targets are keyed by exactly the expected set; each holds
+`{ state, previousCommit?, servingCommit?, backendUnchanged?, message? }`. States:
+queued/running/ok/failed/rolled_back/pending. Full object hashes are required. Attribution hints
+never grant membership: ledger corrections/portable trailers and verified repository ranges do.
+
+The reader accepts only regular files, reads at most 2 MiB plus a sentinel byte, and rejects
+malformed/oversized documents before any projection. JSON parsing is bounded by that byte limit;
+at most 4096 snapshots, 64 targets/snapshot, 2000 message characters and 2048 commits/range are
+accepted. Git reads have 10-second timeouts/output bounds. Snapshot replacement must use an atomic
+rename. A bounded retained journal can recover only the attempts it still contains, not evicted history.
+The writer must not reuse sequences after trimming. Regressing feeds, changed attempt identity,
+unknown objects and wrong scopes are rejected, not interpreted as success.
+
+On open, then directory watch plus a 10-second fallback, consume the feed. Closed projects have
+no watch/poll and remain lazy across restart. Unreadable/invalid feeds mark known deployment sources
+unknown without manufacturing a failure or nudge; a valid reread restores the last projection even
+when its sequence has not advanced. Disabling hides, but retains, that projection and cursor.
+Private `task-deploys.json` persists sequence,
+attempt membership/order, per-target last verified success and a replayable outbox. Freeze the
+union of each target's last verified success → intended commit at attempt admission, using supplied
+previousCommit when there is no observed success, or when retention has advanced the oldest feed
+sequence past the cursor: pre-gap success cursors cannot override the retained attempt's own baseline.
+An old cursor resumes at the first retained unseen snapshot without an error or sequence reset;
+attempt/sequence dedupe survives repeated polls and restart. Missing baselines do **not** backfill all
+history: bootstrap the journal once before relying on task fan-out. Attempts cannot change target
+sets or intended commit. Verified unchanged means the intended revision is covered, while the older
+serving commit remains visible. Rollback restores the serving baseline, not the attempted revision.
+Offline/pending never means ok. A late older attempt may update its own history but not newer Now
+or target success cursors.
+
+One board transaction fans each snapshot to every attributed task, including done/dropped/archived,
+without reopening. A persistent per-feed sequence guard deduplicates outbox replay independently of
+timeline retention. One existing milestone per task/attempt evolves in place, retaining its initial
+time, attempted commit, per-target state/serving commit and messages. Structured snapshots remain
+in the cursor/feed for the later Delivery grouping. Unattributed attempts produce no task rows/facts.
+No new pushes are sent: existing global `Notifier.deployProblem` behavior is unchanged.
+
+Now precedence uses unresolved deploy failure first (retained through retries until those targets
+verify ok), active deploy third, and delivery seventh. Text is age-free: “Deploy failed on 1 of 3
+targets”, “Deploy queued for 5ed27fe”, “Deploying 5ed27fe · 2 of 3 targets ready”, “Live on all
+backends” only for verified all-target success, otherwise “Live on 2 of 3 targets · 1 pending”.
+Clients own the local since time. Landing says “landed · not deployed yet” only while a feed is
+configured. Delivery expires after 24 hours as before. Attempt outcomes call `noteTaskFact` with
+actor harness for Results/Next; starts/progress invalidate Next only. Closed tasks never nudge.
+
+**This repository's observer instance:** `deploy/deploy.sh` sources `deploy/journal.sh` after
+resolving the commit/holding the existing deploy lock. Disposable background observers close that
+lock descriptor immediately; they read local/remote status only, then use a **separate** journal
+lock (1-second acquisition, 3-second outer timeout) and atomic rename to write
+`<deploy state directory>/deploy-journal.json`. The private deploy state directory remains selected
+by `DEPLOY_STATE_DIR`/XDG state configuration. The owner sets this project's deployFeed to that
+absolute path using projects.configure; no actual machine path belongs in committed config.
+Starts, target outcomes, catch-up and unchanged verification become snapshots. Catch-up resumes
+the latest matching intended commit's attempt. Reads of remote status are background-only with
+a 2-second timeout, preserving rollback/serving details without adding waits to deployment.
+Time-based monotonic journal sequences leave room for per-attempt events; concurrent writer arrival
+is sorted and deduplicated. The existing per-backend deploy-status.json contract is untouched.
+
+Observation is deliberately failure-tolerant: no waits/traps, no deployment decision or health-check
+changes, no journal error propagated into deployment's exit status. Missing tooling, contention,
+unreadable status or invalid output loses observation, never a deployment. The writer automatically
+retains the newest **200 attempts or 1 MiB**, whichever fits fewer, with at most 4096 snapshots.
+Each atomic replacement trims whole oldest attempts and their replay inputs/sequence reservations.
+Frozen start baselines, stable attempt IDs/order, verified target checkpoints and a sequence high-water
+mark survive trimming; even clock regression cannot reuse sequence intervals. A single unusually noisy
+attempt compacts to its latest full snapshot instead of filling the file. No operator archival or feed
+path changes are needed. Projects closed beyond retention resume from what remains without inventing
+the evicted outcomes. The initial host baseline is
+seeded from the existing local ok deploy status (including unchanged verification), falling back to
+its serving release; targets with no prior verified journal baseline remain unattributed for that
+initial attempt. Non-Git-backed jj deployment attribution remains deferred.
 
 ### Waiting tasks (D29, T42)
 
@@ -1402,17 +1489,17 @@ ages. Both the `task-activity` feature and the optional field are required; othe
 its existing report rendering. Historical report snapshots are unchanged.
 
 A pure project-local reducer reads durable source records and board facts, first match wins:
-1. Unresolved worker/thread failure (reserved typed deploy-failure slot first).
+1. Unresolved deploy failure, then worker/thread failure.
 2. Blocking open question; questions default blocking, warnings nonblocking. `blocksWork`
    can override that. “Waiting for your answer to Q131 and 1 more · 2 workers still running”.
-3. Attributed deploy in progress (typed slot only; no deploy feed configured yet).
+3. Attributed deploy in progress from an opt-in project deployment feed.
 4. Live task-focused worker/coordinator/thread. Latest phase/state start wins; ties sort by
    actor ID. “fern is working on Card view” or “fern is testing the card view · +1 worker”.
 5. Unhandled (open, not handling) feedback: “Feedback F8 is waiting for the coordinator”.
 6. Unresolved task blockers, then blocked/waiting/review state. “Blocked by T42”,
    “Waiting for external review”, “Ready for your review”. The time is separate in `since`.
-7. Latest attributed landing for 24 hours unless newer work supersedes it. This stage has
-   **no configured deploys**: “3 changes landed on main”, never “not deployed yet” or “live”.
+7. Latest attributed delivery for 24 hours unless newer work supersedes it. Without a feed:
+   “3 changes landed on main”; configured feeds add “not deployed yet” or verified live/pending outcomes.
    Ref removals/reverts without a new landing clear that delivery fallback. One expiry timer
    republishes a changed view, without a storage write; there are no per-second writes.
 8. Done/Dropped (settledAt), Not started (creation), or Idle (last linked run ended, else creation).

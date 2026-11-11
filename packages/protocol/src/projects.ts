@@ -186,6 +186,8 @@ export const ProjectSummarySchema = Type.Object({
 	uiProof: Type.Optional(UiProofSchema),
 	/** Feature task-changes: auto selects main/master; null disables observation. */
 	integrationRef: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+	/** Feature task-deploys: trusted absolute local file path, null disables. */
+	deployFeed: Type.Optional(Type.Union([Type.String(), Type.Null()])), 
 	reportAudit: Type.Optional(ReportAuditSettingsSchema),
 	reportAuditStatus: Type.Optional(ReportAuditStatusSchema),
 	/** Where bare ticket keys and PR numbers point. Absent on servers older than this field. */
@@ -271,6 +273,7 @@ export const ProjectsConfigureRequestSchema = Type.Object({
 	integrationRef: Type.Optional(Type.Union([Type.String({ pattern: "^(auto|refs/[A-Za-z0-9_./-]+)$" }), Type.Null()], {
 		description: 'Feature task-changes: "auto" selects main then master; full Git ref selects another; null turns observation off.',
 	})),
+	deployFeed: Type.Optional(Type.Union([Type.String({ pattern: "^/", maxLength: 4096 }), Type.Null()], { description: "Feature task-deploys: trusted local JSON feed file; null disables. Commands are not supported." })),
 	links: Type.Optional(
 		Type.Union([ProjectLinksSchema, Type.Null()], {
 			description: "Replaces where ticket keys and PR numbers point; null goes back to filling them in automatically.",
@@ -365,12 +368,13 @@ export const HARNESS_FEATURES = [
 	"device-pairing-v1",
 	"device-management-v1",
 	"task-changes",
+	"task-deploys",
 ] as const;
 export type HarnessFeature = (typeof HARNESS_FEATURES)[number];
 
 /** Missing hello.features is never evidence of device-auth support. */
 export const LEGACY_HARNESS_FEATURES = HARNESS_FEATURES.filter(
-	(feature) => feature !== "task-activity" && feature !== "report-audit" && feature !== "task-freshness" && feature !== "task-changes" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
+	(feature) => feature !== "task-deploys" && feature !== "task-activity" && feature !== "report-audit" && feature !== "task-freshness" && feature !== "task-changes" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
 );
 
 export const HarnessFeatureSchema = Type.Union([
@@ -423,6 +427,7 @@ export const HarnessFeatureSchema = Type.Union([
 	Type.Literal("device-pairing-v1"),
 	Type.Literal("device-management-v1"),
 	Type.Literal("task-changes"),
+	Type.Literal("task-deploys"),
 ]);
 export type HarnessFeatureValue = Static<typeof HarnessFeatureSchema>;
 

@@ -95,6 +95,7 @@ import { ThreadService } from "./threads.ts";
 import { createToolCapExtension, DEFAULT_TOOL_CALL_CAP_MS } from "./tool-caps.ts";
 import { ToolCallDrain } from "./drain.ts";
 import { WorkerService } from "./workers.ts";
+import { TaskDeployObserver } from "./task-deploys.ts";
 import { TaskChangeObserver, TASK_CHANGES_FILE } from "./task-changes.ts";
 import { ProjectAttentionStore, boardAttention, workerAttention, threadAttention } from "./sidebar-attention.ts";
 import { readStoredAttention } from "./sidebar-attention-migration.ts";
@@ -273,6 +274,7 @@ function projectSummary(
 		promptCacheWarmHours: project.promptCacheWarmHours,
 		uiProof: project.uiProof,
 		integrationRef: project.integrationRef ?? (project.integrationRef === null ? null : "auto"),
+		deployFeed: project.deployFeed ?? null,
 		links,
 		state: state === "failed" ? "failed" : state === "open" ? "open" : "closed",
 		...(project.archived === true ? { archived: true } : {}),
@@ -1616,7 +1618,18 @@ export class ProjectManager {
 				return async () => undefined;
 			});
 		await taskChanges.start();
-		entry.stopTaskChanges = () => taskChanges.stop();
+		const taskDeploys = new TaskDeployObserver({
+			projectId: project.id, path: project.path,
+			cursorFile: join(this.store.projectDir(project.id), "task-deploys.json"),
+			feed: () => entry.project.deployFeed,
+			changes: taskChanges,
+			onAttempt: fact => board.recordDeployAttempt(fact),
+			onConfigured: configured => board.configureDeployFeed(configured),
+			onAvailability: available => board.deployFeedAvailability(available),
+			log: message => this.#log(`project ${project.id}: ${message}`),
+		});
+		await taskDeploys.start();
+		entry.stopTaskChanges = async () => { await taskDeploys.stop(); await taskChanges.stop(); };
 		await threads.startWatches();
 		// Continue any run the last process left unfinished.
 		harness.resume();
@@ -1628,6 +1641,7 @@ export class ProjectManager {
 			current.state = end.kind === "failed" ? "failed" : "closed";
 			current.failure = end.kind === "failed" ? errorMessage(end.error) : undefined;
 			void (async () => {
+				await taskDeploys.stop().catch(() => undefined);
 				await taskChanges.stop().catch(() => undefined);
 				await activity.stop().catch(() => undefined);
 				const closed = idleActivity(this.#activities.get(project.id) ?? DEFAULT_ACTIVITY);

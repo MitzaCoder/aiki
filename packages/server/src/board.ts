@@ -1,3 +1,4 @@
+import { deploySummary, type TaskDeployFact } from "./task-deploys.ts";
 import { activityTracking, taskActivity, endActivitySource, setActivityPhase, type TaskActivityTracking, DELIVERY_ACTIVITY_MS } from "./task-activity.ts";
 import type { Models } from "@earendil-works/pi-ai";
 import { DEFAULT_REPORT_AUDIT } from "@aiki/protocol";
@@ -82,6 +83,9 @@ export type BoardState = {
 	reportInFlight?: Record<string, number>;
 	reportChatCandidates?: Record<string, { text: string; key: string }[]>;
 	lastReportSweep?: number;
+	deployFeedConfigured?: boolean;
+	deploySequences?: Record<string, number>;
+	latestTaskDeploy?: Record<string, { scope: string; order: number; attemptId: string }>;
 	reportAudit?: ReportAuditRecord;
 	tasks: BoardTask[];
 	questions: BoardQuestion[];
@@ -274,6 +278,49 @@ export function addTimelineEvent(history: TaskHistoryState, task: BoardTask, ent
 	if (events.length > KEPT_EVENTS) events.splice(0, events.length - KEPT_EVENTS);
 	bumpTimeline(history, task);
 	return true;
+}
+
+/** Mutable attempt projection: one legacy milestone per attempt, never one row per target. */
+export function applyTaskDeploy(state: BoardState, history: TaskHistoryState, task: BoardTask, fact: TaskDeployFact): void {
+ const summary = deploySummary(fact);
+ const ref = `deploy:${fact.scope}:${fact.attemptId}`;
+ const detail = [`Attempted ${fact.intendedCommit}`, ...fact.expectedTargets.map(name => {
+  const target = fact.targets[name]!;
+  const serving = target.servingCommit ?? (target.state === "ok" && !target.backendUnchanged ? fact.intendedCommit : target.previousCommit);
+  return `${name}: ${target.state}${target.backendUnchanged ? " (backend unchanged)" : ""}${serving ? ` · serving ${serving}` : ""}${target.message ? ` · ${target.message}` : ""}`;
+ })].join("\n");
+ const entry = history.events?.find(entry => entry.ref === ref);
+ const unchanged = entry?.detail === detail && entry?.label === summary.text;
+ if (entry && !unchanged) { entry.label = summary.text; entry.detail = detail; bumpTimeline(history, task); }
+ else if (!entry) addTimelineEvent(history, task, { kind: "milestone", at: fact.observedAt, label: summary.text, detail, ref, by: HARNESS_WRITER });
+ state.latestTaskDeploy ??= {};
+ const latest = state.latestTaskDeploy[task.id];
+ // A late catch-up updates its own history only; it cannot revive an older attempt in Now.
+ if (latest?.scope === fact.scope && latest.order > fact.order) return;
+ state.latestTaskDeploy[task.id] = { scope: fact.scope, order: fact.order, attemptId: fact.attemptId };
+ const tracking = activityTracking(state, task.id);
+ const old = tracking.deploy;
+ const unresolved = new Set(tracking.deployFailure?.targets ?? []);
+ for (const name of fact.expectedTargets) {
+  const target = fact.targets[name]!;
+  if (target.state === "ok") unresolved.delete(name);
+  else if (target.state === "failed" || target.state === "rolled_back") unresolved.add(name);
+ }
+ if (unresolved.size) {
+  const total = Math.max(fact.expectedTargets.length, tracking.deployFailure?.total ?? 0);
+  const text = `Deploy failed on ${unresolved.size} of ${total} targets`;
+  tracking.deployFailure = { text, since: tracking.deployFailure?.text === text ? tracking.deployFailure.since : fact.observedAt, refs: [ref], targets: [...unresolved], total };
+ } else delete tracking.deployFailure;
+ if (summary.state === "delivered") {
+  delete tracking.deploy;
+  if (tracking.delivery?.text !== summary.text || latest?.attemptId !== fact.attemptId) tracking.delivery = { text: summary.text, at: fact.observedAt, refs: [ref], count: fact.expectedTargets.length };
+ } else {
+  tracking.deploy = { state: summary.state, text: summary.text, since: old?.text === summary.text && latest?.attemptId === fact.attemptId ? old.since : fact.observedAt, refs: [ref] };
+  // No old success while a retry is in flight.
+  delete tracking.delivery;
+ }
+ if (unchanged) return;
+ noteTaskFact(state, task.id, { actor: "harness", kind: "deploy", reason: summary.text, at: fact.observedAt, ref, ...(summary.outcome ? {} : { sections: ["next"] }) });
 }
 
 /** Each task's status, to compare with after a change. */
@@ -876,7 +923,9 @@ export function boardView(state: Readonly<BoardState>, now: number, includeArchi
 	const byId = new Map(state.tasks.map((task) => [task.id, task]));
 	const all = state.tasks
 		.map((task) => {
-			const activity = state.taskActivityEnabled ? taskActivity(task, state.questions, state.tasks, state.taskActivity?.[task.id], now) : undefined;
+			let tracking = state.taskActivity?.[task.id];
+			if (tracking && !state.deployFeedConfigured) tracking = { ...tracking, deploy: undefined, deployFailure: undefined, deployUnknownSince: undefined, delivery: tracking.delivery?.text.startsWith("Live on") ? undefined : tracking.delivery };
+			const activity = state.taskActivityEnabled ? taskActivity(task, state.questions, state.tasks, tracking, now) : undefined;
    const minutes = inProgressMinutes(state, task.id, now);
 			const subtasks = children.get(task.id) ?? [];
 			const counted = subtasks.map((id) => byId.get(id)).filter((child): child is BoardTask => child !== undefined && child.status !== "dropped");
@@ -1889,7 +1938,7 @@ export class BoardService {
 				const reverted = fact.reverted.filter(commit => commit.taskIds.includes(taskId));
 				if (!landed.length && !removed.length && !reverted.length) continue;
 				const ref = fact.ref.replace(/^refs\/heads\//, "");
-    if (landed.length) activityTracking(state, task.id).delivery = { text: `${landed.length} change${landed.length === 1 ? "" : "s"} landed on ${ref}`, at: fact.at, refs: landed.map(c => c.hash), count: landed.length };
+    if (landed.length) activityTracking(state, task.id).delivery = { text: `${landed.length} change${landed.length === 1 ? "" : "s"} landed on ${ref}${state.deployFeedConfigured ? " · not deployed yet" : ""}`,  at: fact.at, refs: landed.map(c => c.hash), count: landed.length };
     else delete activityTracking(state, task.id).delivery;
 				const label = [landed.length ? `${landed.length} change${landed.length === 1 ? "" : "s"} landed on ${ref}` : "",
 					removed.length ? `${removed.length} change${removed.length === 1 ? "" : "s"} removed from ${ref}` : "", reverted.length ? `${reverted.length} change${reverted.length === 1 ? "" : "s"} reverted on ${ref}` : ""].filter(Boolean).join("; ");
@@ -1898,6 +1947,43 @@ export class BoardService {
 					detail: [...landed.map(commit => `Landed ${commit.hash} ${commit.subject}`), ...removed.map(commit => `Removed ${commit.hash} ${commit.subject}`), ...reverted.map(commit => `Reverted ${commit.hash} ${commit.subject}`)].join("\n") }, fact.id);
 			}
 		}, BACKGROUND_CONTEXT);
+	}
+
+	/** One transaction/publication for the entire attempt, including closed and archived tasks. */
+	async recordDeployAttempt(fact: TaskDeployFact): Promise<void> {
+		await this.#options.harness.commit(async tx => {
+			const state = await openBoard(tx, this.coordinator.id);
+			if ((state.deploySequences?.[fact.scope] ?? 0) >= fact.sequence) return;
+			for (const taskId of fact.taskIds) {
+				const task = state.tasks.find(task => task.id === taskId);
+				if (!task) continue;
+				const history = await openTaskHistory(tx, this.coordinator.id, taskId);
+				applyTaskDeploy(state, history, task, fact);
+			}
+			state.deploySequences ??= {};
+			state.deploySequences[fact.scope] = fact.sequence;
+		}, BACKGROUND_CONTEXT);
+	}
+
+	async configureDeployFeed(configured: boolean): Promise<void> {
+		await this.#commit(HARNESS_WRITER, state => {
+			if (!!state.deployFeedConfigured === configured) return;
+			state.deployFeedConfigured = configured;
+			for (const task of state.tasks) {
+				const tracking = activityTracking(state, task.id);
+				if (tracking.delivery?.text.includes("landed")) tracking.delivery.text = tracking.delivery.text.replace(/ · not deployed yet$/, "") + (configured ? " · not deployed yet" : "");
+			}
+		});
+	}
+
+	async deployFeedAvailability(available: boolean): Promise<void> {
+		await this.#commit(HARNESS_WRITER, state => {
+			for (const taskId of Object.keys(state.latestTaskDeploy ?? {})) {
+				const tracking = activityTracking(state, taskId);
+				if (available) delete tracking.deployUnknownSince;
+				else tracking.deployUnknownSince ??= this.#iso();
+			}
+		});
 	}
 
 	/** Refuse a task the board does not have, archived ones included, with `unknown_task`. */

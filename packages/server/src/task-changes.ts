@@ -66,7 +66,7 @@ export function taskTrailers(message: string): string[] {
 }
 
 /** Git worktrees, colocated jj and jj's Git-backed non-colocated workspaces all use Git objects. */
-async function gitRepository(path: string): Promise<string | undefined> {
+export async function gitRepository(path: string): Promise<string | undefined> {
 	try { return await realpath(await command("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], path)); } catch { /* jj workspace */ }
 	try {
 		const pointer = join(path, ".jj", "repo");
@@ -216,6 +216,30 @@ export class TaskChangeObserver {
 		state.tip = tip;
 		await writeJsonFile(this.#options.file, ledger);
 		await this.#deliver(ledger);
+	}); }
+
+	/** Verified deployment range, using the same ledger corrections and portable trailers as integration. */
+	deploymentTasks(repository: string, previous: string | undefined, intended: string): Promise<string[]> { return this.#serialize(async () => {
+		const repo = await gitRepository(this.#options.path);
+		if (repo !== repository) throw new Error("Deploy repository scope mismatch");
+		const verify = async (hash: string) => {
+			if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(hash) || await this.#resolve(repo, hash) !== hash) throw new Error("Invalid deploy commit");
+		};
+		await verify(intended);
+		if (!previous) return []; // No verified baseline: never backfill the repository's entire history.
+		await verify(previous);
+		const hashes = (await this.#git(repo, ["rev-list", "--max-count=2049", `${previous}..${intended}`, "--"])).split("\n").filter(Boolean);
+		if (hashes.length > 2048) throw new Error("Deploy range exceeds 2048 commits");
+		const ledger = await this.#ledger();
+		const changes = ledger.repositories[repo]?.changes ?? [];
+		const known = await this.#options.taskIds();
+		const ids = new Set<string>();
+		for (const hash of hashes) {
+			const stored = changes.filter(change => change.commits.includes(hash));
+			const attributed = stored.length ? stored.map(change => change.taskId) : taskTrailers(await this.#git(repo, ["log", "-1", "--format=%B", hash, "--"]));
+			for (const id of this.#valid(attributed, known)) ids.add(id);
+		}
+		return [...ids];
 	}); }
 
 	/** Called immediately after workspace creation, before any worker runs. Never reconstruct a base from time. */

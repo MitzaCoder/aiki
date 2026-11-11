@@ -1,6 +1,6 @@
 import type { BoardTask, BoardTaskActivity, BoardActivityActor, BoardQuestion } from "@aiki/protocol";
 
-/** Durable run identities, never worker names alone. Deploy sources are reserved for stage 5. */
+/** Durable run identities, never worker names alone. Deployment facts have separate typed slots. */
 export type TaskActivitySource = {
  actor: BoardActivityActor;
  state: "running" | "failed" | "ended" | "unknown";
@@ -17,6 +17,8 @@ export type TaskActivityTracking = {
  feedback?: { id: string; at: string }[];
  delivery?: { text: string; at: string; refs: string[]; count: number };
  deploy?: { state: "failed" | "active" | "unknown"; text: string; since: string; refs: string[] };
+ deployUnknownSince?: string;
+ deployFailure?: { text: string; since: string; refs: string[]; targets: string[]; total: number };
 };
 export const DELIVERY_ACTIVITY_MS = 24 * 60 * 60 * 1000;
 
@@ -27,11 +29,13 @@ export function taskActivity(task: BoardTask, questions: readonly BoardQuestion[
  const workers = closed ? [] : sources.filter(s => s.state === "running" && s.actor.kind === "worker");
  const make = (kind: BoardTaskActivity["kind"], text: string, since: string, refs: string[] = [], actor?: BoardActivityActor, count?: number): BoardTaskActivity => ({ kind, text, since, refs, ...(actor ? { actor } : {}), ...(count === undefined ? {} : { count }) });
  const deploy = tracking?.deploy;
+ if (tracking?.deployFailure) return make("failure", tracking.deployFailure.text, tracking.deployFailure.since, tracking.deployFailure.refs);
  if (deploy?.state === "failed") return make("failure", deploy.text, deploy.since, deploy.refs);
  const failure = sources.find(s => s.state === "failed");
  if (failure) return make("failure", `${failure.actor.name} failed${failure.failure ? `: ${failure.failure.replace(/\s+/g, " ").slice(0, 160)}` : ""}`, failure.since, [failure.actor.id], failure.actor);
  const blocking = questions.filter(q => q.taskId === task.id && q.status === "open" && (q.blocksWork ?? q.kind !== "warning")).sort((a,b) => a.askedAt.localeCompare(b.askedAt) || a.id.localeCompare(b.id));
  if (blocking[0]) return make("question", `Waiting for your answer to ${blocking[0].id}${blocking.length > 1 ? ` and ${blocking.length - 1} more` : ""}${workers.length ? ` · ${workers.length} worker${workers.length === 1 ? "" : "s"} still running` : ""}`, blocking[0].askedAt, blocking.map(q => q.id), undefined, blocking.length);
+ if (deploy?.state === "active" && tracking?.deployUnknownSince) return make("unknown", "Status unknown", tracking.deployUnknownSince, deploy.refs);
  if (deploy?.state === "active") return make("deploy", deploy.text, deploy.since, deploy.refs);
  const live = closed ? undefined : sources.find(s => s.state === "running");
  if (live) return make("working", `${live.actor.name} is ${live.phase || `working on ${live.title}`}${workers.length > (live.actor.kind === "worker" ? 1 : 0) ? ` · +${workers.length - (live.actor.kind === "worker" ? 1 : 0)} worker${workers.length - (live.actor.kind === "worker" ? 1 : 0) === 1 ? "" : "s"}` : ""}`, live.since, [live.actor.id], live.actor, workers.length);
@@ -45,6 +49,7 @@ export function taskActivity(task: BoardTask, questions: readonly BoardQuestion[
   if (task.status === "waiting") return make("waiting", `Waiting for ${task.waiting?.note ?? "external review"}`, task.waiting?.since ?? since);
   if (task.status === "review") return make("review", "Ready for your review", since);
  }
+ if (tracking?.deployUnknownSince) return make("unknown", "Status unknown", tracking.deployUnknownSince, tracking.deploy?.refs ?? tracking.delivery?.refs ?? []);
  const delivery = tracking?.delivery;
  if (delivery && now - Date.parse(delivery.at) < DELIVERY_ACTIVITY_MS && !sources.some(s => s.since > delivery.at)) return make("delivery", delivery.text, delivery.at, delivery.refs, undefined, delivery.count);
  if (closed) return make(task.status === "done" ? "done" : "dropped", task.status === "done" ? "Done" : "Dropped", task.settledAt ?? since);

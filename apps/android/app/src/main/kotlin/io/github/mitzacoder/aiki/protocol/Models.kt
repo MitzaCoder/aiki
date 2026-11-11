@@ -564,6 +564,7 @@ data class ProjectsConfigureRequest(
     val `reportAudit`: ProjectsConfigureRequestReportAudit? = null,
     val `uiProof`: String? = null,
     val `integrationRef`: String? = null,
+    val `deployFeed`: String? = null,
     val `links`: ProjectLinks? = null,
     val `archived`: Boolean? = null
 )
@@ -595,6 +596,7 @@ data class ProjectSummary(
     val `promptCacheWarmHours`: Long? = null,
     val `uiProof`: String? = null,
     val `integrationRef`: String? = null,
+    val `deployFeed`: String? = null,
     val `reportAudit`: ProjectsConfigureRequestReportAudit? = null,
     val `reportAuditStatus`: ProjectSummaryReportAuditStatus? = null,
     val `links`: ProjectLinkSettings? = null,

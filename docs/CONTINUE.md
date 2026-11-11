@@ -1,5 +1,49 @@
 # Continue
 
+## T125: project deployment file feeds and origin journal
+
+Added opt-in `deployFeed` (absolute local JSON file or null; feature `task-deploys`). No command
+adapter: settings-configured commands would expose code execution through the settings API.
+The harness only observes. Version 1 envelopes carry canonical repository scope, optional projectId,
+and complete attempt snapshots with a global sequence, intended commit, expected targets and
+queued/running/ok/failed/rolled_back/pending target details. Private cursor/outbox persistence and
+board sequence guards make missed-attempt replay idempotent. Each attempt freezes the ledger/trailer
+union across all target success→intended ranges. No baseline means no whole-history attribution.
+
+One transaction updates every shipped task, including done/dropped/archived, without reopening or
+per-task pushes. One existing milestone per attempt evolves in place with attempted/serving commits.
+Now uses failure/active/delivery slots; retries retain unresolved failures until verified recovery.
+Pending is not success. Invalid/unreadable feeds become unknown; disable/re-enable retains cursors.
+Harness deploy outcomes stale Results/Next; closed tasks never nudge. Existing global deploy-problem
+notifications are unchanged; no success pushes or new UI/settings field were added.
+
+`deploy/journal.sh` adds disposable background observers to deploy.sh. They close the deploy-lock
+FD before any observer work, use a separate bounded journal lock, and atomically write
+`<deploy state directory>/deploy-journal.json` through deploy-journal.ts. Start/outcome/catch-up and
+unchanged details survive restart; catch-up resumes the matching attempt. A local initial host
+baseline comes from its existing verified status/serving release. Unknown initial target baselines
+never guess. Journal failures cannot affect deploy exit status, rollback, health checks or the
+per-backend status contract. There are no backend.sh/watch.sh behavior changes. Configure this
+project's actual feed path privately through projects.configure; DESIGN records the full schema.
+The journal trims itself atomically to the newest 200 attempts or 1 MiB (whichever fits fewer),
+with at most 4096 snapshots; a single noisy attempt compacts to its latest full snapshot. Frozen
+baselines, verified target checkpoints, stable attempt IDs/order and sequence high-water marks survive
+retention. An old harness cursor resumes only unseen retained attempts, once, using their supplied
+baselines rather than stale pre-gap successes. No manual archival or feed path changes are needed.
+Non-Git jj deployment attribution remains deferred. No live deployment was run.
+
+Protocol/Kotlin models are regenerated. Before retention review, full sequential gates passed:
+root 2,349 tests / 91,021
+assertions and typecheck; web zero check errors/warnings, 1,016 tests / 79,499 assertions and build;
+generator --check; private public-source guard; deploy harnesses 82 tests / 603 assertions; Android
+unit-test/debug assembly. Gradle daemons were stopped. No flaky gate reruns were needed.
+No push, main move, stack rewrite, phone install or UI proof was needed.
+
+The retention review adds count/byte-bound and noisy-attempt writer tests plus old-cursor gap/restart
+dedupe coverage. Its requested gates pass: deploy 84 tests / 622 assertions; task-deploys 9 tests /
+133 assertions; typecheck and public guard. This follow-up is squashed into the same stage-5 change,
+not the stack.
+
 ## T122 Android: automatic Now display
 
 Android gates automatic Now on both `task-activity` and `task.activity`. The Report Now row,
