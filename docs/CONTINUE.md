@@ -121,6 +121,34 @@ zero check diagnostics and production build; Android 811 JVM tests / 107 suites 
 debug assembly and lint (40 warnings, one hint, zero errors). Android builds use an explicit empty private-properties
 file. Public denylist/generic guard and Gitleaks pass. Main stayed untouched.
 
+## Readable family cards (T108 / graph stage 2)
+
+`TaskGraph.svelte` now keeps the stage-1 chrome/model and delegates rendering to small `graph/Graph*` components.
+`GraphFamilyCanvas` retains `layoutTaskFamilies` across updates; `graph-family-camera.svelte.ts` owns only the viewport.
+Cards have 16px titles, 14px small text, distinct reason/quiet marks, descendant progress and a fixed three-creature/+N
+band. Strong status bands/tints replace bubbles; closed cards keep readable text with neutral/dashed styling. Parent
+routes stay visible; other relationship patterns are scoped to selection/matches through `routeTaskFamilyEdges`.
+Dead simulation, bubble model, camera/label placement and their tests were removed. Pure presentation, scoping,
+spatial navigation, matching-fit and v2 persistence helpers live in `task-graph-cards.ts` (nine tests / 236 assertions).
+
+LOD uses the smallest card font (14px), pill font 22px and height 64px; touch requires 44px targets. Family overview
+uses screen-sized targets in shelf order to avoid overlapping titles for tall families. Cards/pills use engine world
+coordinates; first desktop framing shows readable columns, while Fit shows all families. Phone renders one family,
+selected first or most-needs-you, with previous/next and readable 1× vertical pan. Camera key is v2; v1 is ignored.
+One roving Tab stop supports spatial arrows, Space, Enter, Home and Escape. Search/panel links reveal readable cards.
+Regroup is explicit. Reduced motion suppresses LOD fades, creature motion and report sparks.
+
+Real Chromium busy-demo proof on T108 includes desktop 1440×1000 and phone 390×844 light/dark before/after, pills,
+overview, keyboard focus, and an 11.3-second recording. The recording asserts all 80 card transforms and the camera
+stay unchanged after real report/Working→Review watch updates, then exercises phone family switching. Computed Jarvis
+card text contrast was at least 13.74:1 light / 13.80:1 dark; blocker contrast 4.52:1 / 7.38:1. This is narrow Chromium
+coverage, not a hardware touch or screen-reader certification. Ignored proof scripts use Vite 5197, CDP 9397 and the
+isolated busy demo; the task's recipe artifact records setup and localStorage. No live data, prototype route or flag.
+
+Checks: root 2,158 tests / 79,538 assertions; web 940 tests / 68,793 assertions; web check zero errors/warnings,
+web production build, root typecheck and public-source/Gitleaks all pass. No protocol/server/Android changes, push,
+deployment or main movement. All synthetic demo/browser/Vite processes are stopped by their owned PIDs.
+
 ## Family card layout engine (T107 / graph stage 2a)
 
 Unused pure TypeScript engine in `apps/web/src/lib/task-graph-families*.ts`, with synthetic tests in

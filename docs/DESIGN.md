@@ -1413,65 +1413,52 @@ hits get a bounded one-line snippet. No matches has its own message. Escape and 
 per backend/project under web `aiki.task-search.v1:` keys and Android private `aiki.task-search.v1` preferences;
 no query, index or ranking is sent to the server. Changing search never alters tasks or their normal priority order.
 
-### Animated task graph (T79)
+### Animated task graph (T79, family cards T108)
 
-Bubble club is the chosen web graph: soft clusters and round worker creatures, without a look flag or alternate
-renderers. Expanded Tasks offers List | Board | Graph; the narrow sidebar stays a list. The choice is local per
-backend/project under the name-neutral `tasks.view.v2:` key. Graph is read-only; tasks open the existing sheet.
+Option C / D56 replaces bubbles directly with readable cards in soft family regions. Expanded Tasks offers
+List | Board | Graph; the narrow sidebar stays a list. This is read-only: Enter, double-click and Open task use
+the existing task sheet. The view choice stays local under `tasks.view.v2:`. No prototype or graph-lab route ships.
 
-Stage 1 (T106, following option C / D56) keeps the bubble canvas and adds compact product chrome. One strip includes
-review, blocked, waiting, question/warning, worker failure and quiet, then working/planned/done (dropped only if nonzero).
-Counts include closed but not archived tasks; needs-you reasons overlap. Marks and words accompany every count; scope
-and overlap are described accessibly and in the tooltip, not a second visible row. Phone uses one scrollbar-free row.
-Counters and ranked ID/title/family/worker/thread search dim context without removing or repacking nodes. Matching tasks
-have full-opacity reason-coloured rings, nonmatches are 23% opaque, and selection has its own strong ring. Fit matches is
-an explicit camera action: clicking a counter never moves the camera. Search lives with the view switch (an expandable
-icon on phone), with an arrow/Enter/Escape-navigable popover rather than a permanent results row. Focus pans and smoothly
-raises zoom to at least .9 so the selected label is readable; already-closer zoom is preserved. Reduced motion is immediate.
-Zoom/Fit controls float on the canvas, the large heading is removed, and phone's legend is behind a button. The research
-in `research/task-graph-product.md` is historical: prototypes and `/graph-lab` were not merged (D57).
+- Cards show a two-line 16px title, ID, status word/mark, strong coloured band and tinted fill. Small card text is
+  14px at default 1× framing. Review, blocked, waiting, question/warning and worker failure have distinct marks;
+  quiet is separate (48 hours without a task update, never done/dropped). Closed cards have neutral fills and
+  dashed borders instead of unreadable translucent text. Parent progress counts done / all non-dropped descendants.
+  Family headers show title, the same progress contract, mixed-status bar and a unique needs-you count.
+- The stage-1 summary, ranked search, live selected-task panel and loading/empty/closed/no-match/offline states remain.
+  Counters count closed, not archived tasks; reasons overlap. Matches have strong rings; nonmatches lose colour, not
+  text contrast. Fit matches explicitly frames all matching cards. Search/panel links use `revealFamilyCard` at
+  readable cards zoom. Watch replacements update selection in place and never refit the camera.
+- `layoutTaskFamilies` retains the previous layout, hidden named slots and empty families. Fixed creature bands and
+  reserved arrival rows decouple worker/report/status changes from geometry. Overflow/reparenting sets sticky
+  `needsRegroup`; the Regroup button explicitly discards reservations and ancestry pins. Geometry options freeze
+  until regroup. No force simulation, bubble clusters, detached label placement or card dragging remains.
+- `routeTaskFamilyEdges` continuously draws quiet solid subtask links. Found-while is dotted, blocked-by is dashed
+  with an arrow from blocked task to prerequisite, and related is dash-dot. Nonparent routes are scoped to the
+  selected family and counter/search matches. The legend uses the same patterns; blocker strokes are full opacity.
+- `chooseFamilyDetail` uses actual minimum card text (14px), pill text (22px) and pill height (64px), with hysteresis.
+  Cards become single-line pills, then one screen-sized family blob. Text never shrinks below 12 screen pixels;
+  pills stay ≥24px tall on desktop / ≥44px on touch. Overview targets use a screen-space shelf in family order,
+  preventing tall family bounds from collapsing titles onto one another. Click/Enter enters a family at cards level.
+  Detail changes fade quickly; reduced motion is immediate.
+- Worker and non-main thread creatures attach to their task: up to three, then +N. Running creatures type/sway;
+  idle ones rest; failures have a mark. A changed nonempty report produces one bounded spark. Reduced motion removes
+  sway/typing/sparks without removing crew or status information. Card names expose all crew names/states.
+- One roving graph Tab stop supports spatial arrows, Enter to open, Space to select, Home to the family header and
+  Escape to clear selection then return to families. Spoken card names include ID/title/status/reasons/quiet/progress/
+  crew. Focus has a strong foreground outline separated by background. Instructions identify List as the complete path.
+- Background pan, pointer-anchored wheel zoom, pinch, +/− and Fit only change the viewport. Storage is
+  `task-graph.camera.v2:`; v1 is ignored because screen = world × zoom + translation now. First desktop open shows
+  readable family columns, not 90 tiny cards; Fit gives the project overview.
+- At ≤640px, only one family renders at cards/pills levels. First open chooses the selected task's family, otherwise
+  the family with most needs-you tasks. Previous/next calls `fitTaskFamily` but keeps 1× cards and top-aligns tall
+  regions for vertical pan instead of shrinking their text. The stage-1 40%-stage bottom sheet with Expand/Peek stays.
+  Offline retains the last board. Family identity follows hidden ancestors with cycle defense.
 
-A tap selects by task ID; hover only previews. The right detail panel (bottom sheet at ≤640px) updates in place on
-watch replacements and explains disappearing tasks instead of silently closing. It shows exact reasons, waiting dates,
-quiet activity (48 hours since the task update, never done/dropped), direct blockers/dependents, family, workers and
-threads. Family identity follows all available ancestors, even closed/archived parents, with cycle defense. Progress is
-**done / all non-dropped subtasks at every depth**, excluding the root, not a leaf percentage or effort estimate.
-Phone details open at a 40%-of-stage peek with title, status, reason marks and Open task; Expand/Peek switches to a
-full-stage scrollable sheet. Double-click, Enter or Open task uses the existing sheet route. Escape first closes the
-search popover, then clears selection/search/counter. Loading, no
-work yet, all closed, no visible matches and stale connection states are distinct; offline keeps the last board.
-Small footer text uses foreground; blocker arrows have full-opacity stronger strokes and status has its own legend.
-
-- Active tasks appear by default; Show closed adds faded done/dropped tasks. Archived tasks stay out. Parent families
-  gather together, including nested descendants. Solid parent, dotted found-while, dashed related and arrowed blocked-by
-  edges have a legend. Arrows point from the blocked task to what it needs. Status has colour and spoken words;
-  parent progress rings show done/total. Review, open questions/warnings and failed workers mark attention.
-- Existing board/worker/thread watches supply real shapes. The graph reads the project-wide worker list without
-  changing the chat's thread filter. Running creatures type and sway gently; idle ones breathe and sleep. Changed
-  nonempty reports send one spark, never a periodic fake report. Reassigned workers travel to their new task;
-  finished/removed workers fade away. Threads are bigger characters linked to their tasks and workers.
-- A small deterministic layout module pre-settles new nodes before rendering. Existing task positions stay fixed on
-  watch replacements; arrivals ease in and updates never refit the camera. Collision bounds include caption space.
-  Label placement excludes nodes and other labels; minor labels disappear at low zoom or when no safe slot remains.
-  Hover/focus reveals a full-title tooltip and highlights family/blockers. Every node is keyboard focusable.
-- Initial cluster columns follow the viewport aspect ratio; retained positions do not reflow on resize or watch updates.
-  First open fits the active graph with padding on desktop and phone. Fit resets framing explicitly. Drag nodes or
-  pan the background; wheel, buttons and pinch zoom. Camera state is local per backend/project under
-  `task-graph.camera.v1:`. Resizing preserves world centre and zoom. No link editing or task moves.
-- Reduced motion disables floating, typing, transitions, departing fades and sparks, retaining status, progress and
-  attention. List remains the full accessible reading path. Android will implement this contract natively later.
-- Synthetic proof uses the throwaway backend seed script. Loopback-only controls exercise reports, reassignment,
-  completion, task arrival and 80 tasks/10 workers. No installed data or real worker tools are used.
-
-The unused `task-graph-families.ts` engine prepares the next card renderer: deterministic indented preorder trees in
-measured family shelves, fixed creature/count bands, reserved arrival rows and compact pill geometry. Callers supply
-full-board `familyId` values when ancestors are hidden. Singleton tasks keep independent small family regions rather
-than changing identity when a child arrives. Status/report/crew changes and show-closed toggles never move retained
-slots; hidden cards and empty families reserve their space until explicit `regroupTaskFamilies`. Overflow grows locally;
-only colliding neighbors can be displaced, reported by `movedFamilyIds` plus sticky `needsRegroup` for the renderer to
-handle explicitly, not silently reflow. Geometry options/viewport aspect apply only on first layout or regroup. Pure
-helpers provide legibility-safe LOD hysteresis, border-to-border relationship routes and explicit fit/reveal cameras
-(screen = world × zoom + translation). This engine is not yet wired into the visible graph.
+Implementation: `TaskGraph.svelte` owns chrome/model; `graph/GraphFamilyCanvas.svelte` owns layout/LOD/focus; small
+card/family/edge/creature components render content. `graph-family-camera.svelte.ts` owns only the viewport, and
+`task-graph-cards.ts` holds pure presentation/navigation helpers. `task-graph-families*.ts` remains the geometry contract.
+The isolated busy demo has 90 synthetic tasks, ten families and real worker/thread/report watches; no installed data,
+real worker tools, feature flag or prototype renderer is involved.
 
 ### Ticket and pull request links
 
