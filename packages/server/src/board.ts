@@ -1,3 +1,6 @@
+import type { Models } from "@earendil-works/pi-ai";
+import { DEFAULT_REPORT_AUDIT } from "@aiki/protocol";
+import { ReportAuditService, type ReportAuditRecord } from "./report-audit.ts";
 import { initializeTaskFreshness, coverReportSection, noteTaskFact, markReportStale, prepareReportNudges, acknowledgeReportNudge, reportDueAt, sweepReportAge, substantiveTaskMentions, REPORT_SWEEP_MS, type ReportSection, type TaskFact, type TaskReportTracking, type ReportOutbox } from "./task-freshness.ts";
 import { stateKind } from "./state-identity.ts";
 /**
@@ -75,6 +78,7 @@ export type BoardState = {
 	reportInFlight?: Record<string, number>;
 	reportChatCandidates?: Record<string, { text: string; key: string }[]>;
 	lastReportSweep?: number;
+	reportAudit?: ReportAuditRecord;
 	tasks: BoardTask[];
 	questions: BoardQuestion[];
 	decisions: BoardDecision[];
@@ -1718,6 +1722,8 @@ export type BoardServiceOptions = {
 	/** Quiet period before the user's edits reach the coordinator. Default `BOARD_EDIT_DEBOUNCE_MS`. */
 	editDebounceMs?: number;
 	taskFreshness?: boolean;
+	auditModels?: Models;
+	auditStatusChanged?: (record: ReportAuditRecord) => Promise<void>;
 	threadIsLive?: (threadId: string) => Promise<boolean>;
 	reportTimings?: { trailingMs?: number; maxBurstMs?: number; ageMs?: number; sweepMs?: number; maxTokens?: number };
 	/** Called after an input reached a background thread, so a finished or stopped one counts as working again. */
@@ -1730,6 +1736,7 @@ type PendingEdit = { before: BoardTask | null; after: BoardTask; notes: string[]
 
 export class BoardService {
 	readonly #options: BoardServiceOptions;
+	readonly audit: ReportAuditService | undefined;
 	#extension: Extension | undefined;
 	#pending = new Map<string, PendingEdit>();
 	#pendingOrder: { ids: string[]; at: string } | undefined;
@@ -1745,6 +1752,19 @@ export class BoardService {
 
 	constructor(options: BoardServiceOptions) {
 		this.#options = options;
+		if (options.auditModels) this.audit = new ReportAuditService({
+			models: options.auditModels,
+			settings: () => options.project().archived || options.taskFreshness === false ? { mode: "off", dailyTokens: 0 } : options.project().reportAudit ?? DEFAULT_REPORT_AUDIT,
+			now: options.now,
+			state: () => this.state(),
+			update: async change => {
+				await this.#commit(HARNESS_WRITER, change);
+				const record = (await this.state()).reportAudit;
+				if (record) await options.auditStatusChanged?.(record);
+			},
+			timeline: async id => (await this.timeline(id)).entries.slice(-5),
+			log: options.log,
+		});
 	}
 
 	get coordinator(): Conversation {
@@ -2403,6 +2423,7 @@ export class BoardService {
     return live.has(owner) ? owner : "main";
    }, timings);
   });
+  void this.audit?.check("hourly").catch(error => this.#options.log(`report audit failed: ${errorMessage(error)}`));
   for (const batch of (await this.state()).reportOutbox ?? []) {
    const conversation = await this.#conversationOf(batch.owner);
    const submission = await conversation.submit({ type: "input", content: batch.content, whenBusy: "followUp", requestId: batch.key }, BACKGROUND_CONTEXT);
@@ -2435,6 +2456,7 @@ export class BoardService {
 		this.#stopped = true;
 		if (this.#waitingTimer !== undefined) clearTimeout(this.#waitingTimer);
 		if (this.#reportTimer !== undefined) clearTimeout(this.#reportTimer);
+		await this.audit?.stop();
 		await this.#reportRun;
 		await this.#waitingRun;
 		await this.flushEdits();

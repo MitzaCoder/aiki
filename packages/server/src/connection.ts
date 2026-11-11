@@ -386,6 +386,7 @@ export class ClientConnection {
 							: { promptCacheWarmHours: request.promptCacheWarmHours }),
 						...(request.uiProof === undefined ? {} : { uiProof: request.uiProof }),
 						...(request.integrationRef === undefined ? {} : { integrationRef: request.integrationRef }),
+						...(request.reportAudit === undefined ? {} : { reportAudit: request.reportAudit }),
 						...(request.links === undefined ? {} : { links: request.links }),
 						...(request.archived === undefined ? {} : { archived: request.archived }),
 					});

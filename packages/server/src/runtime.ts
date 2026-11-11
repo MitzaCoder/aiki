@@ -1,3 +1,6 @@
+import { DEFAULT_REPORT_AUDIT } from "@aiki/protocol";
+import { readJsonFile, writeJsonFile } from "./fs-json.ts";
+import { chooseAuditModel, emptyAuditRecord, auditDay, type ReportAuditRecord } from "./report-audit.ts";
 import { createHash } from "node:crypto";
 /**
  * One Harness per project, opened lazily on first use and kept open. The root conversation is the project's coordinator
@@ -211,6 +214,7 @@ export type ProjectManagerOptions = {
 	/** How long the user's board edits wait for another before they reach the coordinator. Default 3 s. */
 	boardEditDebounceMs?: number;
 	taskFreshness?: boolean;
+	reportAudit?: boolean;
 	/**
 	 * The backend's memory scopes. Default: one over the store's data directory, without change notifications, which only
 	 * the server needs.
@@ -288,6 +292,9 @@ export class ProjectManager {
 	readonly #onThreadsState: ((projectId: string, threads: ThreadSummary[]) => void) | undefined;
 	readonly #boardEditDebounceMs: number | undefined;
 	readonly #taskFreshness: boolean;
+	readonly #reportAudit: boolean;
+	/** Shared across project summaries; pending auth checks are coalesced too. */
+	readonly #auditModelCache = new Map<string, { expiresAt: number; model: ReturnType<typeof chooseAuditModel> }>();
 	readonly #onWorkersState:
 		| ((projectId: string, workers: WorkerSummary[], defaults: WorkerDefaults) => void)
 		| undefined;
@@ -336,6 +343,7 @@ export class ProjectManager {
 		this.#onThreadsState = options.onThreadsState;
 		this.#boardEditDebounceMs = options.boardEditDebounceMs;
 		this.#taskFreshness = options.taskFreshness !== false;
+		this.#reportAudit = options.reportAudit !== false;
 		this.#now = options.now;
 		this.#setTimer = options.setTimer;
 		this.#agentDir = options.agentDir ?? resolveAgentDir();
@@ -1092,6 +1100,10 @@ export class ProjectManager {
 			this.#requireModel(change.coordinatorModel);
 		}
 		for (const ref of change.workerModels ?? []) this.#requireModel(ref);
+		if (change.reportAudit?.mode === "model") {
+			if (!change.reportAudit.model) throw new ServerError("bad_request", "Report audit model mode requires a model");
+			this.#requireModel(change.reportAudit.model);
+		}
 	}
 
 	#requireModel(ref: ModelRef): void {
@@ -1191,6 +1203,8 @@ export class ProjectManager {
 		const history = new HistoryService({ conversation, coordinators });
 		const board = new BoardService({
 			taskFreshness: this.#taskFreshness,
+			auditStatusChanged: async record => { await writeJsonFile(join(this.store.projectDir(project.id), "report-audit-status.json"), record, 0o600); },
+			...(this.#reportAudit ? { auditModels: this.#requestLog?.observeInternalModels(this.models, project.id, "report_audit") ?? this.models } : {}),
 			threadIsLive: async (id) => {
 				if (id === "main") return true;
 				const record = await threads.record(id);
@@ -1487,6 +1501,7 @@ export class ProjectManager {
 				});
 				void this.#emitProject(project.id);
 				threads.mainChanged();
+				if (next.coordinator === "idle") void board.audit?.check("idle").catch(error => this.#log(`report audit failed: ${errorMessage(error)}`));
 				work.update({ coordinatorWorking: next.coordinator === "working" });
 			},
 			// A new final answer and a failed compaction are worth a push; the notifier decides which devices hear it.
@@ -1647,8 +1662,28 @@ export class ProjectManager {
 		this.#armAttentionReturn(project, attention?.nextReturnAt);
 		return {
 			...projectSummary(project, entry, activity, this.#linkSettings(project)),
+			...(this.#reportAudit ? { reportAudit: project.reportAudit ?? DEFAULT_REPORT_AUDIT, reportAuditStatus: await this.#auditStatus(project, entry) } : {}),
 			...(attention === undefined ? {} : { attention: entry?.state === "open" || entry?.state === "opening" ? attention : { ...attention, runningWorkers: 0 } }),
 		};
+	}
+
+	async #auditStatus(project: Project, entry: RuntimeEntry | undefined) {
+		const settings = project.reportAudit ?? DEFAULT_REPORT_AUDIT;
+		const key = JSON.stringify([settings.mode, settings.model]);
+		let cached = this.#auditModelCache.get(key);
+		if (!cached || cached.expiresAt <= this.#clock()) {
+			const next = { expiresAt: Infinity, model: chooseAuditModel(this.models, settings) };
+			this.#auditModelCache.set(key, next);
+			void next.model.then(() => { next.expiresAt = this.#clock() + 60_000; }, () => { this.#auditModelCache.delete(key); });
+			cached = next;
+		}
+		const model = await cached.model;
+		const stored = entry?.runtime ? (await entry.runtime.board.state()).reportAudit : await readJsonFile(join(this.store.projectDir(project.id), "report-audit-status.json")) as ReportAuditRecord | undefined;
+		const status = stored ?? emptyAuditRecord(this.#clock());
+		return { effectiveModel: model ? { provider: model.provider, modelId: model.id } : null,
+			day: auditDay(this.#clock()), tokensUsed: status.day === auditDay(this.#clock()) ? status.tokensUsed : 0,
+			lastRunAt: status.lastRunAt, state: settings.mode === "off" ? "off" : !model ? "unavailable" : status.state === "running" && !entry?.runtime ? "error" : status.state,
+			reason: settings.mode === "off" ? "disabled" : !model ? "no signed-in provider offers a small model" : status.reason };
 	}
 
 	/** Only a closed project's next deadline needs a clock; open projects already have the board's clock. */

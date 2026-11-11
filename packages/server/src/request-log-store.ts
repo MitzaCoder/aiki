@@ -31,7 +31,7 @@ export type ConversationIdentity = {
 	scheduleId: string | null;
 };
 
-export type InternalUsagePurpose = "compaction" | "memory_extraction" | "memory_maintenance";
+export type InternalUsagePurpose = "compaction" | "memory_extraction" | "memory_maintenance" | "report_audit";
 
 export type RequestRow = ConversationIdentity & {
 	/** Internal calls have no transcript identity; ordinary roles derive from existing identity fields. */

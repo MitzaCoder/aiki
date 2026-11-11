@@ -1,6 +1,7 @@
 /**
  * pi-ai model access for the harness: the providers from the design, credential-backed, plus a catalog for the
- * client. No model defaults live here or anywhere else: the client picks every model.
+ * client. No model defaults live here or anywhere else: the client picks every conversation model. The bounded report audit is the sole
+ * server-chosen default; it chooses a credentialed small model, never a coordinator or worker.
  */
 import {
 	type Api,

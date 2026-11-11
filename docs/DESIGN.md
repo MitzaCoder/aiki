@@ -1416,8 +1416,8 @@ one request is pending/frozen/in flight add no fact or nudge. After the prior re
 new deliberate tap can ask again even without a rewrite. Explicit owner requests are allowed on done
 and dropped tasks without reopening them; only written sections and empty Results on done need work.
 It returns the task and broadcasts normal board state. It never changes status. The request and automatic detection are gated
-by the feature; disabling it does not delete existing prose or metadata. Small-model auditing is not
-implemented; a later audit uses the same `markReportStale` path as this action.
+by the feature; disabling it does not delete existing prose or metadata. The bounded small-model audit
+below uses the same `markReportStale` path as this action.
 
 `show_task` prints `eventSeq`; `board.write_report` and worker `task_progress` accept optional
 `coveredEventSeq`. Workers can call `task_progress` without report fields to read their task and sequence
@@ -1473,6 +1473,66 @@ or interrupted. Replay after admission reuses the same request ID, then acknowle
 reconstructs timers and receipt waits without inventing activity. Delivery suppresses unchanged versions
 of both sections even if another cause becomes stale just afterward. Badges/counts continue updating;
 only a covered rewrite rearms. No model tokens are spent on detection and there are no freshness pushes.
+
+### Report audit (T126, stage 6 of T120)
+
+D60 makes this second opinion **on by default**, superseding the optional/off proposal in the research
+note. `report-audit` advertises settings/status support; absent features never imply this capability.
+There is no settings UI yet. `projects.configure.reportAudit` replaces the project setting:
+`{ mode: "auto" | "off" | "model", model?: ModelRef, dailyTokens: number }`; null restores
+`{ mode: "auto", dailyTokens: 65000 }`. Model mode requires a catalogued model ref; explicit model
+choice can be larger, but the same token limits apply. Settings survive older clients' unrelated writes.
+ProjectSummary includes optional `reportAudit` and `reportAuditStatus` (`effectiveModel`, UTC `day`,
+`tokensUsed`, `lastRunAt`, `state`, `reason`). States are idle/running/checked/error/budget/off/unavailable.
+A closed project's last status is read without opening a Harness; its JSON mirror is display-only.
+Summary effective-model resolution is cached for 60 seconds across projects sharing the same mode/ref;
+pending credential checks are coalesced, and a changed mode/ref uses a different cache entry.
+The board document owns the authoritative budget and coverage. No client/model default changes apply
+to coordinators, workers or memory: this audit is the **sole server-chosen model default**.
+
+Auto uses the first credentialed provider listing `claude-haiku-5-5`: anthropic, then opencode-go;
+otherwise credentialed openai's `gpt-5-nano`; otherwise the cheapest small openai-codex catalog model.
+Small Codex entries have input price <=0.25 and output <=1.5 per million tokens, sorted by estimated
+2600-input/100-output price, then ID. The current catalog chooses `gpt-6-luna` (0.1/0.5), not a flagship.
+The same `checkAuth` contract as `describeModels` is used. No suitable credentials/catalog entry means
+idle/unavailable with "no signed-in provider offers a small model"; no request or login is attempted.
+Anthropic thinking is off (the simple API can otherwise increase maxTokens for a thinking budget);
+other reasoning models use minimal thinking. Non-reasoning models have no thinking option. Hidden
+thinking blocks are ignored by the verdict parser, but their tokens still count toward usage.
+
+Open projects check hourly through the board clock and when main's coordinator activity becomes idle.
+Every trigger requires at least one hour since the last admitted run, using persisted `lastAttempt`;
+new evidence or a restart does not bypass that spacing. Idle is the preferred moment to admit a call,
+not a per-turn opportunity; the hourly timer catches projects whose coordinator never goes idle.
+Admission rechecks the spacing in the durable transaction before reserving tokens.
+Archived projects, disabled freshness, closed/done/todo tasks, quiet covered reports and tasks whose
+unchanged section versions have pending/outbox/delivered nudges are excluded. Only uncertain active
+(in_progress/review/waiting), non-deterministically-stale sections with uncovered task facts qualify;
+coverage also detects changed timeline revisions/chat evidence after an audit. Quiet migration alone
+makes no request. One invocation chooses at most four tasks (one call), with bounded title, Results/Next
+and ages, recent timeline lines and mentioning snippets. Serialized evidence is valid JSON, <=600
+estimated tokens/task; instructions plus framing fit within 2600 estimated input tokens. Output is
+capped at 100 tokens. There are no tools, tool loop, conversations or prompt-cache writes.
+
+All task/chat/timeline text is explicitly untrusted evidence, delimited and JSON-escaped. Only strict
+JSON lines with supplied task IDs, exactly results/next keys and values `fine` or `stale: <short reason>`
+are accepted. Extra keys, duplicate task rows, prose, malformed/partial JSON, tool blocks, errors and
+truncated responses are ignored as a whole and logged once. A stale verdict uses `markReportStale`
+with `audit: ` reason prefix: normal durable batched nudge, never direct report edits/status changes.
+Fine/truncation never clears deterministic stale state. A section rewritten during a call is protected
+by its version; closed tasks cannot be marked by a late response.
+
+Before requesting, persist task eventSeq/evidence coverage and reserve estimated input + 100 output
+against the UTC-day project budget. Insufficient remaining budget makes no call. Success settles to
+provider-reported input + cache reads/writes + output (including thinking); project status reports
+this total. Errors/timeouts/stop retain the reservation conservatively when usage is unknown. Provider
+tokenizers may differ from the estimator; reported overages stop later calls rather than hiding usage.
+A 30-second abort/race bounds even hanging providers; close aborts/waits for this service before storage
+closes. Concurrent triggers share one promise. Restart restores admission, so unchanged evidence is
+not retried even after failure/crash/stop; new evidence is eligible later. Audit-created stale facts
+are not their own new evidence. Provider results flow through `observeInternalModels` with purpose
+`report_audit`: usage breakdown labels **Report audit**, attributed to project/model (not a fake task
+or conversation). No prompt text is stored in the request log. No audit-specific pushes are added.
 
 ### Tasks board
 

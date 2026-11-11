@@ -561,10 +561,18 @@ data class ProjectsConfigureRequest(
     val `longPromptCache`: String? = null,
     val `keepPromptCacheWarm`: Boolean? = null,
     val `promptCacheWarmHours`: Long? = null,
+    val `reportAudit`: ProjectsConfigureRequestReportAudit? = null,
     val `uiProof`: String? = null,
     val `integrationRef`: String? = null,
     val `links`: ProjectLinks? = null,
     val `archived`: Boolean? = null
+)
+
+@Serializable
+data class ProjectsConfigureRequestReportAudit(
+    val `mode`: String,
+    val `model`: ModelRef? = null,
+    val `dailyTokens`: Long
 )
 
 @Serializable
@@ -587,12 +595,24 @@ data class ProjectSummary(
     val `promptCacheWarmHours`: Long? = null,
     val `uiProof`: String? = null,
     val `integrationRef`: String? = null,
+    val `reportAudit`: ProjectsConfigureRequestReportAudit? = null,
+    val `reportAuditStatus`: ProjectSummaryReportAuditStatus? = null,
     val `links`: ProjectLinkSettings? = null,
     val `archived`: Boolean? = null,
     val `state`: String,
     val `failure`: String? = null,
     val `activity`: ProjectActivity? = null,
     val `attention`: ProjectAttention? = null
+)
+
+@Serializable
+data class ProjectSummaryReportAuditStatus(
+    val `effectiveModel`: ModelRef?,
+    val `day`: String,
+    val `tokensUsed`: Long,
+    val `lastRunAt`: String?,
+    val `state`: String,
+    val `reason`: String?
 )
 
 @Serializable

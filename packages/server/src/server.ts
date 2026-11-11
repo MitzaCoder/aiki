@@ -528,6 +528,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	let diskMonitor: DiskMonitor | undefined;
 	const manager = new ProjectManager({
 		taskFreshness: features.includes("task-freshness"),
+		reportAudit: features.includes("report-audit"),
 		diskWarnings: () => diskMonitor?.warnings() ?? [],
 		store,
 		artifacts,

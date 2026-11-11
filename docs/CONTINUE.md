@@ -1,5 +1,55 @@
 # Continue
 
+## T126 review: one admitted audit per hour, including idle
+
+Every audit trigger now observes persisted `lastAttempt` spacing: at least one hour between
+admitted runs, even with fresh evidence after every coordinator turn or after a restart. Idle is
+only the preferred moment; the hourly timer is the fallback for a coordinator that stays busy.
+The durable admission transaction rechecks the interval before reserving tokens. Summary model
+resolution now caches effective-model/auth checks for 60 seconds by mode/model ref across projects,
+coalescing pending lookups; changing mode/ref does not reuse an unrelated cached choice.
+
+Review verification: 17 faux-provider audit tests / 136 assertions; root `bun test` run once,
+2245 tests / 81536 assertions / zero failures; typecheck passes. New coverage checks 50 idle turns
+with new evidence, the hour boundary, persisted restart with new facts, and summary cache expiry
+and mode changes. Existing nudge/budget/retry tests still exercise their own gates past the new
+hourly guard. No protocol/UI changes, live providers, push, main move or deployment in this review.
+
+## T126: stage 6 small-model report audit
+
+Implemented the on-by-default server/protocol audit (D60/D61); no web or Android settings UI.
+`report-audit` advertises `projects.configure.reportAudit` and optional ProjectSummary
+`reportAudit`/`reportAuditStatus`. Settings: `{ mode: "auto" | "off" | "model", model?: ModelRef,
+dailyTokens: number }`, default auto/65000; null restores defaults. Model mode requires a known
+model. Status gives effectiveModel, UTC day, tokensUsed, lastRunAt, state and reason. DESIGN's
+Report audit section is the as-built contract for the settings UI worker. Old clients are unaffected;
+343 Kotlin DTOs / 92 request overloads generate and Android compiles without manual client changes.
+
+Auto selects credentialed anthropic Haiku 5.5, then opencode-go Haiku 5.5, then openai gpt-5-nano,
+then the cheapest small openai-codex catalog entry (currently gpt-6-luna; input <=0.25 and output
+<=1.5 per million). Otherwise unavailable with a no-signed-in-small-model reason. This is the sole
+server-chosen model default; coordinator/worker/memory choices remain explicit. Thinking off on Anthropic (to preserve its output cap), minimal on other
+reasoning models, no tools, 30-second abort/race. Each hourly/main-idle invocation audits at
+most four uncertain active tasks with new evidence and no pending/delivered unchanged nudge.
+Quiet hours cost zero requests. Task JSON is bounded to 600 estimated tokens, total input <=2600,
+output <=100. Strict JSON-line verdicts only; malformed/truncated/tool output never mutates reports.
+Stale verdicts use the same markReportStale/batched-nudge path as the user button. Fine never clears
+fixed-rule stale state. Durable event/evidence coverage and pre-call reservation prevent duplicate
+paid calls on concurrent triggers/restart/errors; unknown usage retains the reservation. UTC daily
+budget settles to provider input/cache/output tokens. Request log purpose `report_audit` appears as
+Report audit in usage analysis, attributed to project/model. Closed summaries read a display mirror;
+the board document remains authoritative for admission/budget. No prompt contents enter usage logs.
+
+Checks passed in the requested order: root 2243 tests / 81521 assertions; typecheck; web check with
+zero diagnostics, 994 tests / 70525 assertions, production build; protocol --check exit zero;
+public guard and Gitleaks; Android 819 JVM tests / 109 suites / two skips / zero failures or errors,
+debug assembly. Gradle daemon stopped. Fifteen faux-provider audit tests cover budget/reset,
+empty hours, bounds, injection fixtures, parsing, model priority/auth, settings, stop/restart and
+usage attribution, plus thinking/output-cap handling. A final root/typecheck rerun after the
+thinking-cap regression fix also passed; no flaky rerun needed. Tests are the backend-only proof. No main move, push,
+deploy, real provider call or live-data access. UI worker still owns both clients' Report check row,
+mode/model/budget controls and usage/status display, plus visual proof.
+
 ## Android one-tap report update request (T121, F24)
 
 Replaced the section/reason dialog with one header tap. Only projectId and taskId go to board.report.stale;

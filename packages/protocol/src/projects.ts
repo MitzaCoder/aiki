@@ -34,6 +34,24 @@ export const WorkerModelSchema = Type.Object(
 );
 export type WorkerModel = Static<typeof WorkerModelSchema>;
 
+/** The only server-chosen model default: a bounded, no-tools report audit (D60/D61). */
+export const ReportAuditSettingsSchema = Type.Object({
+	mode: Type.Union([Type.Literal("auto"), Type.Literal("off"), Type.Literal("model")]),
+	model: Type.Optional(ModelRefSchema),
+	dailyTokens: Type.Integer({ minimum: 0, maximum: 10_000_000 }),
+});
+export type ReportAuditSettings = Static<typeof ReportAuditSettingsSchema>;
+export const DEFAULT_REPORT_AUDIT: ReportAuditSettings = { mode: "auto", dailyTokens: 65_000 };
+export const ReportAuditStatusSchema = Type.Object({
+	effectiveModel: Type.Union([ModelRefSchema, Type.Null()]),
+	day: Type.String({ description: "UTC budget day." }),
+	tokensUsed: Type.Integer({ minimum: 0 }),
+	lastRunAt: Type.Union([Type.String(), Type.Null()]),
+	state: Type.String({ description: "idle, running, checked, error, budget, off, or unavailable." }),
+	reason: Type.Union([Type.String(), Type.Null()]),
+});
+export type ReportAuditStatus = Static<typeof ReportAuditStatusSchema>;
+
 /** Whether a project's Harness is currently open in the server process. */
 export const ProjectStateSchema = Type.Union([Type.Literal("closed"), Type.Literal("open"), Type.Literal("failed")]);
 export type ProjectState = Static<typeof ProjectStateSchema>;
@@ -168,6 +186,8 @@ export const ProjectSummarySchema = Type.Object({
 	uiProof: Type.Optional(UiProofSchema),
 	/** Feature task-changes: auto selects main/master; null disables observation. */
 	integrationRef: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+	reportAudit: Type.Optional(ReportAuditSettingsSchema),
+	reportAuditStatus: Type.Optional(ReportAuditStatusSchema),
 	/** Where bare ticket keys and PR numbers point. Absent on servers older than this field. */
 	links: Type.Optional(ProjectLinkSettingsSchema),
 	/**
@@ -241,6 +261,7 @@ export const ProjectsConfigureRequestSchema = Type.Object({
 	promptCacheWarmHours: Type.Optional(
 		Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(4), Type.Literal(8), Type.Null()]),
 	),
+	reportAudit: Type.Optional(Type.Union([ReportAuditSettingsSchema, Type.Null()], { description: "Feature report-audit; null restores auto and 65000 daily tokens." })),
 	uiProof: Type.Optional(
 		Type.Union([UiProofSchema, Type.Null()], {
 			description:
@@ -336,6 +357,7 @@ export const HARNESS_FEATURES = [
 	"task-links",
 	"task-waiting",
 	"task-freshness",
+	"report-audit",
 	"sidebar-attention",
 	"cache-keep-warm",
 	"device-auth-v1",
@@ -347,7 +369,7 @@ export type HarnessFeature = (typeof HARNESS_FEATURES)[number];
 
 /** Missing hello.features is never evidence of device-auth support. */
 export const LEGACY_HARNESS_FEATURES = HARNESS_FEATURES.filter(
-	(feature) => feature !== "task-freshness" && feature !== "task-changes" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
+	(feature) => feature !== "report-audit" && feature !== "task-freshness" && feature !== "task-changes" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
 );
 
 export const HarnessFeatureSchema = Type.Union([
@@ -392,6 +414,7 @@ export const HarnessFeatureSchema = Type.Union([
 	Type.Literal("task-links"),
 	Type.Literal("task-waiting"),
 	Type.Literal("task-freshness"),
+	Type.Literal("report-audit"),
 	Type.Literal("sidebar-attention"),
 	Type.Literal("cache-keep-warm"),
 	Type.Literal("device-auth-v1"),

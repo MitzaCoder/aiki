@@ -17,6 +17,7 @@ const ROLE_LABELS: Record<string, string> = {
 	compaction: "Compaction",
 	memory_extraction: "Memory extraction",
 	memory_maintenance: "Memory maintenance",
+	report_audit: "Report audit",
 	unknown: "Unattributed",
 };
 export function usageRoleLabel(role: string): string {

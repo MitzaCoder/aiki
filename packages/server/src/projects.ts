@@ -5,9 +5,10 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, realpath, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
-import type { LongPromptCache, ModelRef, ProjectCheckIns, ProjectLinks, ThinkingLevel, UiProof, WorkerModel } from "@aiki/protocol";
+import type { ReportAuditSettings, LongPromptCache, ModelRef, ProjectCheckIns, ProjectLinks, ThinkingLevel, UiProof, WorkerModel } from "@aiki/protocol";
 import {
 	DEFAULT_CHECK_INS,
+	DEFAULT_REPORT_AUDIT,
 	DEFAULT_LONG_PROMPT_CACHE,
 	DEFAULT_UI_PROOF,
 	normalizeGithubRepo,
@@ -42,6 +43,7 @@ export type Project = {
 	promptCacheWarmHours: 1 | 2 | 4 | 8;
 	/** Show UI changes: what agents prove with screenshots or videos; see `uiProofParagraph` in `workers.ts`. */
 	uiProof: UiProof;
+	reportAudit?: ReportAuditSettings;
 	/** Where ticket keys and PR numbers point, as the user set it; null: filled in automatically (`project-links.ts`). */
 	links: ProjectLinks | null;
 	/** auto (absent): main/master; null: disabled; otherwise a full Git ref. */
@@ -63,6 +65,7 @@ export type ProjectChange = {
 	promptCacheWarmHours?: 1 | 2 | 4 | 8 | null;
 	/** `null` restores `DEFAULT_UI_PROOF`. */
 	uiProof?: UiProof | null;
+	reportAudit?: ReportAuditSettings | null;
 	/** `null` goes back to filling them in automatically. */
 	links?: ProjectLinks | null;
 	integrationRef?: string | null;
@@ -101,6 +104,7 @@ function defaultProject(id: string, name: string, path: string): Project {
 		keepPromptCacheWarm: true,
 		promptCacheWarmHours: 8,
 		uiProof: DEFAULT_UI_PROOF,
+		reportAudit: { ...DEFAULT_REPORT_AUDIT },
 		links: null,
 	};
 }
@@ -138,6 +142,7 @@ function parseProject(value: unknown, id: string): Project | undefined {
 		keepPromptCacheWarm: typeof record.keepPromptCacheWarm === "boolean" ? record.keepPromptCacheWarm : true,
 		promptCacheWarmHours: [1, 2, 4, 8].includes(record.promptCacheWarmHours as number) ? record.promptCacheWarmHours as 1 | 2 | 4 | 8 : 8,
 		uiProof: parseUiProof(record.uiProof),
+		reportAudit: parseReportAudit(record.reportAudit),
 		links: cleanLinks(record.links),
 		integrationRef: typeof record.integrationRef === "string" || record.integrationRef === null ? record.integrationRef : "auto",
 		...(record.archived === true ? { archived: true as const } : {}),
@@ -169,6 +174,15 @@ function parseWorkerModels(value: unknown): WorkerModel[] {
 		});
 	}
 	return models;
+}
+
+/** Invalid or legacy stored settings get the on-by-default bounded audit. */
+export function parseReportAudit(value: unknown): ReportAuditSettings {
+	const record = value as Partial<ReportAuditSettings> | null;
+	if (!record || !["auto", "off", "model"].includes(record.mode ?? "")) return { ...DEFAULT_REPORT_AUDIT };
+	const model = record.model;
+	if (record.mode === "model" && (!model || typeof model.provider !== "string" || typeof model.modelId !== "string")) return { ...DEFAULT_REPORT_AUDIT };
+	return { mode: record.mode!, ...(record.mode === "model" ? { model: model! } : {}), dailyTokens: Number.isInteger(record.dailyTokens) && record.dailyTokens! >= 0 && record.dailyTokens! <= 10_000_000 ? record.dailyTokens! : DEFAULT_REPORT_AUDIT.dailyTokens };
 }
 
 const UI_PROOFS: readonly UiProof[] = ["off", "screenshots", "screenshots-and-videos"];
@@ -331,6 +345,7 @@ export class ProjectStore {
 					change.longPromptCache === undefined
 						? project.longPromptCache
 						: (change.longPromptCache ?? DEFAULT_LONG_PROMPT_CACHE),
+				reportAudit: change.reportAudit === undefined ? parseReportAudit(project.reportAudit) : parseReportAudit(change.reportAudit),
 				uiProof: change.uiProof === undefined ? project.uiProof : (change.uiProof ?? DEFAULT_UI_PROOF),
 				links: change.links === undefined ? project.links : cleanLinks(change.links),
 				integrationRef: change.integrationRef === undefined ? project.integrationRef : change.integrationRef,
