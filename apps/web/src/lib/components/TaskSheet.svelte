@@ -1,5 +1,8 @@
 <script lang="ts">
 	import CardMarkdown from './markdown/CardMarkdown.svelte';
+	import ReportSectionFreshness from './ReportSectionFreshness.svelte';
+	import ReportStaleAction from './ReportStaleAction.svelte';
+	import { reportFreshnessEnabled, emptyFinishedResults } from '#lib/report-freshness.js';
 	import { taskSheetViewport } from '#lib/task-sheet-viewport.js';
 	import { overlayScroll } from '#lib/scrollbars.js';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
@@ -168,6 +171,7 @@
 	const hasReport = $derived(report !== undefined && REPORT_SECTIONS.some(({ key }) => report[key].trim().length > 0));
 
 	const supportsLinks = $derived(backend.supports('task-links'));
+	const supportsFreshness = $derived(task !== undefined && reportFreshnessEnabled(backend.supports('task-freshness'), task));
 
 	$effect(() => {
 		const current = task;
@@ -422,13 +426,27 @@
 										class="flex flex-col gap-3"
 										data-report
 									>
-										{#snippet meta()}<span class="text-[0.6875rem] text-(--chat-fg-subtle)">
+										{#snippet meta()}<span class="inline-flex items-center gap-2 text-[0.6875rem] text-(--chat-fg-subtle)">
 												{#if task.report.updatedAt !== null}
 													<span title={exactTime(task.report.updatedAt)}>{ago(task.report.updatedAt)}</span>
 													{#if task.report.updatedBy}· {writerName(task.report.updatedBy)}{/if}
 												{/if}
+												{#if supportsFreshness}<ReportStaleAction {backend} {projectId} taskId={task.id} />{/if}
 											</span>{/snippet}
-										{#if hasReport && report}
+										{#if supportsFreshness && report?.freshness}
+											{#each TASK_SHEET_REPORT_SECTIONS as section (section.key)}
+												{#if report[section.key].trim().length > 0 || (section.key === 'results' && emptyFinishedResults(task))}
+													<div data-report-section={section.key}>
+														<p class="mb-0.5 text-xs font-semibold text-(--chat-fg-muted)">{section.label}</p>
+														{#if section.key === 'results' && emptyFinishedResults(task)}
+															<div class="text-task text-(--chat-fg-muted)">No results yet · work finished</div>
+														{:else}<Markdown source={report[section.key]} class="report-md" />{/if}
+														{#if section.key !== 'now'}<ReportSectionFreshness section={report.freshness[section.key]} emptyResults={section.key === 'results' && emptyFinishedResults(task)} />{/if}
+													</div>
+												{/if}
+											{/each}
+											{#if !hasReport && !emptyFinishedResults(task)}<p class="text-task text-(--chat-fg-subtle)">Nothing written yet. The agents fill this in as they work.</p>{/if}
+										{:else if hasReport && report}
 											{#each TASK_SHEET_REPORT_SECTIONS as section (section.key)}
 												{#if report[section.key].trim().length > 0}
 													<div data-report-section={section.key}>

@@ -1326,6 +1326,13 @@ is where they talk.
 
 ### Report freshness (T121, stage 1 of T120)
 
+The web Report section shows section-local ages (ticking locally every 30 seconds), uncovered event
+counts and quiet “needs update” reasons only when both the capability and freshness metadata exist.
+The Report header’s “This looks out of date” icon opens an accessible dialog for both sections or
+either one, with an optional 160-character reason; inline success/error feedback accompanies the stale
+request. Empty finished Results metadata omits the repeated missing-write/work-finished explanation. Now and Timeline
+remain unchanged. Missing metadata retains the original Report rendering, without inferred ages.
+
 `task-freshness` advertises deterministic Results/Next coverage. Now stays agent-written in this stage;
 report rewrites and stale marks add no timeline rows. `task.eventSeq` is a persisted monotonic count of
 meaningful task facts, independent of the bounded timeline. The optional `report.freshness.results` and

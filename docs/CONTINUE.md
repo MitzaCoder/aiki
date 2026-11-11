@@ -1,5 +1,31 @@
 # Continue
 
+## T121 web review: header action and settled proof
+
+Moved the stale-report action into the Report header as a labelled ghost icon button with a tooltip.
+Empty finished Results keeps its explanation once; metadata adds only event counts, stale state and
+nonduplicated reasons. Added four assertions for that formatting. Web check has zero diagnostics;
+998 tests / 70,544 assertions and the production build pass. Only the requested web checks were rerun.
+Replacement after/dialog screenshots and recording on T121 use emulated system `prefers-color-scheme`
+(the app follows the device), reduced motion and settled transitions. Dark proof now has the actual
+dark sheet background and fully opaque report text; the old grey/dim captures were proof artefacts,
+not a Report style change. The normal nested-dialog backdrop still dims/blurs the sheet behind it.
+
+## T121: stage 1 web report freshness
+
+Report-only web changes add locally ticking Results/Next ages, approximate dates, uncovered event
+counts, quiet stale reasons and the empty finished Results explanation. Both `task-freshness` and
+metadata are required; otherwise the existing UI is retained. The report action opens a section selector
+and optional 160-character reason dialog, calls `board.report.stale`, and reports success/error inline.
+Now, Timeline and section order are unchanged. Three pure formatting/gating tests add 15 assertions.
+
+Checks: web check zero diagnostics, 997 tests / 70,540 assertions, build; root 2,231 tests / 81,415
+assertions, typecheck; public guard and Gitleaks pass. The first root run hit the tool's 120-second
+limit; a complete 300-second-budget rerun passed in 212 seconds, with no test failure rerun.
+Synthetic createSetup backend proof on T121 includes before/after and dialog screenshots at 1280/390
+width in light/dark, and a nine-second recording of opening a task and marking the report stale.
+Before captures use the unchanged legacy branch. No live data, deployment, push or main move.
+
 ## T121 review: ordinary rewrites clear stale coverage
 
 Changed-prose writes now cover the current task event sequence when `coveredEventSeq` is omitted.
