@@ -121,6 +121,36 @@ zero check diagnostics and production build; Android 811 JVM tests / 107 suites 
 debug assembly and lint (40 warnings, one hint, zero errors). Android builds use an explicit empty private-properties
 file. Public denylist/generic guard and Gitleaks pass. Main stayed untouched.
 
+## Task graph stage 1 (T106)
+
+The bubble canvas now has marked status/overlapping reason counters, ranked task/family/worker/thread search and an
+ID-selected live detail panel (bottom sheet at ≤640px). Counter/search dimming never changes graph membership or
+retained coordinates. Enter/double-click/Open task uses the existing sheet route; Escape clears graph state without
+closing the enclosing phone dialog. Loading, empty, all closed, no matches and stale/offline boards are distinct.
+The graph model resolves cycle-safe memoized families through hidden ancestors, counts done/all non-dropped subtasks
+at any depth excluding the root, and marks nonclosed tasks quiet after exactly 48 hours. Worker failure is a separate
+needs-you reason, not folded into questions. Counts include closed but exclude archived tasks. DESIGN has the contract.
+
+`GRAPH_DEMO_SCENARIO=busy` extends the isolated task-graph demo with the protocol-validated 90-task/ten-family fixture,
+six running/two resting/one failed workers and a real held background thread. It shifts fixture dates relative to launch:
+otherwise real waiting/archive timers immediately consume the fixed research dates. Controls add review, empty,
+restore and close-all. Use `GRAPH_WEB_ORIGIN` and `GRAPH_DEMO_OUTPUT`; the first log prints temporary data/config paths.
+No production server/configuration, feature flag, task writes from the graph, prototypes or graph-lab route were added.
+The historical research doc is restored with D56/D57 and T106–T111 at its top. The stage-2 family layout file is untouched.
+
+T106 proof has desktop/phone light/dark before and after, active Review, search/panel, all five state captures and a
+10.3-second interaction recording. The recording asserts 90 unchanged transforms after counter highlighting and an
+unchanged camera while selected T3 receives a worker report and moves to review. Authoritative after screenshots are
+named `proof-counter-*` / `proof-panel-*`; earlier after captures are superseded. CDP emulation resets on session detach,
+so viewport changes and interactions/screenshots must share one CDP session. The existing responsive sidebar remounts
+at its desktop breakpoint: selection is retained through live updates, not through that parent remount. Loading proof
+was captured by reopening the real app after stopping the owned demo backend; offline proof keeps its prior board.
+
+Checks: root 2,144 tests / 24,512 assertions; web 926 tests / 13,767 assertions, including eight model tests / 45
+assertions. Web check has zero errors/warnings; production build, root typecheck and public-source/Gitleaks pass.
+No protocol or Android changes, bookmark movement, push or deployment. Bubble canvas semantic zoom, larger node targets,
+family cards and native parity remain later stages.
+
 ## Readable expanded task questions (T112)
 
 Shared web `BoardQuestionCard` and Android `QuestionCard` now have a small expand icon, including warnings and

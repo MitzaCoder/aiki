@@ -1419,6 +1419,21 @@ Bubble club is the chosen web graph: soft clusters and round worker creatures, w
 renderers. Expanded Tasks offers List | Board | Graph; the narrow sidebar stays a list. The choice is local per
 backend/project under the name-neutral `tasks.view.v2:` key. Graph is read-only; tasks open the existing sheet.
 
+Stage 1 (T106, following option C / D56) keeps the bubble canvas and adds product chrome. Status counters include
+closed but not archived tasks; overlapping needs-you counters distinguish review, blocked, waiting, question/warning
+and worker failure. Each has a mark and a word. Counters and ranked ID/title/family/worker/thread search dim context
+without removing or repacking nodes. Enter/previous/next visits search results by panning, preserving zoom. The research
+in `research/task-graph-product.md` is historical: prototypes and `/graph-lab` were not merged (D57).
+
+A tap selects by task ID; hover only previews. The right detail panel (bottom sheet at ≤640px) updates in place on
+watch replacements and explains disappearing tasks instead of silently closing. It shows exact reasons, waiting dates,
+quiet activity (48 hours since the task update, never done/dropped), direct blockers/dependents, family, workers and
+threads. Family identity follows all available ancestors, even closed/archived parents, with cycle defense. Progress is
+**done / all non-dropped subtasks at every depth**, excluding the root, not a leaf percentage or effort estimate.
+Double-click, Enter or Open task uses the existing sheet route; Escape clears selection/search/counter. Loading, no
+work yet, all closed, no visible matches and stale connection states are distinct; offline keeps the last board.
+Small footer text uses foreground; blocker arrows have full-opacity stronger strokes and status has its own legend.
+
 - Active tasks appear by default; Show closed adds faded done/dropped tasks. Archived tasks stay out. Parent families
   gather together, including nested descendants. Solid parent, dotted found-while, dashed related and arrowed blocked-by
   edges have a legend. Arrows point from the blocked task to what it needs. Status has colour and spoken words;

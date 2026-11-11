@@ -1101,6 +1101,7 @@
 						{#if supportsTasks && fullWidth}
 							<TasksView
 								{board}
+								connection={backend.connection}
 								workers={workerList}
 								graphWorkers={workers?.allWorkers ?? []}
 								scope={`${backend.id}:${projectId}`}
