@@ -62,6 +62,14 @@ The installer brings its own pinned Bun and zellij, plus the web app. No root or
 
 [Full install guide](docs/INSTALL.md) · [Pilot notes and limits](docs/releases/v0.1.0-pilot.1.md) · [Android build instructions](apps/android/README.md)
 
+### Install with your coding agent
+
+Give your agent this prompt:
+
+> Install Aiki from https://github.com/MitzaCoder/aiki. Follow docs/AGENT-INSTALL.md exactly and stop where it says to ask me.
+
+The [agent guide](docs/AGENT-INSTALL.md) checks the install and pauses for your sign-ins and choices. It includes a source fallback if the pilot download isn't published yet.
+
 ## One plan, different views
 
 Prefer columns? The same tasks are a board, too. See what's working, blocked, waiting or ready for review without losing the questions attached to each task.

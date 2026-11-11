@@ -1,5 +1,27 @@
 # Continue
 
+## T127 coding-agent installation guide
+
+README now includes a copyable agent prompt linking to `docs/AGENT-INSTALL.md`.
+The guide follows installer/CLI flags and errors, pins the pilot prerelease
+explicitly, verifies the installer checksum, and offers an exact-public-commit
+`--ref` fallback. Human STOP points cover device/provider sign-in, project access,
+optional user service and HTTPS phone setup. No installer, CLI, tests or workflow
+changes are included.
+
+Rehearsed the source fallback from main `b7cf8f27a8e7648e6866fbde0e6aed4870643eb6`
+in `env -i` with a temporary HOME/USER, explicit temporary data/config and loopback
+port 27317. Private Bun 1.4.4 installed 255 frozen dependencies and built the web;
+version/doctor, status and `/aiki-local.json` passed. Headless Chromium rendered
+Welcome; T127 retains a desktop screenshot without pairing grants. Wait for rendered
+Welcome rather than taking a fixed-virtual-time screenshot of the blank shell.
+Stopped backend/browser by recorded PID, verified backend stopped, purged the test
+installation and removed its temporary tree. No real backend or home state touched.
+Release download/checksum execution remains untested because pilot assets were not
+yet published; no provider login, project access, service or phone setup was done.
+Root typecheck and the private public-tree guard (including Gitleaks) pass after
+frozen workspace dependency installation. No push, main move or deployment.
+
 ## T71 pilot integration and tag authorization (Q130, part 1)
 
 The owner approved integrating and tagging `v0.1.0-pilot.1` as a prerelease, retaining
