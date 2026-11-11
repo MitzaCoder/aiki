@@ -1808,7 +1808,7 @@ export class BoardService {
 		});
 	}
 
-	/** Compatibility projection: one legacy milestone per task/ref advance; structured facts live in the change ledger. */
+	/** Atomically project each ref advance into legacy history and report freshness, deduplicated by fact ID. */
 	async recordChangesLanded(fact: import("./task-changes.ts").ChangesLanded): Promise<void> {
 		await this.#options.harness.commit(async tx => {
 			const state = await openBoard(tx, this.coordinator.id);
@@ -1820,9 +1820,11 @@ export class BoardService {
 				const landed = fact.commits.filter(commit => commit.taskIds.includes(taskId));
 				const removed = fact.removed.filter(commit => commit.taskIds.includes(taskId));
 				const reverted = fact.reverted.filter(commit => commit.taskIds.includes(taskId));
+				if (!landed.length && !removed.length && !reverted.length) continue;
 				const ref = fact.ref.replace(/^refs\/heads\//, "");
 				const label = [landed.length ? `${landed.length} change${landed.length === 1 ? "" : "s"} landed on ${ref}` : "",
-					removed.length ? `${removed.length} removed from ${ref}` : "", reverted.length ? `${reverted.length} reverted on ${ref}` : ""].filter(Boolean).join("; ");
+					removed.length ? `${removed.length} change${removed.length === 1 ? "" : "s"} removed from ${ref}` : "", reverted.length ? `${reverted.length} change${reverted.length === 1 ? "" : "s"} reverted on ${ref}` : ""].filter(Boolean).join("; ");
+				noteTaskFact(state, taskId, { kind: "commit", reason: label, at: fact.at, ref: fact.id });
 				addTimelineEvent(history, task, { at: fact.at, kind: "milestone", label, ref: fact.id, by: HARNESS_WRITER,
 					detail: [...landed.map(commit => `Landed ${commit.hash} ${commit.subject}`), ...removed.map(commit => `Removed ${commit.hash} ${commit.subject}`), ...reverted.map(commit => `Reverted ${commit.hash} ${commit.subject}`)].join("\n") }, fact.id);
 			}

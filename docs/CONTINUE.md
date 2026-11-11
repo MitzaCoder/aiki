@@ -1,5 +1,25 @@
 # Continue
 
+## T124: stage 4 stacked on stage 1; landed changes invalidate reports
+
+Rebased `zmwxuvvx` onto `tqmtvotm`, preserving both stages. Only CONTINUE and the legacy
+feature exclusion list conflicted: retained every continuation section (stage 4 first), and excluded
+both task-changes and task-freshness from legacy support. DESIGN and both prompt edits merged
+cleanly, including the [reports] paragraph and Task trailer instructions. Regenerated Android DTOs.
+
+`recordChangesLanded` now admits one commit fact per attributed task inside its timeline transaction.
+Landed, removed and reverted changes stale Results/Next with count/ref reasons. The existing fact-ID
+guard prevents replayed event counts and nudges; unattributed changes do nothing. Three synthetic
+integration cases prove both sections, one nudge batch, unchanged replay before/after admission, and
+one timeline row. No UI changes, push, main move or deployment.
+
+Final gates pass in order: root 2,247 tests / 81,507 assertions, typecheck; web check zero diagnostics,
+994 tests / 70,525 assertions, production build; protocol --check exits zero (341 DTOs, 92 overloads);
+private public guard/Gitleaks; Android 819 tests / 109 suites / two skips / zero failures or errors
+and debug assembly. Gradle daemons stopped. Initial typecheck caught a synthetic writer fixture using
+the wrong fields; corrected it and repeated root tests then typecheck before the remaining gates.
+No known flaky test needed a rerun.
+
 ## T124: task/change ledger and read-only integration observation
 
 Stage 4 backend implementation is in `task-changes.ts`; runtime attaches one observer per open project.

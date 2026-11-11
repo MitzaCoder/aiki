@@ -1327,9 +1327,12 @@ unreachable commits, declared reversions and timestamp. An outbox retries after 
 optional `onChangesLanded(fact: ChangesLanded): Promise<void> | void` defaults to no-op; consumers deduplicate
 `fact.id` (at-least-once). Runtime projects these facts into one existing `milestone` timeline row per task
 per advance, with hashes/subjects in detail, including archived/closed tasks without reopening. No new
-wire timeline fields: stage 3 can fold the durable structured facts into Delivery. Stage 1 should be wired
-at this callback to invalidate stale prose; this stage does not touch report rules or freshness reducers.
-No push notifications, publication or deploy outcomes are generated.
+wire timeline fields: stage 3 can fold the durable structured facts into Delivery. In the same board
+transaction, each attributed task receives one `noteTaskFact` commit fact marking Results and Next stale,
+with counts and ref in the reason (landed, removed or reverted). The existing timeline `fact.id` guard
+also deduplicates freshness and nudge admission: retries neither increment eventSeq nor re-nudge, even
+after outbox admission. Unattributed changes do nothing. No push notifications, publication or deploy
+outcomes are generated.
 
 ### Waiting tasks (D29, T42)
 

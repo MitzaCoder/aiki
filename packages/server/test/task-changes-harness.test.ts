@@ -4,6 +4,8 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createSetup } from "./support.ts";
 import { WorkersDoc, type WorkerRecord } from "../src/workers.ts";
+import { BoardDoc, type BoardState } from "../src/board.ts";
+import { prepareReportNudges } from "../src/task-freshness.ts";
 import { TASK_CHANGES_FILE, type ChangesLanded, type TaskChangeLedger } from "../src/task-changes.ts";
 
 async function run(path: string, ...args: string[]): Promise<string> {
@@ -29,6 +31,45 @@ test("legacy projection is one plain milestone per task per advance, including d
 			expect(entries).toHaveLength(1); expect(entries[0]?.kind).toBe("milestone"); expect(entries[0]?.label).toBe("3 changes landed on main");
 			expect(entries[0]?.detail).toContain("1".repeat(40)); expect(entries[0]?.detail).toContain("3".repeat(40));
 		}
+	} finally { await setup.cleanup(); }
+}, 30_000);
+
+test.each(["landed", "removed", "reverted"] as const)("attributed %s changes stale Results/Next once and queue one nudge", async (kind) => {
+	const start = Date.parse("2026-01-01T12:00:00.000Z");
+	const setup = await createSetup({ now: () => start });
+	try {
+		const project = await setup.server.manager.store.add(setup.projectDir);
+		const { runtime } = await setup.server.manager.open(project.id);
+		await runtime.board.saveTask({ task }, "harness");
+		const commit = <R>(change: Parameters<typeof runtime.harness.commit<R>>[0]) => runtime.harness.commit(change, BACKGROUND_CONTEXT);
+		await runtime.board.writeReport(commit, { taskId: "T1", sections: { results: "Synthetic tests passed", next: "Review the changes" }, by: { author: "coordinator", threadId: null, workerId: null } }, "initial-report");
+		const count = kind === "landed" ? 2 : 1;
+		const commits = Array.from({ length: count }, (_, i) => ({ hash: String(i + 1).repeat(40), subject: "Synthetic change", taskIds: ["T1"] }));
+		const fact: ChangesLanded = { id: `synthetic-${kind}`, projectId: project.id, repository: "synthetic", ref: "refs/heads/main", previous: "a".repeat(40), tip: "b".repeat(40), at: new Date(start).toISOString(), taskIds: ["T1"], commits: [], removed: [], reverted: [], [kind === "landed" ? "commits" : kind]: commits };
+		const before = await runtime.board.state();
+		// An unattributed advance (even with a stray task hint) cannot invalidate reports.
+		await runtime.board.recordChangesLanded({ ...fact, id: "unattributed", commits: commits.map(c => ({ ...c, taskIds: [] })), removed: [], reverted: [] });
+		expect(await runtime.board.state()).toEqual(before);
+		await runtime.board.recordChangesLanded(fact);
+		const stale = await runtime.board.state();
+		const reason = `${count} change${count === 1 ? "" : "s"} ${kind} ${kind === "removed" ? "from" : "on"} main`;
+		for (const section of ["results", "next"] as const) {
+			expect(stale.tasks[0]!.report.freshness![section]).toMatchObject({ stale: true, reasons: [reason], eventsSince: 1 });
+		}
+		expect(stale.tasks[0]!.eventSeq).toBe((before.tasks[0]!.eventSeq ?? 0) + 1);
+		expect(stale.reportTracking!.T1!.pending?.sections).toEqual({ results: 1, next: 1 });
+		await runtime.board.recordChangesLanded(fact);
+		expect(await runtime.board.state()).toEqual(stale);
+		await commit(async tx => {
+			const state = await tx.doc(BoardDoc, runtime.conversation.id);
+			prepareReportNudges(state as BoardState, start + 30_000, () => "main");
+		});
+		const queued = await runtime.board.state();
+		expect(queued.reportOutbox).toHaveLength(1);
+		expect(queued.reportOutbox![0]!.admissions).toHaveLength(1);
+		await runtime.board.recordChangesLanded(fact);
+		expect(await runtime.board.state()).toEqual(queued);
+		expect((await runtime.board.timeline("T1")).entries.filter(entry => entry.ref === fact.id)).toHaveLength(1);
 	} finally { await setup.cleanup(); }
 }, 30_000);
 
