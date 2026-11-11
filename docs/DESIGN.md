@@ -1548,18 +1548,26 @@ all-closed/Show closed, no-match and offline/reconnecting states keep stale cont
 Controls have 48dp targets, card semantic names include reasons/progress/crew, and the lazy list supplies tree-order
 TalkBack traversal. Text and sections scroll/wrap with system font scaling; the view switch wraps at large sizes.
 
-The compact native toolbar puts overlapping counters directly below the view choice, with icon search and an overflow
-for Show closed/overview/line legend. Live/Reconnecting/Offline sits beside Changes. A pinch out or All families opens
-the project canvas at readable cards; pan, pointer-anchored pinch, double-tap, Fit and 48dp +/− controls change only the
-camera. Native slots are larger than web slots to hold real system text. The pure layout port retains hidden named
+The compact native toolbar gives overlapping counters a full-width scroller below the view choice. Search and a
+badged Changes/history icon sit together; connection tint/dot and a spoken Live/Reconnecting/Offline state stay
+compact, with full connection status/age in overflow alongside Show closed/overview/line legend. A pinch out or
+All families opens the project canvas at readable cards. Floating 48dp family/Fit/zoom/Regroup icons, pan,
+pointer-anchored pinch and double-tap change only the camera. A fixed 300×104dp canvas body holds ID/status, two
+title lines and one compact reason/progress/quiet/holds-up row, with a 32dp crew band above and 12dp between occupied
+rows. Initial system-font scaling is retained until Regroup, not recomputed from watched content. Native slots are
+larger than web slots to hold real system text. The pure layout port retains hidden named
 slots, two arrival reservations, family positions and ancestry until explicit Regroup; only overflowing growth can
 move a colliding region. Structural inputs exclude status, reports and crew. Shared web-generated layout vectors
 check exact card/pill/region/slot geometry through hiding, arrivals and overflow.
 
 Cards yield to single-line pills, then screen-sized family dots at world-anchored region centres. Detail hysteresis
 is asymmetric: leave cards below 12/14 zoom and pills below max(12/22,48/72); re-enter 8% higher. All text stays at
-least 12sp on screen. Dot fit frames anchors instead of tall hidden card bounds, limits zoom to keep targets apart,
-and truncates crowded labels without moving anchors; full names remain in TalkBack. Only nodes/crew within 180dp of
+least 12sp on screen. Dot fit frames anchors instead of tall hidden card bounds, limits zoom to preserve readable
+132–168dp screen-space label budgets (expanded for large fonts), and never detaches anchors. Explicit word-boundary
+wrapping permits two label lines with an end ellipsis; full names remain in TalkBack. Counts inside the ring refer
+to visible tasks; the small badge counts unique needs-you tasks, not summed overlapping reasons. Ring segments use
+the visible status mix. On a phone, readable spacing can require panning rather than fitting every family at once.
+Only nodes/crew within 180dp of
 the viewport compose. Solid subtask routes use branch gutters; found-while is dotted, blocked-by dashed with an arrow
 toward the prerequisite, related dash-dot. Nonparent routes are scoped to the selected task/family and cross-family
 routes use exterior corridors. Canvas nodes expose button semantics in tree/slot order; family view remains the

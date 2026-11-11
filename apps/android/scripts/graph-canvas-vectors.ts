@@ -6,7 +6,7 @@ import { graphSnapshot, diffGraphSnapshots, batchGraphChanges } from '../../web/
 const fixture = makeGraphFixture(18);
 const model = buildGraphModel(fixture.board.tasks, fixture.board.questions, fixture.workers, fixture.threads, Date.parse(FIXTURE_NOW));
 const input: LayoutTask[] = fixture.board.tasks.map(t => ({ id: t.id, parent: t.parent ?? null, familyId: model.details.get(t.id)!.familyId, order: t.order, createdAt: t.createdAt }));
-const options = { cardWidth: 300, cardHeight: 180, creatureHeight: 32, creaturesAbove: true, gap: 28, indent: 28, padding: 24, headerHeight: 56, familyGap: 56, reserveSlots: 2, reserveDepth: 2, aspect: 1.5, pillWidth: 264, pillHeight: 72 };
+const options = { cardWidth: 300, cardHeight: 104, creatureHeight: 32, creaturesAbove: true, gap: 12, indent: 28, padding: 20, headerHeight: 48, familyGap: 56, reserveSlots: 2, reserveDepth: 2, aspect: 1.5, pillWidth: 264, pillHeight: 72 };
 let layout: ReturnType<typeof layoutTaskFamilies> | undefined;
 const layouts = [input, input.filter(t => t.id !== 'T3'), ...[1, 2, 3].map(n => [...input.filter(t => t.id !== 'T3'), ...Array.from({ length: n }, (_, i) => ({ id: `T${19 + i}`, parent: 'T4', familyId: 'T1', order: 100 + i, createdAt: FIXTURE_NOW }))])].map(tasks => {
 	layout = layoutTaskFamilies(tasks, { previous: layout, options });

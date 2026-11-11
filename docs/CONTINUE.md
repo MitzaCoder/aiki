@@ -1,5 +1,20 @@
 # Continue
 
+## Android graph integration on the timeline (Q134)
+
+Rebased the three-commit Android graph stack onto the deployed timeline tip `ca47e56e`. The only conflict was
+DeviceSettings: both global `timelineNewestFirst` and backend/project-scoped `projectTasksView` are retained.
+TaskSheet, the new timeline section/order controls and TasksPanel merge without conflicts. CONTINUE keeps every
+section from both sides; DESIGN keeps graph and timeline contracts. A JVM regression round-trips both preferences
+and checks that changing either leaves the other alone.
+
+Q134 authorizes the exact integrated tip for push and watcher-only main deployment after sequential Android,
+protocol-generation, root, web and public-source gates. Exact-tip counts and the target hash are attached to the
+integration report; earlier graph/timeline counts below remain historical. Existing T115/T116 graph and T118 timeline
+UI proof remains applicable: no new UI behavior was introduced by the conflict resolution. No phone APK, phone
+install, physical-device operation or manual deployment is part of this integration; the required debug assembly is
+only a verification gate. The separately requested phone build waits for the owner's next message.
+
 ## T118 integration on the pilot release fix (Q133)
 
 Rebased T118 onto the checked pilot fix `de189883`. Runtime files merge cleanly; CONTINUE retains every section
@@ -160,6 +175,33 @@ freeze the approved commit and rebuild source/manifest/notice snapshot for that 
 commit before authorized tagging. The publisher still reviews LGPL/relinking and
 Google/dependency terms; this work is not a legal certification.
 
+
+## Android canvas polish (T116 follow-up)
+
+Canvas cards now reserve a fixed 104dp body instead of 180dp: ID/status, two title lines and one compact meta row.
+The crew band stays 32dp; the inter-card gap drops from 28dp to 12dp. Initial font-scaled geometry still freezes
+until Regroup, so status, report, worker and title replacements never resize or reposition slots. Shared web-model
+vectors were regenerated with these native dimensions, not with a changed web engine.
+
+Changes is a badged history icon beside Search; its tint/dot and spoken name convey connection status, with the
+full status/age in overflow. Counters get their own full-width scroller. Family/Fit/zoom/Regroup use floating 48dp
+icon controls, and the redundant detail-level label is gone. Dots have 132–168dp screen-space label budgets, explicit
+word-boundary wrapping to two lines, end ellipsis, visible-task counts, unique needs-you badges and status-mix rings.
+Their anchors remain in world space; readable minimum spacing takes precedence over fitting every family into
+one phone frame, so browsing may require panning. No detached-label/grid redesign was introduced.
+
+One Android build/test/lint invocation passed: 850 tests in 112 suites, two opt-in skips, no failures/errors;
+assembly and lint passed (43 warnings, four hints, zero errors). Five new tests cover label wrapping/ellipsis,
+unique needs-you counts, compact fixed budgets/meta and screen-space dot spacing. Root tests passed once (2,212 /
+81,270 assertions / 183 files), as did typecheck, both vector checks and public-source/Gitleaks checks. The root
+package has no `check` script; no web UI source changed and web-only checks were not required.
+
+T116 has two new dark phone screenshots (cards/chrome and dots) and a 9.2-second native family → canvas → dots →
+different-family recording, using only a scrubbed busy backend and the assigned owned emulator. Existing T116
+screenshots are the before reference. Light/large-font captures were not repeated in this shortened pass. Direct
+on-device screencap/pull was needed for the dot image: exec-out captures sometimes contained incomplete buffers.
+The fresh frame was checked against native bounds before saving. No production hook, real data, physical phone,
+push, deployment or main movement. Scratch backend and owned emulator stopped after proof.
 
 ## Native graph canvas and live changes (T116)
 

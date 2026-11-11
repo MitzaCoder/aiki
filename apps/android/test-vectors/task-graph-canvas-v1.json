@@ -136,27 +136,27 @@
           "parentId": null,
           "depth": 0,
           "box": {
-            "x": 24,
-            "y": 112,
+            "x": 20,
+            "y": 100,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 264,
             "height": 72
           }
@@ -167,27 +167,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 352,
+            "x": 48,
+            "y": 248,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 320,
+            "x": 48,
+            "y": 216,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 320,
+            "x": 48,
+            "y": 216,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 166,
+            "x": 44.64,
+            "y": 146,
             "width": 264,
             "height": 72
           }
@@ -198,27 +198,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 592,
+            "x": 48,
+            "y": 396,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 560,
+            "x": 48,
+            "y": 364,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 560,
+            "x": 48,
+            "y": 364,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 252,
+            "x": 44.64,
+            "y": 224,
             "width": 264,
             "height": 72
           }
@@ -229,27 +229,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 832,
+            "x": 48,
+            "y": 544,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 800,
+            "x": 48,
+            "y": 512,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 800,
+            "x": 48,
+            "y": 512,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 338,
+            "x": 44.64,
+            "y": 302,
             "width": 264,
             "height": 72
           }
@@ -260,27 +260,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 1072,
+            "x": 48,
+            "y": 692,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 1040,
+            "x": 48,
+            "y": 660,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 1040,
+            "x": 48,
+            "y": 660,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 424,
+            "x": 44.64,
+            "y": 380,
             "width": 264,
             "height": 72
           }
@@ -291,27 +291,27 @@
           "parentId": "T5",
           "depth": 2,
           "box": {
-            "x": 80,
-            "y": 1312,
+            "x": 76,
+            "y": 840,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 80,
-            "y": 1280,
+            "x": 76,
+            "y": 808,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 80,
-            "y": 1280,
+            "x": 76,
+            "y": 808,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 73.28,
-            "y": 510,
+            "x": 69.28,
+            "y": 458,
             "width": 264,
             "height": 72
           }
@@ -322,27 +322,27 @@
           "parentId": "T7",
           "depth": 3,
           "box": {
-            "x": 108,
-            "y": 1552,
+            "x": 104,
+            "y": 988,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 108,
-            "y": 1520,
+            "x": 104,
+            "y": 956,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 108,
-            "y": 1520,
+            "x": 104,
+            "y": 956,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 97.92,
-            "y": 596,
+            "x": 93.92,
+            "y": 536,
             "width": 264,
             "height": 72
           }
@@ -353,27 +353,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 1792,
+            "x": 48,
+            "y": 1136,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 1760,
+            "x": 48,
+            "y": 1104,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 1760,
+            "x": 48,
+            "y": 1104,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 682,
+            "x": 44.64,
+            "y": 614,
             "width": 264,
             "height": 72
           }
@@ -384,27 +384,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 2032,
+            "x": 48,
+            "y": 1284,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 2000,
+            "x": 48,
+            "y": 1252,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 2000,
+            "x": 48,
+            "y": 1252,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 768,
+            "x": 44.64,
+            "y": 692,
             "width": 264,
             "height": 72
           }
@@ -415,27 +415,27 @@
           "parentId": null,
           "depth": 0,
           "box": {
-            "x": 568,
-            "y": 112,
+            "x": 556,
+            "y": 100,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 264,
             "height": 72
           }
@@ -446,27 +446,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 352,
+            "x": 584,
+            "y": 248,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 320,
+            "x": 584,
+            "y": 216,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 320,
+            "x": 584,
+            "y": 216,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 166,
+            "x": 580.64,
+            "y": 146,
             "width": 264,
             "height": 72
           }
@@ -477,27 +477,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 592,
+            "x": 584,
+            "y": 396,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 560,
+            "x": 584,
+            "y": 364,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 560,
+            "x": 584,
+            "y": 364,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 252,
+            "x": 580.64,
+            "y": 224,
             "width": 264,
             "height": 72
           }
@@ -508,27 +508,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 832,
+            "x": 584,
+            "y": 544,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 800,
+            "x": 584,
+            "y": 512,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 800,
+            "x": 584,
+            "y": 512,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 338,
+            "x": 580.64,
+            "y": 302,
             "width": 264,
             "height": 72
           }
@@ -539,27 +539,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 1072,
+            "x": 584,
+            "y": 692,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 1040,
+            "x": 584,
+            "y": 660,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 1040,
+            "x": 584,
+            "y": 660,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 424,
+            "x": 580.64,
+            "y": 380,
             "width": 264,
             "height": 72
           }
@@ -570,27 +570,27 @@
           "parentId": "T14",
           "depth": 2,
           "box": {
-            "x": 624,
-            "y": 1312,
+            "x": 612,
+            "y": 840,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 624,
-            "y": 1280,
+            "x": 612,
+            "y": 808,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 624,
-            "y": 1280,
+            "x": 612,
+            "y": 808,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 617.28,
-            "y": 510,
+            "x": 605.28,
+            "y": 458,
             "width": 264,
             "height": 72
           }
@@ -601,27 +601,27 @@
           "parentId": "T16",
           "depth": 3,
           "box": {
-            "x": 652,
-            "y": 1552,
+            "x": 640,
+            "y": 988,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 652,
-            "y": 1520,
+            "x": 640,
+            "y": 956,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 652,
-            "y": 1520,
+            "x": 640,
+            "y": 956,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 641.92,
-            "y": 596,
+            "x": 629.92,
+            "y": 536,
             "width": 264,
             "height": 72
           }
@@ -632,27 +632,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 1792,
+            "x": 584,
+            "y": 1136,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 1760,
+            "x": 584,
+            "y": 1104,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 1760,
+            "x": 584,
+            "y": 1104,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 682,
+            "x": 580.64,
+            "y": 614,
             "width": 264,
             "height": 72
           }
@@ -663,27 +663,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 2032,
+            "x": 584,
+            "y": 1284,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 2000,
+            "x": 584,
+            "y": 1252,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 2000,
+            "x": 584,
+            "y": 1252,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 768,
+            "x": 580.64,
+            "y": 692,
             "width": 264,
             "height": 72
           }
@@ -695,92 +695,92 @@
           "bounds": {
             "x": 0,
             "y": 0,
-            "width": 488,
-            "height": 2716
+            "width": 480,
+            "height": 1704
           },
           "header": {
             "x": 0,
             "y": 0,
-            "width": 488,
-            "height": 56
+            "width": 480,
+            "height": 48
           },
           "slots": [
             {
               "taskId": "T1",
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 80
+              "x": 20,
+              "y": 68
             },
             {
               "taskId": "T2",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 320
+              "x": 48,
+              "y": 216
             },
             {
               "taskId": "T3",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 560
+              "x": 48,
+              "y": 364
             },
             {
               "taskId": "T4",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 800
+              "x": 48,
+              "y": 512
             },
             {
               "taskId": "T5",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 1040
+              "x": 48,
+              "y": 660
             },
             {
               "taskId": "T7",
               "parentId": "T5",
               "depth": 2,
-              "x": 80,
-              "y": 1280
+              "x": 76,
+              "y": 808
             },
             {
               "taskId": "T8",
               "parentId": "T7",
               "depth": 3,
-              "x": 108,
-              "y": 1520
+              "x": 104,
+              "y": 956
             },
             {
               "taskId": "T6",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 1760
+              "x": 48,
+              "y": 1104
             },
             {
               "taskId": "T9",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 2000
+              "x": 48,
+              "y": 1252
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2240
+              "x": 20,
+              "y": 1400
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2480
+              "x": 20,
+              "y": 1548
             }
           ],
           "taskIds": [
@@ -798,94 +798,94 @@
         {
           "id": "T10",
           "bounds": {
-            "x": 544,
+            "x": 536,
             "y": 0,
-            "width": 488,
-            "height": 2716
+            "width": 480,
+            "height": 1704
           },
           "header": {
-            "x": 544,
+            "x": 536,
             "y": 0,
-            "width": 488,
-            "height": 56
+            "width": 480,
+            "height": 48
           },
           "slots": [
             {
               "taskId": "T10",
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 80
+              "x": 20,
+              "y": 68
             },
             {
               "taskId": "T11",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 320
+              "x": 48,
+              "y": 216
             },
             {
               "taskId": "T12",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 560
+              "x": 48,
+              "y": 364
             },
             {
               "taskId": "T13",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 800
+              "x": 48,
+              "y": 512
             },
             {
               "taskId": "T14",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 1040
+              "x": 48,
+              "y": 660
             },
             {
               "taskId": "T16",
               "parentId": "T14",
               "depth": 2,
-              "x": 80,
-              "y": 1280
+              "x": 76,
+              "y": 808
             },
             {
               "taskId": "T17",
               "parentId": "T16",
               "depth": 3,
-              "x": 108,
-              "y": 1520
+              "x": 104,
+              "y": 956
             },
             {
               "taskId": "T15",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 1760
+              "x": 48,
+              "y": 1104
             },
             {
               "taskId": "T18",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 2000
+              "x": 48,
+              "y": 1252
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2240
+              "x": 20,
+              "y": 1400
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2480
+              "x": 20,
+              "y": 1548
             }
           ],
           "taskIds": [
@@ -904,8 +904,8 @@
       "bounds": {
         "x": 0,
         "y": 0,
-        "width": 1032,
-        "height": 2716
+        "width": 1016,
+        "height": 1704
       },
       "needsRegroup": false,
       "movedFamilyIds": []
@@ -1039,27 +1039,27 @@
           "parentId": null,
           "depth": 0,
           "box": {
-            "x": 24,
-            "y": 112,
+            "x": 20,
+            "y": 100,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 264,
             "height": 72
           }
@@ -1070,27 +1070,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 352,
+            "x": 48,
+            "y": 248,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 320,
+            "x": 48,
+            "y": 216,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 320,
+            "x": 48,
+            "y": 216,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 166,
+            "x": 44.64,
+            "y": 146,
             "width": 264,
             "height": 72
           }
@@ -1101,27 +1101,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 832,
+            "x": 48,
+            "y": 544,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 800,
+            "x": 48,
+            "y": 512,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 800,
+            "x": 48,
+            "y": 512,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 338,
+            "x": 44.64,
+            "y": 302,
             "width": 264,
             "height": 72
           }
@@ -1132,27 +1132,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 1072,
+            "x": 48,
+            "y": 692,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 1040,
+            "x": 48,
+            "y": 660,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 1040,
+            "x": 48,
+            "y": 660,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 424,
+            "x": 44.64,
+            "y": 380,
             "width": 264,
             "height": 72
           }
@@ -1163,27 +1163,27 @@
           "parentId": "T5",
           "depth": 2,
           "box": {
-            "x": 80,
-            "y": 1312,
+            "x": 76,
+            "y": 840,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 80,
-            "y": 1280,
+            "x": 76,
+            "y": 808,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 80,
-            "y": 1280,
+            "x": 76,
+            "y": 808,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 73.28,
-            "y": 510,
+            "x": 69.28,
+            "y": 458,
             "width": 264,
             "height": 72
           }
@@ -1194,27 +1194,27 @@
           "parentId": "T7",
           "depth": 3,
           "box": {
-            "x": 108,
-            "y": 1552,
+            "x": 104,
+            "y": 988,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 108,
-            "y": 1520,
+            "x": 104,
+            "y": 956,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 108,
-            "y": 1520,
+            "x": 104,
+            "y": 956,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 97.92,
-            "y": 596,
+            "x": 93.92,
+            "y": 536,
             "width": 264,
             "height": 72
           }
@@ -1225,27 +1225,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 1792,
+            "x": 48,
+            "y": 1136,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 1760,
+            "x": 48,
+            "y": 1104,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 1760,
+            "x": 48,
+            "y": 1104,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 682,
+            "x": 44.64,
+            "y": 614,
             "width": 264,
             "height": 72
           }
@@ -1256,27 +1256,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 2032,
+            "x": 48,
+            "y": 1284,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 2000,
+            "x": 48,
+            "y": 1252,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 2000,
+            "x": 48,
+            "y": 1252,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 768,
+            "x": 44.64,
+            "y": 692,
             "width": 264,
             "height": 72
           }
@@ -1287,27 +1287,27 @@
           "parentId": null,
           "depth": 0,
           "box": {
-            "x": 568,
-            "y": 112,
+            "x": 556,
+            "y": 100,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 264,
             "height": 72
           }
@@ -1318,27 +1318,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 352,
+            "x": 584,
+            "y": 248,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 320,
+            "x": 584,
+            "y": 216,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 320,
+            "x": 584,
+            "y": 216,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 166,
+            "x": 580.64,
+            "y": 146,
             "width": 264,
             "height": 72
           }
@@ -1349,27 +1349,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 592,
+            "x": 584,
+            "y": 396,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 560,
+            "x": 584,
+            "y": 364,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 560,
+            "x": 584,
+            "y": 364,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 252,
+            "x": 580.64,
+            "y": 224,
             "width": 264,
             "height": 72
           }
@@ -1380,27 +1380,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 832,
+            "x": 584,
+            "y": 544,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 800,
+            "x": 584,
+            "y": 512,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 800,
+            "x": 584,
+            "y": 512,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 338,
+            "x": 580.64,
+            "y": 302,
             "width": 264,
             "height": 72
           }
@@ -1411,27 +1411,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 1072,
+            "x": 584,
+            "y": 692,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 1040,
+            "x": 584,
+            "y": 660,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 1040,
+            "x": 584,
+            "y": 660,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 424,
+            "x": 580.64,
+            "y": 380,
             "width": 264,
             "height": 72
           }
@@ -1442,27 +1442,27 @@
           "parentId": "T14",
           "depth": 2,
           "box": {
-            "x": 624,
-            "y": 1312,
+            "x": 612,
+            "y": 840,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 624,
-            "y": 1280,
+            "x": 612,
+            "y": 808,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 624,
-            "y": 1280,
+            "x": 612,
+            "y": 808,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 617.28,
-            "y": 510,
+            "x": 605.28,
+            "y": 458,
             "width": 264,
             "height": 72
           }
@@ -1473,27 +1473,27 @@
           "parentId": "T16",
           "depth": 3,
           "box": {
-            "x": 652,
-            "y": 1552,
+            "x": 640,
+            "y": 988,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 652,
-            "y": 1520,
+            "x": 640,
+            "y": 956,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 652,
-            "y": 1520,
+            "x": 640,
+            "y": 956,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 641.92,
-            "y": 596,
+            "x": 629.92,
+            "y": 536,
             "width": 264,
             "height": 72
           }
@@ -1504,27 +1504,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 1792,
+            "x": 584,
+            "y": 1136,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 1760,
+            "x": 584,
+            "y": 1104,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 1760,
+            "x": 584,
+            "y": 1104,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 682,
+            "x": 580.64,
+            "y": 614,
             "width": 264,
             "height": 72
           }
@@ -1535,27 +1535,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 2032,
+            "x": 584,
+            "y": 1284,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 2000,
+            "x": 584,
+            "y": 1252,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 2000,
+            "x": 584,
+            "y": 1252,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 768,
+            "x": 580.64,
+            "y": 692,
             "width": 264,
             "height": 72
           }
@@ -1567,92 +1567,92 @@
           "bounds": {
             "x": 0,
             "y": 0,
-            "width": 488,
-            "height": 2716
+            "width": 480,
+            "height": 1704
           },
           "header": {
             "x": 0,
             "y": 0,
-            "width": 488,
-            "height": 56
+            "width": 480,
+            "height": 48
           },
           "slots": [
             {
               "taskId": "T1",
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 80
+              "x": 20,
+              "y": 68
             },
             {
               "taskId": "T2",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 320
+              "x": 48,
+              "y": 216
             },
             {
               "taskId": "T3",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 560
+              "x": 48,
+              "y": 364
             },
             {
               "taskId": "T4",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 800
+              "x": 48,
+              "y": 512
             },
             {
               "taskId": "T5",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 1040
+              "x": 48,
+              "y": 660
             },
             {
               "taskId": "T7",
               "parentId": "T5",
               "depth": 2,
-              "x": 80,
-              "y": 1280
+              "x": 76,
+              "y": 808
             },
             {
               "taskId": "T8",
               "parentId": "T7",
               "depth": 3,
-              "x": 108,
-              "y": 1520
+              "x": 104,
+              "y": 956
             },
             {
               "taskId": "T6",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 1760
+              "x": 48,
+              "y": 1104
             },
             {
               "taskId": "T9",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 2000
+              "x": 48,
+              "y": 1252
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2240
+              "x": 20,
+              "y": 1400
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2480
+              "x": 20,
+              "y": 1548
             }
           ],
           "taskIds": [
@@ -1669,94 +1669,94 @@
         {
           "id": "T10",
           "bounds": {
-            "x": 544,
+            "x": 536,
             "y": 0,
-            "width": 488,
-            "height": 2716
+            "width": 480,
+            "height": 1704
           },
           "header": {
-            "x": 544,
+            "x": 536,
             "y": 0,
-            "width": 488,
-            "height": 56
+            "width": 480,
+            "height": 48
           },
           "slots": [
             {
               "taskId": "T10",
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 80
+              "x": 20,
+              "y": 68
             },
             {
               "taskId": "T11",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 320
+              "x": 48,
+              "y": 216
             },
             {
               "taskId": "T12",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 560
+              "x": 48,
+              "y": 364
             },
             {
               "taskId": "T13",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 800
+              "x": 48,
+              "y": 512
             },
             {
               "taskId": "T14",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 1040
+              "x": 48,
+              "y": 660
             },
             {
               "taskId": "T16",
               "parentId": "T14",
               "depth": 2,
-              "x": 80,
-              "y": 1280
+              "x": 76,
+              "y": 808
             },
             {
               "taskId": "T17",
               "parentId": "T16",
               "depth": 3,
-              "x": 108,
-              "y": 1520
+              "x": 104,
+              "y": 956
             },
             {
               "taskId": "T15",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 1760
+              "x": 48,
+              "y": 1104
             },
             {
               "taskId": "T18",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 2000
+              "x": 48,
+              "y": 1252
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2240
+              "x": 20,
+              "y": 1400
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2480
+              "x": 20,
+              "y": 1548
             }
           ],
           "taskIds": [
@@ -1775,8 +1775,8 @@
       "bounds": {
         "x": 0,
         "y": 0,
-        "width": 1032,
-        "height": 2716
+        "width": 1016,
+        "height": 1704
       },
       "needsRegroup": false,
       "movedFamilyIds": []
@@ -1917,27 +1917,27 @@
           "parentId": null,
           "depth": 0,
           "box": {
-            "x": 24,
-            "y": 112,
+            "x": 20,
+            "y": 100,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 264,
             "height": 72
           }
@@ -1948,27 +1948,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 352,
+            "x": 48,
+            "y": 248,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 320,
+            "x": 48,
+            "y": 216,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 320,
+            "x": 48,
+            "y": 216,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 166,
+            "x": 44.64,
+            "y": 146,
             "width": 264,
             "height": 72
           }
@@ -1979,27 +1979,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 832,
+            "x": 48,
+            "y": 544,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 800,
+            "x": 48,
+            "y": 512,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 800,
+            "x": 48,
+            "y": 512,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 338,
+            "x": 44.64,
+            "y": 302,
             "width": 264,
             "height": 72
           }
@@ -2010,27 +2010,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 1072,
+            "x": 48,
+            "y": 692,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 1040,
+            "x": 48,
+            "y": 660,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 1040,
+            "x": 48,
+            "y": 660,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 424,
+            "x": 44.64,
+            "y": 380,
             "width": 264,
             "height": 72
           }
@@ -2041,27 +2041,27 @@
           "parentId": "T5",
           "depth": 2,
           "box": {
-            "x": 80,
-            "y": 1312,
+            "x": 76,
+            "y": 840,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 80,
-            "y": 1280,
+            "x": 76,
+            "y": 808,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 80,
-            "y": 1280,
+            "x": 76,
+            "y": 808,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 73.28,
-            "y": 510,
+            "x": 69.28,
+            "y": 458,
             "width": 264,
             "height": 72
           }
@@ -2072,27 +2072,27 @@
           "parentId": "T7",
           "depth": 3,
           "box": {
-            "x": 108,
-            "y": 1552,
+            "x": 104,
+            "y": 988,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 108,
-            "y": 1520,
+            "x": 104,
+            "y": 956,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 108,
-            "y": 1520,
+            "x": 104,
+            "y": 956,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 97.92,
-            "y": 596,
+            "x": 93.92,
+            "y": 536,
             "width": 264,
             "height": 72
           }
@@ -2103,27 +2103,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 1792,
+            "x": 48,
+            "y": 1136,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 1760,
+            "x": 48,
+            "y": 1104,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 1760,
+            "x": 48,
+            "y": 1104,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 682,
+            "x": 44.64,
+            "y": 614,
             "width": 264,
             "height": 72
           }
@@ -2134,27 +2134,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 2032,
+            "x": 48,
+            "y": 1284,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 2000,
+            "x": 48,
+            "y": 1252,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 2000,
+            "x": 48,
+            "y": 1252,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 768,
+            "x": 44.64,
+            "y": 692,
             "width": 264,
             "height": 72
           }
@@ -2165,27 +2165,27 @@
           "parentId": "T4",
           "depth": 2,
           "box": {
-            "x": 80,
-            "y": 2272,
+            "x": 76,
+            "y": 1432,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 80,
-            "y": 2240,
+            "x": 76,
+            "y": 1400,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 80,
-            "y": 2240,
+            "x": 76,
+            "y": 1400,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 73.28,
-            "y": 854,
+            "x": 69.28,
+            "y": 770,
             "width": 264,
             "height": 72
           }
@@ -2196,27 +2196,27 @@
           "parentId": null,
           "depth": 0,
           "box": {
-            "x": 568,
-            "y": 112,
+            "x": 556,
+            "y": 100,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 264,
             "height": 72
           }
@@ -2227,27 +2227,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 352,
+            "x": 584,
+            "y": 248,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 320,
+            "x": 584,
+            "y": 216,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 320,
+            "x": 584,
+            "y": 216,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 166,
+            "x": 580.64,
+            "y": 146,
             "width": 264,
             "height": 72
           }
@@ -2258,27 +2258,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 592,
+            "x": 584,
+            "y": 396,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 560,
+            "x": 584,
+            "y": 364,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 560,
+            "x": 584,
+            "y": 364,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 252,
+            "x": 580.64,
+            "y": 224,
             "width": 264,
             "height": 72
           }
@@ -2289,27 +2289,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 832,
+            "x": 584,
+            "y": 544,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 800,
+            "x": 584,
+            "y": 512,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 800,
+            "x": 584,
+            "y": 512,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 338,
+            "x": 580.64,
+            "y": 302,
             "width": 264,
             "height": 72
           }
@@ -2320,27 +2320,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 1072,
+            "x": 584,
+            "y": 692,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 1040,
+            "x": 584,
+            "y": 660,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 1040,
+            "x": 584,
+            "y": 660,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 424,
+            "x": 580.64,
+            "y": 380,
             "width": 264,
             "height": 72
           }
@@ -2351,27 +2351,27 @@
           "parentId": "T14",
           "depth": 2,
           "box": {
-            "x": 624,
-            "y": 1312,
+            "x": 612,
+            "y": 840,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 624,
-            "y": 1280,
+            "x": 612,
+            "y": 808,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 624,
-            "y": 1280,
+            "x": 612,
+            "y": 808,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 617.28,
-            "y": 510,
+            "x": 605.28,
+            "y": 458,
             "width": 264,
             "height": 72
           }
@@ -2382,27 +2382,27 @@
           "parentId": "T16",
           "depth": 3,
           "box": {
-            "x": 652,
-            "y": 1552,
+            "x": 640,
+            "y": 988,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 652,
-            "y": 1520,
+            "x": 640,
+            "y": 956,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 652,
-            "y": 1520,
+            "x": 640,
+            "y": 956,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 641.92,
-            "y": 596,
+            "x": 629.92,
+            "y": 536,
             "width": 264,
             "height": 72
           }
@@ -2413,27 +2413,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 1792,
+            "x": 584,
+            "y": 1136,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 1760,
+            "x": 584,
+            "y": 1104,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 1760,
+            "x": 584,
+            "y": 1104,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 682,
+            "x": 580.64,
+            "y": 614,
             "width": 264,
             "height": 72
           }
@@ -2444,27 +2444,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 2032,
+            "x": 584,
+            "y": 1284,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 2000,
+            "x": 584,
+            "y": 1252,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 2000,
+            "x": 584,
+            "y": 1252,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 768,
+            "x": 580.64,
+            "y": 692,
             "width": 264,
             "height": 72
           }
@@ -2476,92 +2476,92 @@
           "bounds": {
             "x": 0,
             "y": 0,
-            "width": 488,
-            "height": 2716
+            "width": 480,
+            "height": 1704
           },
           "header": {
             "x": 0,
             "y": 0,
-            "width": 488,
-            "height": 56
+            "width": 480,
+            "height": 48
           },
           "slots": [
             {
               "taskId": "T1",
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 80
+              "x": 20,
+              "y": 68
             },
             {
               "taskId": "T2",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 320
+              "x": 48,
+              "y": 216
             },
             {
               "taskId": "T3",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 560
+              "x": 48,
+              "y": 364
             },
             {
               "taskId": "T4",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 800
+              "x": 48,
+              "y": 512
             },
             {
               "taskId": "T5",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 1040
+              "x": 48,
+              "y": 660
             },
             {
               "taskId": "T7",
               "parentId": "T5",
               "depth": 2,
-              "x": 80,
-              "y": 1280
+              "x": 76,
+              "y": 808
             },
             {
               "taskId": "T8",
               "parentId": "T7",
               "depth": 3,
-              "x": 108,
-              "y": 1520
+              "x": 104,
+              "y": 956
             },
             {
               "taskId": "T6",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 1760
+              "x": 48,
+              "y": 1104
             },
             {
               "taskId": "T9",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 2000
+              "x": 48,
+              "y": 1252
             },
             {
               "taskId": "T19",
               "parentId": "T4",
               "depth": 2,
-              "x": 80,
-              "y": 2240
+              "x": 76,
+              "y": 1400
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2480
+              "x": 20,
+              "y": 1548
             }
           ],
           "taskIds": [
@@ -2579,94 +2579,94 @@
         {
           "id": "T10",
           "bounds": {
-            "x": 544,
+            "x": 536,
             "y": 0,
-            "width": 488,
-            "height": 2716
+            "width": 480,
+            "height": 1704
           },
           "header": {
-            "x": 544,
+            "x": 536,
             "y": 0,
-            "width": 488,
-            "height": 56
+            "width": 480,
+            "height": 48
           },
           "slots": [
             {
               "taskId": "T10",
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 80
+              "x": 20,
+              "y": 68
             },
             {
               "taskId": "T11",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 320
+              "x": 48,
+              "y": 216
             },
             {
               "taskId": "T12",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 560
+              "x": 48,
+              "y": 364
             },
             {
               "taskId": "T13",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 800
+              "x": 48,
+              "y": 512
             },
             {
               "taskId": "T14",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 1040
+              "x": 48,
+              "y": 660
             },
             {
               "taskId": "T16",
               "parentId": "T14",
               "depth": 2,
-              "x": 80,
-              "y": 1280
+              "x": 76,
+              "y": 808
             },
             {
               "taskId": "T17",
               "parentId": "T16",
               "depth": 3,
-              "x": 108,
-              "y": 1520
+              "x": 104,
+              "y": 956
             },
             {
               "taskId": "T15",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 1760
+              "x": 48,
+              "y": 1104
             },
             {
               "taskId": "T18",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 2000
+              "x": 48,
+              "y": 1252
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2240
+              "x": 20,
+              "y": 1400
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2480
+              "x": 20,
+              "y": 1548
             }
           ],
           "taskIds": [
@@ -2685,8 +2685,8 @@
       "bounds": {
         "x": 0,
         "y": 0,
-        "width": 1032,
-        "height": 2716
+        "width": 1016,
+        "height": 1704
       },
       "needsRegroup": false,
       "movedFamilyIds": []
@@ -2834,27 +2834,27 @@
           "parentId": null,
           "depth": 0,
           "box": {
-            "x": 24,
-            "y": 112,
+            "x": 20,
+            "y": 100,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 264,
             "height": 72
           }
@@ -2865,27 +2865,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 352,
+            "x": 48,
+            "y": 248,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 320,
+            "x": 48,
+            "y": 216,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 320,
+            "x": 48,
+            "y": 216,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 166,
+            "x": 44.64,
+            "y": 146,
             "width": 264,
             "height": 72
           }
@@ -2896,27 +2896,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 832,
+            "x": 48,
+            "y": 544,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 800,
+            "x": 48,
+            "y": 512,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 800,
+            "x": 48,
+            "y": 512,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 338,
+            "x": 44.64,
+            "y": 302,
             "width": 264,
             "height": 72
           }
@@ -2927,27 +2927,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 1072,
+            "x": 48,
+            "y": 692,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 1040,
+            "x": 48,
+            "y": 660,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 1040,
+            "x": 48,
+            "y": 660,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 424,
+            "x": 44.64,
+            "y": 380,
             "width": 264,
             "height": 72
           }
@@ -2958,27 +2958,27 @@
           "parentId": "T5",
           "depth": 2,
           "box": {
-            "x": 80,
-            "y": 1312,
+            "x": 76,
+            "y": 840,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 80,
-            "y": 1280,
+            "x": 76,
+            "y": 808,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 80,
-            "y": 1280,
+            "x": 76,
+            "y": 808,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 73.28,
-            "y": 510,
+            "x": 69.28,
+            "y": 458,
             "width": 264,
             "height": 72
           }
@@ -2989,27 +2989,27 @@
           "parentId": "T7",
           "depth": 3,
           "box": {
-            "x": 108,
-            "y": 1552,
+            "x": 104,
+            "y": 988,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 108,
-            "y": 1520,
+            "x": 104,
+            "y": 956,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 108,
-            "y": 1520,
+            "x": 104,
+            "y": 956,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 97.92,
-            "y": 596,
+            "x": 93.92,
+            "y": 536,
             "width": 264,
             "height": 72
           }
@@ -3020,27 +3020,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 1792,
+            "x": 48,
+            "y": 1136,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 1760,
+            "x": 48,
+            "y": 1104,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 1760,
+            "x": 48,
+            "y": 1104,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 682,
+            "x": 44.64,
+            "y": 614,
             "width": 264,
             "height": 72
           }
@@ -3051,27 +3051,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 2032,
+            "x": 48,
+            "y": 1284,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 2000,
+            "x": 48,
+            "y": 1252,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 2000,
+            "x": 48,
+            "y": 1252,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 768,
+            "x": 44.64,
+            "y": 692,
             "width": 264,
             "height": 72
           }
@@ -3082,27 +3082,27 @@
           "parentId": "T4",
           "depth": 2,
           "box": {
-            "x": 80,
-            "y": 2272,
+            "x": 76,
+            "y": 1432,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 80,
-            "y": 2240,
+            "x": 76,
+            "y": 1400,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 80,
-            "y": 2240,
+            "x": 76,
+            "y": 1400,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 73.28,
-            "y": 854,
+            "x": 69.28,
+            "y": 770,
             "width": 264,
             "height": 72
           }
@@ -3113,27 +3113,27 @@
           "parentId": "T4",
           "depth": 2,
           "box": {
-            "x": 80,
-            "y": 2512,
+            "x": 76,
+            "y": 1580,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 80,
-            "y": 2480,
+            "x": 76,
+            "y": 1548,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 80,
-            "y": 2480,
+            "x": 76,
+            "y": 1548,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 73.28,
-            "y": 940,
+            "x": 69.28,
+            "y": 848,
             "width": 264,
             "height": 72
           }
@@ -3144,27 +3144,27 @@
           "parentId": null,
           "depth": 0,
           "box": {
-            "x": 568,
-            "y": 112,
+            "x": 556,
+            "y": 100,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 264,
             "height": 72
           }
@@ -3175,27 +3175,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 352,
+            "x": 584,
+            "y": 248,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 320,
+            "x": 584,
+            "y": 216,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 320,
+            "x": 584,
+            "y": 216,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 166,
+            "x": 580.64,
+            "y": 146,
             "width": 264,
             "height": 72
           }
@@ -3206,27 +3206,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 592,
+            "x": 584,
+            "y": 396,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 560,
+            "x": 584,
+            "y": 364,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 560,
+            "x": 584,
+            "y": 364,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 252,
+            "x": 580.64,
+            "y": 224,
             "width": 264,
             "height": 72
           }
@@ -3237,27 +3237,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 832,
+            "x": 584,
+            "y": 544,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 800,
+            "x": 584,
+            "y": 512,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 800,
+            "x": 584,
+            "y": 512,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 338,
+            "x": 580.64,
+            "y": 302,
             "width": 264,
             "height": 72
           }
@@ -3268,27 +3268,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 1072,
+            "x": 584,
+            "y": 692,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 1040,
+            "x": 584,
+            "y": 660,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 1040,
+            "x": 584,
+            "y": 660,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 424,
+            "x": 580.64,
+            "y": 380,
             "width": 264,
             "height": 72
           }
@@ -3299,27 +3299,27 @@
           "parentId": "T14",
           "depth": 2,
           "box": {
-            "x": 624,
-            "y": 1312,
+            "x": 612,
+            "y": 840,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 624,
-            "y": 1280,
+            "x": 612,
+            "y": 808,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 624,
-            "y": 1280,
+            "x": 612,
+            "y": 808,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 617.28,
-            "y": 510,
+            "x": 605.28,
+            "y": 458,
             "width": 264,
             "height": 72
           }
@@ -3330,27 +3330,27 @@
           "parentId": "T16",
           "depth": 3,
           "box": {
-            "x": 652,
-            "y": 1552,
+            "x": 640,
+            "y": 988,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 652,
-            "y": 1520,
+            "x": 640,
+            "y": 956,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 652,
-            "y": 1520,
+            "x": 640,
+            "y": 956,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 641.92,
-            "y": 596,
+            "x": 629.92,
+            "y": 536,
             "width": 264,
             "height": 72
           }
@@ -3361,27 +3361,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 1792,
+            "x": 584,
+            "y": 1136,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 1760,
+            "x": 584,
+            "y": 1104,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 1760,
+            "x": 584,
+            "y": 1104,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 682,
+            "x": 580.64,
+            "y": 614,
             "width": 264,
             "height": 72
           }
@@ -3392,27 +3392,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 2032,
+            "x": 584,
+            "y": 1284,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 2000,
+            "x": 584,
+            "y": 1252,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 2000,
+            "x": 584,
+            "y": 1252,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 768,
+            "x": 580.64,
+            "y": 692,
             "width": 264,
             "height": 72
           }
@@ -3424,92 +3424,92 @@
           "bounds": {
             "x": 0,
             "y": 0,
-            "width": 488,
-            "height": 2716
+            "width": 480,
+            "height": 1704
           },
           "header": {
             "x": 0,
             "y": 0,
-            "width": 488,
-            "height": 56
+            "width": 480,
+            "height": 48
           },
           "slots": [
             {
               "taskId": "T1",
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 80
+              "x": 20,
+              "y": 68
             },
             {
               "taskId": "T2",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 320
+              "x": 48,
+              "y": 216
             },
             {
               "taskId": "T3",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 560
+              "x": 48,
+              "y": 364
             },
             {
               "taskId": "T4",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 800
+              "x": 48,
+              "y": 512
             },
             {
               "taskId": "T5",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 1040
+              "x": 48,
+              "y": 660
             },
             {
               "taskId": "T7",
               "parentId": "T5",
               "depth": 2,
-              "x": 80,
-              "y": 1280
+              "x": 76,
+              "y": 808
             },
             {
               "taskId": "T8",
               "parentId": "T7",
               "depth": 3,
-              "x": 108,
-              "y": 1520
+              "x": 104,
+              "y": 956
             },
             {
               "taskId": "T6",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 1760
+              "x": 48,
+              "y": 1104
             },
             {
               "taskId": "T9",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 2000
+              "x": 48,
+              "y": 1252
             },
             {
               "taskId": "T19",
               "parentId": "T4",
               "depth": 2,
-              "x": 80,
-              "y": 2240
+              "x": 76,
+              "y": 1400
             },
             {
               "taskId": "T20",
               "parentId": "T4",
               "depth": 2,
-              "x": 80,
-              "y": 2480
+              "x": 76,
+              "y": 1548
             }
           ],
           "taskIds": [
@@ -3528,94 +3528,94 @@
         {
           "id": "T10",
           "bounds": {
-            "x": 544,
+            "x": 536,
             "y": 0,
-            "width": 488,
-            "height": 2716
+            "width": 480,
+            "height": 1704
           },
           "header": {
-            "x": 544,
+            "x": 536,
             "y": 0,
-            "width": 488,
-            "height": 56
+            "width": 480,
+            "height": 48
           },
           "slots": [
             {
               "taskId": "T10",
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 80
+              "x": 20,
+              "y": 68
             },
             {
               "taskId": "T11",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 320
+              "x": 48,
+              "y": 216
             },
             {
               "taskId": "T12",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 560
+              "x": 48,
+              "y": 364
             },
             {
               "taskId": "T13",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 800
+              "x": 48,
+              "y": 512
             },
             {
               "taskId": "T14",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 1040
+              "x": 48,
+              "y": 660
             },
             {
               "taskId": "T16",
               "parentId": "T14",
               "depth": 2,
-              "x": 80,
-              "y": 1280
+              "x": 76,
+              "y": 808
             },
             {
               "taskId": "T17",
               "parentId": "T16",
               "depth": 3,
-              "x": 108,
-              "y": 1520
+              "x": 104,
+              "y": 956
             },
             {
               "taskId": "T15",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 1760
+              "x": 48,
+              "y": 1104
             },
             {
               "taskId": "T18",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 2000
+              "x": 48,
+              "y": 1252
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2240
+              "x": 20,
+              "y": 1400
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2480
+              "x": 20,
+              "y": 1548
             }
           ],
           "taskIds": [
@@ -3634,8 +3634,8 @@
       "bounds": {
         "x": 0,
         "y": 0,
-        "width": 1032,
-        "height": 2716
+        "width": 1016,
+        "height": 1704
       },
       "needsRegroup": false,
       "movedFamilyIds": []
@@ -3790,27 +3790,27 @@
           "parentId": null,
           "depth": 0,
           "box": {
-            "x": 24,
-            "y": 112,
+            "x": 20,
+            "y": 100,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 24,
-            "y": 80,
+            "x": 20,
+            "y": 68,
             "width": 264,
             "height": 72
           }
@@ -3821,27 +3821,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 352,
+            "x": 48,
+            "y": 248,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 320,
+            "x": 48,
+            "y": 216,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 320,
+            "x": 48,
+            "y": 216,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 166,
+            "x": 44.64,
+            "y": 146,
             "width": 264,
             "height": 72
           }
@@ -3852,27 +3852,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 832,
+            "x": 48,
+            "y": 544,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 800,
+            "x": 48,
+            "y": 512,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 800,
+            "x": 48,
+            "y": 512,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 338,
+            "x": 44.64,
+            "y": 302,
             "width": 264,
             "height": 72
           }
@@ -3883,27 +3883,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 1072,
+            "x": 48,
+            "y": 692,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 1040,
+            "x": 48,
+            "y": 660,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 1040,
+            "x": 48,
+            "y": 660,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 424,
+            "x": 44.64,
+            "y": 380,
             "width": 264,
             "height": 72
           }
@@ -3914,27 +3914,27 @@
           "parentId": "T5",
           "depth": 2,
           "box": {
-            "x": 80,
-            "y": 1312,
+            "x": 76,
+            "y": 840,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 80,
-            "y": 1280,
+            "x": 76,
+            "y": 808,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 80,
-            "y": 1280,
+            "x": 76,
+            "y": 808,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 73.28,
-            "y": 510,
+            "x": 69.28,
+            "y": 458,
             "width": 264,
             "height": 72
           }
@@ -3945,27 +3945,27 @@
           "parentId": "T7",
           "depth": 3,
           "box": {
-            "x": 108,
-            "y": 1552,
+            "x": 104,
+            "y": 988,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 108,
-            "y": 1520,
+            "x": 104,
+            "y": 956,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 108,
-            "y": 1520,
+            "x": 104,
+            "y": 956,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 97.92,
-            "y": 596,
+            "x": 93.92,
+            "y": 536,
             "width": 264,
             "height": 72
           }
@@ -3976,27 +3976,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 1792,
+            "x": 48,
+            "y": 1136,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 1760,
+            "x": 48,
+            "y": 1104,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 1760,
+            "x": 48,
+            "y": 1104,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 682,
+            "x": 44.64,
+            "y": 614,
             "width": 264,
             "height": 72
           }
@@ -4007,27 +4007,27 @@
           "parentId": "T1",
           "depth": 1,
           "box": {
-            "x": 52,
-            "y": 2032,
+            "x": 48,
+            "y": 1284,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 52,
-            "y": 2000,
+            "x": 48,
+            "y": 1252,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 52,
-            "y": 2000,
+            "x": 48,
+            "y": 1252,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 48.64,
-            "y": 768,
+            "x": 44.64,
+            "y": 692,
             "width": 264,
             "height": 72
           }
@@ -4038,27 +4038,27 @@
           "parentId": "T4",
           "depth": 2,
           "box": {
-            "x": 80,
-            "y": 2272,
+            "x": 76,
+            "y": 1432,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 80,
-            "y": 2240,
+            "x": 76,
+            "y": 1400,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 80,
-            "y": 2240,
+            "x": 76,
+            "y": 1400,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 73.28,
-            "y": 854,
+            "x": 69.28,
+            "y": 770,
             "width": 264,
             "height": 72
           }
@@ -4069,27 +4069,27 @@
           "parentId": "T4",
           "depth": 2,
           "box": {
-            "x": 80,
-            "y": 2512,
+            "x": 76,
+            "y": 1580,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 80,
-            "y": 2480,
+            "x": 76,
+            "y": 1548,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 80,
-            "y": 2480,
+            "x": 76,
+            "y": 1548,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 73.28,
-            "y": 940,
+            "x": 69.28,
+            "y": 848,
             "width": 264,
             "height": 72
           }
@@ -4100,27 +4100,27 @@
           "parentId": "T4",
           "depth": 2,
           "box": {
-            "x": 80,
-            "y": 2752,
+            "x": 76,
+            "y": 1728,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 80,
-            "y": 2720,
+            "x": 76,
+            "y": 1696,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 80,
-            "y": 2720,
+            "x": 76,
+            "y": 1696,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 73.28,
-            "y": 1026,
+            "x": 69.28,
+            "y": 926,
             "width": 264,
             "height": 72
           }
@@ -4131,27 +4131,27 @@
           "parentId": null,
           "depth": 0,
           "box": {
-            "x": 568,
-            "y": 112,
+            "x": 556,
+            "y": 100,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 568,
-            "y": 80,
+            "x": 556,
+            "y": 68,
             "width": 264,
             "height": 72
           }
@@ -4162,27 +4162,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 352,
+            "x": 584,
+            "y": 248,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 320,
+            "x": 584,
+            "y": 216,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 320,
+            "x": 584,
+            "y": 216,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 166,
+            "x": 580.64,
+            "y": 146,
             "width": 264,
             "height": 72
           }
@@ -4193,27 +4193,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 592,
+            "x": 584,
+            "y": 396,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 560,
+            "x": 584,
+            "y": 364,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 560,
+            "x": 584,
+            "y": 364,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 252,
+            "x": 580.64,
+            "y": 224,
             "width": 264,
             "height": 72
           }
@@ -4224,27 +4224,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 832,
+            "x": 584,
+            "y": 544,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 800,
+            "x": 584,
+            "y": 512,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 800,
+            "x": 584,
+            "y": 512,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 338,
+            "x": 580.64,
+            "y": 302,
             "width": 264,
             "height": 72
           }
@@ -4255,27 +4255,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 1072,
+            "x": 584,
+            "y": 692,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 1040,
+            "x": 584,
+            "y": 660,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 1040,
+            "x": 584,
+            "y": 660,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 424,
+            "x": 580.64,
+            "y": 380,
             "width": 264,
             "height": 72
           }
@@ -4286,27 +4286,27 @@
           "parentId": "T14",
           "depth": 2,
           "box": {
-            "x": 624,
-            "y": 1312,
+            "x": 612,
+            "y": 840,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 624,
-            "y": 1280,
+            "x": 612,
+            "y": 808,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 624,
-            "y": 1280,
+            "x": 612,
+            "y": 808,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 617.28,
-            "y": 510,
+            "x": 605.28,
+            "y": 458,
             "width": 264,
             "height": 72
           }
@@ -4317,27 +4317,27 @@
           "parentId": "T16",
           "depth": 3,
           "box": {
-            "x": 652,
-            "y": 1552,
+            "x": 640,
+            "y": 988,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 652,
-            "y": 1520,
+            "x": 640,
+            "y": 956,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 652,
-            "y": 1520,
+            "x": 640,
+            "y": 956,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 641.92,
-            "y": 596,
+            "x": 629.92,
+            "y": 536,
             "width": 264,
             "height": 72
           }
@@ -4348,27 +4348,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 1792,
+            "x": 584,
+            "y": 1136,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 1760,
+            "x": 584,
+            "y": 1104,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 1760,
+            "x": 584,
+            "y": 1104,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 682,
+            "x": 580.64,
+            "y": 614,
             "width": 264,
             "height": 72
           }
@@ -4379,27 +4379,27 @@
           "parentId": "T10",
           "depth": 1,
           "box": {
-            "x": 596,
-            "y": 2032,
+            "x": 584,
+            "y": 1284,
             "width": 300,
-            "height": 180
+            "height": 104
           },
           "occupiedBox": {
-            "x": 596,
-            "y": 2000,
+            "x": 584,
+            "y": 1252,
             "width": 300,
-            "height": 212
+            "height": 136
           },
           "creatureBox": {
-            "x": 596,
-            "y": 2000,
+            "x": 584,
+            "y": 1252,
             "width": 300,
             "height": 32
           },
           "creatureCount": 0,
           "pillBox": {
-            "x": 592.64,
-            "y": 768,
+            "x": 580.64,
+            "y": 692,
             "width": 264,
             "height": 72
           }
@@ -4411,99 +4411,99 @@
           "bounds": {
             "x": 0,
             "y": 0,
-            "width": 488,
-            "height": 2956
+            "width": 480,
+            "height": 1852
           },
           "header": {
             "x": 0,
             "y": 0,
-            "width": 488,
-            "height": 56
+            "width": 480,
+            "height": 48
           },
           "slots": [
             {
               "taskId": "T1",
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 80
+              "x": 20,
+              "y": 68
             },
             {
               "taskId": "T2",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 320
+              "x": 48,
+              "y": 216
             },
             {
               "taskId": "T3",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 560
+              "x": 48,
+              "y": 364
             },
             {
               "taskId": "T4",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 800
+              "x": 48,
+              "y": 512
             },
             {
               "taskId": "T5",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 1040
+              "x": 48,
+              "y": 660
             },
             {
               "taskId": "T7",
               "parentId": "T5",
               "depth": 2,
-              "x": 80,
-              "y": 1280
+              "x": 76,
+              "y": 808
             },
             {
               "taskId": "T8",
               "parentId": "T7",
               "depth": 3,
-              "x": 108,
-              "y": 1520
+              "x": 104,
+              "y": 956
             },
             {
               "taskId": "T6",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 1760
+              "x": 48,
+              "y": 1104
             },
             {
               "taskId": "T9",
               "parentId": "T1",
               "depth": 1,
-              "x": 52,
-              "y": 2000
+              "x": 48,
+              "y": 1252
             },
             {
               "taskId": "T19",
               "parentId": "T4",
               "depth": 2,
-              "x": 80,
-              "y": 2240
+              "x": 76,
+              "y": 1400
             },
             {
               "taskId": "T20",
               "parentId": "T4",
               "depth": 2,
-              "x": 80,
-              "y": 2480
+              "x": 76,
+              "y": 1548
             },
             {
               "taskId": "T21",
               "parentId": "T4",
               "depth": 2,
-              "x": 80,
-              "y": 2720
+              "x": 76,
+              "y": 1696
             }
           ],
           "taskIds": [
@@ -4523,94 +4523,94 @@
         {
           "id": "T10",
           "bounds": {
-            "x": 544,
+            "x": 536,
             "y": 0,
-            "width": 488,
-            "height": 2716
+            "width": 480,
+            "height": 1704
           },
           "header": {
-            "x": 544,
+            "x": 536,
             "y": 0,
-            "width": 488,
-            "height": 56
+            "width": 480,
+            "height": 48
           },
           "slots": [
             {
               "taskId": "T10",
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 80
+              "x": 20,
+              "y": 68
             },
             {
               "taskId": "T11",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 320
+              "x": 48,
+              "y": 216
             },
             {
               "taskId": "T12",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 560
+              "x": 48,
+              "y": 364
             },
             {
               "taskId": "T13",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 800
+              "x": 48,
+              "y": 512
             },
             {
               "taskId": "T14",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 1040
+              "x": 48,
+              "y": 660
             },
             {
               "taskId": "T16",
               "parentId": "T14",
               "depth": 2,
-              "x": 80,
-              "y": 1280
+              "x": 76,
+              "y": 808
             },
             {
               "taskId": "T17",
               "parentId": "T16",
               "depth": 3,
-              "x": 108,
-              "y": 1520
+              "x": 104,
+              "y": 956
             },
             {
               "taskId": "T15",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 1760
+              "x": 48,
+              "y": 1104
             },
             {
               "taskId": "T18",
               "parentId": "T10",
               "depth": 1,
-              "x": 52,
-              "y": 2000
+              "x": 48,
+              "y": 1252
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2240
+              "x": 20,
+              "y": 1400
             },
             {
               "taskId": null,
               "parentId": null,
               "depth": 0,
-              "x": 24,
-              "y": 2480
+              "x": 20,
+              "y": 1548
             }
           ],
           "taskIds": [
@@ -4629,8 +4629,8 @@
       "bounds": {
         "x": 0,
         "y": 0,
-        "width": 1032,
-        "height": 2956
+        "width": 1016,
+        "height": 1852
       },
       "needsRegroup": true,
       "movedFamilyIds": []

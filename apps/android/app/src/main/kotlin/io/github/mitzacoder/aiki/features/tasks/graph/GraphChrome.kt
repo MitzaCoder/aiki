@@ -23,10 +23,19 @@ internal fun GraphChrome(viewSwitch: @Composable () -> Unit, model: GraphModel, 
     var overflow by remember { mutableStateOf(false) }
     val status = when (connection) { "Ready" -> "Live"; "Reconnecting", "Connecting" -> "Reconnecting"; else -> "Offline" }
     val age = if (lastDataAt == 0L) "waiting for data" else "last data ${(now - lastDataAt).coerceAtLeast(0) / 1000} seconds ago"
+    val connectionTone = when (status) { "Live" -> Jarvis.colors.success; "Reconnecting" -> Jarvis.colors.warning; else -> Jarvis.colors.danger }
     Column(Modifier.fillMaxWidth().background(Jarvis.colors.bg)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { viewSwitch() }
             IconButton(onClick = onSearch, modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).semantics { contentDescription = "Search graph" }) { LucideGlyph(Lucide.Search, size = 20.dp, tint = Jarvis.colors.fg) }
+            IconButton(onClick = onChanges, modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).semantics { contentDescription = "Changes, $unseen unread. $status" }) {
+                BadgedBox(badge = { if (unseen > 0) Badge { Text(if (unseen > 99) "99+" else "$unseen") } }) {
+                    Box(Modifier.size(24.dp)) {
+                        LucideGlyph(Lucide.History, size = 20.dp, tint = connectionTone)
+                        Box(Modifier.align(Alignment.BottomEnd).size(6.dp).background(connectionTone, androidx.compose.foundation.shape.CircleShape))
+                    }
+                }
+            }
             Box {
                 IconButton(onClick = { overflow = true }, modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).semantics { contentDescription = "Graph options. $status"; liveRegion = LiveRegionMode.Polite }) { LucideGlyph(Lucide.MoreHorizontal, size = 20.dp, tint = Jarvis.colors.fg) }
                 DropdownMenu(expanded = overflow, onDismissRequest = { overflow = false }) {
@@ -38,16 +47,10 @@ internal fun GraphChrome(viewSwitch: @Composable () -> Unit, model: GraphModel, 
             }
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()).semantics { contentDescription = "Task counters. Needs-you reasons overlap; a task can count in several reasons." }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).semantics { contentDescription = "Task counters. Needs-you reasons overlap; a task can count in several reasons." }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 model.counters.forEach { counter ->
                     FilterChip(selected = highlight == counter.key, onClick = { onHighlight(counter.key.takeUnless { it == highlight }) },
                         label = { Text("${counter.mark} ${counter.label} ${counter.count}") }, modifier = Modifier.heightIn(min = 48.dp))
-                }
-            }
-            TextButton(onClick = onChanges, modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Changes, $unseen unread. $status" }) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Changes${if (unseen > 0) " $unseen" else ""}")
-                    Text(status, style = MaterialTheme.typography.bodySmall, color = Jarvis.colors.fg)
                 }
             }
         }

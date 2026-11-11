@@ -13,8 +13,8 @@ data class GraphRect(val x: Float, val y: Float, val width: Float, val height: F
 }
 data class GraphLayoutTask(val id: String, val parent: String?, val familyId: String, val order: Double = 0.0, val createdAt: String = "")
 data class GraphLayoutOptions(
-    val cardWidth: Float = 300f, val cardHeight: Float = 180f, val crewHeight: Float = 32f,
-    val gap: Float = 28f, val indent: Float = 28f, val padding: Float = 24f, val headerHeight: Float = 56f,
+    val cardWidth: Float = 300f, val cardHeight: Float = 104f, val crewHeight: Float = 32f,
+    val gap: Float = 12f, val indent: Float = 28f, val padding: Float = 20f, val headerHeight: Float = 48f,
     val familyGap: Float = 56f, val reserveSlots: Int = 2, val reserveDepth: Int = 2, val aspect: Float = 1.5f,
     val pillWidth: Float = 264f, val pillHeight: Float = 72f,
 )
@@ -161,19 +161,19 @@ fun graphFit(box: GraphRect, width: Float, height: Float, maximum: Float = 1f): 
 }
 
 /** Dots frame family anchors, not tall hidden card bounds. Touch targets stay apart; labels stay screen-sized. */
-fun graphFitDots(families: List<GraphRegion>, width: Float, height: Float): GraphCamera {
+fun graphFitDots(families: List<GraphRegion>, width: Float, height: Float, labelWidth: Float = GRAPH_DOT_LABEL_MIN_WIDTH, labelHeight: Float = GRAPH_DOT_TARGET_HEIGHT): GraphCamera {
     if (families.isEmpty()) return GraphCamera()
     val points = families.map { it.bounds.center }
     val left = points.minOf { it.x }; val top = points.minOf { it.y }
     val spanX = points.maxOf { it.x } - left; val spanY = points.maxOf { it.y } - top
-    val minimum = graphMinimumDotZoom(families)
+    val minimum = graphMinimumDotZoom(families, labelWidth, labelHeight)
     val zoom = min(.6f, min((width - 56).coerceAtLeast(1f) / spanX.coerceAtLeast(1f), (height - 160).coerceAtLeast(1f) / spanY.coerceAtLeast(1f))).coerceAtLeast(minimum)
-    return GraphCamera((width - spanX * zoom) / 2 - left * zoom, 64 + (height - 64 - spanY * zoom) / 2 - top * zoom, zoom)
+    return GraphCamera((width - spanX * zoom) / 2 - left * zoom, (height - spanY * zoom) / 2 - top * zoom, zoom)
 }
 
-fun graphMinimumDotZoom(families: List<GraphRegion>): Float {
+fun graphMinimumDotZoom(families: List<GraphRegion>, labelWidth: Float = GRAPH_DOT_LABEL_MIN_WIDTH, labelHeight: Float = GRAPH_DOT_TARGET_HEIGHT): Float {
     val points = families.map { it.bounds.center }
     val nearest = points.flatMap { a -> points.filter { it != a && abs(it.y - a.y) < 100 && abs(it.x - a.x) > 1 }.map { abs(it.x - a.x) } }.minOrNull()
     val vertical = points.flatMap { a -> points.filter { it != a && abs(it.x - a.x) < 100 && abs(it.y - a.y) > 1 }.map { abs(it.y - a.y) } }.minOrNull()
-    return max(.05f, max(nearest?.let { 48f / it } ?: 0f, vertical?.let { 72f / it } ?: 0f))
+    return max(.05f, max(nearest?.let { (labelWidth + GRAPH_DOT_LABEL_GAP) / it } ?: 0f, vertical?.let { (labelHeight + GRAPH_DOT_LABEL_GAP) / it } ?: 0f))
 }

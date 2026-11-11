@@ -19,6 +19,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.mitzacoder.aiki.ui.theme.Jarvis
+import io.github.mitzacoder.aiki.ui.components.Lucide
+import io.github.mitzacoder.aiki.ui.components.LucideGlyph
 import kotlin.math.*
 
 internal class GraphCanvasState {
@@ -59,21 +61,23 @@ internal fun GraphCanvas(
     val density = LocalDensity.current
     val colors = Jarvis.colors
     val inputs = families.flatMap { it.cards }.mapNotNull { card -> model.details[card.id]?.let { d -> GraphLayoutTask(d.task.id, d.task.parent, d.familyId, d.task.order, d.task.createdAt) } }
-    val layout = remember(inputs, state.regroup) { state.geometry(inputs, GraphLayoutOptions(cardWidth = 300f * density.fontScale.coerceAtMost(1.5f), cardHeight = 180f * density.fontScale)) }
+    val layout = remember(inputs, state.regroup) { state.geometry(inputs, GraphLayoutOptions(cardWidth = 300f * density.fontScale.coerceAtMost(1.5f), cardHeight = 104f * density.fontScale)) }
     val statusTones = graphStatuses.associate { it.key to graphTone(it.key) }
     Column(modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().clipToBounds().semantics { isTraversalGroup = true; contentDescription = "Project graph. Pan with one finger, pinch or use zoom controls. Tap a family to read it." }) {
             val width = maxWidth.value; val height = maxHeight.value
             val viewport = GraphRect(0f, 0f, width, height)
-            val minimum = graphMinimumDotZoom(layout.families)
+            val dotWidth = GRAPH_DOT_LABEL_MIN_WIDTH * density.fontScale.coerceAtMost(1.5f)
+            val dotHeight = max(GRAPH_DOT_TARGET_HEIGHT, 60 + 36 * density.fontScale)
+            val minimum = graphMinimumDotZoom(layout.families, dotWidth, dotHeight)
             val first = layout.families.firstOrNull { it.id == familyId } ?: layout.families.firstOrNull()
-            val camera = state.camera ?: GraphCamera(12 - (first?.bounds?.x ?: 0f) * state.entryZoom, 64 - (first?.bounds?.y ?: 0f) * state.entryZoom, state.entryZoom)
+            val camera = state.camera ?: GraphCamera(12 - (first?.bounds?.x ?: 0f) * state.entryZoom, 12 - (first?.bounds?.y ?: 0f) * state.entryZoom, state.entryZoom)
             val detail = graphDetail(camera.zoom, state.detail)
             SideEffect { if (state.camera == null) state.camera = camera; state.detail = detail }
             fun zoom(factor: Float, at: GraphPoint = GraphPoint(width / 2, height / 2)) { state.camera = camera.zoomAt(at, factor, minimum = minimum) }
             LaunchedEffect(selected) {
                 val card = selected?.let(layout.cards::get) ?: return@LaunchedEffect
-                state.camera = GraphCamera(16 - card.box.x, 64 - card.box.y, 1f)
+                state.camera = GraphCamera(16 - card.box.x, 48 - card.box.y, 1f)
             }
             val boxes = layout.cards.mapValues { (_, card) -> if (detail == GraphDetail.Pills) card.pill else card.occupied }
             val near = boxes.filterValues { camera.box(it).overlaps(viewport.expand(180f)) }.keys
@@ -132,29 +136,26 @@ internal fun GraphCanvas(
                     regions.forEach { f ->
                         val p = camera.point(f.bounds.center)
                         val neighbor = regions.filter { it.id != f.id && abs(it.bounds.center.y - f.bounds.center.y) < 100 }.minOfOrNull { abs(it.bounds.center.x - f.bounds.center.x) * camera.zoom }
-                        val labelWidth = (neighbor?.minus(4) ?: 160f).coerceIn(48f, 160f)
-                        val b = GraphRect(p.x - labelWidth / 2, p.y - 36, labelWidth, 72f)
+                        val labelWidth = (neighbor?.minus(GRAPH_DOT_LABEL_GAP) ?: GRAPH_DOT_LABEL_MAX_WIDTH * density.fontScale.coerceAtMost(1.5f)).coerceIn(dotWidth, GRAPH_DOT_LABEL_MAX_WIDTH * density.fontScale.coerceAtMost(1.5f))
+                        val b = GraphRect(p.x - labelWidth / 2, p.y - dotHeight / 2, labelWidth, dotHeight)
                         if (b.overlaps(viewport.expand(48f))) {
                             val title = model.details[f.taskIds.first()]?.familyTitle ?: f.id
-                            Column(Modifier.offset(b.x.dp, b.y.dp).width(b.width.dp).heightIn(min = 72.dp)
-                                .clickable(role = Role.Button) { onFamily(f.id) }.semantics(mergeDescendants = true) { contentDescription = "$title, ${f.taskIds.size} tasks. Open family" }, horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                                Box(Modifier.size(24.dp).background(colors.accent2, RoundedCornerShape(50)))
-                                Text(title, color = colors.fg, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.width((labelWidth - 8).dp))
-                            }
+                            GraphFamilyDot(title, graphDotCounts(model, f.taskIds), b) { onFamily(f.id) }
                         }
                     }
                 }
             }
-            FlowRow(Modifier.fillMaxWidth().background(colors.bg.copy(alpha = .95f)), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                TextButton(onClick = { onFamily(familyId ?: first?.id.orEmpty()) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Family") }
-                TextButton(onClick = { state.camera = graphFitDots(layout.families.filter { it.taskIds.isNotEmpty() }, width, height) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Fit") }
-                TextButton(onClick = { zoom(.82f) }, modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).semantics { contentDescription = "Zoom out" }) { Text("−") }
-                TextButton(onClick = { zoom(1.22f) }, modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).semantics { contentDescription = "Zoom in" }) { Text("+") }
-                if (layout.needsRegroup) TextButton(onClick = { state.regroup() }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Regroup") }
+            Surface(modifier = Modifier.align(androidx.compose.ui.Alignment.BottomEnd).padding(12.dp), color = colors.surface2, shape = RoundedCornerShape(18.dp), shadowElevation = 4.dp) {
+                Row(Modifier.padding(4.dp)) {
+                    IconButton(onClick = { onFamily(familyId ?: first?.id.orEmpty()) }, modifier = Modifier.size(48.dp).semantics { contentDescription = "Back to family view" }) { LucideGlyph(Lucide.Network, size = 20.dp, tint = colors.fg) }
+                    IconButton(onClick = { state.camera = graphFitDots(layout.families.filter { it.taskIds.isNotEmpty() }, width, height, dotWidth, dotHeight) }, modifier = Modifier.size(48.dp).semantics { contentDescription = "Fit family overview" }) { LucideGlyph(Lucide.Maximize, size = 20.dp, tint = colors.fg) }
+                    IconButton(onClick = { zoom(.82f) }, modifier = Modifier.size(48.dp).semantics { contentDescription = "Zoom out" }) { LucideGlyph(Lucide.Minus, size = 20.dp, tint = colors.fg) }
+                    IconButton(onClick = { zoom(1.22f) }, modifier = Modifier.size(48.dp).semantics { contentDescription = "Zoom in" }) { LucideGlyph(Lucide.Plus, size = 20.dp, tint = colors.fg) }
+                    if (layout.needsRegroup) IconButton(onClick = { state.regroup() }, modifier = Modifier.size(48.dp).semantics { contentDescription = "Regroup families" }) { LucideGlyph(Lucide.Refresh, size = 20.dp, tint = colors.fg) }
+                }
             }
             val offscreen = live.entries.take(8).flatMap { it.change.taskIds }.distinct().filter { it in layout.cards && it !in visible }
-            if (offscreen.isNotEmpty()) TextButton(onClick = { onSelect(offscreen.first()) }, modifier = Modifier.align(androidx.compose.ui.Alignment.BottomStart).heightIn(min = 48.dp).background(colors.bg, RoundedCornerShape(12.dp))) { Text("${offscreen.size} changes off screen") }
-            Text(detail.name, color = colors.fg, fontSize = 12.sp, modifier = Modifier.align(androidx.compose.ui.Alignment.BottomEnd).background(colors.bg).padding(8.dp))
+            if (offscreen.isNotEmpty()) TextButton(onClick = { onSelect(offscreen.first()) }, modifier = Modifier.align(androidx.compose.ui.Alignment.BottomStart).padding(bottom = 80.dp).heightIn(min = 48.dp).background(colors.bg, RoundedCornerShape(12.dp))) { Text("${offscreen.size} changes off screen") }
         }
     }
 }
@@ -168,13 +169,12 @@ private fun CanvasTask(d: GraphTask, b: GraphRect, detail: GraphDetail, selected
         .border(if (selected || updated && motion) 3.dp else 1.dp, if (selected || updated && motion) colors.fg else tone, shape)
         .background(if (matches) tone.copy(alpha = if (finishing) .035f else if (updated && motion) .28f else .10f) else colors.surface2, shape)
         .clickable(role = Role.Button, onClick = onSelect).semantics(mergeDescendants = true) { contentDescription = graphTaskLabel(d, now); this.selected = selected }
-        .padding(if (detail == GraphDetail.Pills) 12.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        .padding(if (detail == GraphDetail.Pills) 12.dp else (8 * zoom).dp), verticalArrangement = Arrangement.spacedBy(if (detail == GraphDetail.Pills) 0.dp else (3 * zoom).dp)) {
         if (detail == GraphDetail.Pills) Text("${d.task.id} ${graphStatus(d.task.status).mark} ${d.task.title}", color = colors.fg, fontSize = size, maxLines = 1, overflow = TextOverflow.Ellipsis)
         else {
-            Text("${d.task.id}  ${graphStatus(d.task.status).mark} ${graphStatus(d.task.status).label}${if (updated) " · Updated" else ""}", color = colors.fg, fontSize = size, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(d.task.title, color = colors.fg, fontSize = max(12f, 16 * zoom).sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(d.reasons.joinToString(" · ") { graphReasons.first { r -> r.key == it }.let { r -> "${r.mark} ${r.label}" } }, color = colors.fg, fontSize = size, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(listOfNotNull(d.progress.takeIf { d.children.isNotEmpty() }, "◴ quiet".takeIf { d.quiet }, "holds up $holdsUp".takeIf { holdsUp > 0 }).joinToString(" · "), color = colors.fg, fontSize = size, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("${d.task.id}  ${graphStatus(d.task.status).mark} ${graphStatus(d.task.status).label}${if (updated) " · Updated" else ""}", color = colors.fg, fontSize = size, lineHeight = (18 * zoom).sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(d.task.title, color = colors.fg, fontSize = max(12f, 16 * zoom).sp, lineHeight = (20 * zoom).sp, minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(graphCanvasMeta(d, holdsUp, now).ifBlank { " " }, color = colors.fg, fontSize = 12.sp, lineHeight = max(14f, 16 * zoom).sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

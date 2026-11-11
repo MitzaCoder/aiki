@@ -26,6 +26,18 @@ class TaskTimelineTest {
         val stored = wireJson.encodeToString(DeviceSettings.serializer(), defaults.copy(timelineNewestFirst = false))
         assertFalse(wireJson.decodeFromString(DeviceSettings.serializer(), stored).timelineNewestFirst)
     }
+    @Test fun timelineOrderAndProjectGraphViewRoundTripIndependently() {
+        val settings = DeviceSettings(
+            timelineNewestFirst = false,
+            projectTasksView = mapOf("https://backend.example.test" to mapOf("demo" to "graph")),
+        )
+        val stored = wireJson.encodeToString(DeviceSettings.serializer(), settings)
+        val restored = wireJson.decodeFromString(DeviceSettings.serializer(), stored)
+        assertFalse(restored.timelineNewestFirst)
+        assertEquals("graph", restored.projectTasksView["https://backend.example.test"]?.get("demo"))
+        assertEquals(restored.projectTasksView, restored.copy(timelineNewestFirst = true).projectTasksView)
+        assertFalse(restored.copy(projectTasksView = emptyMap()).timelineNewestFirst)
+    }
     @Test fun groupsCalendarDaysAcrossMidnightAndDaylightSaving() {
         val zone = ZoneId.of("America/New_York")
         val now = Instant.parse("2026-11-03T05:05:00Z").toEpochMilli()
