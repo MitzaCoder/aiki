@@ -1301,7 +1301,11 @@ Squashes/merges must retain trailers. Task membership on a merge includes its ne
 
 `projects.configure.integrationRef` (feature `task-changes`) accepts `"auto"` (default: local main,
 then master), a full Git ref such as `refs/heads/integration`, or `null` to disable integration observation.
-Old clients keep working and preserve this setting when omitted. Missing repositories/refs do nothing.
+Old clients keep working and preserve this setting when omitted. Web Project settings → General has
+a **Delivery** group. Its independently feature-gated Integration branch row offers Automatic (main
+or master), Custom ref, and Off. Custom input accepts local `refs/heads/...` or maps a validated plain
+branch name into that namespace; it never creates/moves the branch. Modes save immediately; custom
+text saves on blur or Enter with the existing settings' saved/error feedback. Missing repositories/refs do nothing.
 Attach and changing refs baseline without history backfill. Open projects poll every 10 seconds.
 Projects remain lazy across server restarts: previously attached projects catch up from their persisted
 tips when next opened, never by opening/resuming them solely for observation at startup.
@@ -1341,8 +1345,12 @@ Feature `task-deploys` adds optional `projects.configure.deployFeed`: an absolut
 file path, or `null`/absent (default: no deployment observation). Omitted settings preserve it.
 Only file feeds are supported. A settings-configured command would give the settings API remote
 code execution; the harness never executes one, invokes deployment, or moves an integration ref.
-There is no new settings UI in this stage. Existing task-activity clients display the canonical
-Now line; legacy clients get its existing mirror and at most one milestone per attempt.
+Web Project settings → General → Delivery exposes an independently `task-deploys`-gated Deploy
+status feed row: Off or File path. The absolute backend-local path saves on blur or Enter; server
+validation failures stay inline beside the field. ProjectSummary carries only the configured path,
+not feed health/last-attempt status, so the UI does not invent an observer-status line. Existing
+task-activity clients display the canonical Now line; legacy clients get its existing mirror and at
+most one milestone per attempt.
 
 The JSON envelope is `{ version: 1, repository, projectId?, events: [...] }`. `repository` must
 equal the project's canonical Git common-directory (including Git-backed jj); optional projectId

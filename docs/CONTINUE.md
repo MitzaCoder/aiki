@@ -1,5 +1,24 @@
 # Continue
 
+## T125 web: Delivery settings in Project General
+
+Added a Delivery group under Project settings → General. Integration branch (task-changes) offers
+Automatic/main-or-master, Custom ref and Off; local full refs and plain branch names are validated,
+with plain names normalized to refs/heads/. Deploy status feed (task-deploys) offers Off or an absolute
+backend-local file path. Each row requires its own explicit hello feature. Modes save immediately;
+custom fields use existing blur/Enter autosave and inline saved/error feedback, including server
+validation errors. The configure client now forwards both fields and preserves omitted/null semantics.
+ProjectSummary has no feed-health/last-attempt field, so no status line is fabricated. Observation
+remains read-only; no ref move, deployment, command adapter or server behavior changed.
+
+Checks pass: web check zero diagnostics; 1,028 tests / 79,585 assertions; production build; root
+typecheck; public guard/Gitleaks. A targeted client settings/omission/disable test passes with six
+assertions. No root suite was requested. T125 proof includes before/after settings at desktop/390px,
+light/dark, and a recording setting trunk (normalized to refs/heads/trunk) and a synthetic feed path.
+The isolated createSetup project is a temp Git repo with main/trunk and a synthetic JSON journal;
+before truly omits both features. System color-scheme emulation and settled transitions were used.
+No live data/credentials, push, stack rewrite, main move or deployment. Demo processes stopped.
+
 ## T125: project deployment file feeds and origin journal
 
 Added opt-in `deployFeed` (absolute local JSON file or null; feature `task-deploys`). No command

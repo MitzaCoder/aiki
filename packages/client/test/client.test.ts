@@ -549,6 +549,21 @@ describe("workers", () => {
 		expect(listed.defaults).toEqual({ model: { provider: "faux", modelId: "faux-1" }, thinkingLevel: "high" });
 	});
 
+	it("forwards delivery settings, preserves omitted fields and supports disabling both", async () => {
+		const test = await setup();
+		const client = await connect(test.server);
+		const project = await client.addProject(test.projectDir);
+		const configured = await client.configureProject(project.id, { integrationRef: "refs/heads/trunk", deployFeed: "/tmp/synthetic-deploy-journal.json" });
+		expect(configured.integrationRef).toBe("refs/heads/trunk");
+		expect(configured.deployFeed).toBe("/tmp/synthetic-deploy-journal.json");
+		const renamed = await client.configureProject(project.id, { name: "Synthetic delivery" });
+		expect(renamed.integrationRef).toBe("refs/heads/trunk");
+		expect(renamed.deployFeed).toBe("/tmp/synthetic-deploy-journal.json");
+		const off = await client.configureProject(project.id, { integrationRef: null, deployFeed: null });
+		expect(off.integrationRef).toBeNull();
+		expect(off.deployFeed).toBeNull();
+	});
+
 	it("sends report audit settings and restores server defaults", async () => {
 		const test = await setup();
 		const client = await connect(test.server);

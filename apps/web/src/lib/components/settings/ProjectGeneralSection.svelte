@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DeliveryGroup from './DeliveryGroup.svelte';
 	import ArchiveSection from '#lib/components/ArchiveSection.svelte';
 	import ConnectionBadge from '#lib/components/ConnectionBadge.svelte';
 	import CopyButton from '#lib/components/CopyButton.svelte';
@@ -34,6 +35,8 @@
 				<ConnectionBadge {backend} />
 			</SettingsRow>
 		</SettingsGroup>
+
+		<DeliveryGroup {backend} {projectId} />
 
 		{#if backend.supports('project-archive')}
 			<ArchiveSection {backend} {projectId} />

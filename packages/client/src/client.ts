@@ -206,6 +206,10 @@ export type ProjectChange = {
 	uiProof?: UiProof | null;
 	/** Feature `report-audit`; null restores automatic checks with 65,000 daily tokens. */
 	reportAudit?: ReportAuditSettings | null;
+	/** Feature `task-changes`: auto, a full ref, or null to disable read-only observation. */
+	integrationRef?: string | null;
+	/** Feature `task-deploys`: absolute local JSON journal path, or null to disable. */
+	deployFeed?: string | null;
 	/** `null` goes back to letting the server fill them in. */
 	links?: ProjectLinks | null;
 	/** `true` archives the project, `false` unarchives it (feature `project-archive`). */
@@ -563,6 +567,8 @@ export class HarnessClient {
 			...(change.promptCacheWarmHours === undefined ? {} : { promptCacheWarmHours: change.promptCacheWarmHours }),
 			...(change.uiProof === undefined ? {} : { uiProof: change.uiProof }),
 			...(change.reportAudit === undefined ? {} : { reportAudit: change.reportAudit }),
+			...(change.integrationRef === undefined ? {} : { integrationRef: change.integrationRef }),
+			...(change.deployFeed === undefined ? {} : { deployFeed: change.deployFeed }),
 			...(change.links === undefined ? {} : { links: change.links }),
 			...(change.archived === undefined ? {} : { archived: change.archived }),
 		});
