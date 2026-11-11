@@ -1,5 +1,25 @@
 # Continue
 
+## T71: archive-fixture race and integration on 544e4f02
+
+The pinned-browser manual check `43063818191` passed on GitHub. Parallel branch-
+push check `43063818005` correctly skipped the release job, but found a pre-existing
+race in project-archive.test.ts: saving an enabled event schedule starts its automatic
+baseline immediately. The test added request 1 after saving, so a fast empty baseline
+made it legitimate new work before archiving, contradicting the later empty-runs
+assertion. An explicit poll barrier reproduced that exact failure without sleeps.
+Seed request 1 before enabling the schedule, then assert it is seen and no work ran
+before starting the archive checks. All archive/no-poll/fresh-baseline assertions
+remain; production scheduler behavior and workflow trigger semantics are unchanged.
+The workflow regression also explicitly preserves tag-push triggering.
+
+Rebased the browser/check-workflow change onto approved main `544e4f02`, retaining
+all incoming timeline, Android graph and continuation content; DESIGN merged cleanly.
+Full exact-tip local gates and one fresh manual GitHub check are recorded on T71.
+Only the owned temporary ci/release-check branch may be updated (with an exact lease
+because this is a rebase) and deleted after a green run. No main or tag movement is
+part of this repair.
+
 ## T71: pinned browser and a non-publishing release check
 
 Retagged Release run `43057627821` failed in the Markdown browser beforeAll, not

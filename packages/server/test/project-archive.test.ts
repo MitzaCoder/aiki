@@ -258,11 +258,16 @@ describe("an archived project's event triggers", () => {
 		answerBriefs(test);
 		const client = await connect(test.server);
 		const projectId = await addProject(client, test.projectDir);
-		const saved = await saveSchedule(client, projectId, eventInput());
+		// Saving an enabled schedule can immediately establish its baseline. Seed the existing request first:
+		// if it arrives after an empty baseline, running it before archiving is correct, not an archive failure.
 		github.request(1, "2026-11-08T09:00:00Z");
+		const saved = await saveSchedule(client, projectId, eventInput());
 		await test.server.scheduleEvents.poll();
 		const stateFile = join(test.dataDir, "projects", projectId, "schedule-events.json");
-		expect(Object.keys(JSON.parse(await readFile(stateFile, "utf8")).schedules)).toEqual([saved.id]);
+		const baseline = JSON.parse(await readFile(stateFile, "utf8")) as { schedules: Record<string, { seen: Record<string, string> }> };
+		expect(Object.keys(baseline.schedules)).toEqual([saved.id]);
+		expect(Object.keys(baseline.schedules[saved.id]!.seen)).toHaveLength(1);
+		expect((await schedule(client, projectId, saved.id)).runs).toEqual([]);
 
 		await setArchived(client, projectId, true);
 		// A request arrives while it is archived. GitHub is not even asked.

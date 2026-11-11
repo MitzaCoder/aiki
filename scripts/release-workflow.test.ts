@@ -2,12 +2,13 @@ import { expect, test } from 'bun:test';
 
 type Step = { name?: string; run?: string; uses?: string; with?: Record<string, string> };
 type Job = { if?: string; needs?: string; permissions?: { contents?: string }; steps: Step[] };
-type Workflow = { on: { push: { branches: string[] }; workflow_dispatch: unknown }; permissions: { contents: string }; jobs: Record<string, Job> };
+type Workflow = { on: { push: { branches: string[]; tags: string[] }; workflow_dispatch: unknown }; permissions: { contents: string }; jobs: Record<string, Job> };
 const workflow = Bun.YAML.parse(await Bun.file(new URL('../.github/workflows/release.yml', import.meta.url)).text()) as Workflow;
 
 test('branch and manual release checks share the real test job without release permissions or publishing', () => {
 	expect(Object.hasOwn(workflow.on, 'workflow_dispatch')).toBe(true);
 	expect(workflow.on.push.branches).toContain('ci/release-check');
+	expect(workflow.on.push.tags).toEqual(['v[0-9]*.[0-9]*.[0-9]*']);
 	expect(workflow.permissions.contents).toBe('read');
 	const checks = workflow.jobs.checks!;
 	expect(checks.permissions?.contents ?? workflow.permissions.contents).toBe('read');

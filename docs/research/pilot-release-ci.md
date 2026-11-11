@@ -133,3 +133,29 @@ Dispatching any ref, even a tag, cannot stage or publish a release. A branch pus
 also provides a check when GitHub has not yet exposed an unmerged dispatch trigger.
 The owner alone advances main/tag after a successful actual GitHub check. Remove
 the temporary branch after completion, not while a queued checkout still needs it.
+
+## Successful browser check and the parallel archive-fixture race
+
+Manual dispatch [43063818191](https://github.com/MitzaCoder/aiki/actions/runs/43063818191)
+passed the complete checks job with the pinned headless shell; its release job was
+skipped. Parallel branch-push run
+[43063818005](https://github.com/MitzaCoder/aiki/actions/runs/43063818005) also correctly
+skipped release. Its one failure was a test initialization race, not a publishing-
+trigger or browser failure: the archived-project event test had already recorded
+request 1 as a started run before it attempted to archive the project.
+
+Saving an enabled event schedule immediately wakes the event poller. The fixture
+saved an empty schedule, added request 1 and called poll, assuming request 1 would
+always be in the first baseline. If the automatic empty baseline completed first,
+request 1 was correctly treated as new work. A deterministic reproduction explicitly
+completed that empty baseline before adding request 1 and produced the identical
+unexpected started-run record. No timing delay or test retry was required.
+
+The fixture now seeds the existing request before enabling the schedule, waits for
+the serialized poll barrier, and asserts both the populated seen baseline and empty
+run history before testing archive/unarchive behavior. It still checks no polling or
+firing while archived, cleared event state and a fresh baseline after unarchiving.
+No production scheduler behavior changed and no coverage was skipped. The existing
+workflow guard is retained and its regression explicitly checks the tag-push glob.
+The browser repair and this fixture correction are integrated on main 544e4f02 with
+the timeline/Android graph; main and tag updates remain the owner's decision.
