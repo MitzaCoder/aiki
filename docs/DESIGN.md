@@ -1452,87 +1452,34 @@ hits get a bounded one-line snippet. No matches has its own message. Escape and 
 per backend/project under web `aiki.task-search.v1:` keys and Android private `aiki.task-search.v1` preferences;
 no query, index or ranking is sent to the server. Changing search never alters tasks or their normal priority order.
 
-### Animated task graph (T79, connected work T106–T110)
+### Animated task graph (T79)
 
-Option C / D56 replaces bubbles directly with readable cards in soft family regions. Expanded Tasks offers
-List | Board | Graph; the narrow sidebar stays a list. This is read-only: Enter, double-click and Open task use
-the existing task sheet. The view choice stays local under `tasks.view.v2:`. No prototype or graph-lab route ships.
+Connected work was reverted at the owner’s request (F22 on T103); Android is unchanged.
 
-- Cards show a two-line 16px title, ID, status word/mark, strong coloured band and tinted fill. Small card text is
-  14px at default 1× framing. Review, blocked, waiting, question/warning and worker failure have distinct marks;
-  quiet is separate (48 hours without a task update, never done/dropped). Closed cards have neutral fills and
-  dashed borders instead of unreadable translucent text. Parent progress counts done / all non-dropped descendants.
-  Card bodies are 230×88px, with a fixed 12px crew reservation above (100px total). Crew stands wholly above the
-  top-right edge, using that reservation plus the fixed 24px inter-card gap; bodies are about 25px at default zoom.
-  A tighter SVG frame/short antenna preserves recognizable busy/resting/failed faces without covering ID/status.
-  There is no empty crew row or placeholder. ID/status, two title lines and one compact
-  meta row fit the body. Progress displays N/M with the full wording in the accessible label. Family headers show
-  title, the same progress contract, mixed-status bar and a unique needs-you count.
-- The stage-1 summary, ranked search, live selected-task panel and loading/empty/closed/no-match/offline states remain.
-  Counters count closed, not archived tasks; reasons overlap. Matches have strong rings; nonmatches lose colour, not
-  text contrast. Fit matches explicitly frames all matching cards. Search/panel links use `revealFamilyCard` at
-  readable cards zoom. Watch replacements update selection in place and never refit the camera.
-- `layoutTaskFamilies` retains the previous layout, hidden named slots and empty families. The `creaturesAbove` option
-  puts the fixed crew reservation above the body, with body/occupied/creature boxes matching the renderer. Fixed bands and
-  reserved arrival rows decouple worker/report/status changes from geometry. Overflow/reparenting sets sticky
-  `needsRegroup`; the Regroup button explicitly discards reservations and ancestry pins. Geometry options freeze
-  until regroup. No force simulation, bubble clusters, detached label placement or card dragging remains.
-- `routeTaskFamilyEdges` continuously draws quiet solid subtask links. Found-while is dotted, blocked-by is dashed
-  with an arrow from blocked task to prerequisite, and related is dash-dot. Nonparent routes are scoped to the
-  selected family and counter/search matches. The legend uses the same patterns; blocker strokes are full opacity.
-- `chooseFamilyDetail` uses actual minimum card text (14px), pill text (22px) and pill height (64px), with hysteresis.
-  Cards become single-line pills, then one screen-sized family blob. Text never shrinks below 12 screen pixels;
-  pills stay ≥24px tall on desktop / ≥44px on touch. Each dot is anchored at its family's world-space region centre:
-  pan and pointer-anchored zoom use the same camera at every level. Only label dimensions/fonts remain screen-sized.
-  Nearest-neighbor spacing limits title width; crowded labels lose subtitle lines, never move their anchors. A
-  geometry-derived minimum zoom prevents compact labels from colliding. Fit frames all family anchors with screen
-  padding for labels, even when the card regions are tall. Click/Enter enters that family at cards level. Detail
-  changes fade quickly; reduced motion is immediate.
-- Worker and non-main thread creatures attach to their task: up to three, then +N. A keyed world-space crew layer
-  preserves worker identity across cards: reassignment travels for 400ms; arrivals/finished or removed crew fade.
-  Running creatures type/sway; idle ones breathe/rest with a z; failures have a mark. A changed nonempty worker report
-  produces one bounded spark, never periodic traffic; the panel keeps the report line. Reduced motion removes travel,
-  sway/typing/sparks and card glow without removing information. Hidden tabs pause decoration and the display clock;
-  an intersection observer also pauses off-screen creatures. Card names expose all crew names/states.
-- Summary counters wrap on desktop, keeping Changes in a separate nonshrinking space; the phone keeps a horizontal
-  counter scroller. Toolbar/legend controls wrap under browser zoom and larger default fonts. Graph-local status and
-  muted tones meet text contrast in Jarvis/Neutral light/dark without changing the application's theme. Meaningful
-  subtask strokes use a stronger foreground mix; the legend uses the actual edge patterns and tones.
-- Changes beside the summary opens a desktop popover or phone sheet. Successive board/worker/thread snapshots produce
-  at most 50 session-only entries: arrivals, status transitions/completions, task questions/warnings and their answers,
-  reports and crew lifecycle/reassignments. Like events within a fixed one-second window batch into one entry. Entries
-  have relative times and task focus links; the unseen-entry count clears on opening. Reports say worker ID,
-  task ID and the last report line (for example, `pip reported on T3 · Checked the lens`); a report burst retains the
-  latest line. Single status entries include a short task title. Opening the list focuses its named dialog;
-  Escape/Close returns focus to Changes. First load, remount and reconnect
-  establish a baseline without invented history. Reconnect waits for authoritative board, worker and thread reads,
-  not a guessed delay. Selection, entries and their read state live in a backend/project-scoped in-memory store so
-  responsive sidebar remounts do not erase them. Reload starts a new graph session; this is not durable replay.
-- A changed card gets one 1.5-second glow in its status colour (a brief static Updated mark under reduced motion).
-  Done/dropped work remains faded for about 4.5 seconds with its status mark while Show closed is off; selection
-  retains it until dismissed. Removing it preserves the engine's named slot. A small off-screen-change chip reveals
-  changed tasks only when clicked; live updates never move the camera. Waiting cards show a short local until date,
-  with overdue only after that instant. Quiet age is spoken and shown in days in the panel. The panel counts direct
-  and indirect unfinished dependents with cycle/diamond defense; cards with two or more direct dependents say holds up N.
-- Live / Reconnecting / Offline with last-data time sits next to the summary; its tooltip gives update age in seconds.
-  One polite live region batches meaningful changes at most once per five seconds, never creature motion. Connection
-  freshness has its own quiet status. Unassigned questions remain available through the summary's List guidance.
-- Only cards/pills within 180 screen pixels of the viewport mount, including their crew; dots mount no card DOM.
-  Edge rendering is scoped to relationships with at least one near-viewport endpoint.
-  Association indexes replace per-task scans of main-thread owned tasks; dependency walks share one lazy index per
-  derived model. Structural layout and routes invalidate only when their inputs actually change, not on every clock
-  tick/status replacement or camera frame. No worker, spatial index or Canvas/WebGL renderer is needed for this scope.
-- One roving graph Tab stop supports spatial arrows, Enter to open, Space to select, Home to the family header and
-  Escape to clear selection then return to families. Spoken card names include ID/title/status/reasons/quiet/progress/
-  crew. Navigation uses all logical card boxes, not just mounted DOM; keyboard reveal is immediate before focusing
-  a newly mounted card. Focus has a strong foreground outline separated by background. Instructions identify List as the complete path.
-- Background pan, pointer-anchored wheel zoom, pinch, +/− and Fit only change the viewport. Storage is
-  `task-graph.camera.v2:`; v1 is ignored because screen = world × zoom + translation now. First desktop open shows
-  readable family columns, not 90 tiny cards; Fit gives the project overview.
-- At ≤640px, only one family renders at cards/pills levels. First open chooses the selected task's family, otherwise
-  the family with most needs-you tasks. Previous/next calls `fitTaskFamily` but keeps 1× cards and top-aligns tall
-  regions for vertical pan instead of shrinking their text. The stage-1 40%-stage bottom sheet with Expand/Peek stays.
-  Offline retains the last board. Family identity follows hidden ancestors with cycle defense.
+Bubble club is the chosen web graph: soft clusters and round worker creatures, without a look flag or alternate
+renderers. Expanded Tasks offers List | Board | Graph; the narrow sidebar stays a list. The choice is local per
+backend/project under the name-neutral `tasks.view.v2:` key. Graph is read-only; tasks open the existing sheet.
+
+- Active tasks appear by default; Show closed adds faded done/dropped tasks. Archived tasks stay out. Parent families
+  gather together, including nested descendants. Solid parent, dotted found-while, dashed related and arrowed blocked-by
+  edges have a legend. Arrows point from the blocked task to what it needs. Status has colour and spoken words;
+  parent progress rings show done/total. Review, open questions/warnings and failed workers mark attention.
+- Existing board/worker/thread watches supply real shapes. The graph reads the project-wide worker list without
+  changing the chat's thread filter. Running creatures type and sway gently; idle ones breathe and sleep. Changed
+  nonempty reports send one spark, never a periodic fake report. Reassigned workers travel to their new task;
+  finished/removed workers fade away. Threads are bigger characters linked to their tasks and workers.
+- A small deterministic layout module pre-settles new nodes before rendering. Existing task positions stay fixed on
+  watch replacements; arrivals ease in and updates never refit the camera. Collision bounds include caption space.
+  Label placement excludes nodes and other labels; minor labels disappear at low zoom or when no safe slot remains.
+  Hover/focus reveals a full-title tooltip and highlights family/blockers. Every node is keyboard focusable.
+- Initial cluster columns follow the viewport aspect ratio; retained positions do not reflow on resize or watch updates.
+  First open fits the active graph with padding on desktop and phone. Fit resets framing explicitly. Drag nodes or
+  pan the background; wheel, buttons and pinch zoom. Camera state is local per backend/project under
+  `task-graph.camera.v1:`. Resizing preserves world centre and zoom. No link editing or task moves.
+- Reduced motion disables floating, typing, transitions, departing fades and sparks, retaining status, progress and
+  attention. List remains the full accessible reading path. Android keeps its separate native family graph below.
+- Synthetic proof uses the throwaway backend seed script. Loopback-only controls exercise reports, reassignment,
+  completion, task arrival and 80 tasks/10 workers. No installed data or real worker tools are used.
 
 **Android family graph and project canvas (T115–T116).**
 
@@ -1593,27 +1540,8 @@ synthetic `test-vectors/task-graph-v1.json` from the actual web model; `--check`
 all task details, counters, search weights/order and cycle/diamond-safe dependency counts, plus native family order,
 closed selection retention, quiet boundaries, scoped preference serialization and Back transitions.
 
-Implementation: `TaskGraph.svelte` owns chrome/model; `graph/GraphFamilyCanvas.svelte` owns layout/LOD/focus; small
-card/family/edge/creature components render content. `graph-family-camera.svelte.ts` owns only the viewport, and
-`task-graph-cards.ts` holds pure presentation/navigation helpers; `task-graph-family-dots.ts` holds world-anchor,
-label-density, minimum-zoom and dot-fit calculations. `task-graph-changes.ts` owns pure snapshots, baseline resets,
-change diffing/batching, announcement throttling, dates and dependency counts; `task-graph-session.svelte.ts` owns
-only the scoped session presentation state. `task-graph-families*.ts` remains the geometry contract.
-The isolated busy demo has 90 synthetic tasks, ten families and real worker/thread/report watches; no installed data,
-real worker tools, feature flag or prototype renderer is involved. `GRAPH_DEMO_SCENARIO=large GRAPH_DEMO_TASKS=500`
-adds 100–5,000 deterministic synthetic tasks, varied families, a 12-level chain, 36 questions, crowded crew and long
-unbroken/URL content. Card titles wrap anywhere before their deliberate two-line clamp; full content stays in the
-panel and accessible name. Reason marks/progress do not shrink over each other; optional metadata ellipsizes.
-Touch controls are at least 44px, including the view switch and legend. Sheet scrolling is contained, outside the
-canvas's touch-action:none surface. Reduced motion keeps a static Updated mark without sparks, travel or glow.
-
-T110 desktop Chromium development measurements at 100/500/1,000 tasks: renderer mount 52/155/381ms; 2Hz batched
-update-to-two-RAF p95 35/63/113ms; pan p95 16.8ms at each size, zoom p95 16.7/16.7/16.8ms. The 100-task budget passes;
-1,000 tasks exceed that smaller-board update budget and occasional maximum frames still exceed 20ms. These are
-headless software-rendering samples, not production compositor timings or physical phone/screen-reader certification.
-A 500-task broad search that exposes many cross-family routes still misses the interaction budget (117ms pan p95);
-viewport card culling does not solve that dense-route paint cost. This remains a measured limit, not a 60fps claim.
-See the task's measurement artifact for sample counts, heap/DOM and limitations.
+The pure web model, family layout, change helpers and busy fixture remain only for Android vector generation,
+with their regression tests; the web bubble renderer does not import them.
 
 ### Ticket and pull request links
 

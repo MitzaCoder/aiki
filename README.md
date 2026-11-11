@@ -13,7 +13,7 @@ Aiki is a personal AI workbench. Talk to one coordinator that plans the work, de
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/graph-dark.webp" />
-  <img src="docs/assets/readme/graph-light.webp" alt="Aiki's live task graph: three families of connected task cards, a row of status and needs-you counters, search, and small creatures marking active workers and threads." />
+  <img src="docs/assets/readme/graph-light.webp" alt="Aiki's live task graph: soft clusters of task bubbles, relationship lines, and small creatures marking active workers and threads." />
 </picture>
 
 *A living map of the work. Real app, [synthetic demo](docs/assets/readme/README.md).*
@@ -28,7 +28,7 @@ Give the coordinator the goal. It can split independent work among background wo
 
 ### See what needs you
 
-A shared task board keeps the plan visible as a **list, board or graph**. The graph groups related work into families; little creatures show where workers and threads are active. Search for a task, family or worker. Questions, warnings and work ready for review surface together, so you can answer on the task instead of searching a long transcript.
+A shared task board keeps the plan visible as a **list, board or graph**. The graph groups related work into families; little creatures show where workers and threads are active. Search for a task in the list or board. Questions, warnings and work ready for review surface together, so you can answer on the task instead of searching a long transcript.
 
 ### Come back to the work
 

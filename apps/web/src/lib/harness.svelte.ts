@@ -771,8 +771,6 @@ export class ProjectWorkers {
 	readonly threadId: string | undefined;
 	/** Project-wide source for the task graph; the chat's workers remain thread-filtered. */
 	allWorkers = $state<WorkerSummary[]>([]);
-	/** Graph baselines wait for all three authoritative lists after reconnect. */
-	refreshing = $state(true);
 	workers = $state<WorkerSummary[]>([]);
 	defaults = $state<WorkerDefaults>({ ...EMPTY_WORKER_DEFAULTS });
 	loaded = $state(false);
@@ -803,7 +801,6 @@ export class ProjectWorkers {
 		// A reconnect loses the events sent while away, so ask for the list again.
 		this.#unsubscribeState = client.subscribe((state) => {
 			if (state.status === "ready") void this.load();
-			else this.refreshing = true;
 		});
 		if (client.connected) void this.load();
 	}
@@ -814,7 +811,6 @@ export class ProjectWorkers {
 			const snapshot = await this.#client.listWorkers(this.projectId);
 			if (this.#stopped) return;
 			this.#apply(snapshot.workers, snapshot.defaults);
-			this.refreshing = false;
 		} catch (error) {
 			if (this.#stopped) return;
 			this.error = messageOf(error);

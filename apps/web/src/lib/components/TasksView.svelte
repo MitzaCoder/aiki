@@ -9,7 +9,6 @@
 	import type { TasksViewMode } from '#lib/kanban.js';
 	import { tasksView } from '#lib/tasks-view.svelte.js';
 	import type { ThreadSummary, WorkerSummary } from '@aiki/protocol';
-	import type { ClientState } from '@aiki/client';
 
 	/**
 	 * The full-width Tasks view: list, board or graph, with a switch this device remembers. The sidebar
@@ -17,10 +16,8 @@
 	 */
 	let {
 		board,
-		connection,
 		workers = [],
 		graphWorkers = workers,
-		snapshotsReady = true,
 		scope,
 		threads = [],
 		workerHref,
@@ -29,10 +26,8 @@
 		onsendreason
 	}: {
 		board: ProjectBoard | undefined;
-		connection?: ClientState;
 		workers?: readonly WorkerSummary[];
 		graphWorkers?: readonly WorkerSummary[];
-		snapshotsReady?: boolean;
 		scope: string;
 		threads?: readonly ThreadSummary[];
 		workerHref?: (worker: WorkerSummary) => string;
@@ -70,7 +65,7 @@
 {#if tasksView.mode === 'board'}
 	<TaskBoard {board} {workers} {threads} {workerHref} {taskHref} {canNote} {onsendreason} {viewSwitch} />
 {:else if tasksView.mode === 'graph'}
-	{#key scope}<TaskGraph {board} {connection} {snapshotsReady} {scope} workers={graphWorkers} {threads} {taskHref} {viewSwitch} />{/key}
+	{#key scope}<TaskGraph {board} {scope} workers={graphWorkers} {threads} {taskHref} {viewSwitch} />{/key}
 {:else}
 	<TasksPanel {board} {threads} {workers} {workerHref} {taskHref} toolbarStart={viewSwitch} />
 {/if}

@@ -1,5 +1,29 @@
 # Continue
 
+## T130: restore the web Bubble club graph
+
+Restored the T79 web graph from `19cc5744`, backing out the Connected work renderer introduced by
+`slosktxv`, `slmquslx`, `suvvsstq`, `zoqvvoxx`, `pqzwpwot`, `yozyskos`, `rvkwvkuo` and `uzqvpyxz`.
+This is the owner's F22 on T103 decision. TaskGraph, bubble layout/camera/model/tests and the default synthetic
+seed are restored; unused card components, viewport/session code, large fixture and UI-specific tests are removed.
+Graph-only refreshing/readyVersion/receivedAt flags and TasksView/ProjectChat props have no remaining users and
+are removed. Task search and its TasksPanel/TasksView integration, T118 timeline, T113 header, question reader,
+release/CI work and all Android files are unchanged.
+
+Android vector scripts still import the pure model, family layout/view/edge and change modules plus the busy
+fixture, so those modules and their tests remain. The explicit TypeBox dev dependency remains for their protocol
+validation test. Both Android vector `--check` commands pass; no native build or device operation was needed.
+The reference research doc remains. DESIGN describes bubbles again and preserves the separate Android contract.
+Q137 superseded the original README exclusion: its hero pair now shows the synthetic bubble demo (about 59 KiB
+each); alt text/search wording and the capture guide match it. The existing board images are unchanged.
+
+Proof on T130 includes desktop/phone before/after light/dark screenshots, both README WebPs and a 6.2-second
+pan → bubble click → existing task-sheet recording. The seed uses createSetup only and prints temporary
+data/config/project paths; browser, seed, recording and gate logs remain workspace-local and ignored.
+Checks pass: root 2,228 tests / 90,245 assertions and typecheck; web 1,006 tests / 79,452 assertions, zero check
+errors/warnings and production build; both Android vector checks and the private public-source/Gitleaks guard.
+No push, main move or deployment.
+
 ## T71: archive-fixture race and integration on 544e4f02
 
 The pinned-browser manual check `43063818191` passed on GitHub. Parallel branch-
