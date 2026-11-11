@@ -8,6 +8,28 @@ of the exact combined tree after full root/web/Android/public gates. No phone in
 manual deployment script or service restart is part of this integration. Prior T114 counts below describe its
 original isolated tree; combined gate results and the target hash are attached to T114.
 
+## README homepage selected (T117 / Q127)
+
+The owner chose product-page option A with the new task graph as its hero. The change is rebased onto main
+`uzqvpyxz` / `b38689b5`; the only conflict was these continuation introductions, both retained. README.md now
+opens with the existing icon, a short coordinator/worker pitch, light/dark graph imagery and three benefits.
+Source-ref installation stays explicit until a pilot release is tagged; Linux/macOS/WSL, Android APK, provider
+policy and phone-push limitations remain honest. A secondary board image shows the same project in columns.
+
+The former root README's operator/development sections live in `docs/OPERATIONS.md`, linked from the homepage;
+stale no-auth/API-only descriptions were corrected. The unselected drafts, their renderer/demo script and unused
+images are removed. Only four lossless screenshots remain under `docs/assets/readme/`, all below 110 KiB, with
+provenance linked in the hero caption. The icon is referenced directly from the existing web assets.
+
+New captures use the current `packages/server/scripts/task-graph-demo.ts` busy scenario on a createSetup-only
+server. It printed its temporary data/config paths before use. The hero crops the real graph viewport to three
+family groups, status/needs-you counters, search and worker/thread creatures. No real model, installed data,
+provider credential, physical device or native Android screenshot is involved. The preview renderer and browser
+profiles/logs stay in ignored temporary output. T117 holds eight final screenshots (first two screens at desktop
+and phone widths, light/dark) tagged after, plus a short real desktop scrolling recording. Image loads, matching
+colour variants, jump anchors and no horizontal page overflow pass. Bun install, root typecheck and the public
+source guard/Gitleaks pass. No fresh installer/provider/device test, push, main move or deployment was performed.
+
 ## T113 integration on F20 (Q122)
 
 Rebased T113 onto F20 `vkxymkty` / `44f8dfaa`, preserving expanded-question answering and compact refs/keyboard-safe
