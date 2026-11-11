@@ -31,8 +31,8 @@ import io.github.mitzacoder.aiki.ui.theme.textStyle
 import kotlinx.coroutines.launch
 
 /**
- * The Tasks view (web `TasksView.svelte`): the list or the board, with a List | Board switch this device remembers
- * ([io.github.mitzacoder.aiki.data.DeviceSettings.tasksView], list by default). [list] draws the Tasks list with the switch
+ * List, Board or Graph, remembered per backend/project. The legacy global choice remains the fallback.
+ * [list] draws the Tasks list with the switch
  * it is given at the start of its toolbar. [looseQuestion] and [addTask] go to the board ([TaskBoard]).
  */
 @Composable
@@ -44,11 +44,16 @@ fun TasksView(
     list: @Composable (toolbarStart: @Composable () -> Unit) -> Unit,
 ) {
     val settings by context.repository.settings.collectAsStateWithLifecycle()
-    val mode = tasksViewMode(settings.tasksView)
+    val mode = tasksViewMode(settings.projectTasksView[context.backend.config.key]?.get(context.route.projectId) ?: settings.tasksView)
     val scope = rememberCoroutineScope()
-    val switch: @Composable () -> Unit = { TasksViewSwitch(mode) { scope.launch { context.repository.setTasksView(it.stored) } } }
-    if (mode == TasksViewMode.Board) TaskBoard(context, modifier, switch, looseQuestion, addTask)
-    else Column(modifier) { list(switch) }
+    val switch: @Composable () -> Unit = { TasksViewSwitch(mode) { scope.launch { context.repository.setProjectTasksView(context.backend.config.key, context.route.projectId, it.stored) } } }
+    when (mode) {
+        TasksViewMode.Board -> TaskBoard(context, modifier, switch, looseQuestion, addTask)
+        TasksViewMode.Graph -> io.github.mitzacoder.aiki.features.tasks.graph.TaskGraph(context, modifier, switch, onLeave = {
+            scope.launch { context.repository.setProjectTasksView(context.backend.config.key, context.route.projectId, "list") }
+        })
+        TasksViewMode.List -> Column(modifier) { list(switch) }
+    }
 }
 
 /**
@@ -59,33 +64,33 @@ fun TasksView(
 fun showsTasksBoard(context: ProjectScreenContext, tab: PanelTab?): Boolean {
     val settings by context.repository.settings.collectAsStateWithLifecycle()
     val connection by context.backend.client.state.collectAsStateWithLifecycle()
-    return tab == PanelTab.Board && connection.supports(HarnessFeature.TASK_REPORTS) && tasksViewMode(settings.tasksView) == TasksViewMode.Board
+    return tab == PanelTab.Board && connection.supports(HarnessFeature.TASK_REPORTS) && tasksViewMode(settings.projectTasksView[context.backend.config.key]?.get(context.route.projectId) ?: settings.tasksView) != TasksViewMode.List
 }
 
-/** The List | Board switch: a two-part segmented control, as on the web. */
+/** Three 48dp choices, wrapping instead of clipping with large system text. */
 @Composable
 fun TasksViewSwitch(mode: TasksViewMode, onChange: (TasksViewMode) -> Unit) {
     val colors = Jarvis.colors
-    Row(
+    FlowRow(
         Modifier.clip(RoundedCornerShape(10.dp)).background(colors.surface2.fade(70f)).padding(3.dp).semantics { contentDescription = "Show the tasks as" },
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp), verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        listOf(TasksViewMode.List to BoardGlyphs.List, TasksViewMode.Board to Lucide.Kanban).forEach { (entry, icon) ->
+        listOf(TasksViewMode.List to BoardGlyphs.List, TasksViewMode.Board to Lucide.Kanban, TasksViewMode.Graph to Lucide.Layers).forEach { (entry, icon) ->
             val selected = mode == entry
-            val label = if (entry == TasksViewMode.List) "List" else "Board"
+            val label = entry.name
             Row(
                 Modifier
                     .then(if (selected) Modifier.shadow(1.dp, RoundedCornerShape(7.dp)) else Modifier)
                     .clip(RoundedCornerShape(7.dp))
                     .background(if (selected) colors.bg else colors.bg.fade(0f))
                     .selectable(selected, role = Role.Tab) { onChange(entry) }
-                    .heightIn(min = 34.dp)
+                    .heightIn(min = 48.dp)
                     .padding(horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                LucideGlyph(icon, size = 14.dp, tint = if (selected) colors.fg else colors.fgSubtle)
-                Text(label, style = textStyle(0.75f, 1.4f, weight = 600), color = if (selected) colors.fg else colors.fgSubtle)
+                LucideGlyph(icon, size = 14.dp, tint = if (selected) colors.fg else colors.fgMuted)
+                Text(label, style = textStyle(0.75f, 1.4f, weight = 600), color = if (selected) colors.fg else colors.fgMuted)
             }
         }
     }

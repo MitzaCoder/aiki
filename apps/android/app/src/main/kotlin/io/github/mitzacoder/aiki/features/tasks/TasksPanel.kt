@@ -92,8 +92,9 @@ fun TasksPanel(context: ProjectScreenContext, modifier: Modifier = Modifier, too
             }
         }
         item(key = "toolbar") {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                toolbarStart?.let { Box(Modifier.padding(end = 6.dp)) { it() } }
+            Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                toolbarStart?.invoke()
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Box(Modifier.weight(1f)) {
                     when {
                         !view.loaded -> Box(Modifier.size(width = 56.dp, height = 12.dp).background(colors.surface2, RoundedCornerShape(4.dp)))
@@ -105,6 +106,7 @@ fun TasksPanel(context: ProjectScreenContext, modifier: Modifier = Modifier, too
                     LucideGlyph(Lucide.Plus, size = 14.dp)
                     Spacer(Modifier.width(4.dp))
                     Text("Add task", style = TaskType.xs)
+                }
                 }
             }
         }

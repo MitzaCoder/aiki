@@ -1527,6 +1527,31 @@ the existing task sheet. The view choice stays local under `tasks.view.v2:`. No 
   regions for vertical pan instead of shrinking their text. The stage-1 40%-stage bottom sheet with Expand/Peek stays.
   Offline retains the last board. Family identity follows hidden ancestors with cycle defense.
 
+**Android family graph (T115).**
+
+Native Tasks offers List | Board | Graph, remembered per backend/project with the old global choice as a fallback.
+Graph starts at one readable family, preferring a linked selection, otherwise the most needs-you tasks after crew
+loads. Previous/next and a family picker preserve tree order. Hidden ancestors and cyclic parentage retain stable
+family identity; roots without subtasks still get their own group. Cards use status colours, marks and words, quiet
+subtask guides, overlapping reason marks, waiting dates, quiet age, family progress and unfinished holds-up totals.
+Small Compose creatures distinguish running (keyboard/hands), resting (closed eyes) and failed (cross) workers and
+non-main threads. These first-part drawings are static, including under disabled/reduced motion; canvas travel,
+report sparks, semantic zoom, whole-project gestures and change history belong to T116.
+
+The horizontal summary highlights rather than removes context, and offers the next matching family. Search ranks
+ID, title, family, worker and thread matches using the web weights. Picking a result reveals/selects it. Selection
+is stored by ID, so watched replacements update the scrollable native bottom sheet in place, including a missing-task
+notice; wide windows use a 360dp side panel. Relationship links select their endpoints, and Open task opens the
+existing TaskSheet. Back dismisses the sheet, then selection/highlight, then returns to List. Loading, empty,
+all-closed/Show closed, no-match and offline/reconnecting states keep stale content rather than clearing the board.
+Controls have 48dp targets, card semantic names include reasons/progress/crew, and the lazy list supplies tree-order
+TalkBack traversal. Text and sections scroll/wrap with system font scaling; the view switch wraps at large sizes.
+
+Pure Kotlin semantics live under `features/tasks/graph/`. `apps/android/scripts/graph-vectors.ts` generates the shared
+synthetic `test-vectors/task-graph-v1.json` from the actual web model; `--check` detects parity drift. JVM tests compare
+all task details, counters, search weights/order and cycle/diamond-safe dependency counts, plus native family order,
+closed selection retention, quiet boundaries, scoped preference serialization and Back transitions.
+
 Implementation: `TaskGraph.svelte` owns chrome/model; `graph/GraphFamilyCanvas.svelte` owns layout/LOD/focus; small
 card/family/edge/creature components render content. `graph-family-camera.svelte.ts` owns only the viewport, and
 `task-graph-cards.ts` holds pure presentation/navigation helpers; `task-graph-family-dots.ts` holds world-anchor,

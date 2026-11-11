@@ -20,10 +20,12 @@ data class DeviceSettings(
     val mode: ThemeMode = ThemeMode.System,
     /** Backend URL -> project ID -> last viewed reply entry. */
     val seenReplies: Map<String, Map<String, Long>> = emptyMap(),
-    /** How the Tasks view shows tasks on this device, "list" or "board" (web `aiki.tasks-view.v1`). */
+    /** Legacy device-wide List/Board choice, used until a project has its own view preference. */
     val tasksView: String = "list",
     /** One timeline reading direction for every task on this device. */
     val timelineNewestFirst: Boolean = true,
+    /** Backend origin -> project ID -> List, Board or Graph. Legacy global choice is the fallback. */
+    val projectTasksView: Map<String, Map<String, String>> = emptyMap(),
     /** Backend origin -> project ID -> parent ID -> explicit family expansion choice. */
     val taskFamilyExpansion: Map<String, Map<String, Map<String, Boolean>>> = emptyMap(),
     /** Waiting calendar dates resolve at this local wall time on this device. */

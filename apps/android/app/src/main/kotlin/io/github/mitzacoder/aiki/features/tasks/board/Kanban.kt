@@ -271,7 +271,7 @@ fun reasonMessage(reason: String): String = "Back to working: ${reason.trim()}"
 // --- the remembered view -----------------------------------------------------------------------------------------
 
 /** How the Tasks view shows the tasks; per device, list unless the board was chosen. */
-enum class TasksViewMode(val stored: String) { List("list"), Board("board") }
+enum class TasksViewMode(val stored: String) { List("list"), Board("board"), Graph("graph") }
 
-/** The stored choice ([io.github.mitzacoder.aiki.data.DeviceSettings.tasksView]) as a mode; anything but "board" is the list. */
-fun tasksViewMode(stored: String?): TasksViewMode = if (stored == TasksViewMode.Board.stored) TasksViewMode.Board else TasksViewMode.List
+/** Unknown stored choices safely fall back to List. */
+fun tasksViewMode(stored: String?): TasksViewMode = TasksViewMode.entries.find { it.stored == stored } ?: TasksViewMode.List

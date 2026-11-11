@@ -1,0 +1,1421 @@
+{
+  "now": "2026-06-12T12:00:00Z",
+  "tasks": [
+    {
+      "id": "T1",
+      "revision": 1,
+      "title": "Access & identity",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "in_progress",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": null,
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "main",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-12T12:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 0,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-12T12:00:00.000Z",
+      "settledAt": null,
+      "archived": true,
+      "subtaskCount": {
+        "total": 6,
+        "done": 1
+      }
+    },
+    {
+      "id": "T2",
+      "revision": 1,
+      "title": "Agree on the access rules · Access & identity",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "review",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": "T1",
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "main",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-12T09:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 1,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-12T09:00:00.000Z",
+      "settledAt": null,
+      "archived": false
+    },
+    {
+      "id": "T3",
+      "revision": 1,
+      "title": "Build the happy path · Access & identity",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "in_progress",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": "T1",
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "main",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-12T06:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 2,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-12T06:00:00.000Z",
+      "settledAt": null,
+      "archived": false
+    },
+    {
+      "id": "T4",
+      "revision": 1,
+      "title": "Handle reconnect safely · Access & identity",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "blocked",
+      "blockedBy": [
+        "T2"
+      ],
+      "blockedReason": null,
+      "parent": "T1",
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "main",
+      "report": {
+        "now": "Waiting for the access contract",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-12T03:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 3,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-12T03:00:00.000Z",
+      "settledAt": null,
+      "archived": false
+    },
+    {
+      "id": "T5",
+      "revision": 1,
+      "title": "Test concurrent changes · Access & identity",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "dropped",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": "T1",
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "main",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-12T00:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 4,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-12T00:00:00.000Z",
+      "settledAt": null,
+      "archived": false,
+      "subtaskCount": {
+        "total": 1,
+        "done": 0
+      }
+    },
+    {
+      "id": "T6",
+      "revision": 1,
+      "title": "Review keyboard navigation · Access & identity",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "waiting",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": "T1",
+      "foundWhile": null,
+      "related": [],
+      "waiting": {
+        "note": "Waiting for the test window",
+        "since": "2026-06-11T21:00:00.000Z",
+        "until": "2026-06-15T09:00:00Z",
+        "by": "coordinator"
+      },
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "main",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-11T21:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 5,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-11T21:00:00.000Z",
+      "settledAt": null,
+      "archived": false
+    },
+    {
+      "id": "T7",
+      "revision": 1,
+      "title": "Resolve slow network failures · Access & identity",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "blocked",
+      "blockedBy": [
+        "T2"
+      ],
+      "blockedReason": "Needs reconnect contract",
+      "parent": "T5",
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "main",
+      "report": {
+        "now": "Waiting for the access contract",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-09T12:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 6,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-09T12:00:00.000Z",
+      "settledAt": null,
+      "archived": false,
+      "subtaskCount": {
+        "total": 1,
+        "done": 0
+      }
+    },
+    {
+      "id": "T8",
+      "revision": 1,
+      "title": "Check the last edge cases · Access & identity",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "todo",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": "T7",
+      "foundWhile": "T3",
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "main",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-11T15:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 7,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-11T15:00:00.000Z",
+      "settledAt": null,
+      "archived": false
+    },
+    {
+      "id": "T9",
+      "revision": 1,
+      "title": "Write the release notes · Access & identity",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "done",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": "T1",
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "main",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-11T12:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 8,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-11T12:00:00.000Z",
+      "settledAt": "2026-06-11T12:00:00.000Z",
+      "archived": false
+    },
+    {
+      "id": "T10",
+      "revision": 1,
+      "title": "Reliable sync",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "in_progress",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": null,
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "sync-team",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-12T12:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 9,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-12T12:00:00.000Z",
+      "settledAt": null,
+      "archived": false,
+      "subtaskCount": {
+        "total": 6,
+        "done": 1
+      }
+    },
+    {
+      "id": "T11",
+      "revision": 1,
+      "title": "Agree on the access rules · Reliable sync",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "review",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": "T10",
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "sync-team",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-12T09:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 10,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-12T09:00:00.000Z",
+      "settledAt": null,
+      "archived": false
+    },
+    {
+      "id": "T12",
+      "revision": 1,
+      "title": "Build the happy path · Reliable sync",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "in_progress",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": "T10",
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "sync-team",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-12T06:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 11,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-12T06:00:00.000Z",
+      "settledAt": null,
+      "archived": false
+    },
+    {
+      "id": "T13",
+      "revision": 1,
+      "title": "Handle reconnect safely · Reliable sync",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "blocked",
+      "blockedBy": [
+        "T2",
+        "T4"
+      ],
+      "blockedReason": null,
+      "parent": "T14",
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "sync-team",
+      "report": {
+        "now": "Waiting for the access contract",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-12T03:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 12,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-12T03:00:00.000Z",
+      "settledAt": null,
+      "archived": false
+    },
+    {
+      "id": "T14",
+      "revision": 1,
+      "title": "Test concurrent changes · Reliable sync",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "todo",
+      "blockedBy": [
+        "T2",
+        "T13"
+      ],
+      "blockedReason": null,
+      "parent": "T13",
+      "foundWhile": null,
+      "related": [
+        "T5"
+      ],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "sync-team",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-12T00:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 13,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-12T00:00:00.000Z",
+      "settledAt": null,
+      "archived": false,
+      "subtaskCount": {
+        "total": 1,
+        "done": 0
+      }
+    },
+    {
+      "id": "T15",
+      "revision": 1,
+      "title": "Review keyboard navigation · Reliable sync",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "waiting",
+      "blockedBy": [
+        "T14"
+      ],
+      "blockedReason": null,
+      "parent": "T13",
+      "foundWhile": null,
+      "related": [],
+      "waiting": {
+        "note": "Waiting for the test window",
+        "since": "2026-06-11T21:00:00.000Z",
+        "until": "2026-06-15T09:00:00Z",
+        "by": "coordinator"
+      },
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "sync-team",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-11T21:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 14,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-11T21:00:00.000Z",
+      "settledAt": null,
+      "archived": false
+    },
+    {
+      "id": "T16",
+      "revision": 1,
+      "title": "Resolve slow network failures · Reliable sync",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "blocked",
+      "blockedBy": [
+        "T11",
+        "T3"
+      ],
+      "blockedReason": "Needs reconnect contract",
+      "parent": "T14",
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "sync-team",
+      "report": {
+        "now": "Waiting for the access contract",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-09T12:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 15,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-09T12:00:00.000Z",
+      "settledAt": null,
+      "archived": false,
+      "subtaskCount": {
+        "total": 1,
+        "done": 0
+      }
+    },
+    {
+      "id": "T17",
+      "revision": 1,
+      "title": "Check the last edge cases · Reliable sync",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "todo",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": "T16",
+      "foundWhile": "T12",
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "sync-team",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-11T15:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 16,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-11T15:00:00.000Z",
+      "settledAt": null,
+      "archived": false
+    },
+    {
+      "id": "T18",
+      "revision": 1,
+      "title": "Write the release notes · Reliable sync",
+      "description": "Synthetic product release fixture. No real project content.",
+      "acceptance": null,
+      "refs": [],
+      "status": "done",
+      "blockedBy": [],
+      "blockedReason": null,
+      "parent": "T10",
+      "foundWhile": null,
+      "related": [],
+      "writeScopes": [],
+      "workerIds": [],
+      "scheduleId": null,
+      "ownerThreadId": "sync-team",
+      "report": {
+        "now": "Checking acceptance criteria",
+        "results": "",
+        "next": "",
+        "revision": 0,
+        "updatedAt": "2026-06-11T12:00:00.000Z",
+        "updatedBy": {
+          "author": "coordinator",
+          "threadId": "main",
+          "workerId": null
+        }
+      },
+      "snapshots": 1,
+      "order": 17,
+      "createdBy": "coordinator",
+      "updatedBy": "coordinator",
+      "createdAt": "2026-06-08T09:00:00Z",
+      "updatedAt": "2026-06-11T12:00:00.000Z",
+      "settledAt": "2026-06-11T12:00:00.000Z",
+      "archived": false
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q1",
+      "revision": 1,
+      "kind": "question",
+      "text": "Keep the stricter access rule?",
+      "options": [
+        "Keep it",
+        "Relax it"
+      ],
+      "taskId": "T2",
+      "status": "open",
+      "answer": null,
+      "askedAt": "2026-06-12T09:00:00.000Z",
+      "answeredAt": null
+    }
+  ],
+  "workers": [
+    {
+      "id": "fern",
+      "title": "Check reconnect and recovery",
+      "status": "failed",
+      "model": {
+        "provider": "synthetic",
+        "modelId": "fixture"
+      },
+      "thinkingLevel": null,
+      "isolation": "shared",
+      "workspacePath": null,
+      "conversationId": 2,
+      "spawnedByCallId": null,
+      "threadId": "sync-team",
+      "taskId": "T3",
+      "createdAt": "2026-06-12T09:00:00Z",
+      "updatedAt": "2026-06-12T12:00:00Z",
+      "lastReport": "Checked reconnect safety.",
+      "failure": "Synthetic interrupted check"
+    },
+    {
+      "id": "moss",
+      "title": "Check reconnect and recovery",
+      "status": "running",
+      "model": {
+        "provider": "synthetic",
+        "modelId": "fixture"
+      },
+      "thinkingLevel": null,
+      "isolation": "shared",
+      "workspacePath": null,
+      "conversationId": 3,
+      "spawnedByCallId": null,
+      "threadId": "sync-team",
+      "taskId": "T3",
+      "createdAt": "2026-06-12T09:00:00Z",
+      "updatedAt": "2026-06-12T12:00:00Z",
+      "lastReport": null,
+      "failure": null
+    },
+    {
+      "id": "pip",
+      "title": "Check reconnect and recovery",
+      "status": "running",
+      "model": {
+        "provider": "synthetic",
+        "modelId": "fixture"
+      },
+      "thinkingLevel": null,
+      "isolation": "shared",
+      "workspacePath": null,
+      "conversationId": 4,
+      "spawnedByCallId": null,
+      "threadId": "sync-team",
+      "taskId": "T12",
+      "createdAt": "2026-06-12T09:00:00Z",
+      "updatedAt": "2026-06-12T12:00:00Z",
+      "lastReport": null,
+      "failure": null
+    }
+  ],
+  "threads": [
+    {
+      "id": "sync-team",
+      "title": "Sync crew",
+      "status": "running",
+      "main": false,
+      "startedBy": "main",
+      "scheduleId": null,
+      "conversationId": 20,
+      "model": null,
+      "thinkingLevel": null,
+      "onFinish": "review",
+      "runningWorkers": 3,
+      "taskId": "T10",
+      "ownedTasks": [
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18"
+      ],
+      "openQuestions": 1,
+      "current": "Checking reconnect safety",
+      "summary": null,
+      "failure": null,
+      "createdAt": "2026-06-12T12:00:00Z",
+      "updatedAt": "2026-06-12T12:00:00Z",
+      "finishedAt": null,
+      "archived": false
+    }
+  ],
+  "details": [
+    {
+      "id": "T1",
+      "familyId": "T1",
+      "progress": "1 of 7 subtasks done",
+      "reasons": [],
+      "quiet": false,
+      "children": [
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T9"
+      ],
+      "blocks": [],
+      "workers": [],
+      "threads": [],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    },
+    {
+      "id": "T2",
+      "familyId": "T1",
+      "progress": "1 of 7 subtasks done",
+      "reasons": [
+        "review",
+        "question"
+      ],
+      "quiet": false,
+      "children": [],
+      "blocks": [
+        "T4",
+        "T7",
+        "T13",
+        "T14"
+      ],
+      "workers": [],
+      "threads": [],
+      "holdsUp": {
+        "direct": 4,
+        "total": 5
+      }
+    },
+    {
+      "id": "T3",
+      "familyId": "T1",
+      "progress": "1 of 7 subtasks done",
+      "reasons": [
+        "failed"
+      ],
+      "quiet": false,
+      "children": [],
+      "blocks": [
+        "T16"
+      ],
+      "workers": [
+        "fern",
+        "moss"
+      ],
+      "threads": [],
+      "holdsUp": {
+        "direct": 1,
+        "total": 1
+      }
+    },
+    {
+      "id": "T4",
+      "familyId": "T1",
+      "progress": "1 of 7 subtasks done",
+      "reasons": [
+        "blocked"
+      ],
+      "quiet": false,
+      "children": [],
+      "blocks": [
+        "T13"
+      ],
+      "workers": [],
+      "threads": [],
+      "holdsUp": {
+        "direct": 1,
+        "total": 3
+      }
+    },
+    {
+      "id": "T5",
+      "familyId": "T1",
+      "progress": "1 of 7 subtasks done",
+      "reasons": [],
+      "quiet": false,
+      "children": [
+        "T7"
+      ],
+      "blocks": [],
+      "workers": [],
+      "threads": [],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    },
+    {
+      "id": "T6",
+      "familyId": "T1",
+      "progress": "1 of 7 subtasks done",
+      "reasons": [
+        "waiting"
+      ],
+      "quiet": false,
+      "children": [],
+      "blocks": [],
+      "workers": [],
+      "threads": [],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    },
+    {
+      "id": "T7",
+      "familyId": "T1",
+      "progress": "1 of 7 subtasks done",
+      "reasons": [
+        "blocked"
+      ],
+      "quiet": true,
+      "children": [
+        "T8"
+      ],
+      "blocks": [],
+      "workers": [],
+      "threads": [],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    },
+    {
+      "id": "T8",
+      "familyId": "T1",
+      "progress": "1 of 7 subtasks done",
+      "reasons": [],
+      "quiet": false,
+      "children": [],
+      "blocks": [],
+      "workers": [],
+      "threads": [],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    },
+    {
+      "id": "T9",
+      "familyId": "T1",
+      "progress": "1 of 7 subtasks done",
+      "reasons": [],
+      "quiet": false,
+      "children": [],
+      "blocks": [],
+      "workers": [],
+      "threads": [],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    },
+    {
+      "id": "T10",
+      "familyId": "T10",
+      "progress": "1 of 3 subtasks done",
+      "reasons": [],
+      "quiet": false,
+      "children": [
+        "T11",
+        "T12",
+        "T18"
+      ],
+      "blocks": [],
+      "workers": [],
+      "threads": [
+        "sync-team"
+      ],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    },
+    {
+      "id": "T11",
+      "familyId": "T10",
+      "progress": "1 of 3 subtasks done",
+      "reasons": [
+        "review"
+      ],
+      "quiet": false,
+      "children": [],
+      "blocks": [
+        "T16"
+      ],
+      "workers": [],
+      "threads": [
+        "sync-team"
+      ],
+      "holdsUp": {
+        "direct": 1,
+        "total": 1
+      }
+    },
+    {
+      "id": "T12",
+      "familyId": "T10",
+      "progress": "1 of 3 subtasks done",
+      "reasons": [],
+      "quiet": false,
+      "children": [],
+      "blocks": [],
+      "workers": [
+        "pip"
+      ],
+      "threads": [
+        "sync-team"
+      ],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    },
+    {
+      "id": "T13",
+      "familyId": "T13",
+      "progress": "0 of 4 subtasks done",
+      "reasons": [
+        "blocked"
+      ],
+      "quiet": false,
+      "children": [
+        "T14",
+        "T15"
+      ],
+      "blocks": [
+        "T14"
+      ],
+      "workers": [],
+      "threads": [
+        "sync-team"
+      ],
+      "holdsUp": {
+        "direct": 1,
+        "total": 2
+      }
+    },
+    {
+      "id": "T14",
+      "familyId": "T13",
+      "progress": "0 of 4 subtasks done",
+      "reasons": [],
+      "quiet": false,
+      "children": [
+        "T13",
+        "T16"
+      ],
+      "blocks": [
+        "T15"
+      ],
+      "workers": [],
+      "threads": [
+        "sync-team"
+      ],
+      "holdsUp": {
+        "direct": 1,
+        "total": 1
+      }
+    },
+    {
+      "id": "T15",
+      "familyId": "T13",
+      "progress": "0 of 4 subtasks done",
+      "reasons": [
+        "waiting"
+      ],
+      "quiet": false,
+      "children": [],
+      "blocks": [],
+      "workers": [],
+      "threads": [
+        "sync-team"
+      ],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    },
+    {
+      "id": "T16",
+      "familyId": "T13",
+      "progress": "0 of 4 subtasks done",
+      "reasons": [
+        "blocked"
+      ],
+      "quiet": true,
+      "children": [
+        "T17"
+      ],
+      "blocks": [],
+      "workers": [],
+      "threads": [
+        "sync-team"
+      ],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    },
+    {
+      "id": "T17",
+      "familyId": "T13",
+      "progress": "0 of 4 subtasks done",
+      "reasons": [],
+      "quiet": false,
+      "children": [],
+      "blocks": [],
+      "workers": [],
+      "threads": [
+        "sync-team"
+      ],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    },
+    {
+      "id": "T18",
+      "familyId": "T10",
+      "progress": "1 of 3 subtasks done",
+      "reasons": [],
+      "quiet": false,
+      "children": [],
+      "blocks": [],
+      "workers": [],
+      "threads": [
+        "sync-team"
+      ],
+      "holdsUp": {
+        "direct": 0,
+        "total": 0
+      }
+    }
+  ],
+  "counters": [
+    {
+      "key": "reason:review",
+      "count": 2
+    },
+    {
+      "key": "reason:blocked",
+      "count": 4
+    },
+    {
+      "key": "reason:waiting",
+      "count": 2
+    },
+    {
+      "key": "reason:question",
+      "count": 1
+    },
+    {
+      "key": "reason:failed",
+      "count": 1
+    },
+    {
+      "key": "quiet",
+      "count": 2
+    },
+    {
+      "key": "status:in_progress",
+      "count": 3
+    },
+    {
+      "key": "status:todo",
+      "count": 3
+    },
+    {
+      "key": "status:done",
+      "count": 2
+    },
+    {
+      "key": "status:dropped",
+      "count": 1
+    }
+  ],
+  "search": [
+    {
+      "query": "T2",
+      "results": [
+        {
+          "taskId": "T2",
+          "score": 120,
+          "matched": "Task ID"
+        }
+      ]
+    },
+    {
+      "query": "access",
+      "results": [
+        {
+          "taskId": "T2",
+          "score": 80,
+          "matched": "Title"
+        },
+        {
+          "taskId": "T3",
+          "score": 80,
+          "matched": "Title"
+        },
+        {
+          "taskId": "T4",
+          "score": 80,
+          "matched": "Title"
+        },
+        {
+          "taskId": "T5",
+          "score": 80,
+          "matched": "Title"
+        },
+        {
+          "taskId": "T6",
+          "score": 80,
+          "matched": "Title"
+        },
+        {
+          "taskId": "T7",
+          "score": 80,
+          "matched": "Title"
+        },
+        {
+          "taskId": "T8",
+          "score": 80,
+          "matched": "Title"
+        },
+        {
+          "taskId": "T9",
+          "score": 80,
+          "matched": "Title"
+        },
+        {
+          "taskId": "T11",
+          "score": 80,
+          "matched": "Title"
+        }
+      ]
+    },
+    {
+      "query": "fern",
+      "results": [
+        {
+          "taskId": "T3",
+          "score": 90,
+          "matched": "Worker"
+        }
+      ]
+    },
+    {
+      "query": "Sync crew",
+      "results": [
+        {
+          "taskId": "T10",
+          "score": 60,
+          "matched": "Thread"
+        },
+        {
+          "taskId": "T11",
+          "score": 60,
+          "matched": "Thread"
+        },
+        {
+          "taskId": "T12",
+          "score": 60,
+          "matched": "Thread"
+        },
+        {
+          "taskId": "T13",
+          "score": 60,
+          "matched": "Thread"
+        },
+        {
+          "taskId": "T14",
+          "score": 60,
+          "matched": "Thread"
+        },
+        {
+          "taskId": "T15",
+          "score": 60,
+          "matched": "Thread"
+        },
+        {
+          "taskId": "T16",
+          "score": 60,
+          "matched": "Thread"
+        },
+        {
+          "taskId": "T17",
+          "score": 60,
+          "matched": "Thread"
+        },
+        {
+          "taskId": "T18",
+          "score": 60,
+          "matched": "Thread"
+        }
+      ]
+    },
+    {
+      "query": "reconnect",
+      "results": [
+        {
+          "taskId": "T4",
+          "score": 80,
+          "matched": "Title"
+        },
+        {
+          "taskId": "T13",
+          "score": 80,
+          "matched": "Title"
+        },
+        {
+          "taskId": "T3",
+          "score": 60,
+          "matched": "Worker"
+        },
+        {
+          "taskId": "T12",
+          "score": 60,
+          "matched": "Worker"
+        },
+        {
+          "taskId": "T14",
+          "score": 50,
+          "matched": "Family"
+        },
+        {
+          "taskId": "T15",
+          "score": 50,
+          "matched": "Family"
+        },
+        {
+          "taskId": "T16",
+          "score": 50,
+          "matched": "Family"
+        },
+        {
+          "taskId": "T17",
+          "score": 50,
+          "matched": "Family"
+        }
+      ]
+    },
+    {
+      "query": "absent",
+      "results": []
+    }
+  ]
+}

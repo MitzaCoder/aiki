@@ -161,6 +161,40 @@ commit before authorized tagging. The publisher still reviews LGPL/relinking and
 Google/dependency terms; this work is not a legal certification.
 
 
+## Android family graph, first part (T115)
+
+Based on web graph `qxxtnuzp`. Native Tasks now offers Graph beside List/Board, with backend/project-scoped view
+preferences and the old global preference as fallback. The phone shows one family in cycle-safe tree order, a
+mixed-status/progress header, overlapping summary highlights, next matching family, picker and weighted search.
+Status words/marks accompany colour; quiet is separate from failure. Cards have static state-specific Compose
+creatures (typing hands, resting eyes, failure cross), avoiding decorative motion even with reduced motion off.
+Selection is an ID: the scrollable bottom sheet updates through board/worker replacements and survives disappearance;
+wide windows use a side panel. Parent/subtask/dependency links select endpoints; Open task uses the existing TaskSheet.
+Back closes the sheet, then selection/highlight, then returns to List. Loading/empty/all-closed/no-match/offline states
+keep their distinct messages. Controls use 48dp targets, strong foreground text and large-font wrapping.
+
+`features/tasks/graph/` separates pure semantics, cards, details and orchestration for T116's later canvas. The shared
+synthetic JSON vectors are generated from the actual web model by `bun apps/android/scripts/graph-vectors.ts`;
+`--check` detects drift. Twelve new JVM tests cover web parity, hidden ancestors, cycles, numeric ranking, overlapping
+counts, dependency diamonds, quiet boundaries, family order, closed selection, scoped preferences and Back transitions.
+No protocol, server or web source changed. Whole-project zoom/pan, cross-family drawn edges, travel/sparks and the
+change list remain T116; physical-device profiling and an actual TalkBack session were not performed.
+
+Checks pass: Bun install; root 2,190 tests / 81,226 assertions, typecheck; web-model vector parity; Android 825 JVM tests
+in 109 suites, two opt-in skips, zero failures/errors; debug assembly and lint (41 warnings, one hint, zero errors).
+Builds use an explicit empty private-properties source. Public-source guard/Gitleaks pass. Web checks were not rerun
+for this Android/docs-only change. One new cycle-order test initially omitted two valid descendants; its assertion
+was corrected, not the model. No flaky root retries.
+
+T115 proof has phone light/dark list-before and graph-after, counter/search, same-sheet live status/report updates,
+existing TaskSheet, missing/empty/closed/no-match/offline, 1.3/2.0 system fonts, tablet side panel and a 14.3-second
+native interaction recording. The verified tablet and 2.0 control shots supersede two captures of prior frames during
+navigation/resize; use the final-tagged filenames in the task's proof index. Screens were driven only on the owned
+emulator against scrubbed createSetup busy-demo backends; no physical phone, real task/provider data or credentials.
+A second temporary backend used a separate app address because the existing device-auth identity pin correctly
+rejected replacing the first origin's backend. Native add-backend UI was used; no pin/auth bypass. Both synthetic
+backends and the owned emulator are stopped. No push, deployment or main-bookmark movement.
+
 ## T114 integration on T113 (Q126)
 
 Rebased T114 onto T113 `pnyuzyvu` / `5ed27fea`, above T112 F20. Runtime files merge cleanly; the only conflict
