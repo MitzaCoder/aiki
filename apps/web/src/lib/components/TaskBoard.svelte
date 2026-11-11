@@ -724,6 +724,7 @@
 								animate:flip={{ duration: flipDuration }}
 							>
 								<TaskCard
+									activityEnabled={board?.activityEnabled === true}
 									{card}
 									searchHit={search.query.trim() ? searchHitById.get(card.task.id) : undefined}
 									tasks={board?.tasks ?? []}
@@ -831,7 +832,7 @@
 		style:width="{drag.width}px"
 		aria-hidden="true"
 	>
-		<TaskCard card={drag.card} tasks={board?.tasks ?? []} {workers} {threads} {now} href={taskHref(drag.card.task.id)} ghost />
+		<TaskCard activityEnabled={board?.activityEnabled === true} card={drag.card} tasks={board?.tasks ?? []} {workers} {threads} {now} href={taskHref(drag.card.task.id)} ghost />
 	</div>
 {/if}
 

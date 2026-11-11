@@ -1,3 +1,4 @@
+import { taskNowText } from './task-activity.js';
 import { page } from '$app/state';
 import { untrack } from 'svelte';
 import type { BoardTask } from '@aiki/protocol';
@@ -43,7 +44,7 @@ export function useTaskSearch(tasks: () => readonly BoardTask[], board: () => Pr
 	const updated = $derived.by(() => {
 		index.update(tasks().map(task => ({ id: task.id, title: task.title, parent: task.parent,
 			refs: task.refs.flatMap(ref => { const status = refs()?.status(ref); return [ref, refLabel(ref, refs()?.links), ...(status && 'title' in status ? [status.title] : [])]; }),
-			body: [task.description, task.report.now, task.report.results, task.report.next, task.feedback && Object.values(task.feedback).some(count => count > 0) ? feedback[task.id]?.text ?? '' : ''].join('\n') })));
+			body: [task.description, taskNowText(task, board()?.activityEnabled === true), task.report.results, task.report.next, task.feedback && Object.values(task.feedback).some(count => count > 0) ? feedback[task.id]?.text ?? '' : ''].join('\n') })));
 		return index;
 	});
 	return {

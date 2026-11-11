@@ -1,5 +1,36 @@
 # Continue
 
+## T122 proof follow-up: populated sections with missing dates
+
+The demo assigned `report.next/results` directly on BoardDoc after saveTask had initialized freshness
+with null dates, bypassing writeReport/coverReportSection. Setting only shared updatedAt/revision did
+not repair already-present section metadata. This caused the screenshot's Next/“Not written yet”
+mismatch; automatic activity only clones the report and overrides Now, and does not reset dates.
+The formatter was also too categorical: null date now omits age instead of claiming no prose exists,
+while preserving uncovered-event counts and stale marks. It does not invent an approximate date.
+Added a populated/null-date regression; targeted freshness tests, web check and the server's canonical
+mirror metadata regression pass. Replacement phone-dark proof retains the inconsistent fixture to
+verify the defensive display. Production server behavior is unchanged.
+
+## T122 web: automatic Now and activity gists
+
+Report Now, task-list summaries and board cards use canonical `task.activity` only with the explicit
+`task-activity` capability and optional field. A shared activity-line component adds kind-toned dots
+and a locally ticking age; one minute timer serves mounted lines without invalidating whole lists or
+writing server state. Failure/attention/work/review/muted kinds stay compact, and active pulses respect
+reduced motion. Already-timed state/delivery text avoids duplicate ages; unknown/not-started omit ages.
+Missing flag/field preserves legacy prose, gists and waiting summaries. Search uses canonical text,
+never local ages. The current bubble graph has no separate report gist; selecting a task opens the
+same automatic Now sheet. History remains untouched; no editable prose Now was added.
+
+Five pure tests cover gating/fallback, age formatting, kinds, row/card gists and search. Requested
+checks pass: web check zero diagnostics, 1,021 tests / 79,541 assertions, production build; root
+typecheck; public guard/Gitleaks. No root suite was requested. T122 proof includes before/after sheets
+and lists at desktop/390px in light/dark, two board shots, and a recording of live synthetic durable
+worker-source finish/start transitions (working → review → working). The before backend genuinely
+omits task-activity and retains old prose. All demo processes were stopped; no live data/providers,
+main move, push or deployment. Demo scripts and evidence remain in the task artifacts/scratch handoff.
+
 ## T121: freshness stack on the current bubble-graph main
 
 The fifteen T120 changes are one linear stack above main `1d24f8d7`, with

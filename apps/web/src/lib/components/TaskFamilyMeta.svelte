@@ -1,4 +1,6 @@
 <script lang="ts">
+	import TaskActivityLine from './TaskActivityLine.svelte';
+	import type { BoardTaskActivity } from '@aiki/protocol';
 	import GitBranchIcon from '@lucide/svelte/icons/git-branch';
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import LinkIcon from '@lucide/svelte/icons/link';
@@ -8,7 +10,7 @@
 	import type { TaskRow } from '#lib/tasks.js';
 
 	type BoardTask = TaskRow['task'];
-	let { task, tasks, archivedLinks = [], nested, taskHref, onopen, summary = '', canToggle = false, expanded = false, foldedCount = 0, ontoggle }: {
+	let { task, tasks, archivedLinks = [], nested, taskHref, onopen, summary = '', activity, canToggle = false, expanded = false, foldedCount = 0, ontoggle }: {
 		task: BoardTask;
 		tasks: readonly BoardTask[];
 		archivedLinks?: readonly Pick<BoardTask, 'id' | 'title' | 'status' | 'archived'>[];
@@ -16,6 +18,7 @@
 		taskHref: (id: string) => string;
 		onopen?: (id: string) => void;
 		summary?: string;
+		activity?: BoardTaskActivity;
 		canToggle?: boolean;
 		expanded?: boolean;
 		foldedCount?: number;
@@ -47,9 +50,9 @@
 	{:else}Subtasks{/if}
 {/snippet}
 
-{#if summary || (parent && !nested) || (progress && progress.total > 0) || canToggle || hints.length > 0 || feedback > 0}
+{#if activity || summary || (parent && !nested) || (progress && progress.total > 0) || canToggle || hints.length > 0 || feedback > 0}
 	<span class="family-meta flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.6875rem] leading-4 text-(--chat-fg-subtle)">
-		{#if summary}<span class="max-w-full text-(--chat-fg-muted)" class:truncate={task.status !== 'waiting'} class:text-task-sm={task.status !== 'waiting'} class:text-xs={task.status === 'waiting'}>{summary}</span>{/if}
+		{#if activity}<TaskActivityLine {activity} compact />{:else if summary}<span class="max-w-full text-(--chat-fg-muted)" class:truncate={task.status !== 'waiting'} class:text-task-sm={task.status !== 'waiting'} class:text-xs={task.status === 'waiting'}>{summary}</span>{/if}
 		{#if parent && !nested}
 			{@const label = relationLabel('Subtask of', parent)}
 			<a href={taskHref(parent.id)} onclick={() => onopen?.(parent.id)} title={label} aria-label={label} class="family-link" class:opacity-60={parent.closed} data-parent-chip={parent.id}>↳ {parent.id}</a>

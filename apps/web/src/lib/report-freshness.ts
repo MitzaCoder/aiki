@@ -6,7 +6,8 @@ export function reportFreshnessEnabled(advertised: boolean, task: BoardTask): bo
 }
 
 export function reportSectionAge(section: BoardReportSection, now: number, emptyResults = false): string {
-	const age = emptyResults ? '' : section.writtenAt === null ? 'Not written yet' : `written ${section.approximate ? 'about ' : ''}${relativeTime(section.writtenAt, now)}`;
+	// A missing date cannot prove that prose is absent; omit the age rather than claiming it was never written.
+	const age = emptyResults || section.writtenAt === null ? '' : `written ${section.approximate ? 'about ' : ''}${relativeTime(section.writtenAt, now)}`;
 	const events = section.eventsSince > 0 ? `${section.eventsSince} ${section.eventsSince === 1 ? 'event' : 'events'} since` : '';
 	return [age, events].filter(Boolean).join(' · ');
 }

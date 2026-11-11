@@ -1384,7 +1384,14 @@ sources. `actor` is `{ id, kind, name, threadId, conversationId, runId }`; kind 
 coordinator or thread. IDs include thread, conversation and run: worker names are reusable.
 `count` is the question count, live worker count or landed change count, depending on kind.
 Missing flag or activity retains the old-backend display; never infer activity from old prose.
-There are no client display changes in this stage.
+The web Report Now row renders canonical activity text with a quiet local age and a small kind dot:
+failure is error-toned, questions/waits/feedback need attention, active work/deploys pulse gently,
+review uses its review tone, and idle/closure are muted. The pulse respects reduced motion. List and
+board gists share that line; graph task selection opens the same sheet (the bubble graph itself has
+no report gist). One shared minute timer updates only activity-line components, never board state or
+search indexes. Unknown/not-started omit an age; state/delivery text already containing “since” does
+not get a duplicate suffix. Search indexes canonical activity text only. An explicit hello capability
+and the optional field are both required; missing either preserves the existing prose UI.
 
 A pure project-local reducer reads durable source records and board facts, first match wins:
 1. Unresolved worker/thread failure (reserved typed deploy-failure slot first).

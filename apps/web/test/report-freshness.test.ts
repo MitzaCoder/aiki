@@ -17,9 +17,15 @@ describe('report freshness', () => {
 		const now = Date.parse('2026-01-01T12:00:00Z');
 		expect(reportSectionAge(section, now)).toBe('written 2 h ago · 6 events since');
 		expect(reportSectionAge({ ...section, approximate: true, eventsSince: 1 }, now)).toBe('written about 2 h ago · 1 event since');
-		expect(reportSectionAge({ ...section, writtenAt: null, eventsSince: 0 }, now)).toBe('Not written yet');
+		expect(reportSectionAge({ ...section, writtenAt: null, eventsSince: 0 }, now)).toBe('');
 		expect(reportSectionAge({ ...section, writtenAt: 'invalid', eventsSince: 0 }, now)).toBe('written at an unknown time');
 		expect(reportSectionAge(section, now + 3_600_000)).toStartWith('written 3 h ago');
+	});
+	test('missing dates never claim that a populated section has no prose', () => {
+		const populated = { text: 'Coordinator: review the sample.', freshness: { ...section, writtenAt: null } };
+		expect(populated.text.length).toBeGreaterThan(0);
+		expect(reportSectionAge(populated.freshness, Date.now())).toBe('6 events since');
+		expect(reportSectionAge({ ...populated.freshness, eventsSince: 0 }, Date.now())).toBe('');
 	});
 	test('empty finished Results metadata only adds new information', () => {
 		const empty = { ...section, writtenAt: null, reasons: ['work finished', 'Q121 answered'] };

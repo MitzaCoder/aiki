@@ -1,4 +1,6 @@
 <script lang="ts">
+	import TaskActivityLine from './TaskActivityLine.svelte';
+	import { automaticTaskActivity } from '#lib/task-activity.js';
 	import { waitingSummary } from '#lib/task-waiting.js';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
 	import LayersIcon from '@lucide/svelte/icons/layers';
@@ -35,9 +37,11 @@
 		menu,
 		ghost = false,
 		lifted = false,
-		searchHit
+		searchHit,
+		activityEnabled = false
 	}: {
 		card: KanbanCard;
+		activityEnabled?: boolean;
 		/** Every task on the board, to name what this one waits for. */
 		tasks: readonly BoardTask[];
 		workers?: readonly WorkerSummary[];
@@ -63,7 +67,8 @@
 	const task = $derived(card.task);
 	const needsYou = $derived(card.waiting.length > 0 && card.column !== 'done');
 	const warned = $derived(card.waiting.some(isWarning));
-	const gist = $derived(cardGist(card));
+	const gist = $derived(cardGist(card, activityEnabled));
+	const activity = $derived(automaticTaskActivity(task, activityEnabled));
 	const refs = $derived(taskRefs(task));
 	const time = $derived(cardTime(card, now));
 	const closed = $derived(card.column === 'done');
@@ -106,9 +111,11 @@
 				: 'text-(--chat-fg)'}"
 			aria-label="Open {task.id}: {task.title}">{#each task.title.split('') as letter, at}{#if searchHit?.ranges.some(([start, end]) => at >= start && at < end)}<mark>{letter}</mark>{:else}{letter}{/if}{/each}</a
 		>
-		{#if task.waiting}<p class="text-xs text-(--chat-fg-subtle)">{waitingSummary(task)}</p>{/if}
+		{#if task.waiting && !activity}<p class="text-xs text-(--chat-fg-subtle)">{waitingSummary(task)}</p>{/if}
 {#if searchHit?.snippet}<p class="truncate text-xs text-(--chat-fg-muted)">{searchHit.snippet}</p>{/if}
-{#if !searchHit?.snippet && gist.length > 0 && task.status !== 'waiting'}
+{#if !searchHit?.snippet && activity}
+			<TaskActivityLine {activity} compact />
+{:else if !searchHit?.snippet && gist.length > 0 && task.status !== 'waiting'}
 			<p class="line-clamp-2 text-task-sm break-words text-(--chat-fg-muted)">{gist}</p>
 		{/if}
 		{#if needsYou && card.waiting.length > 1}

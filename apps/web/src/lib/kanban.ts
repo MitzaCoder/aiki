@@ -152,9 +152,9 @@ const COLUMN_SECTIONS: Record<KanbanColumnId, TaskSectionId> = {
 };
 
 /** The line under a card's title: the waiting question when one is, else the report line that fits its column. */
-export function cardGist(card: KanbanCard): string {
+export function cardGist(card: KanbanCard, activityEnabled = false): string {
 	const section = card.waiting.length > 0 ? "needs_you" : COLUMN_SECTIONS[card.column];
-	return rowGist({ task: card.task, waiting: card.waiting, section });
+	return rowGist({ task: card.task, waiting: card.waiting, section }, activityEnabled);
 }
 
 /**

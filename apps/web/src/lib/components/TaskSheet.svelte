@@ -1,4 +1,6 @@
 <script lang="ts">
+	import TaskActivityLine from './TaskActivityLine.svelte';
+	import { automaticTaskActivity, taskActivitySupported } from '#lib/task-activity.js';
 	import CardMarkdown from './markdown/CardMarkdown.svelte';
 	import ReportSectionFreshness from './ReportSectionFreshness.svelte';
 	import ReportStaleAction from './ReportStaleAction.svelte';
@@ -168,7 +170,8 @@
 		task === undefined ? [] : task.workerIds.map((id) => ({ id, worker: workers.find((entry) => entry.id === id) }))
 	);
 	const report = $derived(task?.report);
-	const hasReport = $derived(report !== undefined && REPORT_SECTIONS.some(({ key }) => report[key].trim().length > 0));
+	const automaticActivity = $derived(task === undefined ? undefined : automaticTaskActivity(task, taskActivitySupported(backend.connection.features)));
+	const hasReport = $derived(automaticActivity !== undefined || (report !== undefined && REPORT_SECTIONS.some(({ key }) => report[key].trim().length > 0)));
 
 	const supportsLinks = $derived(backend.supports('task-links'));
 	const supportsFreshness = $derived(task !== undefined && reportFreshnessEnabled(backend.supports('task-freshness'), task));
@@ -435,10 +438,11 @@
 											</span>{/snippet}
 										{#if supportsFreshness && report?.freshness}
 											{#each TASK_SHEET_REPORT_SECTIONS as section (section.key)}
-												{#if report[section.key].trim().length > 0 || (section.key === 'results' && emptyFinishedResults(task))}
+												{#if (section.key === 'now' && automaticActivity) || report[section.key].trim().length > 0 || (section.key === 'results' && emptyFinishedResults(task))}
 													<div data-report-section={section.key}>
 														<p class="mb-0.5 text-xs font-semibold text-(--chat-fg-muted)">{section.label}</p>
-														{#if section.key === 'results' && emptyFinishedResults(task)}
+														{#if section.key === 'now' && automaticActivity}<TaskActivityLine activity={automaticActivity} />
+														{:else if section.key === 'results' && emptyFinishedResults(task)}
 															<div class="text-task text-(--chat-fg-muted)">No results yet · work finished</div>
 														{:else}<Markdown source={report[section.key]} class="report-md" />{/if}
 														{#if section.key !== 'now'}<ReportSectionFreshness section={report.freshness[section.key]} emptyResults={section.key === 'results' && emptyFinishedResults(task)} />{/if}
@@ -448,10 +452,10 @@
 											{#if !hasReport && !emptyFinishedResults(task)}<p class="text-task text-(--chat-fg-subtle)">Nothing written yet. The agents fill this in as they work.</p>{/if}
 										{:else if hasReport && report}
 											{#each TASK_SHEET_REPORT_SECTIONS as section (section.key)}
-												{#if report[section.key].trim().length > 0}
+												{#if (section.key === 'now' && automaticActivity) || report[section.key].trim().length > 0}
 													<div data-report-section={section.key}>
 														<p class="mb-0.5 text-xs font-semibold text-(--chat-fg-muted)">{section.label}</p>
-														<Markdown source={report[section.key]} class="report-md" />
+														{#if section.key === 'now' && automaticActivity}<TaskActivityLine activity={automaticActivity} />{:else}<Markdown source={report[section.key]} class="report-md" />{/if}
 													</div>
 												{/if}
 											{/each}

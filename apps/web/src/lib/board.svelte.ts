@@ -4,6 +4,7 @@
  * read when the user asks for them and again after each push while they are shown. Saves and answers go through here and
  * report a conflict as an outcome, with the newer row read back, instead of throwing.
  */
+import { taskActivitySupported } from './task-activity.js';
 import { boardConflict, boardStateIsFor, type HarnessClient } from "@aiki/client";
 import type {
 	Board,
@@ -39,6 +40,8 @@ export class ProjectBoard {
 	archived = $state<BoardTask[]>([]);
 	showArchived = $state(false);
 	loaded = $state(false);
+	/** Activity requires an explicit hello capability, unlike legacy assumed support. */
+	activityEnabled = $state(false);
 	error = $state<string | undefined>(undefined);
 
 	/** Live tasks and, when asked for, the archived ones. */
@@ -65,7 +68,10 @@ export class ProjectBoard {
 		});
 		// A reconnect loses the pushes sent while away, so ask for the board again.
 		this.#unsubscribeState = client.subscribe((state) => {
-			if (state.status === "ready") void this.load();
+			if (state.status === "ready") {
+				this.activityEnabled = taskActivitySupported(state.features);
+				void this.load();
+			}
 		});
 		if (client.connected) void this.load();
 	}

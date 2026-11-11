@@ -308,8 +308,9 @@ export function taskSections(
 }
 
 /** What a row says under the title: the report line that matters for where the task stands. */
-export function rowGist(row: TaskRow): string {
+export function rowGist(row: TaskRow, activityEnabled = false): string {
 	const { task, section } = row;
+	if (activityEnabled && task.activity) return task.activity.text;
 	if (task.status === "waiting") return task.waiting?.note ?? "";
 	if (section === "needs_you") return markdownText(row.waiting[0]?.text ?? "");
 	const report = task.report;

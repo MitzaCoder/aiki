@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { automaticTaskActivity } from '#lib/task-activity.js';
 	import CardMarkdown from './markdown/CardMarkdown.svelte';
 	import TaskSearchBox from './TaskSearchBox.svelte';
 	import { useTaskSearch } from '#lib/task-search.svelte.js';
@@ -184,7 +185,8 @@
 {#snippet taskRow(family: TaskFamily, depth = 0)}
 	{@const row = family.row}
 	{@const warned = row.waiting.some(isWarning)}
-	{@const gist = rowGist(row)}
+	{@const gist = rowGist(row, board?.activityEnabled === true)}
+	{@const activity = automaticTaskActivity(row.task, board?.activityEnabled === true)}
 	{@const refs = taskRefs(row.task)}
 	{@const needsYou = row.section === 'needs_you'}
 	<li class="task-row-item">
@@ -216,6 +218,7 @@
 				>
 				{#if searching && searchHitById.get(row.task.id)?.snippet}<p class="truncate text-xs text-(--chat-fg-muted)">{searchHitById.get(row.task.id)?.snippet}</p>{/if}
 				<TaskFamilyMeta task={row.task} {tasks} archivedLinks={board?.archivedLinks} nested={depth > 0} {taskHref} onopen={onopentask}
+					activity={searching && searchHitById.get(row.task.id)?.snippet ? undefined : activity}
 					summary={searching && searchHitById.get(row.task.id)?.snippet ? '' : row.task.status === 'waiting' ? waitingSummary(row.task) : gist}
 					canToggle={family.canToggle} expanded={family.expanded} foldedCount={family.foldedCount} ontoggle={() => toggleFamily(row.task.id)} />
 				{#if needsYou || refs.length > 0}
