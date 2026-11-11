@@ -1,5 +1,32 @@
 # Continue
 
+## T71: pinned browser and a non-publishing release check
+
+Retagged Release run `43057627821` failed in the Markdown browser beforeAll, not
+in the five repaired tests. With CHROMIUM_BIN unset, the old test launched PATH
+`chromium`: the runner image installs a rolling full Chromium snapshot via a
+system symlink, not a pinned test browser. Its 25-second timeout expired amid
+D-Bus startup diagnostics. Neither a specific D-Bus bug nor a sanitizer failure
+is established by that log.
+
+Checks now install/hash-check/cache Chrome for Testing headless shell 157.0.8103.50
+and export its exact path. The shared browser test support uses concurrent output
+draining, a 90-second bound inside the 120-second hook, private profile, explicit
+non-desktop bus address, headless/resource/background-service flags and owned
+process-group cleanup. Sandbox disabling is explicit for downloaded binaries on
+Ubuntu CI (AppArmor namespace restrictions), or automatic only for root; normal
+local launches retain their sandbox. No real DOM coverage is skipped or mocked.
+The repository search found only user-markdown.test.ts using that old launcher.
+
+Release workflow now has a read-only shared checks job for manual dispatch and
+the temporary ci/release-check branch. Only a successful push-tag event can enter
+the separate write-permission draft job. Manual checks, including dispatches on
+a tag, cannot build/upload/publish release assets. Regression tests enforce that
+separation and the browser pin. Exact local gates and the GitHub check URL/status
+are recorded on T71. Main/tag changes remain owner-only; the throwaway branch is
+removed after its checks conclude, not before a queued checkout can read it.
+
+
 ## Android graph integration on the timeline (Q134)
 
 Rebased the three-commit Android graph stack onto the deployed timeline tip `ca47e56e`. The only conflict was

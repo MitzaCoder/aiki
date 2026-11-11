@@ -14,7 +14,14 @@ hash-pinned jj before root tests: workspace/schedule/storage integration tests r
 the real tool, not an optional skip. Toolchain versions are reported. Deploy fixture
 ordering uses a shared request/restart trace rather than comparing external date
 output with JavaScript wall-clock values; production deployment behavior is unchanged.
-See `docs/research/pilot-release-ci.md` for the first-run failure and reproduction.
+See `docs/research/pilot-release-ci.md` for runner failure evidence and reproduction.
+The same read-only checks job runs for manual dispatches and the temporary release-
+check branch; only successful push-tag events enter the separate write-permission
+release/draft job. CI pins and hashes the dedicated CFT headless shell, not the
+runner's rolling desktop Chromium. Browser tests share bounded process-group
+ownership, concurrent output collection and explicit CI sandbox/resource settings;
+real DOMPurify coverage remains required. See that research note for the pin and
+local developer override.
 
 The neutral Android signing script uses an empty external properties file, `env -i`
 and explicit public build overrides; package ID is `io.github.mitzacoder.aiki` and

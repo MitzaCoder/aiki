@@ -88,6 +88,14 @@ The latter skips **only** private terms and requires Gitleaks; it is not a repla
 for the owner's pre-push scan. Default/local mode still fails without a nonempty
 private denylist. Do not put the denylist into the release checkout's tracked files.
 
+Before tagging, run the same non-publishing GitHub checks on the approved branch:
+`gh workflow run release.yml --repo MitzaCoder/aiki --ref APPROVED_BRANCH`.
+Confirm its exact head SHA, successful checks job and skipped release job. Manual
+runs cannot stage/publish even when the selected ref is a tag. For an unmerged
+workflow change, the temporary `ci/release-check` branch push also triggers checks.
+Delete that temporary branch after the run concludes. This does not replace the
+local private-term scan or grant permission to move main or a release tag.
+
 ## 2. Build and sign locally
 
 From the isolated exact-commit checkout, use the Android Nix shell (or set JDK 21

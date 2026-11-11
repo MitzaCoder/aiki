@@ -2,6 +2,7 @@ import { beforeAll, afterAll, describe, expect, test } from 'bun:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { renderChromiumDocument } from './support/chromium';
 
 // Exercise the actual DOMPurify path in a browser rather than mocking its sanitiser in Bun's DOM-less runtime.
 let directory: string;
@@ -38,14 +39,11 @@ beforeAll(async () => {
 	if (!bundle.success) throw new Error(bundle.logs.join('\n'));
 	const html = join(directory, 'render.html');
 	await Bun.write(html, `<body><script type="module">${(await bundle.outputs[0]!.text()).replaceAll('</script', '<\\/script')}</script></body>`);
-	const browser = Bun.spawn(['timeout', '25', 'setsid', '-f', '--wait', process.env.CHROMIUM_BIN ?? 'chromium', '--headless', '--no-sandbox', '--disable-gpu', `--user-data-dir=${directory}/profile`, '--dump-dom', `file://${html}`], { stdin: 'ignore', stdout: 'pipe', stderr: 'pipe' });
-	const output = await new Response(browser.stdout).text();
-	const error = await new Response(browser.stderr).text();
-	if (await browser.exited !== 0) throw new Error(error);
+	const output = await renderChromiumDocument(html, join(directory, 'profile'));
 	const encoded = [...output.matchAll(/<pre id="results">([A-Za-z0-9+/=]+)<\/pre>/g)].at(-1)?.[1];
-	if (!encoded) throw new Error(`No browser results: ${output}\n${error}`);
+	if (!encoded) throw new Error(`No browser results: ${output}`);
 	rendered = JSON.parse(Buffer.from(encoded, 'base64').toString());
-}, 60_000);
+}, 120_000);
 afterAll(async () => { if (directory) await rm(directory, { recursive: true, force: true }); });
 
 describe('user Markdown through the shared renderer', () => {

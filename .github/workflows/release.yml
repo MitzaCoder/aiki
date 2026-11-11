@@ -2,13 +2,17 @@ name: Release
 on:
   push:
     tags: ['v[0-9]*.[0-9]*.[0-9]*']
+    branches: ['ci/release-check']
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  release:
+  checks:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    timeout-minutes: 20
+    env:
+      # Downloaded CFT binaries have no Ubuntu AppArmor user-namespace profile. These are trusted local fixtures only.
+      CHROMIUM_NO_SANDBOX: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -26,12 +30,20 @@ jobs:
           tar -xzf jj-v0.47.1-x86_64-unknown-linux-musl.tar.gz ./jj
           install -m 755 jj "$RUNNER_TEMP/bin/jj"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Cache pinned headless shell archive
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.tool_cache }}/aiki-headless-shell
+          key: cft-linux64-157.0.8103.50-7bf0d41e424efd1d6281c4162993ab9dc5de92fac213c211614905a71c057d0f
+      - name: Install pinned headless shell
+        run: bash scripts/setup-test-browser.sh "$RUNNER_TOOL_CACHE/aiki-headless-shell" "$RUNNER_TEMP/aiki-headless-shell"
       - name: Report test toolchain
         run: |
           bun --version
           jj --version
           git --version
           date --version
+          "$CHROMIUM_BIN" --version
       - run: bun install --frozen-lockfile
       - run: bun test && bun run typecheck
       - run: bun run check && bun run build && bun test
@@ -50,6 +62,17 @@ jobs:
           install -m 755 gitleaks "$RUNNER_TEMP/bin/gitleaks"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - run: bun scripts/check-public.ts --public-ci
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
       - name: Build neutral source and web release
         run: bun scripts/build-release.ts --version "$GITHUB_REF_NAME" --out .preview/releases
       - name: Hash installer
