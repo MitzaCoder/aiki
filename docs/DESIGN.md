@@ -9,7 +9,12 @@ and mandatory Gitleaks still run; only the unavailable private-term scan is skip
 Local/default checks remain fail-closed without the ignored private denylist, and the
 owner must run them on the exact proposed public refs before a tag push. Tag automation
 stages a draft, not a public release, so the owner can attach/review local signed assets.
-No signing key or password is stored in the repository or GitHub.
+No signing key or password is stored in the repository or GitHub. Release CI installs
+hash-pinned jj before root tests: workspace/schedule/storage integration tests require
+the real tool, not an optional skip. Toolchain versions are reported. Deploy fixture
+ordering uses a shared request/restart trace rather than comparing external date
+output with JavaScript wall-clock values; production deployment behavior is unchanged.
+See `docs/research/pilot-release-ci.md` for the first-run failure and reproduction.
 
 The neutral Android signing script uses an empty external properties file, `env -i`
 and explicit public build overrides; package ID is `io.github.mitzacoder.aiki` and

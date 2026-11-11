@@ -5,7 +5,7 @@
  * Its answers are read live from the mutable `state` or from files, so a test can make it busy, publish a release under
  * a deploy root or lie about the running commit between two checks of the same deploy.
  */
-import { readFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export type FakeRelease = { name: string; commit: string; description: string; deployedAt: string };
@@ -39,6 +39,8 @@ export type FakeBackendState = {
 	 * projects opening lazily: they are listed, but closed until something pages them.
 	 */
 	openFor: number | null;
+	/** Shared append-only trace, also written by the restart stub; no cross-process wall-clock comparison. */
+	eventsFile: string | null;
 	/** IDs of projects whose `conversation.page` answers with an error. */
 	failPageFor: string[];
 };
@@ -46,8 +48,8 @@ export type FakeBackendState = {
 export type FakeBackend = {
 	url: string;
 	state: FakeBackendState;
-	/** Every request received, in order, without its id; `at` is for ordering against a restart. */
-	requests: { type: string; fields: Record<string, unknown>; at: number }[];
+	/** Every request received, in order, without its id. */
+	requests: { type: string; fields: Record<string, unknown> }[];
 	stop(): void;
 };
 
@@ -119,6 +121,7 @@ export function startFakeBackend(overrides: Partial<FakeBackendState> = {}): Fak
 		projects: [],
 		openFor: null,
 		failPageFor: [],
+		eventsFile: null,
 		...overrides,
 	};
 	const requests: FakeBackend["requests"] = [];
@@ -134,7 +137,8 @@ export function startFakeBackend(overrides: Partial<FakeBackendState> = {}): Fak
 				const request = JSON.parse(String(raw)) as Record<string, unknown>;
 				const type = String(request.type);
 				const { type: _type, id, ...fields } = request;
-				requests.push({ type, fields, at: Date.now() });
+				requests.push({ type, fields });
+				if (state.eventsFile) appendFileSync(state.eventsFile, `${type}\n`);
 				const answer = (body: Record<string, unknown>): void => {
 					socket.send(JSON.stringify({ type, id, ...body }));
 				};

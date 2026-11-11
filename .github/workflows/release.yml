@@ -14,6 +14,24 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4
+      - name: Install pinned workspace tool
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/jj" "$RUNNER_TEMP/bin"
+          gh release download v0.47.1 --repo jj-vcs/jj \
+            --pattern jj-v0.47.1-x86_64-unknown-linux-musl.tar.gz --dir "$RUNNER_TEMP/jj"
+          cd "$RUNNER_TEMP/jj"
+          echo 'd4b657f622ee50929c8916466dfa3d6a6c17a0a32b50e7b2c793707ec9ebcad7  jj-v0.47.1-x86_64-unknown-linux-musl.tar.gz' | sha256sum --check
+          tar -xzf jj-v0.47.1-x86_64-unknown-linux-musl.tar.gz ./jj
+          install -m 755 jj "$RUNNER_TEMP/bin/jj"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Report test toolchain
+        run: |
+          bun --version
+          jj --version
+          git --version
+          date --version
       - run: bun install --frozen-lockfile
       - run: bun test && bun run typecheck
       - run: bun run check && bun run build && bun test

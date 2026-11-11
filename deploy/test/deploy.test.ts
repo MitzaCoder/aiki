@@ -310,6 +310,7 @@ type Machine = {
 	root: string;
 	bin: string;
 	restartsFile: string;
+	eventsFile: string;
 	cgroupFile: string;
 };
 
@@ -340,7 +341,7 @@ function makeMachine(): Machine {
 			'if [[ ${1:-} == --user ]]; then scope=" user"; shift; fi',
 			"case ${1:-} in",
 			'show) if [[ $* == *--property=User* ]]; then printf "%s\\n" "${STUB_SERVICE_USER:-$(id -un)}"; fi ;;',
-			'restart) printf "%s%s\\n" "$(date +%s%3N)" "$scope" >> "$STUB_RESTARTS" ;;',
+			'restart) printf "restart%s\\n" "$scope" >> "$STUB_RESTARTS"; if [[ -n ${STUB_EVENTS:-} ]]; then printf "restart\\n" >> "$STUB_EVENTS"; fi ;;',
 			"esac",
 			"exit 0",
 		].join("\n"),
@@ -355,10 +356,12 @@ function makeMachine(): Machine {
 
 	const restartsFile = join(dir, "restarts");
 	writeFileSync(restartsFile, "");
+	const eventsFile = join(dir, "events");
+	writeFileSync(eventsFile, "");
 	const cgroupFile = join(dir, "cgroup");
 	writeFileSync(cgroupFile, `${SAFE_CGROUP}\n`);
 
-	const machine = { dir, home, root, bin, restartsFile, cgroupFile };
+	const machine = { dir, home, root, bin, restartsFile, eventsFile, cgroupFile };
 	machines.push(machine);
 	return machine;
 }
@@ -375,6 +378,7 @@ function backendEnvironment(machine: Machine, port: number): Record<string, stri
 		DEPLOY_HEALTH_TIMEOUT_MS: "1500",
 		DEPLOY_CGROUP_FILE: machine.cgroupFile,
 		STUB_RESTARTS: machine.restartsFile,
+		STUB_EVENTS: machine.eventsFile,
 	};
 }
 
@@ -493,10 +497,16 @@ describe("backend.sh", () => {
 		expect(guarded.code).toBe(2);
 		expect(guarded.stdout).toContain("REFUSING");
 	});
-	test("writes RELEASE.json, waits for idle, then records an ok deploy", async () => {
+	test.each([false, true])("writes RELEASE.json, waits for idle, then records an ok deploy (bad date format: %s)", async (badDateFormat) => {
 		const machine = makeMachine();
+		if (badDateFormat) {
+			// Reproduce a different date implementation ignoring the requested millisecond width. Request ordering
+			// must not compare these shell timestamps with Date.now(), nor depend on clock precision or adjustments.
+			const date = Bun.which("date")!;
+			writeScript(join(machine.bin, "date"), `if [[ $1 == +%s%3N ]]; then printf '999999999999999999\\n'; else exec ${JSON.stringify(date)} "$@"; fi`);
+		}
 		// The stand-in backend reports the release `current` points at, like a real one reading its own RELEASE.json.
-		const backend = startBackend({ deployRoot: machine.root, busyFor: 1, busy: { conversations: 1, workers: 0 } });
+		const backend = startBackend({ deployRoot: machine.root, eventsFile: machine.eventsFile, busyFor: 1, busy: { conversations: 1, workers: 0 } });
 		backend.state.projects = [{ id: "open-project", state: "open" }];
 
 		const name = "20261030T120000Z-0f1e2d3";
@@ -520,20 +530,21 @@ describe("backend.sh", () => {
 		expect(status).toMatchObject({ state: "ok", commit: COMMIT, description: subject, message: null });
 
 		// The restart happens once, after at least one "busy" answer and one "idle" answer, and the deep check follows it.
-		const restarts = readFileSync(machine.restartsFile, "utf8").trim().split("\n").map(Number);
-		expect(restarts.length).toBe(1);
-		const [restartedAt] = restarts as [number];
-		const before = backend.requests.filter((request) => request.type === "server.status" && request.at < restartedAt);
-		const after = backend.requests.filter((request) => request.at > restartedAt);
-		expect(before.length).toBeGreaterThanOrEqual(2);
-		expect(after.map((request) => request.type)).toContain("projects.list");
-		expect(after.map((request) => request.type)).toContain("conversation.page");
+		expect(readFileSync(machine.restartsFile, "utf8").trim().split("\n")).toHaveLength(1);
+		const events = readFileSync(machine.eventsFile, "utf8").trim().split("\n");
+		const restart = events.indexOf("restart");
+		expect(restart).toBeGreaterThanOrEqual(0);
+		expect(events.lastIndexOf("restart")).toBe(restart);
+		expect(events.slice(0, restart).filter((type) => type === "server.status").length).toBeGreaterThanOrEqual(2);
+		expect(events.slice(restart + 1)).toContain("projects.list");
+		expect(events.slice(restart + 1)).toContain("conversation.page");
 	});
 
 	test("drains the backend and restarts once no tool call executes, with conversations still running", async () => {
 		const machine = makeMachine();
 		const backend = startBackend({
 			deployRoot: machine.root,
+			eventsFile: machine.eventsFile,
 			features: DRAIN_FEATURES,
 			busy: { conversations: 2, workers: 4 },
 			toolCalls: 1,
@@ -544,11 +555,12 @@ describe("backend.sh", () => {
 
 		expect(result.code).toBe(0);
 		expect(result.stdout).toContain("idle: " + backend.url + " is drained");
-		const restarts = readFileSync(machine.restartsFile, "utf8").trim().split("\n").map(Number);
-		expect(restarts.length).toBe(1);
-		const drains = backend.requests.filter((request) => request.type === "server.drain");
-		expect(drains.length).toBe(2);
-		expect(drains.every((request) => request.at < restarts[0]!)).toBe(true);
+		expect(readFileSync(machine.restartsFile, "utf8").trim().split("\n")).toHaveLength(1);
+		const events = readFileSync(machine.eventsFile, "utf8").trim().split("\n");
+		const restart = events.indexOf("restart");
+		expect(restart).toBeGreaterThanOrEqual(0);
+		expect(events.filter((type) => type === "server.drain")).toHaveLength(2);
+		expect(events.lastIndexOf("server.drain")).toBeLessThan(restart);
 	});
 
 	test("checks the conversations that were open before the restart", async () => {

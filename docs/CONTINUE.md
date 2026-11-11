@@ -1,5 +1,32 @@
 # Continue
 
+## T71: release-runner prerequisites and deterministic deploy assertions
+
+Release run `43047820705` at `b7cf8f27` failed before any draft/assets were produced.
+Four workspace tests (schedule, two worker-isolation cases, storage) threw ENOENT
+for `jj`. Release CI now installs hash-pinned jj 0.47.1 before tests and reports
+Bun/jj/git/date versions. A clean runner-like environment with no jj reproduces all
+four; adding that exact binary makes them pass even with no Git/jj user identity.
+No workspace test is skipped. Existing optional fish/zellij skips remain explicit
+when those tools are absent; they did not cause these failures.
+
+The deploy fixture compared shell `date +%s%3N` with JavaScript Date.now() to infer
+ordering. Its failed assertion did not preserve either timestamp, so the exact
+runner clock/format discrepancy is not recoverable. Ubuntu 26.04 container testing
+alone did not reproduce it; a deliberately incompatible date width deterministically
+reproduced the identical false empty-after-restart result. The fixture now uses a
+shared append-only request/restart trace, with before/after/drain assertions and an
+extra bad-date regression. Production deploy/health logic is unchanged. See
+`docs/research/pilot-release-ci.md` for evidence boundaries and all five causes.
+
+The fixed tip is based on the tagged commit, not a moved tag. Exact-tip full gate
+results are attached to T71; no push, tag rewrite, main move or publication is part
+of this repair. The owner decides how to advance main and the unshipped pilot tag.
+
+T127 `oxwtksrp` is included beneath this repair so the release README and agent
+installation guide match the tagged release. Both continuation sections are retained.
+
+
 ## T127 coding-agent installation guide
 
 README now includes a copyable agent prompt linking to `docs/AGENT-INSTALL.md`.
