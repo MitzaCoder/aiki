@@ -28,16 +28,26 @@ export function publicFileProblems(path: string, bytes: Uint8Array, privateTerms
 	return problems;
 }
 
-async function main(): Promise<void> {
-	const root = resolve(import.meta.dir, "..");
-	const args = process.argv.slice(2);
-	if (args.some((arg) => arg !== "--require-scanner" && !arg.startsWith("--denylist="))) throw new Error("Usage: bun scripts/check-public.ts [--require-scanner] [--denylist=<private file>]");
-	const denylist = args.find((arg) => arg.startsWith("--denylist="))?.slice("--denylist=".length)
-		|| join(process.env.DEPLOY_CONFIG_DIR || join(root, "deploy/local"), "denylist.txt");
+export function publicCheckOptions(args: string[], defaultDenylist: string): { terms: string[]; requireScanner: boolean } {
+	if (args.some((arg) => arg !== "--public-ci" && arg !== "--require-scanner" && !arg.startsWith("--denylist="))) {
+		throw new Error("Usage: bun scripts/check-public.ts [--public-ci] [--require-scanner] [--denylist=<private file>]");
+	}
+	const publicCI = args.includes("--public-ci");
+	if (publicCI && args.some((arg) => arg.startsWith("--denylist="))) throw new Error("--public-ci cannot be combined with --denylist");
+	if (publicCI) return { terms: [], requireScanner: true };
+	const denylist = args.find((arg) => arg.startsWith("--denylist="))?.slice("--denylist=".length) || defaultDenylist;
 	let terms: string[];
 	try { terms = readFileSync(denylist, "utf8").split(/\r?\n/).filter((line) => line.trim() && !line.startsWith("#")); }
 	catch { throw new Error("Private denylist missing; configure deploy/local/denylist.txt (never commit its contents)."); }
 	if (!terms.length) throw new Error("Private denylist must contain at least one term.");
+	return { terms, requireScanner: args.includes("--require-scanner") };
+}
+
+async function main(): Promise<void> {
+	const root = resolve(import.meta.dir, "..");
+	const args = process.argv.slice(2);
+	const { terms, requireScanner } = publicCheckOptions(args,
+		join(process.env.DEPLOY_CONFIG_DIR || join(root, "deploy/local"), "denylist.txt"));
 	const listing = Bun.spawnSync(["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"], { cwd: root });
 	if (listing.exitCode !== 0) throw new Error("Cannot enumerate source files.");
 	const paths = [...new Set(listing.stdout.toString().split("\0").filter(Boolean))];
@@ -58,12 +68,14 @@ async function main(): Promise<void> {
 			checked++;
 		}
 		if (findings.length) throw new Error(`Public tree check failed (${findings.length} findings):\n${findings.join("\n")}`);
-		console.log(`Public tree denylist and generic checks pass: ${checked} files, ${terms.length} private terms. Values withheld.`);
+		console.log(args.includes("--public-ci")
+			? `Public CI generic checks pass: ${checked} files. Private-term scan skipped; operator scan still required before push.`
+			: `Public tree denylist and generic checks pass: ${checked} files, ${terms.length} private terms. Values withheld.`);
 		const scanArgs = ["dir", stage, "--redact", "--no-banner"];
 		const command = Bun.which("gitleaks") ? ["timeout", "120s", "gitleaks", ...scanArgs]
 			: Bun.which("nix") ? ["timeout", "120s", "nix", "run", "nixpkgs#gitleaks", "--", ...scanArgs] : null;
 		if (command === null) {
-			if (args.includes("--require-scanner")) throw new Error("Gitleaks/Nix unavailable; a scanner is required.");
+			if (requireScanner) throw new Error("Gitleaks/Nix unavailable; a scanner is required.");
 			console.warn("Gitleaks/Nix unavailable: scanner not run. Install it before publishing.");
 		} else {
 			const child = Bun.spawn(command, { cwd: root, stdout: "inherit", stderr: "inherit" });

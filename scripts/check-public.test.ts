@@ -1,8 +1,29 @@
 import { describe, expect, test } from "bun:test";
-import { publicFileProblems } from "./check-public.ts";
+import { publicCheckOptions, publicFileProblems } from "./check-public.ts";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 describe("public snapshot guard", () => {
+	test("local mode fails closed without a nonempty denylist; CI explicitly skips only private terms", () => {
+		const dir = mkdtempSync(join(tmpdir(), "public-guard-test-"));
+		const path = join(dir, "denylist.txt");
+		try {
+			expect(() => publicCheckOptions([], path)).toThrow("Private denylist missing");
+			expect(() => publicCheckOptions(["--require-scanner"], path)).toThrow("Private denylist missing");
+			expect(publicCheckOptions(["--public-ci"], path)).toEqual({ terms: [], requireScanner: true });
+			writeFileSync(path, "# comment\n\n");
+			expect(() => publicCheckOptions([], path)).toThrow("at least one term");
+			writeFileSync(path, "synthetic-private-term\n");
+			expect(publicCheckOptions(["--require-scanner"], path)).toEqual({ terms: ["synthetic-private-term"], requireScanner: true });
+			expect(publicCheckOptions(["--public-ci"], path)).toEqual({ terms: [], requireScanner: true });
+			expect(() => publicCheckOptions(["--public-ci", `--denylist=${path}`], path)).toThrow("cannot be combined");
+			expect(() => publicCheckOptions(["--skip-scanner"], path)).toThrow("Usage:");
+			// Generic checks are the same with CI's empty term list.
+			expect(publicFileProblems("secret.jks", bytes(""), publicCheckOptions(["--public-ci"], path).terms)).toContain("secret-bearing filename");
+		} finally { rmSync(dir, { recursive: true, force: true }); }
+	});
 	test("exempts only the license copyright line, never the same name elsewhere", () => {
 		const notice = "Copyright (c) 2026 Example Person";
 		expect(publicFileProblems("LICENSE", bytes(notice), ["Example Person"])).toEqual([]);

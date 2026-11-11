@@ -19,14 +19,16 @@ jobs:
       - run: bun run check && bun run build && bun test
         working-directory: apps/web
       - run: bun apps/android/scripts/generate-protocol.ts --check
-      - run: bun scripts/check-public.ts
+      - run: bun scripts/check-public.ts --public-ci
       - name: Build neutral source and web release
         run: bun scripts/build-release.ts --version "$GITHUB_REF_NAME" --out .preview/releases
-      - name: Publish tag assets
+      - name: Hash installer
+        run: sha256sum install.sh > .preview/releases/install.sh.sha256
+      - name: Stage draft tag assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           case "$GITHUB_REF_NAME" in
-            *-*) gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --prerelease .preview/releases/* install.sh ;;
-            *) gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes .preview/releases/* install.sh ;;
+            *-*) gh release create "$GITHUB_REF_NAME" --verify-tag --draft --generate-notes --prerelease .preview/releases/* install.sh ;;
+            *) gh release create "$GITHUB_REF_NAME" --verify-tag --draft --generate-notes .preview/releases/* install.sh ;;
           esac
