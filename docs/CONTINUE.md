@@ -1,5 +1,49 @@
 # Continue
 
+## T139: installed self-update and health rollback
+
+Installed release backends expose Update now beside the navigation version and in
+About on web/Android. Confirm freezes from → to and notes; a second confirm is
+required to interrupt agents. Preparation uses the existing checksum-verifying
+installer's new stage-only mode. Progress waits for all conversation turns and
+workers, supports Cancel, holds admission across the final idle recheck, then
+hands off to `aiki start`'s persistent supervisor. Its parent PID survives under
+foreground, systemd and launchd; it stops/starts only its child, never invokes a
+service manager. Owner-socket version health has a 30-second deadline. A recovery
+journal plus the shared manual rollback selector restores old code after health
+failure or interrupted switching. State survives client reconnect. Source/ref and
+watcher hosts explain why they cannot self-update; RPC requires a paired owner
+and logs the session ID. No APK installation or unattended update is added.
+
+Rehearsal installed and health-checked published pilot.2 in an empty-environment
+temporary HOME. Pilot.2 required one manual bootstrap to the local updater-capable
+source test release. **Pilot.3 also lacks the API/supervisor** and needs the same
+one-time manual update after a release containing self-update is published. Its only test modification
+registers two held faux turns. The verified production binary target succeeds;
+a separately verified dead-on-start candidate rolls back, with automatic web
+reconnect. Web retains desktop light/dark button, confirm, wait, update, success
+and rollback shots, phone-width proof and a continuous interaction recording.
+Replay with `self-update-demo.ts`, `self-update-web-proof.ts` and the emulator-only
+`self-update-android-proof.ts` under `packages/server/scripts/`. No real service,
+phone, provider account, push, main movement or deployment. Native macOS and an
+actual temporary service-manager unit remain untested. Rollback cannot undo data
+migrations; storage changes must remain backward-compatible.
+
+Before rebase, full root/web/Android gates including debug assembly and lint
+passed. Fresh-emulator Android light/dark About button/confirm and navigation
+button/confirm proof is retained too. A second paired owner triggered the broken
+candidate from Android; automatic rollback/reconnect is recorded, and two distinct
+session IDs appear in the isolated server's update log. Owned test processes and
+temporary installs/builds are removed after retaining evidence.
+
+Rebased onto `154ae6ce` (pilot.3 prep, T156 and T142). INSTALL keeps pilot.3's exact
+version text and plain `aiki update` for pilot.2; pilot.3 also needs one manual
+bootstrap to acquire the API. Main's continuation is preserved below this section.
+No UI change or new proof was needed. Sequential rebase gates pass: root 2,560
+tests / 92,488 assertions; typecheck; web check zero diagnostics, 1,073 tests /
+79,812 assertions and build; Android 920 JVM tests (two opt-in skips); private/
+generic/Gitleaks scan. Gradle stopped. All three T139 revisions are conflict-free.
+
 ## T158: top-level-only task filter removed for now
 
 Web and Android no longer offer or apply “Top-level only”. Web ignores its old

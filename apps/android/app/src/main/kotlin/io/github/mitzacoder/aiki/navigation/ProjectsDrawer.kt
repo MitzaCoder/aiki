@@ -31,6 +31,7 @@ import io.github.mitzacoder.aiki.features.settings.ProjectDirectoryBrowser
 import io.github.mitzacoder.aiki.features.settings.canBrowseDirectories
 import io.github.mitzacoder.aiki.features.settings.connectionLabel
 import io.github.mitzacoder.aiki.features.status.StatusGlyphs
+import io.github.mitzacoder.aiki.features.status.SelfUpdateControls
 import io.github.mitzacoder.aiki.features.status.aikiVersionLabel
 import io.github.mitzacoder.aiki.features.status.visibleReleaseUpdate
 import io.github.mitzacoder.aiki.protocol.ProjectSummary
@@ -203,6 +204,7 @@ private fun ColumnScope.ProjectsNav(repository: HarnessRepository, current: Dest
         if (visibleReleaseUpdate(versionStatus?.updates)) Box(Modifier.size(6.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
         Text(if (rail) "v" else versionText, style = MaterialTheme.typography.labelSmall, color = Jarvis.colors.fgSubtle, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
+    if (!rail && versionBackend != null) SelfUpdateControls(versionBackend, compact = true)
     Spacer(Modifier.height(if (rail) 8.dp else 16.dp))
     adding?.let { backend ->
         var error by remember(backend) { mutableStateOf<String?>(null) }

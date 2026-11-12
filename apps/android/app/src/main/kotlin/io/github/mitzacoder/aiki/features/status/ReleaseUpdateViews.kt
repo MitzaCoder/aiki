@@ -64,7 +64,7 @@ fun ReleaseUpdateAbout(backend: BackendSession) {
             if (release != null) {
                 GroupNote("Aiki ${release.version} is available.")
                 ReleaseNotesButton(release.notesUrl)
-                SelectionContainer { GroupNote(UPDATE_INSTRUCTIONS) }
+                if (status?.selfUpdate?.enabled != true) SelectionContainer { GroupNote(UPDATE_INSTRUCTIONS) }
                 if (updates.dismissedVersion != release.version) TextButton(onClick = {
                     saving = true
                     scope.launch {
@@ -77,6 +77,7 @@ fun ReleaseUpdateAbout(backend: BackendSession) {
                 else GroupNote("Update notice dismissed.")
             } else GroupNote("No newer release found yet.")
         }
+        SelfUpdateControls(backend)
         error?.let { GroupNote(it) }
     }
 }
