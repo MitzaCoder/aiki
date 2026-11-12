@@ -701,6 +701,30 @@ Web and Android share ordering and count rules, including activity-only fallback
 
 - Tools run on the backend's machine, against repos checked out there.
 
+## Command MCP servers and reviewed import (T142 / D72)
+
+Any paired device may add a backend command server after explicit confirmation
+of the exact executable, argument array, working directory and environment names
+(values masked). Changing the executable or arguments requires confirmation again.
+Commands run directly, never through a shell, with the backend user's PATH via
+`childEnvironment`. Environment overrides live only in `mcp:<id>` credentials,
+not definitions, diagnostics or prompts. The installed pi-mcp 1.5.2
+`StdioTransport` provides process-group shutdown, bounded framing and stderr capture.
+Connections start lazily on discovery/use or explicit refresh; idle children stop
+after five minutes. Crashes reconnect with capped exponential backoff, never
+replaying an in-flight tool call. Disconnect/remove/backend shutdown cancel restarts.
+Settings show status and a bounded, secret-redacted stderr tail. Cached tools retain
+the existing deferred discovery, project/role restrictions and Off/Ask/Allow policy.
+
+JSON import accepts `mcpServers` or a bare server map. Clients review valid and
+invalid rows before any save, select entries, and rename collisions. Command rows
+require the same command confirmation. HTTP aliases are accepted; only Bearer
+Authorization headers map to write-only tokens; unsupported headers are explained
+rather than silently lost. Explicit SSE imports use a small bounded HTTP+SSE
+adapter with same-origin endpoint enforcement, bearer credentials and no replay;
+stdio and Streamable HTTP use pi-mcp directly. Import text/secrets remain
+transient client state and are never exported to project files.
+
 ## MCP servers
 
 T154: Web and Android offer Copy sign-in link next to Sign in. Copy starts
@@ -770,7 +794,8 @@ receipts for closed projects survive until the next project bind can withdraw
 the board question; a list or removal without a binding cannot forget it.
 
 The core is backend-global remote Streamable HTTP with pasted bearer tokens or
-OAuth. No stdio, legacy SSE or imports. Definitions and
+OAuth. T142 adds command and explicit legacy SSE transports plus reviewed imports
+as described above. Definitions and
 cached catalogues live in `mcp/servers.json`; project/role enablement defaults off.
 Credentials use a separate MCP namespace in the harness credentials file, with a
 versioned token/OAuth record supporting stage-2 refresh grants.
@@ -791,7 +816,8 @@ allow this tool, Deny. Once binds the project, conversation, server, tool and ex
 argument hash, expires, and is consumed before dispatch. Workers route questions
 to their coordinator. Answers wake through the existing board route; writes are
 never automatically retried after an ambiguous failure. Approval storage and board
-routing sit behind a small interface. Local provisioning follows separately.
+routing sit behind a small interface. D72 permits command provisioning from any
+paired device after confirmation.
 
 Compatibility: standalone `@earendil-works/pi-mcp` 1.5.2 imports and runs under
 Bun with pi-ai/pi-durable/pi-codemode 1.5.1 unchanged. Its client follows catalogue
@@ -807,7 +833,7 @@ connection intent, per-project role choices, and exact-call approval receipts
 (seven-day questions, fifteen-minute approve-once windows from the answer). `credentials.json` holds `mcp:<server-id>` entries, hidden from provider
 credential RPCs. The normal pi credential union supports token (`api_key`) and
 OAuth (`access`, `refresh`, `expires` plus grant metadata); MCP adds
-`mcp: {version: 1, serverUrl, oauth?}` and refuses a URL-mismatched credential.
+`mcp: {version: 1, serverUrl, oauth?, env?}` and refuses a URL-mismatched credential.
 `oauth` holds pi-mcp discovery, registration and token state; the top-level
 access/refresh/expires mirror it for redaction and diagnostics. PKCE verifier
 and pending OAuth state exist only in memory, not the credential file. Both files

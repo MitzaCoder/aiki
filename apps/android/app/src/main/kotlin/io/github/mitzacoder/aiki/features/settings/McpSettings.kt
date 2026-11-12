@@ -36,6 +36,16 @@ internal fun McpServersPage(backend: BackendSession) {
     val scope = rememberCoroutineScope()
     var selectedId by remember(backend) { mutableStateOf<String?>(null) }
     var adding by remember(backend) { mutableStateOf(false) }
+    var importing by remember(backend) { mutableStateOf(false) }
+    var commandForm by remember(backend) { mutableStateOf(false) }
+    fun saveEntries(entries: List<McpImportEntry>) { scope.launch { session.perform {
+        entries.forEach { entry ->
+            val added = backend.client.request(McpAddRequest(serverId = entry.serverId, name = entry.name, url = entry.url, transport = entry.transport, command = entry.command, env = entry.env, confirmed = entry.command?.let { true }))
+            entry.token?.let { backend.client.request(McpTokenSetRequest(serverId = added.server.id, token = it)) }
+            selectedId = added.server.id
+        }
+        session.reload(); adding = false; importing = false; commandForm = false
+    } } }
     LaunchedEffect(backend, connection.status) { if (connection.status == ConnectionStatus.Ready) session.perform { session.reload() } }
     val selected = servers.firstOrNull { it.id == selectedId }
     SettingsSectionPage("MCP servers", "Remote tools on this backend. Enable them separately in each project's MCP settings.", SettingsIcon.Server) {
@@ -44,6 +54,12 @@ internal fun McpServersPage(backend: BackendSession) {
         if (selected != null) {
             TextButton(onClick = { selectedId = null }) { Text("All MCP servers") }
             McpServerDetails(backend, selected, busy) { selectedId = null }
+        } else if (importing) {
+            TextButton(onClick = { importing = false }) { Text("All MCP servers") }
+            McpImportForm(servers.flatMap { listOf(it.id, mcpImportServerId(it.name, emptyList())) }, busy, ::saveEntries)
+        } else if (commandForm) {
+            TextButton(onClick = { commandForm = false }) { Text("All MCP servers") }
+            McpCommandForm(busy, submit = { saveEntries(listOf(it)) })
         } else if (adding) {
             TextButton(onClick = { adding = false }) { Text("All MCP servers") }
             McpAddForm(presets, busy) { name, url, preset ->
@@ -55,6 +71,10 @@ internal fun McpServersPage(backend: BackendSession) {
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { adding = true }, enabled = !busy) { Text("Add server") }
+                OutlinedButton(onClick = { commandForm = true }, enabled = !busy) { Text("Add command") }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { importing = true }, enabled = !busy) { Text("Import JSON") }
                 OutlinedButton(onClick = { scope.launch { session.perform { session.reload() } } }, enabled = !busy) { Text("Reload") }
             }
             SettingsGroup {
@@ -91,6 +111,7 @@ private fun McpServerDetails(backend: BackendSession, server: McpOAuthCompleteRe
     val client = backend.client
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var editingCommand by remember(server.id) { mutableStateOf(false) }
     var tokenDialog by remember(server.id) { mutableStateOf(false) }
     var callbackDialog by remember(server.id) { mutableStateOf(false) }
     var confirmRemove by remember(server.id) { mutableStateOf(false) }
@@ -102,13 +123,19 @@ private fun McpServerDetails(backend: BackendSession, server: McpOAuthCompleteRe
     fun change(action: suspend () -> Unit) { scope.launch { session.perform { action(); session.reload() } } }
     SettingsGroup(title = server.name) { GroupRow {
         Text("${mcpStatusLabel(server.status)} · ${server.tools.size} tools", style = MaterialTheme.typography.titleMedium)
-        Text(server.url, style = MaterialTheme.typography.bodySmall)
+        Text(server.command?.let { "${it.command} ${it.args}" } ?: server.url, style = MaterialTheme.typography.bodySmall)
+        if (server.command != null) {
+            Text("Working directory: ${server.command.cwd ?: "(backend default)"}\nEnvironment: ${server.envNames.orEmpty().joinToString()}")
+            OutlinedButton(onClick = { editingCommand = !editingCommand }, enabled = !busy) { Text("Edit command") }
+            server.stderrTail?.takeIf { it.isNotBlank() }?.let { Text("Redacted stderr tail:\n$it", style = MaterialTheme.typography.bodySmall) }
+        }
         server.lastError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         server.oauthFlow?.let { flow ->
             Text("Sign-in: ${flow.status}${flow.error?.let { ": $it" }.orEmpty()}", style = MaterialTheme.typography.bodySmall)
             if (flow.status == "pending") TextButton(onClick = { scope.launch { session.cancel(flow.flowId) } }, enabled = !busy) { Text("Cancel sign-in") }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (server.command == null) {
             Button(onClick = { scope.launch {
                 session.start(server.id)?.let { authorization ->
                     try { CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(authorization)) }
@@ -126,6 +153,7 @@ private fun McpServerDetails(backend: BackendSession, server: McpOAuthCompleteRe
             } }, enabled = !busy) { Text("Copy sign-in link") }
             OutlinedButton(onClick = { tokenDialog = true }, enabled = !busy) { Text("Paste token") }
             OutlinedButton(onClick = { callbackDialog = true }, enabled = !busy) { Text("Paste callback URL") }
+            }
             OutlinedButton(onClick = { change { client.request(McpRefreshRequest(serverId = server.id)) } }, enabled = !busy) { Text("Refresh tools") }
             OutlinedButton(onClick = { change { client.request(McpDisconnectRequest(serverId = server.id)) } }, enabled = !busy) { Text("Disconnect") }
             TextButton(onClick = { confirmRemove = true }, enabled = !busy) { Text("Remove", color = MaterialTheme.colorScheme.error) }
@@ -142,7 +170,10 @@ private fun McpServerDetails(backend: BackendSession, server: McpOAuthCompleteRe
                 scope.launch { session.complete(url) }
             }, enabled = !busy && callbackUrl.isNotBlank()) { Text("Complete sign-in") }
         }
-        Text("Sign-in returns through ${session.redirectUri}. If this backend does not allow the configured web origin, its operator must configure that origin. After signing in, paste the callback URL here if the browser does not return to Aiki.", style = MaterialTheme.typography.bodySmall)
+        if (server.command == null) Text("Sign-in returns through ${session.redirectUri}. If this backend does not allow the configured web origin, its operator must configure that origin. After signing in, paste the callback URL here if the browser does not return to Aiki.", style = MaterialTheme.typography.bodySmall)
+    } }
+    if (editingCommand) McpCommandForm(busy, server) { entry -> change {
+        client.request(McpAddRequest(serverId = server.id, name = entry.name, command = entry.command, env = entry.env, confirmed = true, replace = true)); editingCommand = false
     } }
     OutlinedTextField(filter, { filter = it }, label = { Text("Filter tools") }, singleLine = true, modifier = Modifier.fillMaxWidth())
     val tools = server.tools.filter { mcpToolMatches(it, filter) }

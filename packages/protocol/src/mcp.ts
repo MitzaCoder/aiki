@@ -22,10 +22,18 @@ export const McpOAuthFlowSchema = Type.Object({
  error: Type.Optional(Type.String()),
 });
 export type McpOAuthFlow = Static<typeof McpOAuthFlowSchema>;
+export const McpCommandSchema = Type.Object({
+ command: Type.String(), args: Type.Array(Type.String()), cwd: Type.Optional(Type.String()),
+});
+export type McpCommand = Static<typeof McpCommandSchema>;
 export const McpServerSchema = Type.Object({
 	id: Type.String(),
 	name: Type.String(),
 	url: Type.String(),
+	transport: Type.Optional(Type.Union([Type.Literal("http"), Type.Literal("sse")])),
+	command: Type.Optional(McpCommandSchema),
+	envNames: Type.Optional(Type.Array(Type.String())),
+	stderrTail: Type.Optional(Type.String()),
 	presetId: Type.Optional(Type.String()),
 	status: Type.Union([Type.Literal("disconnected"), Type.Literal("connected"), Type.Literal("error"), Type.Literal("needs_sign_in"), Type.Literal("signing_in")]),
 	lastError: Type.Union([Type.String(), Type.Null()]),
@@ -52,6 +60,11 @@ export const McpAddRequestSchema = Type.Object({
 	name: Type.String(),
 	url: Type.Optional(Type.String()),
 	presetId: Type.Optional(Type.String()),
+ transport: Type.Optional(Type.Union([Type.Literal("http"), Type.Literal("sse")])),
+ command: Type.Optional(McpCommandSchema),
+ env: Type.Optional(Type.Record(Type.String(), Type.String())),
+ confirmed: Type.Optional(Type.Boolean()),
+ replace: Type.Optional(Type.Boolean()),
 });
 export const McpTokenSetRequestSchema = Type.Object({
 	type: Type.Literal("mcp.token.set"),

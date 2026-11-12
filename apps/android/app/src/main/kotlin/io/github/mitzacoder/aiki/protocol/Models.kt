@@ -97,6 +97,10 @@ data class McpOAuthCompleteResponseServer(
     val `id`: String,
     val `name`: String,
     val `url`: String,
+    val `transport`: String? = null,
+    val `command`: McpOAuthCompleteResponseServerCommand? = null,
+    val `envNames`: List<String>? = null,
+    val `stderrTail`: String? = null,
     val `presetId`: String? = null,
     val `status`: String,
     val `lastError`: String?,
@@ -104,6 +108,13 @@ data class McpOAuthCompleteResponseServer(
     val `oauthFlow`: McpOAuthFlow? = null,
     val `authKind`: String,
     val `tools`: List<McpOAuthCompleteResponseServerToolsItem>
+)
+
+@Serializable
+data class McpOAuthCompleteResponseServerCommand(
+    val `command`: String,
+    val `args`: List<String>,
+    val `cwd`: String? = null
 )
 
 @Serializable
@@ -423,15 +434,24 @@ data class McpAddRequest(
     val `serverId`: String,
     val `name`: String,
     val `url`: String? = null,
-    val `presetId`: String? = null
-)
+    val `presetId`: String? = null,
+    val `transport`: String? = null,
+    val `command`: McpOAuthCompleteResponseServerCommand? = null,
+    val `env`: Map<String, String>? = null,
+    val `confirmed`: Boolean? = null,
+    val `replace`: Boolean? = null
+) {
+    override fun toString(): String = "McpAddRequest(redacted)"
+}
 
 @Serializable
 data class McpAddResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.add",
     val `id`: String,
     val `server`: McpOAuthCompleteResponseServer
-)
+) {
+    override fun toString(): String = "McpAddResponse(redacted)"
+}
 
 @Serializable
 data class McpTokenSetRequest(

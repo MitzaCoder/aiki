@@ -1,5 +1,36 @@
 # Continue
 
+## T142: command MCP servers and reviewed JSON import
+
+D72 replaces host-only provisioning: any paired web/Android device may save a
+command after reviewing its exact executable, argv, cwd and masked env names.
+Editing a command requires confirmation again. pi-mcp 1.5.2 already supplies
+`StdioTransport`; no SDK dependency was added. Children use `childEnvironment`
+and the backend PATH, start lazily on discovery/use or refresh, stop after five
+idle minutes, restart with 500 ms–30 s exponential backoff, and close with the
+backend. Failed calls are never replayed. Env overrides live only in `mcp:<id>`
+credentials; cached schemas/results and the bounded in-memory stderr tail redact
+them. Deferred tools, project/role filters and Off/Ask/Allow are shared unchanged.
+
+Both clients review wrapped/bare server-map JSON before saving, with selection,
+collision renaming, invalid-row reasons and command confirmation. HTTP aliases
+and Bearer Authorization imports work. Explicit legacy SSE imports use a small
+same-origin, bounded, no-replay adapter; other remote connections use pi-mcp.
+Unsupported headers are explained, not silently dropped. Secret forms are only
+transient state; Android theme/activity recreation clears them rather than saving
+secrets. Command env edits retain existing values when omitted; remove/re-add to
+clear all values. `mcp.add` accepts confirmed command creation/replacement; no CLI,
+Windows support, push, main movement or deployment was added.
+
+Sequential gates pass: root 2,538 tests / 92,360 assertions; typecheck; web check
+zero diagnostics, 1,068 tests / 79,786 assertions and build; Android 914 tests
+(two opt-in skips), debug assembly and lint. Gradle stopped; private/generic and
+Gitleaks checks pass with the external operator denylist. T142 holds the web
+add/confirm/connected/import desktop/phone light/dark matrix, Add before/after
+pairs, import recording and Android emulator light/dark confirm/import proof.
+Use the existing MCP demo plus `mcp-command-proof.ts`; select free Vite/CDP ports.
+Android driver is `verification/mcp-command-proof.ts` on an explicitly owned track.
+
 ## T159: pilot.3 prepared, not published
 
 Prepared `v0.1.0-pilot.3` from the approved main tip. Package/protocol identity,

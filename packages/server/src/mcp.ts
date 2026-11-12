@@ -3,7 +3,7 @@ import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import type { CredentialStore } from "@earendil-works/pi-ai";
-import { McpClient, StreamableHttpTransport, type Tool } from "@earendil-works/pi-mcp";
+import { McpClient, StdioTransport, StreamableHttpTransport, type Tool } from "@earendil-works/pi-mcp";
 import {
 	AgentDoc,
 	type Conversation,
@@ -14,6 +14,9 @@ import {
 } from "@earendil-works/pi-durable";
 import type { CodemodeNamespace } from "@earendil-works/pi-durable/codemode";
 import { MCP_PRESETS, type McpPolicy, type McpProjectServer, type McpRole, type McpServer } from "@aiki/protocol";
+import { McpSseTransport } from "./mcp-sse.ts";
+import { childEnvironment } from "./child-environment.ts";
+import type { McpAddRequest } from "@aiki/protocol";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 import type { McpCredential } from "./credentials.ts";
 import { ServerError } from "./errors.ts";
@@ -118,6 +121,12 @@ export class McpService {
 	#state: McpState = { servers: [], projects: {}, approvals: [] };
 	#chain: Promise<unknown> = Promise.resolve();
 	readonly #clients = new Map<string, McpClient>();
+ readonly #stdio = new Map<string, StdioTransport>();
+ readonly #lastUse = new Map<string, number>();
+ readonly #inFlight = new Map<string, number>();
+ readonly #restartTimers = new Map<string, ReturnType<typeof setTimeout>>();
+ readonly #failures = new Map<string, number>();
+ readonly #idleTimer: ReturnType<typeof setInterval>;
 	readonly #epochs = new Map<string, number>();
 	readonly #connecting = new Map<string, Promise<void>>();
 	readonly #bindings = new Set<McpProjectBinding>();
@@ -125,13 +134,15 @@ export class McpService {
 	readonly #approvalTimer: ReturnType<typeof setInterval>;
 	constructor(dataDir: string, credentials: CredentialStore, now = Date.now, origins: readonly string[] = [], onOAuthChange: (flow: McpOAuthFlow) => void = () => {}) {
 		this.path = join(dataDir, "mcp", "servers.json");
-		this.oauth = new McpOAuth(credentials, origins, id => this.#server(id).url, onOAuthChange, async id => {
+		this.oauth = new McpOAuth(credentials, origins, id => { const server = this.#server(id); if (server.command) return bad("Command servers do not support OAuth"); return server.url; }, onOAuthChange, async id => {
 			await this.#mutate(() => { const server = this.#server(id); server.status = "needs_sign_in"; server.lastError = "MCP needs sign-in; reconnect"; });
 		}, now);
 		this.#credentials = credentials;
 		this.#now = now;
 		this.#approvalTimer = setInterval(() => { void this.pruneApprovals().catch(() => undefined); }, 60_000);
 		this.#approvalTimer.unref();
+ this.#idleTimer = setInterval(() => { void this.stopIdle().catch(() => undefined); }, 30_000);
+ this.#idleTimer.unref();
 	}
 	async open(): Promise<void> {
 		const stored = (await readJsonFile(this.path)) as McpState | undefined;
@@ -162,6 +173,8 @@ export class McpService {
 			id: server.id,
 			name: server.name,
 			url: server.url,
+ ...(server.transport ? { transport: server.transport } : {}),
+ ...(server.command ? { command: server.command, envNames: Object.keys(credential?.mcp.env ?? {}), stderrTail: await this.#redact(id, this.#stdio.get(id)?.stderr ?? "") } : {}),
 			...(server.presetId ? { presetId: server.presetId } : {}),
 			status: this.oauth.flow(id)?.status === "pending" ? "signing_in" : server.status,
 			...(this.oauth.flow(id) ? { oauthFlow: this.oauth.flow(id) } : {}),
@@ -177,18 +190,42 @@ export class McpService {
 			})),
 		});
 	}
-	async add(input: { serverId: string; name: string; url?: string; presetId?: string }): Promise<McpServer> {
+	async add(input: Omit<McpAddRequest, "id" | "type">): Promise<McpServer> {
 		const id = identifier(input.serverId);
 		const preset = MCP_PRESETS.find((preset) => preset.id === input.presetId);
 		if (input.presetId && !preset) return bad("Unknown MCP preset");
-		const url = validateMcpUrl(input.url ?? preset?.url ?? "");
+		if (input.command) {
+ if (input.confirmed !== true) return bad("Confirm the exact command before saving");
+ const { command, args, cwd } = input.command;
+ if (!command.trim() || [command, ...args, cwd ?? ""].some(value => value.includes("\0")) || args.length > 256) return bad("Invalid MCP command");
+ if (cwd && !cwd.startsWith("/")) return bad("Working directory must be absolute");
+ if (Object.entries(input.env ?? {}).some(([name, value]) => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) || name.startsWith("AIKI_") || value.includes("\0"))) return bad("Invalid MCP environment");
+ if (input.url || preset || input.transport) return bad("Choose command or URL, not both");
+ }
+ const url = input.command ? `stdio:${id}` : validateMcpUrl(input.url ?? preset?.url ?? "");
 		if (!input.name.trim() || input.name.length > 120) return bad("MCP display name must be 1–120 characters");
-		await this.#mutate(() => {
-			if (this.#state.servers.some((server) => server.id === id)) return bad("MCP server already exists");
+		const previous = this.#state.servers.find(server => server.id === id);
+ if (previous && !(input.replace && input.command && previous.command)) return bad("MCP server already exists");
+ if (previous) {
+ await this.disconnect(id);
+ this.#stdio.delete(id);
+ }
+		await this.#mutate(async () => {
+ if (this.#state.servers.find(server => server.id === id) !== previous) return bad("MCP server changed; reload before saving");
+ if (input.command) {
+ const previousCredential = previous ? await this.#credential(id) : undefined;
+ await this.#credentials.modify(`${MCP_CREDENTIAL_PREFIX}${id}`, async () => ({ type: "api_key", key: "", mcp: { version: 1, serverUrl: url, env: input.env ?? previousCredential?.mcp.env ?? {} } }));
+ }
+ if (previous) {
+ await this.#withdrawApprovals(approval => approval.serverId === id);
+ this.#state.servers = this.#state.servers.filter(server => server !== previous);
+ }
 			this.#state.servers.push({
 				id,
 				name: input.name.trim(),
 				url,
+ ...(input.transport ? { transport: input.transport } : {}),
+ ...(input.command ? { command: structuredClone(input.command), active: true } : {}),
 				...(preset ? { presetId: preset.id } : {}),
 				tools: [],
 				policies: {},
@@ -199,7 +236,7 @@ export class McpService {
 		return this.view(id);
 	}
 	async setToken(id: string, token: string | null): Promise<McpServer> {
-		this.#server(id);
+		if (this.#server(id).command) return bad("Command servers use environment secrets, not bearer tokens");
 		if (token !== null && (!token.trim() || /[\r\n]/.test(token))) return bad("Invalid MCP bearer token");
 		await this.disconnect(id);
 		if (token === null) await this.#credentials.delete(`${MCP_CREDENTIAL_PREFIX}${id}`);
@@ -247,6 +284,7 @@ export class McpService {
 		const server = this.#server(id);
 		this.oauth.cancelServer(id);
 		server.active = false;
+ clearTimeout(this.#restartTimers.get(id)); this.#restartTimers.delete(id);
 		this.#epochs.set(id, (this.#epochs.get(id) ?? 0) + 1);
 		const pending = this.#connecting.get(id);
 		const client = this.#clients.get(id);
@@ -261,6 +299,7 @@ export class McpService {
 	}
 	async remove(id: string): Promise<void> {
 		await this.disconnect(id);
+ this.#stdio.delete(id);
 		await this.#credentials.delete(`${MCP_CREDENTIAL_PREFIX}${id}`);
 		await this.#mutate(async () => {
 			await this.#withdrawApprovals(approval => approval.serverId === id);
@@ -270,7 +309,9 @@ export class McpService {
 			// Keep invalidated receipts until a closed project reopens and withdraws its question.
 		});
 	}
-	async refresh(id: string): Promise<McpServer> {
+	async refresh(id: string, touch = true): Promise<McpServer> {
+ if (touch) this.#lastUse.set(id, this.#now());
+ clearTimeout(this.#restartTimers.get(id)); this.#restartTimers.delete(id);
 		const existing = this.#connecting.get(id);
 		if (existing) {
 			await existing;
@@ -294,13 +335,17 @@ export class McpService {
 		try {
 			let client = this.#clients.get(id);
 			if (!client || client.connectionState !== "connected") {
+ this.#clients.delete(id);
 				await client?.close().catch(() => undefined);
 				if (!current()) return;
 				client = new McpClient({ name: "aiki", version: "1", requestTimeoutMs: 10_000 });
-				const origin = new URL(server.url).origin;
+				const origin = server.command ? "" : new URL(server.url).origin;
 				const credential = await this.#credential(id);
 				const oauthProvider = credential?.type === "oauth" ? this.oauth.provider(id) : undefined;
-				const transport = new StreamableHttpTransport({
+				const transport = server.command ? new StdioTransport({
+ ...server.command, env: childEnvironment({ ...childEnvironment(), ...credential?.mcp.env }), inheritEnv: false,
+ stderr: "pipe", maxStderrBytes: 8192, maxMessageBytes: 2 * 1024 * 1024,
+ }) : server.transport === "sse" ? new McpSseTransport(server.url, async () => { const credential = await this.#credential(id); return credential?.type === "api_key" ? credential.key : credential?.access; }) : new StreamableHttpTransport({
 					url: server.url,
 					maxMessageBytes: 2 * 1024 * 1024,
 					reconnect: { maxRetries: 0 },
@@ -332,6 +377,14 @@ export class McpService {
 						if (server.status !== "needs_sign_in") { server.status = "error"; server.lastError = "MCP connection failed"; }
 					}).catch(() => undefined);
 				});
+				if (transport instanceof StdioTransport) {
+ this.#stdio.set(id, transport);
+ client.onClose(() => { if (current() && server.active && this.#clients.get(id) === client) {
+ this.#clients.delete(id);
+ void this.#mutate(() => { server.status = "error"; server.lastError = "MCP process exited; reconnecting with backoff"; }).catch(() => undefined);
+ this.#scheduleRestart(id);
+ } });
+ }
 				this.#clients.set(id, client);
 				await client.connect(transport);
 				client.onNotification("notifications/tools/list_changed", () => {
@@ -368,11 +421,28 @@ export class McpService {
 			await this.#mutate(() => {
 				if (server.status !== "needs_sign_in") {
 					server.status = "error";
-					server.lastError = "MCP connection or catalogue failed; check URL and credential";
+					server.lastError = "MCP connection or catalogue failed; check configuration and credential";
 				}
 			});
+ if (server.command && server.active) this.#scheduleRestart(id);
 		}
 	}
+ #scheduleRestart(id: string): void {
+ if (this.#closed || this.#restartTimers.has(id) || !this.#server(id).active) return;
+ const failures = (this.#failures.get(id) ?? 0) + 1; this.#failures.set(id, failures);
+ const timer = setTimeout(() => { this.#restartTimers.delete(id); void this.refresh(id, false).catch(() => undefined); }, Math.min(30_000, 500 * 2 ** Math.min(failures - 1, 6)));
+ timer.unref(); this.#restartTimers.set(id, timer);
+ }
+ /** Stop idle children without disabling cached deferred tools or replaying calls. */
+ async stopIdle(idleMs = 5 * 60_000): Promise<void> {
+ for (const server of this.#state.servers) {
+ if (!server.command || !server.active || (!this.#clients.has(server.id) && !this.#restartTimers.has(server.id)) || this.#connecting.has(server.id) || this.#inFlight.get(server.id) || this.#now() - (this.#lastUse.get(server.id) ?? 0) < idleMs) continue;
+ clearTimeout(this.#restartTimers.get(server.id)); this.#restartTimers.delete(server.id);
+ const client = this.#clients.get(server.id); this.#clients.delete(server.id);
+ await client?.close().catch(() => undefined);
+ await this.#mutate(() => { server.status = "disconnected"; server.lastError = null; });
+ }
+ }
 	bind(binding: McpProjectBinding): () => void {
 		this.#bindings.add(binding);
 		this.#publish();
@@ -406,6 +476,7 @@ export class McpService {
 							key: "mcp_servers",
 							render: async ({ conversationId }) => {
 								if ((await binding.role(conversationId)) !== role) return undefined;
+ for (const server of servers) if (server.command && !server.tools.length && !this.#restartTimers.has(server.id)) await this.refresh(server.id);
 								return (
 									servers
 										.filter((server) => server.status === "connected")
@@ -511,7 +582,7 @@ export class McpService {
 						admittedPolicy
 				)
 					return output("MCP policy changed; call refused", true);
-				if (!this.#clients.has(server.id)) await this.refresh(server.id);
+				if (!this.#clients.has(server.id) && !this.#restartTimers.has(server.id)) await this.refresh(server.id);
 				if (
 					!(await permitted()) ||
 					(server.policies[tool.name] ??
@@ -521,6 +592,8 @@ export class McpService {
 					return output("MCP policy changed; call refused", true);
 				const client = this.#clients.get(server.id);
 				if (!client || server.status !== "connected") return output("MCP server unavailable; no call was made", true);
+				this.#lastUse.set(server.id, this.#now());
+ this.#inFlight.set(server.id, (this.#inFlight.get(server.id) ?? 0) + 1);
 				try {
 					context.abortSignal?.throwIfAborted();
 					const result = await client.callTool(tool.name, argumentsObject, { signal: context.abortSignal });
@@ -528,7 +601,7 @@ export class McpService {
 				} catch {
 					// A write may already have happened. Neither durable recovery nor the transport retries this POST.
 					return output("MCP call failed; outcome may be unknown. Do not automatically retry writes.", true);
-				}
+				} finally { this.#lastUse.set(server.id, this.#now()); this.#inFlight.set(server.id, (this.#inFlight.get(server.id) ?? 1) - 1); }
 			},
 		};
 	}
@@ -569,16 +642,27 @@ export class McpService {
 	}
 	async #redact<T>(id: string, value: T): Promise<T> {
 		const credential = await this.#credentials.read(`${MCP_CREDENTIAL_PREFIX}${id}`);
-		const secrets =
-			credential?.type === "api_key" ? [credential.key] : credential ? [credential.access, credential.refresh, (credential as McpCredential).mcp?.oauth?.clientInformation?.client_secret] : [];
-		let encoded = JSON.stringify(value);
-		for (const secret of secrets)
-			if (secret) encoded = encoded.split(JSON.stringify(secret).slice(1, -1)).join("[redacted]");
-		return JSON.parse(encoded) as T;
+		const secrets = [ ...Object.values((credential as McpCredential | undefined)?.mcp?.env ?? {}), ...(
+			credential?.type === "api_key" ? [credential.key] : credential ? [credential.access, credential.refresh, (credential as McpCredential).mcp?.oauth?.clientInformation?.client_secret] : []) ];
+		const redactString = (text: string): string => {
+			for (const secret of secrets) if (secret) text = text.split(secret).join("[redacted]");
+			return text;
+		};
+		const redact = (part: unknown): unknown => {
+			if (typeof part === "string") return redactString(part);
+			if (Array.isArray(part)) return part.map(redact);
+			if (part !== null && typeof part === "object")
+				return Object.fromEntries(Object.entries(part).map(([key, child]) => [redactString(key), redact(child)]));
+			return part;
+		};
+		return redact(value) as T;
 	}
 	async close(): Promise<void> {
 		this.#closed = true;
 		clearInterval(this.#approvalTimer);
+ clearInterval(this.#idleTimer);
+ for (const timer of this.#restartTimers.values()) clearTimeout(timer);
+ this.#restartTimers.clear();
 		this.#bindings.clear();
 		await Promise.allSettled([...this.#clients.values()].map((client) => client.close()));
 		this.#clients.clear();
