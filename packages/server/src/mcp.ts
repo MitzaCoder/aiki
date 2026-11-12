@@ -57,6 +57,7 @@ type McpState = { servers: StoredServer[]; projects: Record<string, McpProjectSe
 export interface McpApprovalBoard {
 	request(input: { text: string; options: string[]; threadId: string; key: string }): Promise<string>;
 	answer(questionId: string): Promise<string | undefined>;
+	withdraw(questionId: string): Promise<void>;
 }
 export type McpProjectBinding = {
 	projectId: string;
@@ -118,10 +119,13 @@ export class McpService {
 	readonly #connecting = new Map<string, Promise<void>>();
 	readonly #bindings = new Set<McpProjectBinding>();
 	#closed = false;
+	readonly #approvalTimer: ReturnType<typeof setInterval>;
 	constructor(dataDir: string, credentials: CredentialStore, now = Date.now) {
 		this.path = join(dataDir, "mcp", "servers.json");
 		this.#credentials = credentials;
 		this.#now = now;
+		this.#approvalTimer = setInterval(() => { void this.pruneApprovals().catch(() => undefined); }, 60_000);
+		this.#approvalTimer.unref();
 	}
 	async open(): Promise<void> {
 		const stored = (await readJsonFile(this.path)) as McpState | undefined;
@@ -142,6 +146,7 @@ export class McpService {
 		return this.#state.servers.find((server) => server.id === id) ?? bad("Unknown MCP server");
 	}
 	async list(): Promise<McpServer[]> {
+		await this.pruneApprovals();
 		return Promise.all(this.#state.servers.map((server) => this.view(server.id)));
 	}
 	async view(id: string): Promise<McpServer> {
@@ -249,7 +254,8 @@ export class McpService {
 	async remove(id: string): Promise<void> {
 		await this.disconnect(id);
 		await this.#credentials.delete(`${MCP_CREDENTIAL_PREFIX}${id}`);
-		await this.#mutate(() => {
+		await this.#mutate(async () => {
+			await this.#withdrawApprovals(approval => approval.serverId === id);
 			this.#state.servers = this.#state.servers.filter((server) => server.id !== id);
 			for (const [project, servers] of Object.entries(this.#state.projects))
 				this.#state.projects[project] = servers.filter((server) => server.serverId !== id);
@@ -334,7 +340,8 @@ export class McpService {
 				tools.some((tool) => !/^[a-zA-Z0-9_-]{1,100}$/.test(tool.name))
 			)
 				throw new Error("Invalid catalogue");
-			await this.#mutate(() => {
+			await this.#mutate(async () => {
+				await this.#withdrawApprovals(approval => approval.serverId === id && !tools.some(tool => tool.name === approval.tool));
 				server.tools = tools.map((tool) => ({
 					name: tool.name,
 					...(tool.description ? { description: tool.description.slice(0, 16_384) } : {}),
@@ -421,6 +428,7 @@ export class McpService {
 				const argumentsObject = args as Record<string, unknown>;
 				const hash = mcpArgumentHash(argumentsObject);
 				let admittedPolicy: McpPolicy = server.policies[tool.name] ?? defaultPolicy(tool);
+				await this.pruneApprovals();
 				const decision = await this.#mutate(async () => {
 					for (const approval of this.#state.approvals.filter(
 						(approval) =>
@@ -470,7 +478,6 @@ export class McpService {
 							`MCP approval: ${server.id} / ${tool.name}\nExact arguments:\n${JSON.stringify(argumentsObject)}\nAsking conversation: ${api.conversationId}. Retry only after approval; no call has been made.`,
 						),
 					});
-					this.#state.approvals = this.#state.approvals.filter((approval) => approval.expires > this.#now());
 					this.#state.approvals.push({
 						projectId: binding.projectId,
 						conversationId: api.conversationId,
@@ -478,7 +485,7 @@ export class McpService {
 						tool: tool.name,
 						hash,
 						questionId,
-						expires: this.#now() + 15 * 60_000,
+						expires: this.#now() + 7 * 24 * 60 * 60_000,
 						consumed: false,
 					});
 					return `MCP approval requested (${questionId}); retry exactly these arguments after approval. No call was made.`;
@@ -514,17 +521,31 @@ export class McpService {
 		};
 	}
 	async applyAnswer(projectId: string, questionId: string, answer: string): Promise<void> {
-		if (answer !== "Always allow this tool") return;
 		await this.#mutate(() => {
 			const approval = this.#state.approvals.find(
 				(approval) =>
 					approval.projectId === projectId && approval.questionId === questionId && approval.expires > this.#now(),
 			);
-			if (approval) {
-				this.#server(approval.serverId).policies[approval.tool] = "allow";
-				approval.consumed = true;
+			if (approval && !approval.consumed) {
+				approval.expires = this.#now() + 15 * 60_000;
+				if (answer === "Always allow this tool") {
+					this.#server(approval.serverId).policies[approval.tool] = "allow";
+					approval.consumed = true;
+				}
 			}
 		});
+	}
+	async #withdrawApprovals(matches: (approval: Approval) => boolean): Promise<void> {
+		for (const approval of this.#state.approvals.filter(approval => !approval.consumed && matches(approval))) {
+			for (const binding of this.#bindings) {
+				if (binding.projectId === approval.projectId) await binding.board.withdraw(approval.questionId);
+			}
+			approval.consumed = true;
+		}
+	}
+	/** Also run on list/call/reconnect so restored pending questions are cleaned up. */
+	async pruneApprovals(): Promise<void> {
+		await this.#mutate(() => this.#withdrawApprovals(approval => approval.expires <= this.#now() || !this.#state.servers.some(server => server.id === approval.serverId && server.tools.some(tool => tool.name === approval.tool))));
 	}
 	async #credential(id: string): Promise<McpCredential | undefined> {
 		const credential = (await this.#credentials.read(`${MCP_CREDENTIAL_PREFIX}${id}`)) as McpCredential | undefined;
@@ -541,6 +562,7 @@ export class McpService {
 	}
 	async close(): Promise<void> {
 		this.#closed = true;
+		clearInterval(this.#approvalTimer);
 		this.#bindings.clear();
 		await Promise.allSettled([...this.#clients.values()].map((client) => client.close()));
 		this.#clients.clear();

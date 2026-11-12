@@ -290,10 +290,16 @@ it("expires exact-call approvals and restores pending approvals across a backend
 	)!;
 	expect(await run(write, runtime.conversation.id)).toContain("approval requested (Q1)");
 	let question = (await runtime.board.state()).questions[0]!;
+	now += 24 * 60 * 60_000; // The owner can answer the next day.
+	await runtime.board.answer({ questionId: question.id, expectedRevision: question.revision, answer: "Approve once" });
+	expect(await run(write, runtime.conversation.id)).toContain("synthetic result");
+	expect(fake.calls.length).toBe(1);
+	await run(write, runtime.conversation.id);
+	question = (await runtime.board.state()).questions.find(question => question.status === "open")!;
 	await runtime.board.answer({ questionId: question.id, expectedRevision: question.revision, answer: "Approve once" });
 	now += 16 * 60_000;
-	expect(await run(write, runtime.conversation.id)).toContain("approval requested (Q2)");
-	expect(fake.calls.length).toBe(0);
+	expect(await run(write, runtime.conversation.id)).toContain("approval requested (Q3)");
+	expect(fake.calls.length).toBe(1);
 	await test.restart();
 	const reopened = (await test.server.manager.open(projectId)).runtime;
 	write = (await reopened.conversation.agent(BACKGROUND_CONTEXT)).callable.find((tool) =>
@@ -302,7 +308,7 @@ it("expires exact-call approvals and restores pending approvals across a backend
 	question = (await reopened.board.state()).questions.find((question) => question.status === "open")!;
 	await reopened.board.answer({ questionId: question.id, expectedRevision: question.revision, answer: "Approve once" });
 	expect(await run(write, reopened.conversation.id)).toContain("synthetic result");
-	expect(fake.calls.length).toBe(1);
+	expect(fake.calls.length).toBe(2);
 }, 25_000);
 it("isolates project enablement and background role registration", async () => {
 	const { test, mcp, client, projectId, runtime, fake } = await setup();
@@ -411,4 +417,27 @@ it("gives scheduled workers coordinator scope and preserves non-MCP filters on r
 	const after = await restored!.agent(BACKGROUND_CONTEXT);
 	expect(after.callable.some((tool) => tool.name === "board")).toBe(false);
 	expect(after.callable.some((tool) => tool.name === read.name)).toBe(true);
+}, 25_000);
+
+it("withdraws open Ask questions on expiry, catalogue removal and server removal", async () => {
+ let now = Date.now();
+ const { mcp, runtime, projectId, fake } = await setup(() => now);
+ await mcp.setProject(projectId, [{ serverId: "notion", enabled: true, roles: ["coordinator"] }]);
+ const write = (await runtime.conversation.agent(BACKGROUND_CONTEXT)).callable.find(tool => tool.name.endsWith("__write_page"))!;
+ await run(write, runtime.conversation.id);
+ now += 8 * 24 * 60 * 60_000;
+ await mcp.pruneApprovals();
+ expect((await runtime.board.state()).questions[0]!.status).toBe("withdrawn");
+ await run(write, runtime.conversation.id);
+ fake.setTools([]);
+ await mcp.refresh("notion");
+ expect((await runtime.board.state()).questions.every(question => question.status === "withdrawn")).toBe(true);
+ // Restore a tool, ask again, and remove its server.
+ fake.setTools([{ name: "write_page", inputSchema: { type: "object" } }]);
+ await mcp.refresh("notion");
+ const restored = (await runtime.conversation.agent(BACKGROUND_CONTEXT)).callable.find(tool => tool.name.endsWith("__write_page"))!;
+ await run(restored, runtime.conversation.id);
+ await mcp.remove("notion");
+ expect((await runtime.board.state()).questions.length).toBe(3);
+ expect((await runtime.board.state()).questions.every(question => question.status === "withdrawn")).toBe(true);
 }, 25_000);

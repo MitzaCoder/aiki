@@ -1,5 +1,12 @@
 # Continue
 
+## T143: MCP approval lifetime
+
+Ask questions last seven days; approve-once gets fifteen minutes from the answer.
+A minute sweep and list/call/catalogue/removal cleanup withdraw open questions
+when expired or removed. Late-answer, restart, expiry and removal regressions
+are covered by the MCP server suite.
+
 ## T143: remote MCP core, token auth and lazy discovery
 
 Stage 1 uses standalone pi-mcp 1.5.2 with the existing pi 1.5.1 packages under

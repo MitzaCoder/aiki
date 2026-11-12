@@ -675,6 +675,19 @@ Web and Android share ordering and count rules, including activity-only fallback
 
 ## MCP servers
 
+Stage 2 adds server-owned OAuth flows through the allowlisted web origin at
+`/mcp/oauth/callback`, with a pasted redirect fallback for unpaired browsers.
+Pending flows are one-use, ten-minute, URL/device-bound state and PKCE; grants
+and dynamic registrations remain in URL-bound `mcp:<id>` credentials. pi-mcp
+owns discovery, issuer checks, PKCE and serialized refresh; Aiki owns routing,
+expiry, cancellation, status broadcasts and secret-safe errors. Invalid grants
+require sign-in, not automatic browser launches. Notion supports OAuth or an MCP
+token. Settings screens and Android app-link interception follow separately.
+
+Ask requests remain answerable for seven days. The exact-call approve-once
+window lasts fifteen minutes from the answer, not from the question. Expired or
+removed-tool/server requests withdraw their open board questions.
+
 Stage 1 is backend-global remote Streamable HTTP with pasted bearer tokens. No
 stdio, legacy SSE, imports, real-account sign-ins or client UI. Definitions and
 cached catalogues live in `mcp/servers.json`; project/role enablement defaults off.

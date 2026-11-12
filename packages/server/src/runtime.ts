@@ -1395,7 +1395,7 @@ export class ProjectManager {
    entry.stopMcp = this.mcp.bind({ projectId: project.id, registry,
     role: async id => coordinators.isMain(id) ? "coordinator" : coordinators.isBackground(id) ? "background" : (await workerOf(id))?.scheduleId ? "coordinator" : "workers",
     thread: async id => coordinators.threadIdOf(id) ?? (await workerOf(id))?.threadId ?? MAIN_THREAD_ID,
-    board: { request: input => board.requestMcpApproval(input), answer: async id => {
+    board: { request: input => board.requestMcpApproval(input), withdraw: id => board.withdrawMcpApproval(id), answer: async id => {
      const question = (await board.state()).questions.find(question => question.id === id);
      return question?.status === "open" ? undefined : question?.answer ?? "Deny";
     } },

@@ -2344,6 +2344,13 @@ export class BoardService {
 		this.#armEditTimer();
 	}
 
+async withdrawMcpApproval(questionId: string): Promise<void> {
+  await this.#commit(HARNESS_WRITER, state => {
+   const question = state.questions.find(question => question.id === questionId);
+   if (question?.status === "open") settleQuestion(state, { questionId, expectedRevision: question.revision, answer: null, now: this.#iso(), actor: "coordinator" });
+  });
+ }
+
 async requestMcpApproval(input: { text: string; options: string[]; threadId: string; key: string }): Promise<string> {
   const pending = (await this.state()).questions.find(question => question.status === "open" && question.text === input.text && question.threadId === input.threadId);
   if (pending) return pending.id;
