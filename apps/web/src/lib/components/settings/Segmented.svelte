@@ -24,6 +24,7 @@
 	} = $props();
 
 	function onkeydown(event: KeyboardEvent): void {
+		if (disabled) return;
 		const keys: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
 		const step = keys[event.key];
 		if (step === undefined) return;
@@ -32,8 +33,9 @@
 		const at = enabled.findIndex((option) => option.value === value);
 		const next = enabled[(at + step + enabled.length) % enabled.length];
 		if (next !== undefined) {
+			const group = event.currentTarget as HTMLElement;
 			onchange(next.value);
-			queueMicrotask(() => (event.currentTarget as HTMLElement).querySelector<HTMLElement>('[aria-checked="true"]')?.focus());
+			queueMicrotask(() => group.querySelector<HTMLElement>('[aria-checked="true"]')?.focus());
 		}
 	}
 </script>

@@ -48,6 +48,7 @@ export const PROJECT_SECTIONS = [
 	{ id: "schedules", label: "Scheduled tasks", hint: "Clocks and event triggers", icon: "calendar-clock" },
 	{ id: "tickets", label: "Tickets and pull requests", hint: "Jira site, prefixes, repositories", icon: "ticket" },
 	{ id: "cache", label: "Prompt cache", hint: "How long Claude keeps a conversation", icon: "database-zap" },
+	{ id: "mcp", label: "MCP", hint: "Remote servers and agent roles", icon: "server" },
 	{ id: "storage", label: "Storage", hint: "Finished workspaces and disk use", icon: "hard-drive" },
 ] as const satisfies readonly SettingsSectionInfo[];
 
@@ -69,7 +70,7 @@ export function generalSettingsHref(section?: GeneralSectionId): string {
 }
 
 /** One backend's own page, or one of its subpages. */
-export function backendSettingsHref(backendId: string, sub?: "accounts"): string {
+export function backendSettingsHref(backendId: string, sub?: "accounts" | "mcp"): string {
 	const base = `${GENERAL_SETTINGS_HREF}/backends/${encodeURIComponent(backendId)}`;
 	return sub === undefined ? base : `${base}/${sub}`;
 }
@@ -154,6 +155,8 @@ export function projectSectionAvailable(
 			return has.links;
 		case "cache":
 			return has.longPromptCache;
+		case "mcp":
+			return has.supports("mcp-servers");
 		case "storage":
 			return has.supports("storage");
 	}

@@ -1,5 +1,31 @@
 # Continue
 
+## T145: web MCP settings (stage 3)
+
+Capability-gated backend MCP settings now list/add servers and show details with
+write-only token connect, refresh, disconnect, confirmed removal, and filterable
+plain-text tool descriptions/hints with Off / Ask / Allow. Project MCP settings
+start servers and roles off and save coordinator/worker/background choices.
+OAuth wiring is deliberately left at the marked stage-2 integration point in
+`McpServersSection.svelte`; no real account sign-in or protocol changes here.
+
+Reusable synthetic proof: `bun packages/server/scripts/mcp-web-demo.ts` uses
+createSetup and the bearer-protected 71-tool peer, prints isolated paths and writes
+`/tmp/mcp-web-demo.json`. Start Vite on localhost:5186 and dedicated headless
+Chromium on CDP :9386, then `bun packages/server/scripts/mcp-web-proof.ts` seeds
+`aiki.backends.v1` and drives add/token/policy/project roles plus desktop/phone
+light/dark screenshots and two recordings under `/tmp/mcp-web-proof`.
+Use a fresh fixture for each full proof. `MCP_PROOF_PHASE=before` captures the
+pre-feature settings; `MCP_PROOF_ONLY=approval` captures only existing questions.
+Approval JSON already wraps at 617px desktop / 284px phone; no card change needed.
+T145 artifacts contain the screen matrix and add/token/policy plus project-role
+recordings. Additional live checks cover credential-preserving disconnect,
+refresh reconnect, keyboard policy change, cancelled and confirmed removal.
+Sequential gates pass: web check (zero diagnostics), 1,044 web tests, build;
+root typecheck and 2,440 tests / 91,556 assertions (no reruns), private-denylist,
+generic and Gitleaks checks. The ignored operator denylist was supplied externally;
+this workspace itself has no local deploy configuration. No push or main move.
+
 ## T144: MCP OAuth through the web origin
 
 Added mcp.oauth.start/complete/cancel and mcp.oauth.changed, optional per-server

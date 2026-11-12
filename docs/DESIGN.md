@@ -675,6 +675,16 @@ Web and Android share ordering and count rules, including activity-only fallback
 
 ## MCP servers
 
+Web settings (stage 3) are gated by `mcp-servers`. Backend settings → MCP
+servers lists status and tool count, adds backend-provided presets or a named
+URL, and opens server details. Details offer write-only pasted-token connection,
+refresh, disconnect, confirmed removal, and a filterable plain-text tool catalogue
+with Off / Ask / Allow. Descriptions are truncated and annotations are labelled
+as server hints, not guarantees. OAuth has a reserved integration point for stage 2.
+Project settings → MCP starts every server and role disabled; coordinator, workers
+and background threads are independent choices saved on change. Existing board
+questions carry exact-argument approvals, including long JSON on phone screens.
+
 Stage 2 adds server-owned OAuth flows through the allowlisted web origin at
 `/mcp/oauth/callback`, with a pasted redirect fallback for unpaired browsers.
 Pending flows are one-use, ten-minute, URL/device-bound state and PKCE; grants
@@ -682,7 +692,7 @@ and dynamic registrations remain in URL-bound `mcp:<id>` credentials. pi-mcp
 owns discovery, issuer checks, PKCE and serialized refresh; Aiki owns routing,
 expiry, cancellation, status broadcasts and secret-safe errors. Invalid grants
 require sign-in, not automatic browser launches. Notion supports OAuth or an MCP
-token. Settings screens and Android app-link interception follow separately.
+token. Android app-link interception follows separately.
 
 Ask requests remain answerable for seven days. The exact-call approve-once
 window lasts fifteen minutes from the answer, not from the question. Expired or
@@ -691,7 +701,7 @@ receipts for closed projects survive until the next project bind can withdraw
 the board question; a list or removal without a binding cannot forget it.
 
 The core is backend-global remote Streamable HTTP with pasted bearer tokens or
-OAuth. No stdio, legacy SSE, imports or settings screens yet. Definitions and
+OAuth. No stdio, legacy SSE or imports. Definitions and
 cached catalogues live in `mcp/servers.json`; project/role enablement defaults off.
 Credentials use a separate MCP namespace in the harness credentials file, with a
 versioned token/OAuth record so refresh grants can be added in stage 2.
@@ -3621,11 +3631,12 @@ section lists, the URLs and the rules below as pure functions (`test/settings.te
   footer entry). Sections: **Appearance** (theme and the device-local work-day start for Waiting dates), **Backends**, **Notifications**, **Archived projects**.
   - Backends lists the browser's backends, suggested ones, add, connect another device. Each backend has its own
     subpages: its page (status, release, machine, deploy, name, remove, memory maintenance) and **Accounts and API
-    keys** (moved out of Project settings: credentials belong to the backend that holds them).
+    keys** (moved out of Project settings: credentials belong to the backend that holds them), and **MCP servers**
+    (capability-gated remote connections, token entry and tool policies).
   - Notifications is the old /notifications page; Archived projects is the unarchive list (the drawer keeps its own).
 - **Project settings**, opened from the top bar gear and the ⋯ menu: **General** (name, folder, archive),
   **Coordinator** (model, thinking), **Workers** (worker models, check-ins), **Scheduled tasks**, **Tickets and pull
-  requests**, **Prompt cache**, **Storage**. A section a backend does not offer is left out of the list.
+  requests**, **Prompt cache**, **MCP** (server and agent-role enablement), **Storage**. A section a backend does not offer is left out of the list.
 - `/` stays the projects home (it was both): every backend's projects, Add a project (opens `FolderPicker`), the
   first-run backend form. Management moved to Settings → Backends.
 
@@ -3639,8 +3650,9 @@ Every section has a URL; the last segment is the section name, which Android reu
 /settings/backends                          list
 /settings/backends/<id>                     one backend
 /settings/backends/<id>/accounts            Accounts and API keys
+/settings/backends/<id>/mcp                 MCP servers
 /b/<backend>/projects/<id>/settings         list (phone) / General (wide)
-/b/<backend>/projects/<id>/settings/general | coordinator | workers | schedules | tickets | cache | storage
+/b/<backend>/projects/<id>/settings/general | coordinator | workers | schedules | tickets | cache | mcp | storage
 ```
 
 - `/notifications` redirects to `/settings/notifications`. The old `.../settings` URL still works: it is the list on a

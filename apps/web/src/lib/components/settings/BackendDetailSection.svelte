@@ -89,6 +89,12 @@
 				<ChevronRightIcon class="size-4 shrink-0 text-(--chat-fg-subtle)" aria-hidden="true" />
 			</a>
 		{/if}
+        {#if backend.supports('mcp-servers')}
+            <a href={backendSettingsHref(backend.id, 'mcp')} data-link="mcp" class="flex min-h-14 items-center gap-3 px-4 py-3 transition-colors hover:bg-(--chat-surface-2)/50 sm:px-5">
+                <span class="flex min-w-0 flex-1 flex-col"><span class="text-sm font-semibold">MCP servers</span><span class="text-[0.8125rem] text-muted-foreground">Remote tools, connections and permissions.</span></span>
+                <ChevronRightIcon class="size-4 shrink-0 text-(--chat-fg-subtle)" aria-hidden="true" />
+            </a>
+        {/if}
 	</SettingsGroup>
 
 	{#if backend.supports('memory-maintenance')}
