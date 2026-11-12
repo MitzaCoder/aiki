@@ -58,6 +58,19 @@ class HarnessClient(
     private val requestTimeoutMs: Long = 30_000,
     val deviceAuth: DeviceAuth? = null,
 ) : Closeable {
+    /** Authenticated, same-backend file HTTP only. Never follow credential-bearing redirects. Caller closes response. */
+    internal suspend fun attachmentRequest(path: String, body: RequestBody? = null): Response = withContext(Dispatchers.IO) {
+        require(path.startsWith("/attachments/") && !path.startsWith("//"))
+        val token = deviceAuth?.prepare()
+        val request = Request.Builder().url(backend.url + path).header("Cache-Control", "no-store").apply {
+            if (token != null) header("Authorization", "Bearer $token")
+            if (body != null) post(body)
+        }.build()
+        val response = http.newBuilder().followRedirects(false).followSslRedirects(false).callTimeout(120, java.util.concurrent.TimeUnit.SECONDS).build().newCall(request).execute()
+        if (!response.isSuccessful) { val reason = response.body.string().take(300); response.close(); throw ClientException("attachment_failed", reason) }
+        response
+    }
+
     private val socketHttp = if (deviceAuth != null) http.newBuilder().followRedirects(false).followSslRedirects(false).build() else http
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val mutableState = MutableStateFlow(ConnectionState())

@@ -35,9 +35,11 @@ native PDFs**. Upstream would need document/file user-content types, catalog PDF
 modality/limits and Anthropic Messages document / OpenAI Responses input_file
 conversion (including the Codex adapter), plus replay/serialization support.
 
-Web and Android show removable name/size/type chips before send and downloadable
-chips in history. Pickers, web drop/paste and Android share intents accept any
-MIME. Existing image behavior stays compatible. All uploaded content is untrusted
+Web and Android main/background chat composers show removable name/size/type
+chips before send and downloadable chips in history. Their pickers, web drop/paste
+and Android share intents accept any MIME. Task-sheet reply pickers use the same
+file upload path to main's conversation, carrying the task ID on submission.
+Existing image behavior stays compatible. All uploaded content is untrusted
 user input, never harness instructions. HTTP upload is `POST /attachments/<projectId>`
 with raw bytes, Content-Type, `name` and optional `threadId` query parameters;
 response metadata is versioned by the advertised capability. `fileIds` on submit

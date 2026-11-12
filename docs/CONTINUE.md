@@ -1,5 +1,58 @@
 # Continue
 
+## T140 integration: standalone binary Part 2
+
+The three attachment revisions now sit on `pxvxqzsv` (9636867f), above the full
+T136/T137/T72 Part 1 + Part 2 line. Conflicts were resolved in `mxspyrts`;
+`vrqyotqq` and `msmyzxkq` are clean. Both release assertions remain: Part 2's
+aggregate SHA256SUMS and T140's licence sidecar. The Part 2 continuation section
+is preserved verbatim below the attachment sections.
+
+Release CI and the builder still publish the executable, checksum and matching
+`.licenses.txt`. Seven installer/CLI fixture cases now include the extra notice
+asset and checksum-manifest row; install, update, rollback, runtime switching and
+fail-closed checksum behavior still pass. Together with workflow checks: 11 tests
+/ 99 assertions. Installer/CLI runtime files are unchanged from Part 2. The
+installer tolerates the notice asset but does not currently copy it locally.
+
+Final sequential gates at `msmyzxkq`: root **2,470 pass / 91,739 assertions**;
+typecheck; web check (zero diagnostics), **1,047 pass / 79,667 assertions**, build;
+Android **899 tests / 122 suites**, two opt-in skips, zero failures/errors
+(unchanged Android inputs reused Gradle outputs); assembly; lint (zero errors,
+51 warnings); Gradle daemon stopped; private/public guard and Gitleaks pass.
+Full rebuilt production/faux binary smoke passes PDF extraction, owner/auth/web,
+codemode/worker, QuickJS recovery and Photon. Linux x64 binary: **130,468,016
+bytes**; generated licence sidecar matches `PDF-LICENSES.txt` byte for byte.
+No UI change or new media proof. No push/main movement, deployment, phone or real
+provider calls. Owned temporary binary outputs are removed after verification.
+
+## T140 follow-up: rebased PDF text fallback and task replies
+
+The three area changes remain `mxspyrts` → `vrqyotqq` → `msmyzxkq`, now on
+`qttywtxo` (T136/T137/T72). Both documentation/export conflicts retain upstream
+content; Android protocol regeneration passes (352 DTOs / 93 overloads).
+Task-sheet reply pickers on both clients now accept files, including file-only
+replies; feedback records their filenames rather than an empty body.
+
+Pinned unpdf 2.1.0 supplies pure-JS bounded PDF text extraction (MIT wrapper,
+Apache-2.0 PDF.js, no required native dependency). Lazy import works inside the
+standalone executable with no dependency directory or Bun on PATH. The real
+compiled faux smoke uploads a PDF and verifies its extracted text and original
+path notice; owner/auth/web/codemode/worker/Photon smokes still pass. Linux x64
+production binary: **130,443,440 bytes**, about 1.59 MiB above the qttywtxo build.
+Source archives and binary releases carry `PDF-LICENSES.txt` / `.licenses.txt`;
+the installer should retain the sidecar. `install.sh` is untouched. Details and
+upstream native-document requirements: [PDF fallback](research/chat-pdf-text.md).
+
+Final sequential gates: root **2,463 pass / 91,689 assertions**; typecheck; web
+check (zero diagnostics), **1,047 pass / 79,667 assertions**, build; Android
+**899 JVM tests / 122 suites**, two opt-in skips, no failures/errors; assembly;
+lint (zero errors, 51 warnings); isolated Gradle daemon stopped; private/public
+source guard and Gitleaks pass. Updated T140 proof is one web screenshot showing
+the PDF reply picker and sent PDF. Synthetic fixtures only; no push/main move,
+real provider API, phone, deployment or installer edit. Owned temporary binary,
+helper and browser outputs are removed after verification.
+
 ## T140: arbitrary chat attachments (D66 C)
 
 Added additive `chat-files-v1` HTTP uploads and optional submit `fileIds`; protocol
@@ -25,8 +78,23 @@ ACTION_SEND/SEND_MULTIPLE destination selection, saved file/admission IDs, match
 chips and SAF downloads with 48dp controls and TalkBack labels. Shared-file uploads
 belong to the chat's scope, not the consumption effect whose keys they clear.
 
-Verification and final change IDs are recorded on T140. Synthetic createSetup/faux
-fixtures only; no phone, live providers/data, deployment, push or main movement.
+Sequential gates pass: root 2,439 tests / 91,513 assertions; typecheck; web check
+(zero diagnostics), 1,042 tests / 79,649 assertions and production build; Android
+892 JVM tests across 120 suites (two opt-in skips, zero failures/errors), assembly
+and lint (zero errors, 51 warnings). The isolated Gradle daemon was stopped.
+Private-denylist/generic and Gitleaks checks pass using external operator config.
+T140 retains 12 before/after screenshots (web desktop/phone light/dark and Android
+light/dark), an 8-second web attach/send recording and a 44-second real Android
+Files → share sheet → Aiki → conversation → send recording. Only three screenshots
+were read back during proof. Synthetic createSetup/faux fixtures only; no phone,
+live providers/data, deployment, push or main movement.
+
+Area changes: server/protocol/client `mxspyrts`, web `vrqyotqq`, Android `msmyzxkq`.
+Main/background chat and secondary task-sheet reply pickers now accept any file;
+task replies upload to main's conversation and preserve the task ID. Rebased onto
+`qttywtxo` (T136/T137/T72), keeping all three area commits and upstream docs/exports.
+Android protocol regenerated with 352 DTOs / 93 request overloads. `install.sh`
+was not changed. Follow-up verification counts are recorded below when complete.
 
 ## T72 part 2: binary-first installation and mixed-runtime rollback
 

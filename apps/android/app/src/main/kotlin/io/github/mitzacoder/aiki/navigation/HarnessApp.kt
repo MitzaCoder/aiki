@@ -88,6 +88,7 @@ fun HarnessApp(
         if (stack.size > 1 && stack[stack.lastIndex - 1] == encoded) pop() else replaceTop(target)
     }
     val settingsNavigator = SettingsNavigator(navigate, replaceTop, goUp)
+    io.github.mitzacoder.aiki.features.chat.ShareConversationDialog(repository, navigate)
     LaunchedEffect(connectPayload) { if (connectPayload != null) navigate(Destination.Settings(GeneralPage(GeneralSection.Backends))) }
     HandleAppLink(pendingLink, loaded, sessions.map { it.config }, navigate, onUnknownBackend = { id ->
         // A phone's panel or a task sheet would cover the drawer: back to their chat first.

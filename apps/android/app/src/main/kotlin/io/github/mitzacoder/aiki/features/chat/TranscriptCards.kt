@@ -169,7 +169,7 @@ private const val ORB_MIN_WIDTH_DP = 640
             first.kind == "image" -> Box(Modifier.fillMaxWidth(),contentAlignment = Alignment.CenterEnd) {
                 AsyncImage(model = remember(first.text) { runCatching { Base64.decode(first.text,Base64.DEFAULT) }.getOrNull() },contentDescription = "Attached image",modifier = Modifier.fillMaxWidth(.85f).heightIn(max = 320.dp).clip(RoundedCornerShape(16.dp)))
             }
-            first.kind == "user" -> UserMessage(first)
+            first.kind == "user" -> UserMessage(first, scope.context)
             else -> TaskMentions(streaming,source = first.text) { RichMarkdown(first.text,Modifier.fillMaxWidth()) }
         }
         row.turn?.let { TurnFooter(row.key,it) }
@@ -298,13 +298,18 @@ private fun stepIcon(part: ChatPart): LucideIcon = when {
  * A message from the user: the task it is about as a pill above the bubble, the quotes it starts with as small quotes
  * at the top of the bubble, the text, then copy and time.
  */
-@Composable private fun UserMessage(part: ChatPart) {
-    val reference = remember(part.text) { io.github.mitzacoder.aiki.features.tasks.parseTaskReference(part.text) }
+@Composable private fun UserMessage(part: ChatPart, context: ProjectScreenContext?) {
+    val attachment = remember(part.text) { splitFileMessage(part.text) }
+    var downloadError by remember { mutableStateOf<String?>(null) }
+    val download = context?.let { rememberFileDownload(it.backend.client) { message -> downloadError = message } }
+    val reference = remember(attachment.text) { io.github.mitzacoder.aiki.features.tasks.parseTaskReference(attachment.text) }
     val quoted = remember(reference.text) { splitQuotes(reference.text) }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
     val widest = minOf(640.dp,maxWidth * .88f)
     Column(Modifier.fillMaxWidth(),horizontalAlignment = Alignment.End,verticalArrangement = Arrangement.spacedBy(6.dp)) {
         reference.taskId?.let { TaskPill(it,Modifier.widthIn(max = widest), showTitle = reference.feedbackId == null, feedbackId = reference.feedbackId) }
+        if(attachment.files.isNotEmpty()) CompositionLocalProvider(LocalFileDownload provides download) { FileChips(attachment.files) }
+        downloadError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if(reference.text.isNotEmpty()) UserMessageSurface(Modifier.widthIn(max = widest)) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 quoted.quotes.forEachIndexed { index,quote -> key(index) { QuoteBlock(quote) } }

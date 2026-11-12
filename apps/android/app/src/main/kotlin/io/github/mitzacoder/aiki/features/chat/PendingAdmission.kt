@@ -21,10 +21,11 @@ internal data class PendingAdmission(
     val taskId: String? = null,
     /** Quotes from the transcript, sent as blockquotes before [text]. */
     val quotes: List<String> = emptyList(),
+    val fileIds: List<String> = emptyList(),
 ) {
     fun save(): String = Json.encodeToString(serializer(),this)
-    fun canRetry(scope: String, text: String, images: List<JsonObject>, taskId: String? = null, quotes: List<String> = emptyList()): Boolean =
-        this.scope == scope && this.text == text && imageDigest == digest(images) && this.taskId == taskId && this.quotes == quotes
+    fun canRetry(scope: String, text: String, images: List<JsonObject>, taskId: String? = null, quotes: List<String> = emptyList(), fileIds: List<String> = emptyList()): Boolean =
+        this.scope == scope && this.text == text && imageDigest == digest(images) && this.taskId == taskId && this.quotes == quotes && this.fileIds == fileIds
     /** The text that goes out: the quotes as blockquotes, then what was typed. */
     val message: String get() = if(quotes.isEmpty()) text else messageWithQuotes(quotes,text)
     /** The content the request carries: the text, then each image in order; null when [images] are not the ones this admission was made with. */
@@ -37,8 +38,8 @@ internal data class PendingAdmission(
         }
     }
     companion object {
-        fun create(scope: String,text: String,images: List<JsonObject>,defaults: WorkerDefaults,id: String = UUID.randomUUID().toString(),taskId: String? = null,quotes: List<String> = emptyList()) =
-            PendingAdmission(scope,id,text,digest(images),defaults,taskId,quotes)
+        fun create(scope: String,text: String,images: List<JsonObject>,defaults: WorkerDefaults,id: String = UUID.randomUUID().toString(),taskId: String? = null,quotes: List<String> = emptyList(),fileIds: List<String> = emptyList()) =
+            PendingAdmission(scope,id,text,digest(images),defaults,taskId,quotes,fileIds)
         fun restore(saved: String?): PendingAdmission? = saved?.let { runCatching { Json.decodeFromString(serializer(),it) }.getOrNull() }
         private fun digest(images: List<JsonObject>): String? = images.takeIf { it.isNotEmpty() }?.let { list ->
             // Fixed field order, independent of JsonObject construction order; the order of the images counts.

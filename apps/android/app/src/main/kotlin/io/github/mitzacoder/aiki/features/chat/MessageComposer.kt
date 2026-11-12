@@ -35,6 +35,7 @@ internal fun MessageComposer(
     onSend: () -> Unit,
     modifier: Modifier = Modifier,
     fieldModifier: Modifier = Modifier,
+    attachLabel: String = "Attach images",
     inputTransformation: InputTransformation? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     hintMaxLines: Int = Int.MAX_VALUE,
@@ -63,7 +64,7 @@ internal fun MessageComposer(
         )
         afterInput()
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            JarvisIconButton(Lucide.Paperclip, if (attaching) "Reading images" else "Attach images", enabled = attachEnabled, onClick = onAttach)
+            JarvisIconButton(Lucide.Paperclip, if (attaching) "Reading attachments" else attachLabel, enabled = attachEnabled, onClick = onAttach)
             controls()
             JarvisIconButton(Lucide.ArrowUp, sendLabel, emphasized = true, enabled = sendEnabled, onClick = onSend)
         }

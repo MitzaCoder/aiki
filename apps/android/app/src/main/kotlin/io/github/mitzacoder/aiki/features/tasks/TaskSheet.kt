@@ -41,6 +41,11 @@ import io.github.mitzacoder.aiki.data.*
 import io.github.mitzacoder.aiki.features.panels.panelData
 import io.github.mitzacoder.aiki.features.tasks.media.ARTIFACT_TAGS_FEATURE
 import io.github.mitzacoder.aiki.features.tasks.media.TaskFiles
+import io.github.mitzacoder.aiki.features.chat.ChatFile
+import io.github.mitzacoder.aiki.features.chat.FileChips
+import io.github.mitzacoder.aiki.features.chat.INPUT_IMAGE_MIME_TYPES
+import io.github.mitzacoder.aiki.features.chat.readRawImage
+import io.github.mitzacoder.aiki.features.chat.uploadChatFile
 import io.github.mitzacoder.aiki.features.chat.ComposerQuotes
 import io.github.mitzacoder.aiki.features.chat.DraftImage
 import io.github.mitzacoder.aiki.features.chat.INPUT_MAX_IMAGES
@@ -440,13 +445,14 @@ private fun ReplyBox(context: ProjectScreenContext, task: BoardTask, owner: Task
     var replyProblem by remember { mutableStateOf<String?>(null) }
     // Images wait here, in memory only (the reply has no draft), until the message is sent.
     var images by remember(task.id) { mutableStateOf(listOf<DraftImage>()) }
+    var attachments by remember(task.id) { mutableStateOf(listOf<ChatFile>()) }
+    val android = androidx.compose.ui.platform.LocalContext.current
+    val connection by context.backend.client.state.collectAsStateWithLifecycle()
     var attaching by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     // Typing again after a send clears "Sent".
     LaunchedEffect(reply) { snapshotFlow { reply.text.toString() }.collect { if (it.isNotEmpty()) sent = false } }
-    val intake = rememberImageIntake { files ->
-        attaching = true
-        try {
+    suspend fun addImages(files: List<Pair<io.github.mitzacoder.aiki.features.chat.RawImage?, String?>>) {
             replyProblem = attachFiles(files) { image ->
                 val id = sha256Hex(image.bytes)
                 when {
@@ -457,14 +463,35 @@ private fun ReplyBox(context: ProjectScreenContext, task: BoardTask, owner: Task
                     }
                 }
             }
-        } finally { attaching = false }
+    }
+    val intake = rememberImageIntake { files ->
+        attaching = true
+        try { addImages(files) } finally { attaching = false }
+    }
+    val filePicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) scope.launch {
+            attaching = true; replyProblem = null
+            try {
+                for (uri in uris) {
+                    if (images.size + attachments.size >= INPUT_MAX_IMAGES) { replyProblem = "A message holds at most 8 attachments"; break }
+                    try {
+                        if (android.contentResolver.getType(uri) in INPUT_IMAGE_MIME_TYPES) {
+                            val raw = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { readRawImage(android.contentResolver, uri) }
+                            addImages(listOf(raw to null))
+                        } else attachments = attachments + uploadChatFile(context.backend.client, android.contentResolver, context.route.projectId, null, uri)
+                    } catch (cause: CancellationException) { throw cause }
+                    catch (cause: Exception) { replyProblem = cause.message ?: "Could not attach file" }
+                }
+            } finally { attaching = false }
+        }
     }
     fun send() {
         val text = reply.text.toString().trim()
-        if ((text.isEmpty() && images.isEmpty()) || sending || attaching) return
+        if ((text.isEmpty() && images.isEmpty() && attachments.isEmpty()) || sending || attaching) return
         sending = true
         replyProblem = null
         val sentImages = images
+        val sentAttachments = attachments
         scope.launch {
             try {
                 val blocks = sentImages.mapNotNull { image -> image.bytes?.let { imageBlock(image.ref.mimeType, it) } }
@@ -474,11 +501,12 @@ private fun ReplyBox(context: ProjectScreenContext, task: BoardTask, owner: Task
                         if (text.isNotEmpty()) add(kotlinx.serialization.json.buildJsonObject { put("type", JsonPrimitive("text")); put("text", JsonPrimitive(text)) })
                         blocks.forEach { add(it) }
                     },
-                    whenBusy = "steer", taskId = task.id,
+                    whenBusy = "steer", taskId = task.id, fileIds = sentAttachments.map { it.id },
                 ))
                 reply.setTextAndPlaceCursorAtEnd("")
                 // What was sent goes; images added while the request was out stay.
                 images = images.filterNot { image -> sentImages.any { it.ref.id == image.ref.id } }
+                attachments = attachments.filterNot { file -> sentAttachments.any { it.id == file.id } }
                 sent = true
             } catch (cause: CancellationException) { throw cause }
             catch (cause: Exception) { replyProblem = cause.message ?: "Could not send" }
@@ -493,10 +521,12 @@ private fun ReplyBox(context: ProjectScreenContext, task: BoardTask, owner: Task
             images = images,
             onRemoveImage = { id -> images = images.filterNot { it.ref.id == id } },
             attaching = attaching,
-            attachEnabled = !attaching && !sending && images.size < INPUT_MAX_IMAGES,
-            onAttach = intake.pick,
+            attachEnabled = !attaching && !sending && images.size + attachments.size < INPUT_MAX_IMAGES,
+            attachLabel = if (connection.supports("chat-files-v1")) "Attach files" else "Attach images",
+            onAttach = if (connection.supports("chat-files-v1")) ({ filePicker.launch(arrayOf("*/*")) }) else intake.pick,
+            beforeInput = { if (attachments.isNotEmpty()) FileChips(attachments, onRemove = { id -> attachments = attachments.filterNot { it.id == id } }) },
             sendLabel = if (sending) "Sending" else "Send to the coordinator about ${task.id}",
-            sendEnabled = !sending && !attaching && (reply.text.isNotBlank() || images.isNotEmpty()),
+            sendEnabled = !sending && !attaching && (reply.text.isNotBlank() || images.isNotEmpty() || attachments.isNotEmpty()),
             onSend = ::send,
             modifier = Modifier.fillMaxWidth(),
             fieldModifier = Modifier.heightIn(max = inputMaxHeight).contentReceiver(intake.receiver).semantics { contentDescription = "Message about ${task.id}" },

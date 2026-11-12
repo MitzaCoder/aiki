@@ -84,7 +84,11 @@ fun ChatScreen(context: ProjectScreenContext, modifier: Modifier = Modifier) {
     var pendingSaved by rememberSaveable(admissionScope) { mutableStateOf<String?>(null) }
     val pending = remember(pendingSaved) { PendingAdmission.restore(pendingSaved) }
     var discardPending by remember { mutableStateOf(false) }
-    val retryMatches = remember(pendingSaved,pending,draft,images,admissionScope,taskId,quotes) { pendingSaved == null || pending?.canRetry(admissionScope,draft,chatDraft.imageBlocks(),taskId,quotes) == true }
+    var savedFiles by rememberSaveable(admissionScope) { mutableStateOf("[]") }
+    val files = remember(savedFiles) { runCatching { wireJson.decodeFromString(kotlinx.serialization.builtins.ListSerializer(ChatFile.serializer()), savedFiles) }.getOrDefault(emptyList()) }
+    fun setFiles(next: List<ChatFile>) { savedFiles = wireJson.encodeToString(kotlinx.serialization.builtins.ListSerializer(ChatFile.serializer()), next) }
+    val fileIds = files.map { it.id }
+    val retryMatches = remember(pendingSaved,pending,draft,images,admissionScope,taskId,quotes,fileIds) { pendingSaved == null || pending?.canRetry(admissionScope,draft,chatDraft.imageBlocks(),taskId,quotes,fileIds) == true }
     var workerDefaults by remember(context.route) { mutableStateOf(WorkerDefaults(null,null)) }
     // Pictures come from the attach button's picker, a paste (long press or keyboard) and the keyboard's own images.
     val intake = rememberImageIntake { files ->
@@ -94,6 +98,36 @@ fun ChatScreen(context: ProjectScreenContext, modifier: Modifier = Modifier) {
             val problem = attachFiles(files) { image -> chatDraft.attach(cache,image.bytes,image.mimeType,image.name) }
             error = problem
         } finally { attaching = false }
+    }
+    suspend fun attachUris(uris: List<android.net.Uri>) {
+        attaching = true
+        try {
+            val added = files.toMutableList()
+            for (uri in uris) {
+                if (added.size + chatDraft.images.size >= 8) { error = "A message holds at most 8 attachments"; break }
+                try {
+                    val type = android.contentResolver.getType(uri)
+                    if (type in INPUT_IMAGE_MIME_TYPES) {
+                        val raw = withContext(Dispatchers.IO) { readRawImage(android.contentResolver, uri) }
+                        error = attachFiles(listOf(raw to null)) { image -> chatDraft.attach(DraftCache.of(android), image.bytes, image.mimeType, image.name) }
+                    } else added += uploadChatFile(context.backend.client, android.contentResolver, context.route.projectId, context.route.threadId, uri)
+                    setFiles(added.toList())
+                } catch (e: CancellationException) { throw e }
+                catch (e: Exception) { error = e.message ?: "Attachment failed" }
+            }
+        } finally { attaching = false }
+    }
+    val filePicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) scope.launch { attachUris(uris) }
+    }
+    val shared = LocalSharedFiles.current
+    LaunchedEffect(shared?.target, shared?.uris) {
+        if (shared != null && shared.target == context.route.copy(highlight = null) && shared.uris.isNotEmpty()) {
+            val uris = shared.uris; shared.clear()
+            // Consuming the shared state changes this effect's keys. The screen owns the upload job,
+            // otherwise the next recomposition cancels it before the first HTTP response arrives.
+            scope.launch { attachUris(uris) }
+        }
     }
     LaunchedEffect(state.entries.lastOrNull()?.id) {
         state.entries.lastOrNull { it.kind == "pi.assistant" }?.let { context.repository.markSeen(context.backend.config.key, context.route.projectId, it.id) }
@@ -328,10 +362,11 @@ fun ChatScreen(context: ProjectScreenContext, modifier: Modifier = Modifier) {
                 images = images,
                 onRemoveImage = chatDraft::removeImage,
                 attaching = attaching,
-                attachEnabled = !attaching && !submitting && images.size < INPUT_MAX_IMAGES,
-                onAttach = intake.pick,
+                attachEnabled = !attaching && !submitting && images.size + files.size < INPUT_MAX_IMAGES,
+                attachLabel = if (connection.supports("chat-files-v1")) "Attach files" else "Attach images",
+                onAttach = if (connection.supports("chat-files-v1")) ({ filePicker.launch(arrayOf("*/*")) }) else intake.pick,
                 sendLabel = if(submitting) "Sending" else if(pending != null) "Retry" else if(busy) "Steer" else "Send",
-                sendEnabled = (draft.isNotBlank() || images.isNotEmpty() || quotes.isNotEmpty()) && !submitting && !attaching && !chatDraft.imageLoading && retryMatches && ready && chatAllowed,
+                sendEnabled = (draft.isNotBlank() || images.isNotEmpty() || quotes.isNotEmpty() || files.isNotEmpty()) && !submitting && !attaching && !chatDraft.imageLoading && retryMatches && ready && chatAllowed,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                 inputTransformation = userEdits,
                 fieldModifier = Modifier.contentReceiver(intake.receiver).onFocusChanged { focus -> chatDraft.focused = focus.isFocused; if(!focus.isFocused) chatDraft.sync?.flush() }.onPreviewKeyEvent { event ->
@@ -342,6 +377,7 @@ fun ChatScreen(context: ProjectScreenContext, modifier: Modifier = Modifier) {
                     else false
                 },
                 beforeInput = {
+                    if(files.isNotEmpty()) FileChips(files, onRemove = { id -> setFiles(files.filter { it.id != id }) })
                     if(pendingSaved != null && pending == null) {
                         Text("Previous admission could not be restored. Check the transcript before starting another.",modifier = Modifier.padding(horizontal = 16.dp))
                         TextButton(onClick = { discardPending = true }) { Text("Start a new admission…") }
@@ -381,9 +417,9 @@ fun ChatScreen(context: ProjectScreenContext, modifier: Modifier = Modifier) {
                     val blocks = chatDraft.imageBlocks()
                     val sentTask = taskId
                     val sentQuotes = quotes
-                    val admission = pending ?: PendingAdmission.create(admissionScope,message,blocks,workerDefaults,taskId = sentTask,quotes = sentQuotes)
+                    val admission = pending ?: PendingAdmission.create(admissionScope,message,blocks,workerDefaults,taskId = sentTask,quotes = sentQuotes,fileIds = fileIds)
                     val content = admission.content(blocks)
-                    if(content == null || !admission.canRetry(admissionScope,message,blocks,sentTask,sentQuotes)) return@send
+                    if(content == null || !admission.canRetry(admissionScope,message,blocks,sentTask,sentQuotes,fileIds)) return@send
                     pendingSaved = admission.save()
                     val requestId = admission.requestId
                     submitting = true; error = null
@@ -391,8 +427,9 @@ fun ChatScreen(context: ProjectScreenContext, modifier: Modifier = Modifier) {
                     scope.launch {
                         try {
                             context.backend.client.request(ConversationSubmitRequest(projectId = context.route.projectId, threadId = context.route.threadId,
-                                requestId = requestId, content = content, whenBusy = "steer",workerModel = admission.workerDefaults.model,workerThinkingLevel = admission.workerDefaults.thinkingLevel,taskId = admission.taskId))
+                                requestId = requestId, content = content, whenBusy = "steer",workerModel = admission.workerDefaults.model,workerThinkingLevel = admission.workerDefaults.thinkingLevel,taskId = admission.taskId,fileIds = admission.fileIds))
                             if (draft == message) setDraft("")
+                            setFiles(files.filter { it.id !in admission.fileIds })
                             if(chatDraft.images === sentImages) chatDraft.clearImages()
                             if(taskId == sentTask) taskId = null
                             if(quotes == sentQuotes) { quotes = emptyList(); openQuote = null }

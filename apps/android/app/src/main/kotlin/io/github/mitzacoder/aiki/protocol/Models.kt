@@ -976,6 +976,7 @@ data class ConversationSubmitRequest(
     val `threadId`: String? = null,
     val `requestId`: String,
     val `content`: JsonElement,
+    val `fileIds`: List<String>? = null,
     val `whenBusy`: String? = null,
     val `workerModel`: ModelRef? = null,
     val `workerThinkingLevel`: String? = null,

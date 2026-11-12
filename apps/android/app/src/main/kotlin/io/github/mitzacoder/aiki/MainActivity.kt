@@ -30,6 +30,7 @@ class PairingIntentState : ViewModel() {
 class MainActivity : ComponentActivity() {
     private var connectPayload by mutableStateOf<String?>(null)
     private val pairingIntent by viewModels<PairingIntentState>()
+    private val sharedFiles by viewModels<io.github.mitzacoder.aiki.features.chat.SharedFilesState>()
     private var pairingLink: String?
         get() = pairingIntent.link
         set(value) { pairingIntent.link = value }
@@ -42,6 +43,10 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState != null) {
             connectPayload = savedInstanceState.getString("pending-connect")
             pendingLink = savedInstanceState.getString("pending-link")?.let(::decodePendingAppLink)
+            if (sharedFiles.uris.isEmpty()) {
+                sharedFiles.uris = savedInstanceState.getStringArrayList("shared-files").orEmpty().map(android.net.Uri::parse)
+                sharedFiles.target = savedInstanceState.getString("shared-target")?.let { runCatching { io.github.mitzacoder.aiki.data.wireJson.decodeFromString(io.github.mitzacoder.aiki.navigation.Destination.Chat.serializer(), it) }.getOrNull() }
+            }
         } else readIntent(intent)
         val repository = (application as HarnessApplication).repository
         val notifications = notifications
@@ -61,7 +66,7 @@ class MainActivity : ComponentActivity() {
             HarnessTheme(settings.palette, settings.mode) {
                 val scope = rememberCoroutineScope()
                 val codeWrap = remember(settings.codeWrap) { CodeWrapChoice(settings.codeWrap) { stored -> scope.launch { repository.setCodeWrap(stored) } } }
-                CompositionLocalProvider(LocalNotificationCenter provides notifications, LocalProjectMute provides projectMute, LocalCodeWrap provides codeWrap) {
+                CompositionLocalProvider(io.github.mitzacoder.aiki.features.chat.LocalSharedFiles provides sharedFiles, LocalNotificationCenter provides notifications, LocalProjectMute provides projectMute, LocalCodeWrap provides codeWrap) {
                     io.github.mitzacoder.aiki.features.settings.DeviceApprovalDialogs(repository)
                     pairingLink?.let { link -> io.github.mitzacoder.aiki.features.settings.PairDeviceDialog(repository, link) { pairingLink = null; intent?.data = null } }
                     HarnessApp(repository, connectPayload, onConnectHandled = {
@@ -99,6 +104,8 @@ class MainActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("pending-connect", connectPayload)
         outState.putString("pending-link", pendingLink?.encode())
+        outState.putStringArrayList("shared-files", ArrayList(sharedFiles.uris.map { it.toString() }))
+        sharedFiles.target?.let { outState.putString("shared-target", io.github.mitzacoder.aiki.data.wireJson.encodeToString(io.github.mitzacoder.aiki.navigation.Destination.Chat.serializer(), it)) }
         super.onSaveInstanceState(outState)
     }
     override fun onNewIntent(intent: Intent) {
@@ -108,6 +115,7 @@ class MainActivity : ComponentActivity() {
     }
     private fun readIntent(intent: Intent?) {
         if (intent == null) return
+        if (sharedFiles.receive(intent)) { intent.action = Intent.ACTION_MAIN; intent.removeExtra(Intent.EXTRA_STREAM); intent.clipData = null; return }
         val data = intent.dataString
         if (data != null && io.github.mitzacoder.aiki.features.notifications.relay.validRelayEmailLink(
             data, BuildConfig.RELAY_EMAIL_LINK_DOMAIN)) {
