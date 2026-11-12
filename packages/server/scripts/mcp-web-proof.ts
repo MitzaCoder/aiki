@@ -2,7 +2,7 @@
  * MCP_PROOF_PHASE=before captures existing backend/project settings without changing data.
  * The default after phase drives add/token/policy/roles, captures the screen matrix and two recordings.
  */
-import { mkdir } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { connectChromiumPage } from '../../../apps/web/scripts/chromium-page.ts';
 const origin = process.env.MCP_WEB_ORIGIN ?? 'http://localhost:5186';
@@ -63,6 +63,16 @@ async function shot(screen: string, form: string, mode: string) {
   await settle();
   const overflow = await page.run(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }));
   if (overflow.scroll > overflow.width) throw new Error('Page overflow: ' + JSON.stringify({ screen, form, mode, ...overflow }));
+  if (phase !== 'before' && ['servers', 'details', 'tools', 'description', 'project'].includes(screen)) {
+    const status = await page.run(() => document.querySelector<HTMLElement>('[data-settings-section] [data-tone]')?.innerText.trim());
+    if (!status?.startsWith('Connected')) throw new Error(`Expected connected MCP server in ${screen}/${form}/${mode}: ${status}`);
+    console.log('Connected screenshot', screen, form, mode);
+  }
+  if (screen === 'tools') {
+    const rows = await page.run(() => [...document.querySelectorAll<HTMLElement>('[data-mcp-tool-row]')].map(row => row.getBoundingClientRect().height));
+    console.log('Collapsed tool row heights', form, mode, { count: rows.length, min: Math.min(...rows), max: Math.max(...rows) });
+    if (phase !== 'before' && form === 'desktop' && rows.some(height => height < 56 || height > 72)) throw new Error('Desktop tool rows outside 56–72px target');
+  }
   const image = await page.call<{ data: string }>('Page.captureScreenshot', { format: 'png' });
   await Bun.write(join(output, `${phase}-${screen}-${form}-${mode}.png`), Buffer.from(image.data, 'base64'));
 }
@@ -71,6 +81,7 @@ let frameDir = '';
 let frameWrites: Promise<unknown>[] = [];
 async function record(name: string) {
   frameCount = 0; frameWrites = []; frameDir = join(output, name + '-frames');
+  await rm(frameDir, { recursive: true, force: true });
   await mkdir(frameDir, { recursive: true });
   page.onFrame = frame => {
     frameWrites.push(Bun.write(join(frameDir, String(frameCount++).padStart(5, '0') + '.jpg'), Buffer.from(frame.data, 'base64')));
@@ -115,6 +126,41 @@ if (phase !== 'before' && process.env.MCP_PROOF_ONLY !== 'approval') {
   await page.run(() => document.querySelector('[role="radiogroup"]')?.scrollIntoView({ block: 'center' }));
   await click('[role="radiogroup"] [role="radio"]'); await waitFor('Saved');
   await settle();
+  await click('[data-mcp-tool-row] button[aria-expanded]');
+  const disclosure = await page.run(() => {
+    const button = document.querySelector<HTMLButtonElement>('[data-mcp-tool-row] button[aria-expanded]')!;
+    const full = document.getElementById(button.getAttribute('aria-controls')!)!;
+    return { expanded: button.getAttribute('aria-expanded'), visible: !full.hidden, length: full.textContent!.length, markup: !!full.querySelector('a,script') };
+  });
+  if (disclosure.expanded !== 'true' || !disclosure.visible || disclosure.length <= 600 || disclosure.markup) throw new Error('Full plain-text disclosure failed: ' + JSON.stringify(disclosure));
+  console.log('Full plain-text description expanded', disclosure);
+  await settle();
+  // Enter is the same disclosure action for keyboard users.
+  await page.run(() => document.querySelector<HTMLButtonElement>('[data-mcp-tool-row] button[aria-expanded]')?.focus());
+  await page.call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', text: '\r', unmodifiedText: '\r', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+  await page.call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  await settle();
+  if (await page.run(() => document.querySelector('[data-mcp-tool-row] button[aria-expanded]')?.getAttribute('aria-expanded')) !== 'false') throw new Error('Keyboard disclosure collapse failed');
+  for (const [key, code, policy] of [['ArrowRight', 39, 'Ask'], ['ArrowLeft', 37, 'Off']] as const) {
+    await page.run(() => document.querySelector<HTMLButtonElement>('[data-mcp-tool-row] [role="radio"][aria-checked="true"]')?.focus());
+    await page.call('Input.dispatchKeyEvent', { type: 'keyDown', key, code: key, windowsVirtualKeyCode: code });
+    await page.call('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key, windowsVirtualKeyCode: code });
+    await page.run(policy => new Promise<void>((resolve, reject) => {
+      const row = document.querySelector('[data-mcp-tool-row]')!;
+      const done = () => {
+        const checked = row.querySelector('[role="radio"][aria-checked="true"]');
+        if (row.getAttribute('aria-busy') === 'false' && checked?.textContent?.trim() === policy) {
+          clearTimeout(timer); observer.disconnect();
+          if (document.activeElement !== checked) reject(new Error('Policy keyboard focus did not follow selection'));
+          else resolve();
+        }
+      };
+      const observer = new MutationObserver(done);
+      const timer = setTimeout(() => { observer.disconnect(); reject(new Error('Policy keyboard save failed')); }, 6500);
+      observer.observe(row, { subtree: true, childList: true, attributes: true }); done();
+    }), policy);
+  }
+  console.log('ArrowRight/ArrowLeft policy saves keep keyboard focus');
   await finishRecord('server-flow-desktop-light');
   // Plain-text metadata must never become a link or executable markup.
   if (await page.run(() => !!document.querySelector('[data-mcp-description] a, [data-mcp-description] script'))) throw new Error('Rendered server markup');
@@ -127,6 +173,13 @@ if (phase !== 'before' && process.env.MCP_PROOF_ONLY !== 'approval') {
   await click('[role="switch"][aria-label="Sample catalogue: Coordinator"]'); await waitFor('Saved'); await settle();
   await click('[role="switch"][aria-label="Sample catalogue: Workers"]'); await waitFor('Saved'); await settle();
   await finishRecord('project-flow-phone-dark');
+  // Beyond both the backend's 15s header deadline and the fake peer's 30s idle cap.
+  // This is one fixed regression wait, not a readiness polling loop.
+  await new Promise(resolve => setTimeout(resolve, 32_000));
+  await navigate(projectPath + '/settings/mcp', 'Enable Sample catalogue');
+  const idleStatus = await page.run(() => document.querySelector<HTMLElement>('[data-settings-section] [data-tone]')?.innerText.trim());
+  if (!idleStatus?.startsWith('Connected')) throw new Error('MCP idle stream failed: ' + idleStatus);
+  console.log('MCP remains connected after 32 idle seconds');
 }
 for (const form of ['desktop', 'phone']) for (const mode of ['light', 'dark']) {
   await viewport(form, mode);
@@ -147,6 +200,8 @@ for (const form of ['desktop', 'phone']) for (const mode of ['light', 'dark']) {
     await waitFor('Connect with a token'); await shot('details', form, mode);
     await page.run(() => document.querySelector('#mcp-tool-filter')?.scrollIntoView({ block: 'start' }));
     await shot('tools', form, mode);
+    await click('[data-mcp-tool-row] button[aria-expanded]');
+    await shot('description', form, mode);
     await navigate(projectPath + '/settings/mcp', 'Enable Sample catalogue');
     await shot('project', form, mode);
   }

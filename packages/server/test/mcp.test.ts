@@ -40,6 +40,28 @@ function api(conversationId: number, callId = crypto.randomUUID()): ToolExecutio
 async function run(tool: ToolRegistration, conversationId: number, args: object = { page: "one" }): Promise<string> {
 	return JSON.stringify(await tool.execute(args, api(conversationId), BACKGROUND_CONTEXT));
 }
+it("flushes fake SSE headers immediately and keeps idle streams alive", async () => {
+	const test = await createSetup();
+	cleanups.push(test.cleanup);
+	console.log(`MCP stream test dirs: ${test.root}; data=${test.dataDir}; project=${test.projectDir}`);
+	const fake = fakeMcpServer(TOKEN, { heartbeatMs: 30 });
+	cleanups.push(fake.close);
+	const response = await fetch(fake.url, {
+		headers: { authorization: `Bearer ${TOKEN}` },
+		signal: AbortSignal.timeout(2000),
+	});
+	expect(response.status).toBe(200);
+	const reader = response.body!.getReader();
+	try {
+		const initial = await reader.read();
+		expect(new TextDecoder().decode(initial.value)).toContain(": connected");
+		const heartbeat = await reader.read();
+		expect(new TextDecoder().decode(heartbeat.value)).toContain(": keepalive");
+		expect(heartbeat.done).toBe(false);
+	} finally {
+		await reader.cancel();
+	}
+});
 it("validates remote URLs without exposing URL credentials", () => {
 	for (const url of [
 		"http://example.com/mcp",

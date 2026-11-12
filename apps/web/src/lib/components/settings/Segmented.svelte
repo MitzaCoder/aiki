@@ -13,6 +13,7 @@
 		onchange,
 		label,
 		disabled = false,
+		compact = false,
 		class: className
 	}: {
 		options: readonly SegmentedOption[];
@@ -20,6 +21,8 @@
 		onchange: (value: string) => void;
 		label: string;
 		disabled?: boolean;
+		/** Short desktop rows; phone choices keep their 44px touch target. */
+		compact?: boolean;
 		class?: string;
 	} = $props();
 
@@ -45,7 +48,7 @@
 	aria-label={label}
 	{onkeydown}
 	tabindex="-1"
-	class={cn('flex flex-wrap gap-1 max-sm:grid max-sm:grid-cols-3 rounded-xl bg-(--chat-surface-2)/70 p-1 ring-1 ring-foreground/10', className)}
+	class={cn('flex flex-wrap gap-1 max-sm:grid max-sm:grid-cols-3 rounded-xl bg-(--chat-surface-2)/70 p-1 ring-1 ring-foreground/10', compact && 'sm:rounded-lg sm:p-0.5', className)}
 >
 	{#each options as option (option.value)}
 		{@const checked = option.value === value}
@@ -55,7 +58,7 @@
 			aria-checked={checked}
 			tabindex={checked || (value === '' && option === options[0]) ? 0 : -1}
 			disabled={disabled || option.disabled}
-			class="min-h-11 flex-1 rounded-lg px-3 text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 sm:min-h-8 {checked
+			class="min-h-11 flex-1 rounded-lg px-3 text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 {compact ? 'sm:min-h-7 sm:px-2 sm:text-xs' : 'sm:min-h-8'} {checked
 				? 'bg-card text-(--chat-fg) shadow-sm ring-1 ring-foreground/10'
 				: 'text-(--chat-fg-muted) hover:text-(--chat-fg)'}"
 			onclick={() => onchange(option.value)}

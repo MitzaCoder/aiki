@@ -679,8 +679,11 @@ Web settings (stage 3) are gated by `mcp-servers`. Backend settings → MCP
 servers lists status and tool count, adds backend-provided presets or a named
 URL, and opens server details. Details offer write-only pasted-token connection,
 refresh, disconnect, confirmed removal, and a filterable plain-text tool catalogue
-with Off / Ask / Allow. Descriptions are truncated and annotations are labelled
-as server hints, not guarantees. OAuth has a reserved integration point for stage 2.
+with Off / Ask / Allow. Catalogue rows are compact: name and server hint share
+one line, a one-line plain-text description expands on click/tap to its full text,
+and a smaller policy control sits inline on desktop (below on phone). Normal
+desktop rows target 56–72px. Annotations are labelled as server hints, not
+guarantees. OAuth has a reserved integration point for stage 2.
 Project settings → MCP starts every server and role disabled; coordinator, workers
 and background threads are independent choices saved on change. Existing board
 questions carry exact-argument approvals, including long JSON on phone screens.

@@ -1,6 +1,6 @@
 /** Synthetic Streamable HTTP peer; callers own it through their createSetup cleanup. */
 import type { Tool } from "@earendil-works/pi-mcp";
-export function fakeMcpServer(token: string) {
+export function fakeMcpServer(token: string, options: { heartbeatMs?: number } = {}) {
 	let tools: Tool[] = [
 		{
 			name: "read_page",
@@ -44,6 +44,9 @@ export function fakeMcpServer(token: string) {
 						start(value) {
 							controller = value;
 							streams.add(value);
+							// Bun flushes streaming headers with the first bytes. Without this,
+							// the client's header deadline expires even though POSTs succeed.
+							value.enqueue(new TextEncoder().encode(": connected\n\n"));
 							request.signal.addEventListener("abort", () => {
 								streams.delete(value);
 								try {
@@ -100,6 +103,13 @@ export function fakeMcpServer(token: string) {
 			);
 		},
 	});
+	// Keep the synthetic notification stream alive through Bun's 30-second idle cap.
+	const heartbeat = setInterval(() => {
+		for (const stream of streams) {
+			try { stream.enqueue(new TextEncoder().encode(": keepalive\n\n")); }
+			catch { streams.delete(stream); }
+		}
+	}, options.heartbeatMs ?? 10_000);
 	return {
 		url: `http://127.0.0.1:${server.port}/mcp`,
 		calls,
@@ -130,6 +140,7 @@ export function fakeMcpServer(token: string) {
 			return listed;
 		},
 		async close() {
+			clearInterval(heartbeat);
 			for (const stream of streams) {
 				try {
 					stream.close();

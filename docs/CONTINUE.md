@@ -2,6 +2,19 @@
 
 ## T145: web MCP settings (stage 3)
 
+Follow-up: compact tool rows now measure 57–58px on desktop, with an inline
+policy control, name/hint on one line and a one-line description. Tap/click or
+keyboard disclosure shows the full plain text in a bounded scroll region; phone
+policy buttons retain 44px targets. Arrow policy changes keep keyboard focus.
+The demo's misleading Error state was an empty fake SSE stream: Bun deferred its
+headers past the backend's 15-second deadline. The fake peer now sends an initial
+comment and 10-second keepalives (no production status change). A regression test
+fails before and passes after. Proof checks a 32-second idle period and asserts
+Connected before every server/details/tools/project shot. Fresh affected light/
+dark desktop/phone shots and both recordings replace the original proof state.
+Follow-up gates pass sequentially: web check (zero diagnostics), 1,044 tests,
+build; root typecheck and 2,441 tests / 91,560 assertions, with no reruns.
+
 Capability-gated backend MCP settings now list/add servers and show details with
 write-only token connect, refresh, disconnect, confirmed removal, and filterable
 plain-text tool descriptions/hints with Off / Ask / Allow. Project MCP settings
