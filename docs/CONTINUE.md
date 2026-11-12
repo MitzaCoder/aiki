@@ -3,15 +3,25 @@
 ## T136: confirmed Anthropic limit resets
 
 Usage/discovery/spend share CLAUDE_USAGE_USER_AGENT (CLI 2.1.310); model calls are unchanged.
-Discovery has a separate hourly cache and no longer depends on usage response markers.
+Anthropic discovery has a separate hourly cache and no longer depends on usage response markers.
 Confirmed spend still rechecks availability, deduplicates UUIDs and never retries a mutation;
 it now initializes usage state and invalidates discovery before refreshing after a spend.
 Protocol adds optional weekly give-back and per-grant unavailability reasons. Synthetic fixture
 models Full and Fable grants and counts only validated local spends. Web rows group identical grants,
 show human scope explanations and expiry, disable with provider reasons, and use a focus-managed
 confirmation with explicit Confirm/Cancel and announced results. Four row-helper tests and web
-check (zero diagnostics) pass. Targeted server suite:
-25 tests / 119 assertions pass. No real POST, deployment, push or main movement.
+check (zero diagnostics) pass. Android now has the same grouped rows after the window grid,
+48dp TalkBack-labelled buttons, Material confirmation and announced result snackbar.
+Known overage scopes map to the Fable allowance; source launch/tenure labels normalize by
+coverage/give-back (not type). Targeted server suite: 27 tests / 125 assertions pass,
+including stale in-flight discovery finishing after a spend and unchanged Codex discovery.
+Four native row tests pass. Final sequential gates pass: root 2,409 tests, typecheck;
+web check (zero diagnostics), 1,039 tests, build; Android 889 JVM tests (two opt-in skips),
+assembly and lint (zero errors, 47 warnings); private public-source guard and Gitleaks.
+Gradle daemons and owned demo processes are stopped. T136 has web desktop/phone and
+Android light/dark before/after screenshots plus both confirmation recordings. Fake counters
+prove Cancel never spends and Confirm spends once, then refreshes grants and windows.
+No real provider POST, deployment, push or main movement by this worker.
 
 ## T135 follow-up: root failures settled
 

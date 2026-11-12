@@ -84,13 +84,13 @@ private fun BackendUsage(backend: BackendSession, watch: UsageWatch, now: Double
                 }
             }
         } }
-        state.subscriptions.forEach { subscription -> key(subscription.providerId) { ProviderUsage(subscription, now) } }
+        state.subscriptions.forEach { subscription -> key(subscription.providerId) { ProviderUsage(subscription, now, backend, watch::refresh) } }
         if (connection.supports(HarnessFeature.CACHE_STATS)) BoxWithConstraints { CacheSection(backend, wide = maxWidth >= 600.dp) }
     }
 }
 
 @Composable
-private fun ProviderUsage(s: SubscriptionUsage, now: Double) {
+private fun ProviderUsage(s: SubscriptionUsage, now: Double, backend: BackendSession, onRefresh: () -> Unit) {
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
@@ -115,6 +115,7 @@ private fun ProviderUsage(s: SubscriptionUsage, now: Double) {
                     } }
                 }
             }
+            SubscriptionResets(s, backend, onRefresh)
         }
     }
 }

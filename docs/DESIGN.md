@@ -855,12 +855,16 @@ Codex wham usage and rate-limit events/headers, and OpenCode Go usage expose aut
 `cedar_ember=1&skip_spend=1` / `at_wall=1&skip_spend=1` probes and Codex's reset-credit list. Public provider-client
 code documents these undocumented contracts; discovery failure means unknown, not zero. OpenCode Go has no known
 manual reset contract. Each grant shows remaining count, expiry, covered limits and current usability.
-Claude usage/discovery/reset requests share a versioned CLI User-Agent, never model calls. Reset discovery has
+Claude usage/discovery/reset requests share a versioned CLI User-Agent, never model calls. Anthropic reset discovery has
 its own hourly cache, independent of window/header samples, invalidated after a confirmed spend. Discovery
 runs even when the normal usage response omits program markers. Optional givesBackWeekly and unavailableReason
 preserve narrower Fable grants (even when type is full) and provider reasons without inferring broad coverage.
 Web limit-reset rows group only matching label/program/scopes/expiry/usability, retain one grant ID per spend,
-and explain weekly give-back separately from a full weekly refill. Reset for free opens a keyboard/focus-managed
+and explain weekly give-back separately from a full weekly refill. The provider's seven_day_overage_included
+scope is the Fable allowance; launch/tenure grant labels normalize to Fable reset only with matching narrow
+coverage and weekly give-back. Android places the same groups after its window grid, uses 48dp labelled
+buttons and a Material confirmation, and announces results through a dismissible snackbar.
+Reset for free opens a keyboard/focus-managed
 confirmation naming the number available and irreversible effect; Cancel never sends a mutation. Result status
 is announced, and uncertain outcomes block further spending in that view.
 Consumption requires an explicit confirmation, a fresh availability check, one grant and one request UUID; the server
