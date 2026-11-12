@@ -1,5 +1,33 @@
 # Continue
 
+## T151: CI-only web rune getter failure
+
+The release check's migration push test read `globalThis.$state` before installing
+its browser shim. When the SSR file-chip test runs first, Svelte's development
+runtime installs a throwing rune getter on that global. Vite's `deps_ssr`
+attachments chunk merely contains the getter; no app module is misnamed or
+incorrectly compiled. Local test discovery ran device-auth first, hiding the bug.
+Removed the duplicate value-based save/restore: `installPushBrowser` already
+preserves property descriptors without invoking getters. Added a regression for
+its throwing-getter replacement/restoration contract. No production/UI changes.
+
+Fetched the failed Actions log and checked the release environment: Bun 1.4.4,
+root frozen install, root `bun test && bun run typecheck`, `CI=true`, no explicit
+`NODE_ENV`; web commands run from `apps/web`. A fresh clone at 231aa140 passed in
+its default discovery order, but explicitly running file-chips before device-auth
+reproduced the exact CI stack (22 pass, one fail). After the fix, that order with
+the new shim regression passes 24 tests from a cold Vite cache. The patched fresh
+clone also passes the unmodified CI command from a cold cache: 2,499 tests /
+92,011 assertions, then typecheck. Used the workflow's pinned headless shell
+157.0.8103.50 with host library paths supplied for this Nix host.
+
+Final workspace gates pass sequentially: root 2,499 tests / 92,011 assertions;
+typecheck; web check zero errors/warnings, 1,058 tests / 79,730 assertions, build;
+operator private-denylist/generic and Gitleaks checks. The first workspace root
+run had an unrelated terminal-detach assertion in server device-auth (attached
+PTY count still one); one full rerun passed without changes. No skip, push,
+workflow trigger, main movement or deployment. Temporary clone/browser removed.
+
 ## T150: aikilabs.dev static site
 
 `site/` now contains the responsive, system-light/dark homepage, exact README

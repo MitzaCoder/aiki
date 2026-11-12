@@ -480,9 +480,9 @@ test('web push sync rebinds an unreadable legacy row after migration', async () 
 	});
 	await expect(client.readNotificationDevice(deviceId)).rejects.toThrow('another session');
 
-	// Bun executes the class's ordinary TS directly. These state initializers need no DOM/reactivity for sync.
-	const globals = globalThis as unknown as { $state?: (value: unknown) => unknown };
-	const previous = globals.$state;
+	// Bun executes the class's ordinary TS directly. installPushBrowser supplies the rune stub
+	// and restores its descriptor without reading Svelte's throwing dev-mode $state getter.
+	// SSR component tests may install that getter first, depending on test discovery order.
 	const { applicationServerKey } = await import('@aiki/client');
 	const browserSubscription = {
 		options: { applicationServerKey: applicationServerKey(await client.readNotificationsConfig()).buffer },
@@ -506,8 +506,6 @@ test('web push sync rebinds an unreadable legacy row after migration', async () 
 		expect((await Bun.file(s.dataDir + '/notifications/devices.json').json()).devices[0].sessionId).toBe(sessionId);
 	} finally {
 		restoreBrowser();
-		if (previous === undefined) delete globals.$state;
-		else globals.$state = previous;
 	}
 });
 
