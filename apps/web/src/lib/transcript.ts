@@ -18,6 +18,7 @@ import {
 	type EntryRecord,
 } from "@aiki/protocol";
 import { parseBoardNotice } from "./board.ts";
+import { parseReportNotice, type ReportNotice } from "./report-notice.ts";
 import { parseCheckIn, parseWorkerNotice } from "./workers.ts";
 import { parseThreadNotice, threadIdOfNotice, type ThreadNotice } from "./threads.ts";
 import { singleCallOfScript } from "./chat/codemode.ts";
@@ -440,6 +441,7 @@ export type TranscriptItem =
 			body: string;
 			timestamp?: number;
 	  }
+	| { kind: "reports"; key: string; notice: ReportNotice; timestamp?: number }
 	| {
 			/** A note the harness posted about the board (`[board]` and what changed), admitted as a user input. */
 			kind: "board";
@@ -595,6 +597,7 @@ export function isTypedInput(text: string): boolean {
 	return (
 		parseWorkerNotice(text) === undefined &&
 		parseCheckIn(text) === undefined &&
+		parseReportNotice(text) === undefined &&
 		parseBoardNotice(text) === undefined &&
 		parseThreadNotice(text) === undefined
 	);
@@ -690,7 +693,10 @@ export function buildTranscript(
 					notice === undefined && checkIn === undefined && boardNotice === undefined && images.length === 0
 						? parseThreadNotice(text)
 						: undefined;
-				if (notice !== undefined) {
+				const reportsNotice = images.length === 0 ? parseReportNotice(text) : undefined;
+				if (reportsNotice !== undefined) {
+					items.push({ kind: "reports", key: `entry-${entry.id}`, notice: reportsNotice, ...(timestamp === undefined ? {} : { timestamp }) });
+				} else if (notice !== undefined) {
 					items.push(
 						notice.kind === "report"
 							? {

@@ -3122,7 +3122,14 @@ one quiet line; a failed one keeps the existing notice. The Info tab's usage blo
   read-only memory (Memory), is a full-screen sheet on a phone, and can
   expand over the chat area; worker
   reports, failures and check-ins are cards in the transcript, not user
-  bubbles. Jarvis-only features (voice, tags, artifacts, subagents panel,
+  bubbles. Web and Android also recognise boundary-delimited `[reports]` user inputs as quiet,
+  collapsed “Reports out of date” task lines, in every shared transcript including loaded history.
+  Like board/check-in notices, these inputs currently have no structured wire marker: parse the
+  prefix on read, never rewrite stored messages. Each `T… Results/Next stale: reason` batch yields
+  one labelled button per task/section and a short reason; task buttons open the existing task sheet.
+  Unknown bodies remain a notice with the complete original text behind the same disclosure.
+  Image-bearing messages remain ordinary user inputs. Android task/disclosure targets are at least
+  48dp, with TalkBack task/section labels and expanded/collapsed state. Jarvis-only features (voice, tags, artifacts, subagents panel,
   offline queue, i18n) are left out.
 - Consecutive thinking parts fold into one thinking block (one header such as
   "Thought for a while · 3 steps", the steps divided when open). A run of coding

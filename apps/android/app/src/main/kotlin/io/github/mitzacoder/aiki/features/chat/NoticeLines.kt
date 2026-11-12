@@ -43,6 +43,7 @@ import io.github.mitzacoder.aiki.ui.theme.Jarvis
 internal sealed interface InjectedInput {
     data class Report(val notice: WorkerNotice) : InjectedInput
     data class CheckIn(val body: String) : InjectedInput
+    data class Reports(val notice: ReportsNotice) : InjectedInput
     data class Board(val notice: BoardNotice) : InjectedInput
     data class Thread(val notice: ThreadNotice) : InjectedInput
 }
@@ -51,11 +52,12 @@ internal sealed interface InjectedInput {
 internal fun injectedInput(text: String): InjectedInput? =
     parseWorkerNotice(text)?.let(InjectedInput::Report)
         ?: parseCheckIn(text)?.let(InjectedInput::CheckIn)
+        ?: parseReportsNotice(text)?.let(InjectedInput::Reports)
         ?: parseBoardNotice(text)?.let(InjectedInput::Board)
         ?: parseThreadNotice(text)?.let(InjectedInput::Thread)
 
 /** A notice's whole text, as written, for the opened line. */
-@Composable private fun RawText(text: String) {
+@Composable internal fun RawText(text: String) {
     SelectionContainer {
         Text(text, Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState()), fontFamily = FontFamily.Monospace, fontSize = 12.sp, lineHeight = 19.sp, color = Jarvis.colors.fgMuted)
     }
@@ -72,6 +74,7 @@ internal fun injectedInput(text: String): InjectedInput? =
     when (input) {
         is InjectedInput.Report -> WorkerReportLine(part, input.notice, workers.firstOrNull { it.id == input.notice.workerId }, context)
         is InjectedInput.CheckIn -> CheckInLine(part, input.body, threads, context)
+        is InjectedInput.Reports -> ReportsNoticeLine(part, input.notice, context)
         is InjectedInput.Board -> BoardNoticeLine(part, input.notice, threads, context)
         is InjectedInput.Thread -> ThreadNoticeLine(part, input.notice, threads, artifacts, context)
     }

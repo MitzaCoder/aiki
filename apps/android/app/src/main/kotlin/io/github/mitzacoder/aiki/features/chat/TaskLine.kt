@@ -27,6 +27,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.mitzacoder.aiki.features.refs.RefTextLinker
@@ -76,6 +77,7 @@ enum class TaskLineTone { Quiet, Report, Done, Failed, Tool }
     tone: TaskLineTone,
     modifier: Modifier = Modifier,
     timestamp: Long? = null,
+    minimumTouchTarget: Dp? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null,
     details: (@Composable ColumnScope.() -> Unit)? = null,
     line: @Composable RowScope.() -> Unit,
@@ -96,7 +98,7 @@ enum class TaskLineTone { Quiet, Report, Done, Failed, Tool }
     } else Modifier.border(1.dp, borderColor, shape)
     Column(modifier.fillMaxWidth().clip(shape).background(background).then(frame)) {
         Row(
-            Modifier.fillMaxWidth().heightIn(min = 36.dp)
+            Modifier.fillMaxWidth().heightIn(min = minimumTouchTarget ?: 36.dp)
                 .then(if (details != null) Modifier.semantics { stateDescription = if (open) "Expanded" else "Collapsed" }.clickable(role = Role.Button) { open = !open } else Modifier)
                 .padding(start = 12.dp, end = if (details != null) 4.dp else 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -107,7 +109,7 @@ enum class TaskLineTone { Quiet, Report, Done, Failed, Tool }
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), content = line)
             timestamp?.let { Text(clockTime(it), style = MaterialTheme.typography.labelSmall, color = Jarvis.colors.fgSubtle, maxLines = 1) }
             trailing?.invoke(this)
-            if (details != null) Box(Modifier.size(32.dp).semantics { contentDescription = if (open) "Hide the full text" else "Show the full text" }, contentAlignment = Alignment.Center) {
+            if (details != null) Box(Modifier.size(minimumTouchTarget ?: 32.dp).semantics { contentDescription = if (open) "Hide the full text" else "Show the full text" }, contentAlignment = Alignment.Center) {
                 LucideGlyph(if (open) Lucide.ChevronDown else Lucide.ChevronRight, size = 14.dp, tint = Jarvis.colors.fgSubtle)
             }
         }

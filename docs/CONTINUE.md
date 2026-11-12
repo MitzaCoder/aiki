@@ -1,5 +1,24 @@
 # Continue
 
+## T133: compact report-staleness notices
+
+Web and Android shared transcripts recognise boundary-delimited `[reports]` inputs on read,
+including existing history. They reuse quiet TaskLine styling, start collapsed, show one labelled
+button per task/Results-or-Next plus short reasons, and disclose the exact original text.
+Task buttons open the existing sheet (web worker transcripts route back to the project sheet).
+Android buttons/disclosure use 48dp targets and TalkBack labels/state. Image-bearing inputs remain
+user messages; unknown future bodies retain a generic notice with raw disclosure. The server uses
+plain text, as for board/check-in/worker notices; no wire metadata or storage migration was added.
+Parser/history regression tests cover batching, slash sections, semicolons in reasons, boundaries,
+unknown bodies, duplicates and image-bearing messages. Sequential gates pass: root 2,404 tests /
+91,280 assertions; typecheck; web check (zero diagnostics), 1,038 tests / 79,629 assertions and build;
+Android 888 JVM tests (two opt-in skips, zero failures/errors), assembly and lint (zero errors,
+47 warnings); private public-source/Gitleaks guard. Gradle daemon stopped. T133 has synthetic
+createSetup before/after web desktop/390px and emulator light/dark screenshots, raw disclosure,
+and web/Android recordings expanding the widget and opening a task. Corrected light baseline and
+playable web recording supersede two initial mis-tagged/empty artifacts. No phone, live data,
+push, deployment or main movement.
+
 ## T132: shorter README for the published pilot
 
 README is 339 words (was 775, `wc -w`). It keeps both themed graph/board pictures,

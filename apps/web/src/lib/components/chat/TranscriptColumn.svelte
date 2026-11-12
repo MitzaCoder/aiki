@@ -16,6 +16,7 @@
 	import TurnNotice from './TurnNotice.svelte';
 	import UserMessage from './UserMessage.svelte';
 	import BoardNotice from './BoardNotice.svelte';
+	import ReportsNotice from './ReportsNotice.svelte';
 	import WorkerCheckIn from './WorkerCheckIn.svelte';
 	import WorkerReport from './WorkerReport.svelte';
 	import ThreadNotice from './ThreadNotice.svelte';
@@ -190,7 +191,7 @@
 			});
 		});
 	});
-	const LINE_KINDS: ReadonlySet<string> = new Set(['report', 'checkin', 'thread', 'board']);
+	const LINE_KINDS: ReadonlySet<string> = new Set(['report', 'checkin', 'thread', 'board', 'reports']);
 </script>
 
 <div class="relative min-h-0 flex-1">
@@ -263,6 +264,8 @@
 							<WorkerCheckIn {item} cards={threadCards} />
 						{:else if item.kind === 'thread'}
 							<ThreadNotice {item} cards={threadCards} />
+						{:else if item.kind === 'reports'}
+							<ReportsNotice {item} />
 						{:else if item.kind === 'board'}
 							<BoardNotice {item} cards={threadCards} />
 						{:else if item.kind === 'cacheWarm'}
