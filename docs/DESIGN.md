@@ -41,6 +41,23 @@ JAR. The documented rebuild path permits modified-library debugging, with a sepa
 signed/identified APK. These are technical materials, not legal certification; the
 publisher still reviews the final distribution. See `docs/RELEASE.md`.
 
+## Installed-release update notices
+
+The installed CLI passes its recorded version/channel in the private settings snapshot; `--ref` and source/deploy
+entry points do not. Installation metadata remembers pilot/stable, inferred from the first tag for old installs;
+`aiki update --channel` changes it only after successful activation. Explicit `--version` wins; rollback swaps code
+without changing channel or data. Both CLI selection and notices use SemVer ordering, including numeric prereleases.
+The CLI queries the public releases list then uses the existing checksum-verifying installer, with no auto-restart.
+
+`release-updates.json` in backend data holds the opt-in/out, per-version dismissal, ETag, channel candidates and
+next-check budget. Default checks require an installed release; an explicit About switch enables source checkouts.
+A 60-second startup delay and persisted 24-hour request floor include errors/restarts. Conditional unauthenticated
+GitHub requests have a 15-second timeout, no retries/pagination; 403/429 extend the floor with Retry-After/reset.
+Offline/invalid responses keep the last cache quietly. Corrupt settings fail closed without stopping the backend.
+`release-updates` advertises `server.updates.set`; optional `server.status.updates` has `schemaVersion: 1`, so old
+clients keep working. Settings/dismissal are backend-wide, across projects and devices. Web/Android About retain
+the row after dismissal; chat shows a quiet banner until that version is dismissed. Nothing downloads or installs.
+
 ## Local installer and first run
 
 The public installer ships a versioned source/web archive and a private, checksum-pinned Bun runtime (no Node
@@ -155,6 +172,7 @@ exact-statement regression guards the capture/child-environment boundaries again
 | `AIKI_DEPLOY_STATUS_FILE` | `server-status.ts` |
 | `AIKI_TERMINALS`, `AIKI_ZELLIJ` | `terminals.ts` (explicit terminal env/options may override) |
 | `AIKI_TIMEZONE` | `schedules.ts` |
+| `AIKI_INSTALLED_VERSION`, `AIKI_UPDATE_CHANNEL` | Installed CLI identity for the read-only release notice; absent for source/ref entry points |
 | `AIKI_WEB_DIR` | `main.ts` private-snapshot opt-in to serving public local SPA assets |
 | `AIKI_ENV_FILE` | `server-env.ts` raw startup file selector; private owner-CLI explicit-target guard |
 | `AIKI_CHILD_PROCESS` | Generated child marker; `server-env.ts` discovery suppression and private owner-CLI guard |

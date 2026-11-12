@@ -15,7 +15,7 @@ curl -fL https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.1/ins
 sh install.sh --version v0.1.0-pilot.1
 ```
 
-Keep `--version` explicit: `/releases/latest` and unqualified updates select stable releases, not this pilot. HTTPS checksums detect download
+Keep `--version` explicit for the first pilot install; it remembers the pilot channel for later updates. HTTPS checksums detect download
 corruption; they are not a signature or protection against a compromised publisher. Bun 1.4.4 and zellij 0.45.1
 archive hashes are pinned in the installer. They are private to Aiki and never replace your global tools.
 The release archive and its sibling `.sha256` come from the same GitHub Release.
@@ -60,7 +60,8 @@ paid API keys are the straightforward alternative. A saved credential is not pro
 - `aiki service install|remove`: user unit `aiki-local.service`, or launch agent
   `io.github.mitzacoder.aiki.local`. `--print` generates the platform's definition without writing or running it.
   Linux users who want startup before login may choose to enable linger themselves; Aiki never does so.
-- `aiki update --version v0.1.0-pilot.1`: select the exact pilot tag. Without `--version`, updates select latest stable.
+- `aiki update`: newest release on the saved channel (pilot includes prereleases; stable excludes them).
+  `--channel pilot|stable` switches channel; `--version TAG` selects an exact tag instead.
 - `aiki rollback`: select the retained previous release, swapping it with current.
 
 Default installation root: `${XDG_DATA_HOME:-~/.local/share}/aiki`; runtime under `runtime/`, immutable releases
@@ -87,12 +88,17 @@ Linux logs use the user journal.
 
 ## Updating, rollback, backup and removal
 
-**Stop Aiki first.** For a user service use `aiki service remove`; for foreground use Ctrl-C. Updating never
+**Stop Aiki, then `aiki update`, then start it.** For a user service use `aiki service remove`; for foreground use Ctrl-C. Updating never
 restarts a running server or interrupts a tool call. It prepares the new release and frozen dependencies before
 switching the `current` symlink, then keeps the previous release only. A later update removes older releases.
 Run `aiki start` (or `aiki service install`) and check `aiki status` afterward. A failed download/checksum/build
 leaves the selected release unchanged. An interrupted install can leave `.install-lock`; remove it only after
 confirming no installer is running.
+
+Settings → About shows available versions and release notes. Installed releases check the public GitHub API
+about once a day, without credentials; turn this off there for the whole backend. Dismissal hides the small banner
+for that version, not the About row. Source/deploy checkouts do not check unless explicitly enabled in About.
+An older installer without channel support needs one exact `aiki update --version TAG` to acquire this behavior.
 
 Back up `data/` and your config directory **while stopped**, plus repositories separately. These include provider
 credentials, conversations, artifacts and absolute repository paths: protect backups like secrets. A code rollback
@@ -134,7 +140,7 @@ build; no `deploy/local`, Android config, node_modules or environment files ente
 their notices when installed; Bun and zellij keep their upstream licences. `.github/workflows/release.yml` runs
 checks on a `vMAJOR.MINOR.PATCH[-pilot.N]` tag and stages a draft with the tarball, checksum, installer and installer checksum.
 The owner attaches the locally signed APK and notices before publication; see [RELEASE.md](RELEASE.md).
-The workflow does not create tags. GitHub's latest non-prerelease is the only automatic update channel.
+The workflow does not create tags. The CLI remembers pilot/stable independently of rollback; neither channel updates automatically.
 
 ### Troubleshooting
 

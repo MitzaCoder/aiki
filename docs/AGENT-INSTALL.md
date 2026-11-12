@@ -207,7 +207,8 @@ Stop the foreground process (Ctrl-C), or remove the authorized local service wit
 and project repositories separately. Protect backups like secrets.
 
 ```sh
-aiki update --version v0.1.0-pilot.1
+aiki update
+# Or select an exact reviewed tag with: aiki update --version TAG
 # Source installs can instead select a newly reviewed exact public commit:
 aiki update --ref FULL_COMMIT_HASH
 aiki start
@@ -215,8 +216,10 @@ aiki start
 aiki status
 ```
 
-Select only one update command. Unqualified updates select latest **stable**, not
-this prerelease. Updates do not restart the server. `aiki rollback` selects the
+Select only one update command. Updates follow the saved pilot/stable channel; `--channel pilot|stable`
+switches it, and `--version TAG` wins. Older installers need one exact-tag update to gain channel support.
+Settings → About has release notes and a backend-wide daily-check switch. No source-checkout notices by default.
+Updates do not restart the server. `aiki rollback` selects the
 retained previous code release while stopped, but does not undo database migrations;
 read release notes before downgrading. There is no automatic health rollback.
 

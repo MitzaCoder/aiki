@@ -1,5 +1,27 @@
 # Continue
 
+## T137: installed-release notices and pilot channel
+
+Installed CLI metadata now remembers pilot/stable; unqualified updates select the newest matching public release,
+explicit versions win, and rollback keeps the saved channel. Old pilots need one exact-tag update to acquire this
+CLI behavior. Source/ref entry points never identify themselves as installed releases. The shared SemVer comparator
+orders numeric prereleases below stable; download/checksum/activation and manual stop/restart rules remain intact.
+
+The backend has an unauthenticated, conditional GitHub release check with a persisted daily budget, 60-second
+startup delay, ETag cache, rate-limit backoff and quiet offline failures. Backend-wide About settings enable/disable
+checks and dismiss a version across projects/devices. Source/deploy checkouts default off. `release-updates` adds
+`server.updates.set` and optional `server.status.updates` (`schemaVersion: 1`); old clients need no changes.
+Web and Android show the version, release notes and stop/update/start instructions in About and a quiet banner.
+
+T137 artifacts contain desktop/phone web light/dark and emulator Android light/dark before/after screenshots of
+chat and About, plus both dismissal recordings. A real createSetup backend served only synthetic releases;
+dismissal leaves About intact, and a later version shows again. No physical device, push, main move or deployment.
+Sequential gates pass: root 2,434 tests / 91,482 assertions, typecheck, web check (zero diagnostics),
+1,039 web tests / 79,636 assertions and build; Android 891 JVM tests (two opt-in skips), debug assembly and lint
+(zero errors, 47 warnings). Generated protocol checks pass (352 DTOs / 93 request overloads). Gradle daemons and
+owned proof processes are stopped. The default public guard lacks this workspace's ignored private denylist;
+explicit public-CI generic/Gitleaks checks pass, but the operator private-term scan is required before a public push.
+
 ## T136: confirmed Anthropic limit resets
 
 Usage/discovery/spend share CLAUDE_USAGE_USER_AGENT (CLI 2.1.310); model calls are unchanged.
