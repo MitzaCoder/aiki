@@ -7,6 +7,22 @@ import { execFile } from "node:child_process";
 import { rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 
+// Parallel worker tools may mutate the same Git-backed jj repository. jj's packed-ref
+// export can race even when the workspace names differ; keep our mutations in order.
+const workspaceMutations = new Map<string, Promise<unknown>>();
+
+async function serializeWorkspaceMutation<T>(repo: string, work: () => Promise<T>): Promise<T> {
+	const previous = workspaceMutations.get(repo) ?? Promise.resolve();
+	const result = previous.then(work);
+	const settled = result.catch(() => undefined);
+	workspaceMutations.set(repo, settled);
+	try {
+		return await result;
+	} finally {
+		if (workspaceMutations.get(repo) === settled) workspaceMutations.delete(repo);
+	}
+}
+
 export class JjError extends Error {
 	constructor(message: string) {
 		super(message);
@@ -65,6 +81,10 @@ export async function ensureJjWorkspace(options: {
 	/** Where the new working copy starts; `@` is the checkout the coordinator sees, uncommitted edits included. */
 	revision?: string;
 }): Promise<void> {
+	return serializeWorkspaceMutation(options.repo, () => createWorkspace(options));
+}
+
+async function createWorkspace(options: { repo: string; name: string; path: string; revision?: string }): Promise<void> {
 	const { repo, name, path } = options;
 	const listed = await run(["workspace", "list"], repo);
 	const registered = listed.stdout
@@ -84,6 +104,10 @@ export async function ensureJjWorkspace(options: {
 
 /** Forget the workspace in the repository and delete its directory. Missing pieces are fine. */
 export async function removeJjWorkspace(options: { repo: string; name: string; path: string }): Promise<void> {
+	return serializeWorkspaceMutation(options.repo, () => removeWorkspace(options));
+}
+
+async function removeWorkspace(options: { repo: string; name: string; path: string }): Promise<void> {
 	const { repo, name, path } = options;
 	const listed = await run(["workspace", "list"], repo).catch(() => undefined);
 	const registered =

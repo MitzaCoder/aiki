@@ -1,5 +1,27 @@
 # Continue
 
+## T134: deterministic worker-workspace storage checks
+
+The storage timeout was a failed spawn, not slow cleanup: parallel `worker_spawn`
+calls ran `jj workspace add` against the same Git-backed repository. Under CPU
+contention, jj failed exporting refs (`Could not delete empty packed refs`),
+leaving only one worker; the test then waited 20 seconds for two idle workers.
+The unchanged test reproduced this in 1 of 25 runs with three CPU hogs and the
+runner pinned to one CPU. A diagnostic rerun captured the failed tool result.
+
+Managed jj workspace creation/reuse/removal now queues by repository, including
+the list/check/mutate sequence. Different repositories retain separate queues;
+a failed operation releases later work. No timeout was raised. The new direct
+jj regression covers simultaneous distinct/repeated creation, failure recovery
+and repeated concurrent removal. The original storage integration stays intact.
+
+After the fix, both tests passed 25 reruns each under the same three-hog,
+one-CPU contention (50 passes, 500 assertions, 119 seconds). Hogs were stopped
+by their recorded PIDs. Sequential gates: root `bun test` (2,402 passes,
+91,270 assertions), `bun run typecheck`, and the operator public-source/Gitleaks
+check pass. Before, diagnostic and after logs are attached to T134. No main move,
+push, deployment or UI change.
+
 ## T133: compact report-staleness notices
 
 Web and Android shared transcripts recognise boundary-delimited `[reports]` inputs on read,
