@@ -16,14 +16,21 @@ export const McpToolSchema = Type.Object({
 	annotations: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
 	policy: McpPolicySchema,
 });
+export const McpOAuthFlowSchema = Type.Object({
+ flowId: Type.String(), serverId: Type.String(), expiresAt: Type.Number(),
+ status: Type.Union([Type.Literal("pending"), Type.Literal("succeeded"), Type.Literal("failed"), Type.Literal("cancelled"), Type.Literal("expired")]),
+ error: Type.Optional(Type.String()),
+});
+export type McpOAuthFlow = Static<typeof McpOAuthFlowSchema>;
 export const McpServerSchema = Type.Object({
 	id: Type.String(),
 	name: Type.String(),
 	url: Type.String(),
 	presetId: Type.Optional(Type.String()),
-	status: Type.Union([Type.Literal("disconnected"), Type.Literal("connected"), Type.Literal("error")]),
+	status: Type.Union([Type.Literal("disconnected"), Type.Literal("connected"), Type.Literal("error"), Type.Literal("needs_sign_in"), Type.Literal("signing_in")]),
 	lastError: Type.Union([Type.String(), Type.Null()]),
 	hasCredential: Type.Boolean(),
+	oauthFlow: Type.Optional(McpOAuthFlowSchema),
 	authKind: Type.Union([Type.Literal("none"), Type.Literal("token"), Type.Literal("oauth")]),
 	tools: Type.Array(McpToolSchema),
 });
@@ -35,7 +42,7 @@ export const McpProjectServerSchema = Type.Object({
 });
 export type McpProjectServer = Static<typeof McpProjectServerSchema>;
 export const MCP_PRESETS = [
-	{ id: "notion", name: "Notion", url: "https://mcp.notion.com/mcp", auth: "oauth or token" },
+	{ id: "notion", name: "Notion", url: "https://mcp.notion.com/mcp", auth: "oauth or token", description: "Connect Notion pages and workspace tools. Use OAuth or a Business/Enterprise MCP token (not a REST integration token)." },
 ] as const;
 export const McpListRequestSchema = Type.Object({ type: Type.Literal("mcp.list"), id: RequestIdSchema });
 export const McpAddRequestSchema = Type.Object({
@@ -89,7 +96,7 @@ export const McpListResponseSchema = Type.Object({
 	type: Type.Literal("mcp.list"),
 	id: RequestIdSchema,
 	servers: Type.Array(McpServerSchema),
-	presets: Type.Array(Type.Object({ id: Type.String(), name: Type.String(), url: Type.String(), auth: Type.String() })),
+	presets: Type.Array(Type.Object({ id: Type.String(), name: Type.String(), url: Type.String(), auth: Type.String(), description: Type.Optional(Type.String()) })),
 });
 export const McpAddResponseSchema = Type.Object({
 	type: Type.Literal("mcp.add"),
@@ -146,3 +153,30 @@ export type McpProjectGetRequest = Static<typeof McpProjectGetRequestSchema>;
 export type McpProjectGetResponse = Static<typeof McpProjectGetResponseSchema>;
 export type McpProjectSetRequest = Static<typeof McpProjectSetRequestSchema>;
 export type McpProjectSetResponse = Static<typeof McpProjectSetResponseSchema>;
+
+export const McpOAuthStartRequestSchema = Type.Object({
+ type: Type.Literal("mcp.oauth.start"), id: RequestIdSchema, serverId: Type.String(), redirectUri: Type.String(),
+});
+export const McpOAuthStartResponseSchema = Type.Object({
+ type: Type.Literal("mcp.oauth.start"), id: RequestIdSchema, flowId: Type.String(), authorizationUrl: Type.String(), expiresAt: Type.Number(),
+});
+export const McpOAuthCompleteRequestSchema = Type.Object({
+ type: Type.Literal("mcp.oauth.complete"), id: RequestIdSchema,
+ flowId: Type.Optional(Type.String()), state: Type.Optional(Type.String()), code: Type.Optional(Type.String()),
+ iss: Type.Optional(Type.String()), redirectUrl: Type.Optional(Type.String()),
+});
+export const McpOAuthCompleteResponseSchema = Type.Object({
+ type: Type.Literal("mcp.oauth.complete"), id: RequestIdSchema, server: McpServerSchema,
+});
+export const McpOAuthCancelRequestSchema = Type.Object({
+ type: Type.Literal("mcp.oauth.cancel"), id: RequestIdSchema, flowId: Type.String(),
+});
+export const McpOAuthCancelResponseSchema = Type.Object({ type: Type.Literal("mcp.oauth.cancel"), id: RequestIdSchema });
+export const McpOAuthChangedEventSchema = Type.Object({ type: Type.Literal("mcp.oauth.changed"), flow: McpOAuthFlowSchema });
+export type McpOAuthStartRequest = Static<typeof McpOAuthStartRequestSchema>;
+export type McpOAuthStartResponse = Static<typeof McpOAuthStartResponseSchema>;
+export type McpOAuthCompleteRequest = Static<typeof McpOAuthCompleteRequestSchema>;
+export type McpOAuthCompleteResponse = Static<typeof McpOAuthCompleteResponseSchema>;
+export type McpOAuthCancelRequest = Static<typeof McpOAuthCancelRequestSchema>;
+export type McpOAuthCancelResponse = Static<typeof McpOAuthCancelResponseSchema>;
+export type McpOAuthChangedEvent = Static<typeof McpOAuthChangedEventSchema>;

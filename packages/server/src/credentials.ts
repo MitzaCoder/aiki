@@ -16,7 +16,7 @@ import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 /** MCP records are isolated from AI providers by the `mcp:` key prefix. The normal
  * OAuth credential already carries access/refresh/expires and extensible grant metadata.
  * Version and URL binding let stage 2 add issuer/registration/refresh without moving secrets. */
-export type McpCredential = Credential & { mcp: { version: 1; serverUrl: string } };
+export type McpCredential = Credential & { mcp: { version: 1; serverUrl: string; oauth?: import("@earendil-works/pi-mcp/oauth").McpOAuthState } };
 type CredentialsFile = Record<string, Credential>;
 
 function isCredential(value: unknown): value is Credential {

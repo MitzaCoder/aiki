@@ -1,5 +1,40 @@
 # Continue
 
+## T144: MCP OAuth through the web origin
+
+Added mcp.oauth.start/complete/cancel and mcp.oauth.changed, optional per-server
+oauthFlow, signing_in and needs_sign_in statuses. startMcpOAuth(backend,serverId)
+is the stage-3 web entry point; callback path is /mcp/oauth/callback. It clears
+the query, uses only localStorage backend routing, completes on the paired device
+session, or offers Copy URL for pasting into the initiating app. Without device
+authentication only the original socket can complete/cancel. Android stage 4
+should intercept this path and send the entire redirect URL to the initiating
+backend on its existing session. No settings screens were built here.
+
+pi-mcp 1.5.2 supplies discovery/issuer checks, DCR, S256 PKCE, split sign-in and
+refresh; Aiki supplies in-memory ten-minute one-use flows, exact origin checks,
+session binding, status/cancel and the credential/refresh-lock adapter. The
+URL-bound mcp:<id> OAuth record contains registration/discovery and rotating
+tokens; verifier/state are not persisted. Invalid grants require sign-in, with
+no crash/retry loop. Missing DCR clearly needs a registered client; hosted CIMD
+and pre-registered-client configuration are deferred. Notion preset describes
+OAuth and Business/Enterprise MCP tokens (not REST integration tokens).
+
+Fake issuer/resource tests cover start/callback/direct or pasted completion,
+PKCE, state/device/origin/path/issuer rejection, expiry/reuse/cancel, real bearer
+calls, concurrent rotating 401/expiry refresh, invalid_grant, secrecy and restart.
+T144 artifacts: 12 callback screenshots (success/error/paste, desktop/phone,
+light/dark), plus a short start → fake consent → callback → connected recording.
+No real accounts, physical device, deployment, push or main movement.
+
+Sequential checks: root 2,441 tests / 91,594 assertions; typecheck; web check
+(zero diagnostics), 1,040 tests / 79,640 assertions and build. Android generated
+378 DTOs / 104 request overloads, compiled without MCP fixes; 888 JVM tests
+(two opt-in skips), debug assembly and lint (zero errors, 47 warnings). First
+Android run exceeded the four-minute tool bound; cached rerun passed in 2m33s.
+Gradle daemons and owned proof processes stopped. Private-denylist/generic and
+Gitleaks public checks passed using the operator local denylist (not copied).
+
 ## T143: MCP approval lifetime
 
 Ask questions last seven days; approve-once gets fifteen minutes from the answer.

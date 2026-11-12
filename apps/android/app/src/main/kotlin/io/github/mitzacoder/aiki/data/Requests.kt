@@ -4,6 +4,18 @@ package io.github.mitzacoder.aiki.data
 import io.github.mitzacoder.aiki.protocol.*
 import kotlinx.serialization.json.*
 
+suspend fun HarnessClient.request(value: McpOAuthStartRequest, explicitNulls: Set<String> = emptySet()): McpOAuthStartResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpOAuthStartRequest.serializer(), value).jsonObject, explicitNulls), McpOAuthStartResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: McpOAuthCompleteRequest, explicitNulls: Set<String> = emptySet()): McpOAuthCompleteResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpOAuthCompleteRequest.serializer(), value).jsonObject, explicitNulls), McpOAuthCompleteResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: McpOAuthCancelRequest, explicitNulls: Set<String> = emptySet()): McpOAuthCancelResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpOAuthCancelRequest.serializer(), value).jsonObject, explicitNulls), McpOAuthCancelResponse.serializer()
+)
+
 suspend fun HarnessClient.request(value: NotificationsRegisterRelayRequest, explicitNulls: Set<String> = emptySet()): NotificationsRegisterRelayResponse = exchange(
     value.id, withExplicitNulls(wireJson.encodeToJsonElement(NotificationsRegisterRelayRequest.serializer(), value).jsonObject, explicitNulls), NotificationsRegisterRelayResponse.serializer()
 )

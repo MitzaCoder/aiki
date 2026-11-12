@@ -54,6 +54,96 @@ open class UnionSerializer<T : Any>(
 }
 
 @Serializable
+data class McpOAuthStartRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.oauth.start",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `serverId`: String,
+    val `redirectUri`: String
+)
+
+@Serializable
+data class McpOAuthStartResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.oauth.start",
+    val `id`: String,
+    val `flowId`: String,
+    val `authorizationUrl`: String,
+    val `expiresAt`: Double
+)
+
+@Serializable
+data class McpOAuthCompleteRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.oauth.complete",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `flowId`: String? = null,
+    val `state`: String? = null,
+    val `code`: String? = null,
+    val `iss`: String? = null,
+    val `redirectUrl`: String? = null
+) {
+    override fun toString(): String = "McpOAuthCompleteRequest(redacted)"
+}
+
+@Serializable
+data class McpOAuthCompleteResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.oauth.complete",
+    val `id`: String,
+    val `server`: McpOAuthCompleteResponseServer
+) {
+    override fun toString(): String = "McpOAuthCompleteResponse(redacted)"
+}
+
+@Serializable
+data class McpOAuthCompleteResponseServer(
+    val `id`: String,
+    val `name`: String,
+    val `url`: String,
+    val `presetId`: String? = null,
+    val `status`: String,
+    val `lastError`: String?,
+    val `hasCredential`: Boolean,
+    val `oauthFlow`: McpOAuthFlow? = null,
+    val `authKind`: String,
+    val `tools`: List<McpOAuthCompleteResponseServerToolsItem>
+)
+
+@Serializable
+data class McpOAuthCompleteResponseServerToolsItem(
+    val `name`: String,
+    val `description`: String? = null,
+    val `inputSchema`: Map<String, JsonElement>,
+    val `annotations`: Map<String, JsonElement>? = null,
+    val `policy`: String
+)
+
+@Serializable
+data class McpOAuthCancelRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.oauth.cancel",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `flowId`: String
+)
+
+@Serializable
+data class McpOAuthCancelResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.oauth.cancel",
+    val `id`: String
+)
+
+@Serializable
+data class McpOAuthChangedEvent(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.oauth.changed",
+    val `flow`: McpOAuthFlow
+) : ProtocolEvent
+
+@Serializable
+data class McpOAuthFlow(
+    val `flowId`: String,
+    val `serverId`: String,
+    val `expiresAt`: Double,
+    val `status`: String,
+    val `error`: String? = null
+)
+
+@Serializable
 data class NotificationRelayStatus(
     val `available`: Boolean,
     val `state`: String,
@@ -313,30 +403,8 @@ data class McpListRequest(
 data class McpListResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.list",
     val `id`: String,
-    val `servers`: List<McpListResponseServersItem>,
+    val `servers`: List<McpOAuthCompleteResponseServer>,
     val `presets`: List<McpListResponsePresetsItem>
-)
-
-@Serializable
-data class McpListResponseServersItem(
-    val `id`: String,
-    val `name`: String,
-    val `url`: String,
-    val `presetId`: String? = null,
-    val `status`: String,
-    val `lastError`: String?,
-    val `hasCredential`: Boolean,
-    val `authKind`: String,
-    val `tools`: List<McpListResponseServersItemToolsItem>
-)
-
-@Serializable
-data class McpListResponseServersItemToolsItem(
-    val `name`: String,
-    val `description`: String? = null,
-    val `inputSchema`: Map<String, JsonElement>,
-    val `annotations`: Map<String, JsonElement>? = null,
-    val `policy`: String
 )
 
 @Serializable
@@ -344,7 +412,8 @@ data class McpListResponsePresetsItem(
     val `id`: String,
     val `name`: String,
     val `url`: String,
-    val `auth`: String
+    val `auth`: String,
+    val `description`: String? = null
 )
 
 @Serializable
@@ -361,7 +430,7 @@ data class McpAddRequest(
 data class McpAddResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.add",
     val `id`: String,
-    val `server`: McpListResponseServersItem
+    val `server`: McpOAuthCompleteResponseServer
 )
 
 @Serializable
@@ -378,7 +447,7 @@ data class McpTokenSetRequest(
 data class McpTokenSetResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.token.set",
     val `id`: String,
-    val `server`: McpListResponseServersItem
+    val `server`: McpOAuthCompleteResponseServer
 ) {
     override fun toString(): String = "McpTokenSetResponse(redacted)"
 }
@@ -394,7 +463,7 @@ data class McpRefreshRequest(
 data class McpRefreshResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.refresh",
     val `id`: String,
-    val `server`: McpListResponseServersItem
+    val `server`: McpOAuthCompleteResponseServer
 )
 
 @Serializable
@@ -410,7 +479,7 @@ data class McpPolicySetRequest(
 data class McpPolicySetResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.policy.set",
     val `id`: String,
-    val `server`: McpListResponseServersItem
+    val `server`: McpOAuthCompleteResponseServer
 )
 
 @Serializable
@@ -437,7 +506,7 @@ data class McpDisconnectRequest(
 data class McpDisconnectResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.disconnect",
     val `id`: String,
-    val `server`: McpListResponseServersItem
+    val `server`: McpOAuthCompleteResponseServer
 )
 
 @Serializable
@@ -3386,6 +3455,7 @@ data class MemoryChangedEvent(
 data class UnknownEvent(val raw: JsonObject) : ProtocolEvent
 
 fun decodeProtocolEvent(raw: JsonObject, json: Json): ProtocolEvent = when(raw["type"]?.jsonPrimitive?.content) {
+    "mcp.oauth.changed" -> json.decodeFromJsonElement(McpOAuthChangedEvent.serializer(), raw)
     "auth.devicesChanged" -> json.decodeFromJsonElement(AuthDevicesChangedEvent.serializer(), raw)
     "auth.pairingRequested" -> json.decodeFromJsonElement(AuthPairingRequestedEvent.serializer(), raw)
     "auth.sessionRevoked" -> json.decodeFromJsonElement(AuthSessionRevokedEvent.serializer(), raw)

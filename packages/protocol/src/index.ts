@@ -1,3 +1,4 @@
+import { McpOAuthStartRequestSchema, McpOAuthStartResponseSchema, McpOAuthCompleteRequestSchema, McpOAuthCompleteResponseSchema, McpOAuthCancelRequestSchema, McpOAuthCancelResponseSchema, McpOAuthChangedEventSchema, McpOAuthFlowSchema } from "./mcp.ts";
 export * from "./mcp.ts";
 import { McpListRequestSchema, McpListResponseSchema, McpAddRequestSchema, McpAddResponseSchema, McpTokenSetRequestSchema, McpTokenSetResponseSchema, McpRefreshRequestSchema, McpRefreshResponseSchema, McpPolicySetRequestSchema, McpPolicySetResponseSchema, McpRemoveRequestSchema, McpRemoveResponseSchema, McpDisconnectRequestSchema, McpDisconnectResponseSchema, McpProjectGetRequestSchema, McpProjectGetResponseSchema, McpProjectSetRequestSchema, McpProjectSetResponseSchema } from "./mcp.ts";
 
@@ -717,6 +718,7 @@ import {
 
 /** Everything a client may send. */
 export const ClientMessageSchema = Type.Union([
+ McpOAuthStartRequestSchema, McpOAuthCompleteRequestSchema, McpOAuthCancelRequestSchema,
 	McpListRequestSchema,
 	McpAddRequestSchema,
 	McpTokenSetRequestSchema,
@@ -833,6 +835,7 @@ export const RequestSchema = ClientMessageSchema;
 export type Request = ClientMessage;
 
 export const ResponseSchema = Type.Union([
+ McpOAuthStartResponseSchema, McpOAuthCompleteResponseSchema, McpOAuthCancelResponseSchema,
 	McpListResponseSchema,
 	McpAddResponseSchema,
 	McpTokenSetResponseSchema,
@@ -941,6 +944,7 @@ export const ResponseSchema = Type.Union([
 export type Response = Static<typeof ResponseSchema>;
 
 export const ServerEventSchema = Type.Union([
+ McpOAuthChangedEventSchema,
 	AuthDevicesChangedEventSchema,
 	AuthPairingRequestedEventSchema,
 	AuthSessionRevokedEventSchema,
@@ -972,6 +976,15 @@ export type ServerMessage = Static<typeof ServerMessageSchema>;
  * them to a generator directly.
  */
 export const PROTOCOL_SCHEMAS: Readonly<Record<string, TSchema>> = {
+ McpOAuthStartRequest: McpOAuthStartRequestSchema,
+ McpOAuthStartResponse: McpOAuthStartResponseSchema,
+ McpOAuthCompleteRequest: McpOAuthCompleteRequestSchema,
+ McpOAuthCompleteResponse: McpOAuthCompleteResponseSchema,
+ McpOAuthCancelRequest: McpOAuthCancelRequestSchema,
+ McpOAuthCancelResponse: McpOAuthCancelResponseSchema,
+ McpOAuthChangedEvent: McpOAuthChangedEventSchema,
+ McpOAuthFlow: McpOAuthFlowSchema,
+
 	NotificationRelayStatus: NotificationRelayStatusSchema,
 	NotificationsRegisterRelayRequest: NotificationsRegisterRelayRequestSchema,
 	NotificationsRegisterRelayResponse: NotificationsRegisterRelayResponseSchema,

@@ -17,6 +17,8 @@ import { MCP_PRESETS, type McpPolicy, type McpProjectServer, type McpRole, type 
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 import type { McpCredential } from "./credentials.ts";
 import { ServerError } from "./errors.ts";
+import { McpOAuth } from "./mcp-oauth.ts";
+import type { McpOAuthFlow } from "@aiki/protocol";
 
 export const MCP_CREDENTIAL_PREFIX = "mcp:";
 export const MCP_ROLES: McpRole[] = ["coordinator", "workers", "background"];
@@ -110,6 +112,7 @@ export function mcpSummary(server: { id: string; tools: readonly unknown[] }): s
 }
 export class McpService {
 	readonly path: string;
+	readonly oauth: McpOAuth;
 	readonly #credentials: CredentialStore;
 	readonly #now: () => number;
 	#state: McpState = { servers: [], projects: {}, approvals: [] };
@@ -120,8 +123,11 @@ export class McpService {
 	readonly #bindings = new Set<McpProjectBinding>();
 	#closed = false;
 	readonly #approvalTimer: ReturnType<typeof setInterval>;
-	constructor(dataDir: string, credentials: CredentialStore, now = Date.now) {
+	constructor(dataDir: string, credentials: CredentialStore, now = Date.now, origins: readonly string[] = [], onOAuthChange: (flow: McpOAuthFlow) => void = () => {}) {
 		this.path = join(dataDir, "mcp", "servers.json");
+		this.oauth = new McpOAuth(credentials, origins, id => this.#server(id).url, onOAuthChange, async id => {
+			await this.#mutate(() => { const server = this.#server(id); server.status = "needs_sign_in"; server.lastError = "MCP needs sign-in; reconnect"; });
+		}, now);
 		this.#credentials = credentials;
 		this.#now = now;
 		this.#approvalTimer = setInterval(() => { void this.pruneApprovals().catch(() => undefined); }, 60_000);
@@ -157,9 +163,10 @@ export class McpService {
 			name: server.name,
 			url: server.url,
 			...(server.presetId ? { presetId: server.presetId } : {}),
-			status: server.status,
+			status: this.oauth.flow(id)?.status === "pending" ? "signing_in" : server.status,
+			...(this.oauth.flow(id) ? { oauthFlow: this.oauth.flow(id) } : {}),
 			lastError: server.lastError,
-			hasCredential: credential !== undefined,
+			hasCredential: credential?.type === "api_key" ? true : Boolean(credential?.access),
 			authKind: credential ? (credential.type === "oauth" ? "oauth" : "token") : "none",
 			tools: server.tools.map((tool) => ({
 				name: tool.name,
@@ -238,6 +245,7 @@ export class McpService {
 	}
 	async disconnect(id: string): Promise<McpServer> {
 		const server = this.#server(id);
+		this.oauth.cancelServer(id);
 		server.active = false;
 		this.#epochs.set(id, (this.#epochs.get(id) ?? 0) + 1);
 		const pending = this.#connecting.get(id);
@@ -290,6 +298,8 @@ export class McpService {
 				if (!current()) return;
 				client = new McpClient({ name: "aiki", version: "1", requestTimeoutMs: 10_000 });
 				const origin = new URL(server.url).origin;
+				const credential = await this.#credential(id);
+				const oauthProvider = credential?.type === "oauth" ? this.oauth.provider(id) : undefined;
 				const transport = new StreamableHttpTransport({
 					url: server.url,
 					maxMessageBytes: 2 * 1024 * 1024,
@@ -308,7 +318,7 @@ export class McpService {
 							clearTimeout(timer);
 						}
 					},
-					authProvider: {
+					authProvider: oauthProvider ?? {
 						token: async () => {
 							const credential = await this.#credential(id);
 							return credential?.type === "api_key" ? credential.key : credential?.access;
@@ -319,8 +329,7 @@ export class McpService {
 				client.onError(() => {
 					if (!current()) return;
 					void this.#mutate(() => {
-						server.status = "error";
-						server.lastError = "MCP connection failed";
+						if (server.status !== "needs_sign_in") { server.status = "error"; server.lastError = "MCP connection failed"; }
 					}).catch(() => undefined);
 				});
 				this.#clients.set(id, client);
@@ -357,8 +366,10 @@ export class McpService {
 			await client?.close().catch(() => undefined);
 			if (!current()) return;
 			await this.#mutate(() => {
-				server.status = "error";
-				server.lastError = "MCP connection or catalogue failed; check URL and credential";
+				if (server.status !== "needs_sign_in") {
+					server.status = "error";
+					server.lastError = "MCP connection or catalogue failed; check URL and credential";
+				}
 			});
 		}
 	}
@@ -554,7 +565,7 @@ export class McpService {
 	async #redact<T>(id: string, value: T): Promise<T> {
 		const credential = await this.#credentials.read(`${MCP_CREDENTIAL_PREFIX}${id}`);
 		const secrets =
-			credential?.type === "api_key" ? [credential.key] : credential ? [credential.access, credential.refresh] : [];
+			credential?.type === "api_key" ? [credential.key] : credential ? [credential.access, credential.refresh, (credential as McpCredential).mcp?.oauth?.clientInformation?.client_secret] : [];
 		let encoded = JSON.stringify(value);
 		for (const secret of secrets)
 			if (secret) encoded = encoded.split(JSON.stringify(secret).slice(1, -1)).join("[redacted]");
@@ -567,6 +578,7 @@ export class McpService {
 		await Promise.allSettled([...this.#clients.values()].map((client) => client.close()));
 		this.#clients.clear();
 		await Promise.allSettled([...this.#connecting.values()]);
+		await this.oauth.close();
 		await this.#chain;
 	}
 }

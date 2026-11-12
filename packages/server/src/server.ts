@@ -530,7 +530,9 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	});
 	// Read by main's check-ins; the monitor starts once the status service it pushes through exists.
 	let diskMonitor: DiskMonitor | undefined;
-	const mcp = new McpService(dataDir, credentials, options.now);
+	const mcp = new McpService(dataDir, credentials, options.now, allowedOrigins, flow => {
+		for (const connection of connections) connection.notifyMcpOAuth(flow);
+	});
 	await mcp.open();
 	const manager = new ProjectManager({
 		mcp,

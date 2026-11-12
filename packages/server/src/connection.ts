@@ -153,6 +153,7 @@ export class ClientConnection {
 	readonly #terminals = new Map<number, TerminalAttachment>();
 	#terminalSequence = 0;
 	#ready = false;
+	readonly #mcpOwner = crypto.randomUUID();
 	#closed = false;
 	#watchSequence = 0;
 	#revoked = false;
@@ -207,6 +208,9 @@ export class ClientConnection {
 	}
 
 	/** Push an OAuth login change to this connection. */
+	notifyMcpOAuth(flow: import("@aiki/protocol").McpOAuthFlow): void {
+		this.#respond({ type: "mcp.oauth.changed", flow });
+	}
 	notifyLogin(login: AuthLogin): void {
 		this.#respond({ type: "credentials.login", login });
 	}
@@ -440,10 +444,13 @@ export class ClientConnection {
 					this.#respond({ type: "models.list", id: request.id, ...catalog });
 					return;
 				}
-    case "mcp.list": case "mcp.add": case "mcp.token.set": case "mcp.refresh": case "mcp.policy.set": case "mcp.remove": case "mcp.disconnect": case "mcp.project.get": case "mcp.project.set": {
+    case "mcp.oauth.start": case "mcp.oauth.complete": case "mcp.oauth.cancel": case "mcp.list": case "mcp.add": case "mcp.token.set": case "mcp.refresh": case "mcp.policy.set": case "mcp.remove": case "mcp.disconnect": case "mcp.project.get": case "mcp.project.set": {
      const mcp = this.#manager.mcp;
      if (!mcp || !this.#features.includes("mcp-servers")) return this.#unknownRequest(request);
      switch (request.type) {
+      case "mcp.oauth.start": { await mcp.disconnect(request.serverId); const flow = await mcp.oauth.start(request.serverId, request.redirectUri, this.#deviceAuth?.identity?.sessionId ?? this.#mcpOwner); if (!flow.authorizationUrl) { await mcp.refresh(request.serverId); mcp.oauth.notifyStatus(request.serverId); } this.#respond({ type: request.type, id: request.id, ...flow }); break; }
+      case "mcp.oauth.complete": { const serverId = await mcp.oauth.complete(request, this.#deviceAuth?.identity?.sessionId ?? this.#mcpOwner); const server = await mcp.refresh(serverId); mcp.oauth.notifyStatus(serverId); this.#respond({ type: request.type, id: request.id, server }); break; }
+      case "mcp.oauth.cancel": mcp.oauth.cancel(request.flowId, this.#deviceAuth?.identity?.sessionId ?? this.#mcpOwner); this.#respond({ type: request.type, id: request.id }); break;
       case "mcp.list": this.#respond({ type: request.type, id: request.id, servers: await mcp.list(), presets: [...MCP_PRESETS] }); break;
       case "mcp.add": this.#respond({ type: request.type, id: request.id, server: await mcp.add(request) }); break;
       case "mcp.token.set": this.#respond({ type: request.type, id: request.id, server: await mcp.setToken(request.serverId, request.token) }); break;

@@ -688,8 +688,8 @@ Ask requests remain answerable for seven days. The exact-call approve-once
 window lasts fifteen minutes from the answer, not from the question. Expired or
 removed-tool/server requests withdraw their open board questions.
 
-Stage 1 is backend-global remote Streamable HTTP with pasted bearer tokens. No
-stdio, legacy SSE, imports, real-account sign-ins or client UI. Definitions and
+The core is backend-global remote Streamable HTTP with pasted bearer tokens or
+OAuth. No stdio, legacy SSE, imports or settings screens yet. Definitions and
 cached catalogues live in `mcp/servers.json`; project/role enablement defaults off.
 Credentials use a separate MCP namespace in the harness credentials file, with a
 versioned token/OAuth record so refresh grants can be added in stage 2.
@@ -710,7 +710,7 @@ allow this tool, Deny. Once binds the project, conversation, server, tool and ex
 argument hash, expires, and is consumed before dispatch. Workers route questions
 to their coordinator. Answers wake through the existing board route; writes are
 never automatically retried after an ambiguous failure. Approval storage and board
-routing sit behind a small interface. OAuth/UI/local provisioning follow later.
+routing sit behind a small interface. Settings UI and local provisioning follow later.
 
 Compatibility: standalone `@earendil-works/pi-mcp` 1.5.2 imports and runs under
 Bun with pi-ai/pi-durable/pi-codemode 1.5.1 unchanged. Its client follows catalogue
@@ -722,11 +722,14 @@ message, and redirects rejected. Known bearer/access/refresh values are redacted
 from cached metadata and call results as defense against reflected credentials.
 
 Storage: `mcp/servers.json` holds definitions, tool policies, cached catalogues,
-connection intent, per-project role choices, and 15-minute exact-call approval
-receipts. `credentials.json` holds `mcp:<server-id>` entries, hidden from provider
+connection intent, per-project role choices, and exact-call approval receipts
+(seven-day questions, fifteen-minute approve-once windows from the answer). `credentials.json` holds `mcp:<server-id>` entries, hidden from provider
 credential RPCs. The normal pi credential union supports token (`api_key`) and
 OAuth (`access`, `refresh`, `expires` plus grant metadata); MCP adds
-`mcp: {version: 1, serverUrl}` and refuses a URL-mismatched credential. Both files
+`mcp: {version: 1, serverUrl, oauth?}` and refuses a URL-mismatched credential.
+`oauth` holds pi-mcp discovery, registration and token state; the top-level
+access/refresh/expires mirror it for redaction and diagnostics. PKCE verifier
+and pending OAuth state exist only in memory, not the credential file. Both files
 are 0600 atomic JSON. No secrets are stored in project files. Disconnect disables
 registration/calls until refresh; restart preserves intent and cached metadata,
 but reports disconnected until a lazy call or explicit refresh reconnects.
@@ -738,7 +741,27 @@ clears), `mcp.refresh`, `mcp.policy.set`, `mcp.remove`, `mcp.disconnect`,
 `mcp.project.get`, `mcp.project.set`. Capability: `mcp-servers` (not assumed for
 legacy hello). Server responses contain only auth kind/hasCredential, never
 credentials. Tokens are write-only; generated Android token DTO diagnostics are
-redacted. UI, OAuth sign-in/refresh and host-local provisioning remain later stages.
+redacted. `mcp.oauth.start {serverId,redirectUri}` returns flowId,
+authorizationUrl and numeric expiresAt; an empty authorizationUrl means the grant
+was refreshed without browser consent. `mcp.oauth.complete` accepts flowId/state/
+code/iss or a full redirectUrl, consumes before exchange, then connects and returns
+the server. `mcp.oauth.cancel {flowId}` aborts. `mcp.oauth.changed {flow}` broadcasts
+pending/succeeded/failed/cancelled/expired; `mcp.list` includes optional oauthFlow
+and signing_in/needs_sign_in server statuses. Completion/cancel bind to the
+initiating device session (or the original socket without device authentication).
+Authenticated tabs can reload/rejoin; backend restart discards pending flows but
+preserves completed grants. Cancellation never drops an already-rotated refresh.
+
+The web helper `startMcpOAuth(backend,serverId)` saves only backend ID under
+`aiki.mcpOAuth.<state>` and opens consent; the callback strips its query before
+async completion. No routing authority comes from callback parameters. An
+unpaired browser shows Copy URL for pasting into the initiating device. Android
+must intercept the same stable callback path and submit its full URL to the
+originating backend using its existing device session; never store MCP tokens
+on the phone. Stage 3 owns settings screens. DCR is supported; missing DCR reports
+that a registered client is required. Hosted client metadata documents and
+pre-registered-client configuration are not implemented (fixed callback path).
+Only fake issuers/resources have been used, never real Notion accounts.
 
 Measured by `packages/server/test/mcp.test.ts`, using a synthetic createSetup
 project and chars/4 (ceiling), replaying the effective system sections and model
