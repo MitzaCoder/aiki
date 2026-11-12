@@ -1,5 +1,29 @@
 # Continue
 
+## T150: aikilabs.dev static site
+
+`site/` now contains the responsive, system-light/dark homepage, exact README
+bubble-graph assets, `/privacy/`, CNAME and a small checksum-verifying installer
+bootstrap. No framework, client JavaScript, trackers, external fonts or CDN. The bootstrap
+pins pilot.1 by default; an explicit `--version TAG` selects that release's
+installer and sidecar, verifies SHA-256, and forwards arguments. No `latest` or
+unverified fallback. Direct GitHub instructions remain the agent-preferred path.
+README and both install guides document the domain alternative and trust limits.
+
+The pinned-SHA Pages workflow uploads only `site/`, with separate read-only build
+and Pages/OIDC deploy permissions, path-filtered main pushes and manual dispatch.
+`docs/SITE.md` has owner setup: Pages source = GitHub Actions, github-pages main
+protection, first run, custom domain, DNS verification/HTTPS and separate support
+mail forwarding. No push, main move, DNS/account changes or deployment performed.
+
+T150 artifacts include homepage and privacy at 1280/390px in both themes, browser
+checks (no overflow/errors), and a short scroll → Privacy recording. Local link
+checks cover 2 pages / 37 references; 13 focused tests dry-run the bootstrap on a
+fake release server, including version/argument forwarding, exit propagation,
+checksum failures and cleanup. Root `bun test`: 2,511 pass / 0 fail, 92,062
+assertions across 218 files (no rerun). Typecheck and private-denylist/generic/
+Gitleaks checks pass using the existing external operator config, not copied here.
+
 ## T149: installed artifact CORS
 
 Reproduced pilot.1/main's text-only failure in real Chromium: the installed page

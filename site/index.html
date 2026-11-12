@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Aiki is a personal AI workbench. Delegate to background agents, see what needs you, and come back to work that lasts.">
+  <meta name="color-scheme" content="light dark">
+  <title>Aiki — your personal AI workbench</title>
+  <link rel="canonical" href="https://aikilabs.dev/">
+  <link rel="icon" href="/assets/icon.png" type="image/png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Aiki home"><img src="/assets/icon.png" width="32" height="32" alt="">Aiki</a>
+    <nav aria-label="Main"><a href="https://github.com/MitzaCoder/aiki/blob/main/docs/INSTALL.md">Docs</a><a href="https://github.com/MitzaCoder/aiki">GitHub <span aria-hidden="true">↗</span></a></nav>
+  </header>
+  <main id="main">
+    <section class="intro" aria-labelledby="intro-title">
+      <p class="eyebrow">Your machine. Your models. Your work.</p>
+      <h1 id="intro-title">A little help.<br>A bigger picture.</h1>
+      <p class="lead">Aiki is a personal AI workbench. One coordinator delegates to background agents and brings questions and results back to you.</p>
+      <div class="actions"><a class="button" href="#install">Try the pilot <span aria-hidden="true">↓</span></a><a class="text-link" href="https://github.com/MitzaCoder/aiki/releases/tag/v0.1.0-pilot.1">Pilot release notes <span aria-hidden="true">↗</span></a></div>
+    </section>
+    <figure class="graph">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="/assets/graph-dark.webp">
+        <img src="/assets/graph-light.webp" width="1440" height="1000" alt="Aiki’s live task graph: soft clusters of task bubbles, relationship lines, and small creatures marking active workers and threads." fetchpriority="high">
+      </picture>
+      <figcaption>Less tab juggling. More of the whole picture. <a href="https://github.com/MitzaCoder/aiki/blob/main/docs/assets/readme/README.md">Real app, synthetic demo.</a></figcaption>
+    </figure>
+    <section class="why" aria-label="Why Aiki?">
+      <article><span class="point-number" aria-hidden="true">01</span><h2>Delegate work.</h2><p>Give the coordinator a goal. Choose models from your own providers, and let background agents take on the pieces.</p></article>
+      <article><span class="point-number" aria-hidden="true">02</span><h2>See what needs you.</h2><p>Tasks, questions and reviews share a list, board or graph. Step in where your judgment matters.</p></article>
+      <article><span class="point-number" aria-hidden="true">03</span><h2>Come back later.</h2><p>Runs resume after backend restarts. Reports and artifacts stay with their tasks, ready when you are.</p></article>
+    </section>
+    <section id="install" class="install" aria-labelledby="install-title">
+      <div class="section-heading"><p class="eyebrow">Start on your own machine</p><h2 id="install-title">Make room for a little help.</h2><p>First pilot: <strong>v0.1.0-pilot.1</strong> · Linux tested · macOS/WSL experimental · no phone push.</p></div>
+      <h3>Install, then start</h3>
+      <p>Download and read the small bootstrap before running it. It fetches the versioned GitHub release installer and verifies its SHA-256 checksum.</p>
+      <pre aria-label="Install commands"><code>curl -fL https://aikilabs.dev/install.sh -o install.sh
+# Read install.sh before running it.
+sh install.sh --version v0.1.0-pilot.1 --no-service
+aiki start</code></pre>
+      <p class="small">You need git; install jj for isolated workers. The pilot installer supplies private Bun and zellij. Checksums detect corruption, not a compromised publisher. <a href="https://github.com/MitzaCoder/aiki/blob/main/docs/INSTALL.md">Full guide &amp; direct GitHub downloads</a>.</p>
+      <h3>Open your workbench</h3>
+      <p>In another terminal:</p>
+      <pre aria-label="Open and pair commands"><code>aiki open
+aiki pair</code></pre>
+      <p>Open the private pairing URL in the same browser. Then connect a provider, choose a project folder and pick a coordinator model. Keep pairing links private.</p>
+      <aside class="agent-install" aria-labelledby="agent-title">
+        <h3 id="agent-title">Already have a coding agent?</h3>
+        <p>Give it this prompt:</p>
+        <blockquote>Install Aiki from https://github.com/MitzaCoder/aiki. Follow docs/AGENT-INSTALL.md exactly and stop where it says to ask me.</blockquote>
+        <a href="https://github.com/MitzaCoder/aiki/blob/main/docs/AGENT-INSTALL.md">Read the agent install guide <span aria-hidden="true">↗</span></a>
+      </aside>
+      <div class="android"><h3>Take the view with you.</h3><p><a href="https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.1/aiki-v0.1.0-pilot.1-android-universal.apk">Download the signed Android APK</a> (Android 12+). Your phone needs your backend reachable over HTTPS; the APK is not a tunnel.</p></div>
+    </section>
+    <aside class="boundaries" aria-label="Before you begin"><strong>Personal, not sandboxed.</strong> Aiki runs commands with your permissions and provider spending authority. Every paired device has full owner access. This is not a multi-user service. Keep the backend private.</aside>
+  </main>
+  <footer><p>Built on <a href="https://github.com/earendil-works/pi/tree/main/packages/durable">pi durable</a>. Open source, <a href="https://github.com/MitzaCoder/aiki/blob/main/LICENSE">MIT licensed</a>.</p><nav aria-label="More"><a href="https://github.com/MitzaCoder/aiki/releases">Latest release</a><a href="/privacy/">Privacy</a><a href="mailto:support@aikilabs.dev">Contact</a></nav></footer>
+</body>
+</html>

@@ -84,6 +84,25 @@ Never skip a mismatch. Install with the explicit version:
 sh install.sh --version v0.1.0-pilot.1 --dir "$AIKI_ROOT" --no-service
 ```
 
+#### Domain alternative
+
+The direct GitHub download above is preferred for an agent because you can inspect the full verified
+installer before running it. The domain also serves a small bootstrap:
+
+```sh
+curl --connect-timeout 15 --max-time 300 --retry 2 -fL https://aikilabs.dev/install.sh -o install-bootstrap.sh
+# Read install-bootstrap.sh before running it.
+sh install-bootstrap.sh --version v0.1.0-pilot.1 --dir "$AIKI_ROOT" --no-service
+```
+
+Choose this **instead of** the direct installation, not in addition. It fetches the exact version's installer
+and sidecar from GitHub Releases, requires a matching SHA-256, then forwards the same arguments.
+Its default is the pinned pilot, and `--version latest` is refused. You review the bootstrap here; it executes
+the checksum-verified release installer without a second review pause. If the human wants that pause,
+use the direct GitHub path. Checksum failure is fatal; never retry through another path to evade it.
+For later removal keep the reviewed bootstrap and substitute `install-bootstrap.sh` for `install.sh` below,
+with the same explicit `--version v0.1.0-pilot.1`. See [SITE.md](SITE.md) for the trust model.
+
 If downloads return 404, stop this path and check the version and asset names.
 Use the following fallback if needed, not an unversioned installer or `/latest`.
 Do not retry a checksum failure via another installation path.

@@ -4,7 +4,7 @@
 
 <h1 align="center">Aiki</h1>
 
-Aiki is a personal AI workbench: one coordinator delegates to background agents and brings questions and results back to you.
+Aiki is a personal AI workbench: one coordinator delegates to background agents and brings questions and results back to you. [aikilabs.dev](https://aikilabs.dev)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/graph-dark.webp" />
@@ -30,7 +30,7 @@ sh install.sh --version v0.1.0-pilot.1 --no-service
 aiki start
 ```
 
-Keep `--version`: GitHub's latest release excludes prereleases. Verify downloads with the release checksums. You need git; install jj for isolated workers. The installer supplies private Bun and zellij.
+Alternative download: `curl -fL https://aikilabs.dev/install.sh -o install.sh`, then the same review/run steps. This small [bootstrap](site/install.sh) verifies the versioned GitHub release installer before running it. Keep `--version`: GitHub's latest release excludes prereleases. Verify direct downloads with the release checksums. You need git; install jj for isolated workers. The installer supplies private Bun and zellij.
 
 In another terminal:
 

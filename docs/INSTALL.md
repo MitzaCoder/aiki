@@ -15,6 +15,24 @@ curl -fL https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.1/ins
 sh install.sh --version v0.1.0-pilot.1
 ```
 
+Alternatively, use the domain bootstrap (download and review it, do not pipe it into a shell):
+
+```sh
+curl -fL https://aikilabs.dev/install.sh -o install.sh
+# Read install.sh before running it.
+sh install.sh --version v0.1.0-pilot.1
+```
+
+The [small bootstrap](../site/install.sh) downloads the exact version's `install.sh` and `install.sh.sha256`
+from GitHub Releases, validates the checksum, then runs that installer with the same arguments. No version
+means the pinned `v0.1.0-pilot.1`, not latest. An explicit `--version TAG` selects both the installer and release;
+`--version latest` is deliberately rejected. All other arguments (including `--no-service`) pass through.
+It requires HTTPS for both downloads and redirects, never executes an unverified installer, and cleans its
+temporary downloads on exit. The verified release installer still checks its own archives and runtimes.
+Use the direct GitHub commands above if you prefer to inspect the full installer before execution.
+Checksums fetched from the same publisher are not signatures. See [the site operations note](SITE.md)
+for the trust boundary and how the pinned pilot is maintained.
+
 Keep `--version` explicit for the first pilot install; it remembers the pilot channel for later updates. HTTPS checksums detect download
 corruption; they are not a signature or protection against a compromised publisher. Bun 1.4.4 and zellij 0.45.1
 archive hashes are pinned in the installer. They are private to Aiki and never replace your global tools.

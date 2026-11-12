@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="How privacy works in the self-hosted Aiki app and on aikilabs.dev.">
+  <meta name="color-scheme" content="light dark">
+  <title>Privacy — Aiki</title>
+  <link rel="canonical" href="https://aikilabs.dev/privacy/">
+  <link rel="icon" href="/assets/icon.png" type="image/png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Aiki home"><img src="/assets/icon.png" width="32" height="32" alt="">Aiki</a>
+    <nav aria-label="Main"><a href="https://github.com/MitzaCoder/aiki/blob/main/docs/INSTALL.md">Docs</a><a href="https://github.com/MitzaCoder/aiki">GitHub <span aria-hidden="true">↗</span></a></nav>
+  </header>
+  <main id="main" class="privacy">
+    <p class="eyebrow">Your work, on your machine</p>
+    <h1>Privacy, plainly.</h1>
+    <p>Aiki is a self-hosted personal AI workbench. You run its backend on your own machine. There is no Aiki-hosted account or central service receiving your conversations in this pilot.</p>
+    <h2>The app and your providers</h2>
+    <p>Your backend stores conversations, tasks, artifacts and provider credentials on your machine. Devices you pair connect to that backend; every paired device has full owner access. Protect the machine, its backups and its pairing links.</p>
+    <p>When you use a model, Aiki sends your prompts and the context needed for that work to the provider you sign in to or configure. That can include project files and tool results. Those providers process the requests under their own terms and privacy policies. Your choice of model and provider matters.</p>
+    <p>Agents can run commands with your permissions. Tools and external services you enable can make their own network requests and receive the information you send them. Self-hosting is not a sandbox.</p>
+    <p>Installed releases can check GitHub for release updates about once a day. You can turn this off in Settings → About. Installing and updating also downloads files from GitHub and the runtime suppliers named in the installer. Those services’ own logging and policies apply.</p>
+    <h2>This website</h2>
+    <p>aikilabs.dev itself collects nothing: no analytics, tracking cookies, forms or external fonts. GitHub Pages hosts the static site. GitHub’s own request logs and <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">privacy policy</a> apply when you visit or download files. Links to GitHub and other sites take you to services with their own policies.</p>
+    <h2>Push notifications</h2>
+    <p>A future push relay is not active in this pilot. No phone push is sent through an Aiki relay.</p>
+    <h2>Questions?</h2>
+    <p>Email <a href="mailto:support@aikilabs.dev">support@aikilabs.dev</a>. Please do not send credentials, pairing links or private conversation logs.</p>
+    <p><a href="/">Back to Aiki <span aria-hidden="true">↗</span></a></p>
+  </main>
+  <footer><p>Built on <a href="https://github.com/earendil-works/pi/tree/main/packages/durable">pi durable</a>. Open source, <a href="https://github.com/MitzaCoder/aiki/blob/main/LICENSE">MIT licensed</a>.</p><nav aria-label="More"><a href="https://github.com/MitzaCoder/aiki/releases">Latest release</a><a href="/privacy/" aria-current="page">Privacy</a><a href="mailto:support@aikilabs.dev">Contact</a></nav></footer>
+</body>
+</html>
