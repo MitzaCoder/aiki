@@ -18,12 +18,17 @@ sh install.sh --version v0.1.0-pilot.1
 Keep `--version` explicit for the first pilot install; it remembers the pilot channel for later updates. HTTPS checksums detect download
 corruption; they are not a signature or protection against a compromised publisher. Bun 1.4.4 and zellij 0.45.1
 archive hashes are pinned in the installer. They are private to Aiki and never replace your global tools.
-The release archive and its sibling `.sha256` come from the same GitHub Release.
+For releases with a matching executable, the current installer downloads it instead of Bun or node_modules.
+It requires both the executable's `.sha256` sidecar and its matching entry in `SHA256SUMS` before execution.
+Only an absent binary (HTTP 404), an unsupported binary platform, or `--runtime bun` selects the existing
+pinned-Bun source/web fallback. Network errors or bad/missing checksums never trigger a weaker fallback.
+The published pilot predates the binary assets, so it continues to use Bun.
 
 Install **git** for repositories, **jj** for isolated workers, and **Tailscale** for future phone access. Missing
 tools are explained without blocking local setup (except git is required for `--ref`). On minimal Linux images,
-bootstrap utilities `curl`, `tar`, `unzip`, and `sha256sum` or `shasum` must be available. macOS supplies these except
-that it uses `shasum`. No sudo or system-wide package changes are made. Repository toolchains remain your choice.
+bootstrap utilities `curl`, `tar` (with gzip), and `sha256sum` or `shasum` must be available; `unzip` is needed only
+for the Bun fallback. No preinstalled Bun is needed, and a matching binary install downloads no Bun runtime or
+JavaScript dependencies. macOS supplies these utilities and uses `shasum`. No sudo or system-wide package changes are made. Repository toolchains remain your choice.
 `ffprobe` is optional for video metadata. A failed zellij download leaves chat usable; re-run to enable terminals.
 
 The default tries to install and start a **user** service. Without a user systemd session (Linux) or a logged-in
@@ -55,17 +60,22 @@ paid API keys are the straightforward alternative. A saved credential is not pro
   `devices revoke ID`, `mode required`, `migration list`, and the other source owner-CLI commands. These and `pair`
   work from a normal shell, SSH, or an agent child shell; they do not depend on an inherited backend or port setting.
 - `aiki status`: check the selected port for Aiki's local discovery endpoint; nonzero when unavailable.
-- `aiki version`: release and private Bun versions.
+- `aiki health-check`: owner-socket protocol/status health, including installed version/channel for update notices.
+- `aiki version`: selected release and Bun engine version (embedded for binary installs).
 - `aiki doctor`: tool availability/versions, local paths, platform and whether the configured port is free.
 - `aiki service install|remove`: user unit `aiki-local.service`, or launch agent
   `io.github.mitzacoder.aiki.local`. `--print` generates the platform's definition without writing or running it.
   Linux users who want startup before login may choose to enable linger themselves; Aiki never does so.
 - `aiki update`: newest release on the saved channel (pilot includes prereleases; stable excludes them).
   `--channel pilot|stable` switches channel; `--version TAG` selects an exact tag instead.
+  `--runtime bun` forces the source/private-Bun fallback; `--runtime binary` requires a matching executable.
 - `aiki rollback`: select the retained previous release, swapping it with current.
 
 Default installation root: `${XDG_DATA_HOME:-~/.local/share}/aiki`; runtime under `runtime/`, immutable releases
-under `releases/`, backend state under `data/`, with `current` and `previous` symlinks. Configuration defaults to
+under `releases/` (a binary release contains `aiki` and `.ready`), backend state under `data/`, with `current`
+and `previous` symlinks. The launcher checks the selected release, so rollback works across both runtimes.
+An explicit runtime change at the same tag prepares a separate immutable `TAG-bun` or `TAG-binary` directory;
+the recorded version/channel remain the release's original identity. Configuration defaults to
 `${XDG_CONFIG_HOME:-~/.config}/aiki`. The launcher is `~/.local/bin/aiki`. With `--dir /absolute/empty/path`, both
 state and config live there (`data/`, `config/`). Existing unmanaged directories or another launcher are refused.
 Re-running the same version reuses its ready release and does not reinstall dependencies. A normal uninstall
@@ -89,7 +99,7 @@ Linux logs use the user journal.
 ## Updating, rollback, backup and removal
 
 **Stop Aiki, then `aiki update`, then start it.** For a user service use `aiki service remove`; for foreground use Ctrl-C. Updating never
-restarts a running server or interrupts a tool call. It prepares the new release and frozen dependencies before
+restarts a running server or interrupts a tool call. It verifies/prepares the binary (or source/frozen dependencies) before
 switching the `current` symlink, then keeps the previous release only. A later update removes older releases.
 Run `aiki start` (or `aiki service install`) and check `aiki status` afterward. A failed download/checksum/build
 leaves the selected release unchanged. An interrupted install can leave `.install-lock`; remove it only after
@@ -99,6 +109,9 @@ Settings → About shows available versions and release notes. Installed release
 about once a day, without credentials; turn this off there for the whole backend. Dismissal hides the small banner
 for that version, not the About row. Source/deploy checkouts do not check unless explicitly enabled in About.
 An older installer without channel support needs one exact `aiki update --version TAG` to acquire this behavior.
+For an installation whose updater predates binary support, download/review the new installer and rerun it with
+an explicit reviewed `--version TAG` and the same `--dir` to switch directly. An old updater may first install the
+new release through Bun; subsequent updates use its binary-aware installer. Never bypass checksum verification.
 
 Back up `data/` and your config directory **while stopped**, plus repositories separately. These include provider
 credentials, conversations, artifacts and absolute repository paths: protect backups like secrets. A code rollback
@@ -142,13 +155,14 @@ checks on a `vMAJOR.MINOR.PATCH[-pilot.N]` tag and stages a draft with the tarba
 The owner attaches the locally signed APK and notices before publication; see [RELEASE.md](RELEASE.md).
 The workflow does not create tags. The CLI remembers pilot/stable independently of rollback; neither channel updates automatically.
 
-### Single-binary CI assets (installer switch is separate)
+### Single-binary release assets
 
 CI also builds `aiki-VERSION-linux-x64`, `aiki-VERSION-linux-arm64` and
 `aiki-VERSION-darwin-arm64`, each with a sibling `.sha256`. They join the existing assets on a
 **draft**, never an automatically published release. Linux binaries require glibc; x64 uses Bun's
-baseline target. macOS signing/notarization is separate. The installer and `aiki update` still use
-the pinned-Bun source/web path above; they do not select these binaries yet.
+baseline target. The release also contains `SHA256SUMS`, covering the executables, source archive and
+installer. macOS signing/notarization is separate. The installer and `aiki update` prefer matching binaries;
+macOS x64, Linux musl, older releases and `--runtime bun` retain the source/private-Bun path.
 
 Build and smoke locally on Linux x64, without tags, GitHub releases or service management:
 
@@ -170,14 +184,30 @@ The smoke script uses temporary isolated paths, an empty environment and no Bun 
 The standalone binary accepts `start`, `status`, `health-check`, `version`, `--print-config`, `pair`
 and `auth`. It defaults to loopback and required device sign-in on fresh data. Use explicit temporary
 `AIKI_DATA_DIR`, `AIKI_CONFIG_DIR`, `AIKI_AGENT_DIR`, `AIKI_CLAUDE_DIR` and HOME for experiments;
-never aim a test at an existing backend. Installer lifecycle/service/update commands still belong
-to the installed launcher, not this standalone entry.
+never aim a test at an existing backend. When invoked through the installed launcher, this same executable
+also runs the shared installer lifecycle/service/update/rollback CLI. It uses T137's existing installation
+metadata and private installed-version/channel settings, not a separate binary identity marker.
 
-Measured locally: Linux x64 binary **122.80 MiB**, versus **410.52 MiB** for the neutral installed
+Original part-1 local measurements: Linux x64 binary **122.80 MiB**, versus **410.52 MiB** for the neutral installed
 source/dependencies plus pinned Bun. Five warm startup medians were **353.1 ms** binary and
 **404.8 ms** installed Bun CLI. These are not cold-start or inference benchmarks. Full methodology,
-other target sizes, acceptance details and part-2 requirements are in
+other target sizes and the original part-1 measurements are in
 [the binary build note](research/single-binary-build.md).
+
+For a Linux installed-runtime rehearsal, build a binary and a differently versioned source archive, then run:
+
+```sh
+bun scripts/smoke-install.ts --binary .preview/binaries/aiki-v0.0.0-test.72-linux-x64 \
+  --binary-version v0.0.0-test.72 --archive .preview/releases/aiki-v0.0.1-test.1.tar.gz \
+  --bun-version v0.0.1-test.1
+```
+
+This serves local assets/checksums on loopback, installs into printed temporary HOME/data/config paths with no
+Bun on child PATH, and checks fresh binary installation, both runtime update directions, rollback, health/update
+identity, required auth and the Welcome HTML shell. Bun fallback uses a private copy of the test runner's pinned
+Bun as its download-cache fixture. A fake zellij avoids unrelated downloads. All owned processes and temp trees
+are removed afterward. `--release-base-url URL` is available for local mirrors/tests (HTTPS, or loopback HTTP);
+normal installs/updates use the public GitHub release assets.
 
 ### Troubleshooting
 

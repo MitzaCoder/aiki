@@ -10,6 +10,8 @@ version=latest
 channel=
 ref=
 archive=
+runtime=auto
+release_base=$REPOSITORY/releases/download
 no_service=0
 uninstall=0
 purge=0
@@ -24,10 +26,12 @@ while [ "$#" -gt 0 ]; do
  --dir) need_value "$@"; root=$2; custom_dir=1; shift 2 ;;
  --ref) need_value "$@"; ref=$2; shift 2 ;;
  --archive) need_value "$@"; archive=$2; shift 2 ;;
+ --runtime) need_value "$@"; runtime=$2; case $runtime in auto|bun|binary) ;; *) die '--runtime must be auto, bun or binary' ;; esac; shift 2 ;;
+ --release-base-url) need_value "$@"; release_base=$2; case $release_base in https://*|http://127.0.0.1:*|http://localhost:*) ;; *) die 'Release base URL requires HTTPS (or loopback HTTP for local assets)' ;; esac; shift 2 ;;
  --no-service) no_service=1; shift ;;
  --uninstall) uninstall=1; shift ;;
  --purge) purge=1; shift ;;
- --help) printf '%s\n' 'Usage: install.sh [--version TAG] [--dir PATH] [--no-service]' '                  [--ref REF | --archive FILE] [--uninstall [--purge]]'; exit 0 ;;
+ --help) printf '%s\n' 'Usage: install.sh [--version TAG] [--dir PATH] [--no-service]' '                  [--runtime auto|bun|binary] [--ref REF | --archive FILE]' '                  [--release-base-url URL] [--uninstall [--purge]]'; exit 0 ;;
  *) die "Unknown option: $1 (see --help)" ;;
  esac
 done
@@ -43,6 +47,7 @@ if [ "$custom_dir" = 1 ]; then config=$root/config; fi
 launcher=$HOME/.local/bin/aiki
 if [ "$uninstall" = 1 ]; then
  [ -f "$root/.aiki-managed" ] || die 'Not an Aiki-managed install directory'
+ if [ -x "$root/current/aiki" ]; then exec "$root/current/aiki" uninstall "$root" "$purge"; fi
  exec "$root/runtime/bun-$BUN_VERSION/bin/bun" "$root/current/scripts/aiki.ts" uninstall "$root" "$purge"
 fi
 case $(uname -s) in Linux) os=linux ;; Darwin) os=darwin ;; *) die 'Supported systems: Linux and macOS. On Windows, run this inside WSL.' ;; esac
@@ -61,7 +66,7 @@ case $os-$arch$libc in
  darwin-aarch64) target=darwin-aarch64; checksum=c240d7f0ccb90c263a849fcdb09b7ee62630d921348ed6aafda86b9d577bc510 ;;
  *) die 'No pinned runtime for this platform' ;;
 esac
-for command in curl tar unzip; do command -v "$command" >/dev/null 2>&1 || die "Install $command and re-run this installer"; done
+for command in curl tar; do command -v "$command" >/dev/null 2>&1 || die "Install $command and re-run this installer"; done
 sha256() {
  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}';
  elif command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | awk '{print $1}';
@@ -91,7 +96,9 @@ work=$(mktemp -d "$root/.incoming.XXXXXX")
 cleanup() { rm -rf "$work"; rmdir "$root/.install-lock"; }
 trap cleanup EXIT HUP INT TERM
 bun=$root/runtime/bun-$BUN_VERSION/bin/bun
+ensure_bun() {
 if [ ! -x "$bun" ]; then
+ command -v unzip >/dev/null 2>&1 || die 'Install unzip to prepare the Bun fallback'
  say "Downloading private Bun $BUN_VERSION ($target)"
  fetch "https://github.com/oven-sh/bun/releases/download/bun-v$BUN_VERSION/bun-$target.zip" "$work/bun.zip"
  [ "$(sha256 "$work/bun.zip")" = "$checksum" ] || die 'Bun checksum mismatch; nothing activated'
@@ -101,6 +108,8 @@ if [ ! -x "$bun" ]; then
  chmod 755 "$bun"
 fi
 [ "$("$bun" --version)" = "$BUN_VERSION" ] || die 'Private Bun could not run or has the wrong version; see docs/INSTALL.md'
+}
+if [ "$runtime" = binary ] && { [ -n "$ref" ] || [ -n "$archive" ]; }; then die '--runtime binary cannot be combined with --ref or --archive'; fi
 if [ -n "$ref" ]; then
  [ -z "$archive" ] || die '--ref and --archive are mutually exclusive'
  command -v git >/dev/null 2>&1 || die '--ref requires git; use a release instead'
@@ -118,8 +127,45 @@ else
  fi
 fi
 case $version in ''|.|..|*[!a-zA-Z0-9._-]*) die 'Version must be a release tag (letters, numbers, dot, dash, underscore)' ;; esac
-release=$root/releases/$version
+release_name=$version
+release=$root/releases/$release_name
+# Explicit runtime changes prepare another immutable directory, never mutate the selected executable.
+if [ -f "$release/.ready" ]; then
+ if [ "$runtime" = bun ] && [ -x "$release/aiki" ]; then release_name=$version-bun; fi
+ if [ "$runtime" = binary ] && [ ! -x "$release/aiki" ]; then release_name=$version-binary; fi
+ release=$root/releases/$release_name
+fi
+checksum_for() {
+ awk -v name="$2" 'NF == 2 && $2 == name && length($1) == 64 && $1 !~ /[^0-9a-fA-F]/ { hash=tolower($1); count++ } END { if (count != 1) exit 1; print hash }' "$1" || die 'Missing or ambiguous binary checksum; nothing activated'
+}
 if [ ! -f "$release/.ready" ]; then
+ prepared_binary=0
+ binary_platform=
+ case $os-$arch$libc in linux-x64) binary_platform=linux-x64 ;; linux-aarch64) binary_platform=linux-arm64 ;; darwin-aarch64) binary_platform=darwin-arm64 ;; esac
+ if [ "$runtime" != bun ] && [ -z "$ref" ] && [ -z "$archive" ] && [ -n "$binary_platform" ]; then
+  asset=aiki-$version-$binary_platform
+  binary_url=$release_base/$version/$asset
+  say "Looking for standalone Aiki $version ($binary_platform)"
+  code=$(curl --connect-timeout 15 --max-time 300 --retry 2 -sSL -w '%{http_code}' "$binary_url" -o "$work/aiki") || die 'Binary download failed; nothing activated'
+  case $code in
+  200)
+   fetch "$binary_url.sha256" "$work/binary.sha256"
+   fetch "$release_base/$version/SHA256SUMS" "$work/SHA256SUMS"
+   expected=$(checksum_for "$work/binary.sha256" "$asset")
+   manifest=$(checksum_for "$work/SHA256SUMS" "$asset")
+   [ "$expected" = "$manifest" ] && [ "$(sha256 "$work/aiki")" = "$expected" ] || die 'Aiki binary checksum mismatch; nothing activated'
+   chmod 755 "$work/aiki"
+   identity=$("$work/aiki" --version) || die 'Standalone binary could not execute on this platform; nothing activated'
+   [ "$(printf '%s\n' "$identity" | head -n 1)" = "Aiki $version" ] || die 'Standalone binary version mismatch; nothing activated'
+   mkdir "$work/source"
+   mv "$work/aiki" "$work/source/aiki"
+   prepared_binary=1 ;;
+  404) say 'No matching binary asset; using the pinned Bun fallback' ;;
+  *) die "Binary download returned HTTP $code; nothing activated" ;;
+  esac
+ fi
+ if [ "$runtime" = binary ] && [ "$prepared_binary" = 0 ]; then die 'No standalone binary for this release/platform'; fi
+ if [ "$prepared_binary" = 0 ]; then
  if [ -z "$ref" ]; then
   if [ -n "$archive" ]; then
    [ -f "$archive" ] || die 'Local archive not found'
@@ -127,7 +173,7 @@ if [ ! -f "$release/.ready" ]; then
    [ -f "$archive.sha256" ] || die 'Local archive needs a sibling .sha256 file'
    cp "$archive.sha256" "$work/aiki.sha256"
   else
-   url=$REPOSITORY/releases/download/$version/aiki-$version.tar.gz
+   url=$release_base/$version/aiki-$version.tar.gz
    fetch "$url" "$work/aiki.tar.gz"
    fetch "$url.sha256" "$work/aiki.sha256"
   fi
@@ -142,6 +188,7 @@ if [ ! -f "$release/.ready" ]; then
   tar -xzf "$work/aiki.tar.gz" -C "$work/source" --strip-components=1
  fi
  if [ ! -f "$work/source/bun.lock" ] || [ ! -f "$work/source/scripts/aiki.ts" ]; then die 'Not an Aiki release'; fi
+ ensure_bun
  say "Preparing Aiki $version with the frozen lockfile"
  (cd "$work/source" && "$bun" install --frozen-lockfile)
  if [ ! -f "$work/source/apps/web/build/200.html" ]; then
@@ -149,6 +196,7 @@ if [ ! -f "$release/.ready" ]; then
  fi
  # A generic install never retains published backend suggestions.
  rm -f "$work/source/apps/web/build/backends.json"
+ fi
  printf '%s\n' "$version" > "$work/source/.ready"
  mkdir -p "$root/releases"
  [ ! -e "$release" ] || die 'Incomplete release directory exists; remove it before retrying'
@@ -169,7 +217,17 @@ if [ ! -x "$root/tools/bin/zellij" ]; then
   chmod 755 "$root/tools/bin/zellij"
  else say 'Could not download zellij. App terminals are unavailable; re-run the installer to retry. Chat still works.'; fi
 fi
-"$bun" "$release/scripts/aiki.ts" activate "$root" "$config" "$version" "$launcher" "$channel"
+# Prefer a binary lifecycle driver even when selecting a historical Bun release: its old CLI may write a Bun-only launcher.
+driver=
+for candidate in "$release/aiki" "$root/current/aiki" "$root/previous/aiki"; do
+ if [ -x "$candidate" ]; then driver=$candidate; break; fi
+done
+if [ -n "$driver" ]; then
+ "$driver" activate "$root" "$config" "$version" "$launcher" "$channel" "$release_name"
+else
+ ensure_bun
+ "$bun" "$release/scripts/aiki.ts" activate "$root" "$config" "$version" "$launcher" "$channel" "$release_name"
+fi
 # Print the export literally for the user's shell.
 # shellcheck disable=SC2016
 case :$PATH: in *:"$HOME/.local/bin":*) ;; *) say 'Add ~/.local/bin to PATH: export PATH="$HOME/.local/bin:$PATH"' ;; esac

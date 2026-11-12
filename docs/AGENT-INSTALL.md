@@ -22,12 +22,14 @@ source-checkout fallback. Do not use `/latest`: GitHub excludes prereleases from
 1. Run `uname -s` and `uname -m`. Accept Linux or Darwin, x86_64/amd64 or
    aarch64/arm64 only. On Windows, run inside WSL, not PowerShell. Explain the
    experimental status on macOS/WSL before proceeding.
-2. Check `command -v curl tar unzip git` and either `command -v sha256sum` or
+2. Check `command -v curl tar gzip git` and either `command -v sha256sum` or
    `command -v shasum`. Ask the human to supply missing utilities; do not use a
    system package manager without permission. Git is mandatory for the source path
    and project operations. Recommend jj for isolated workers; Tailscale is only
-   needed later for phone access. No preinstalled Bun is required: the installer
-   downloads private pinned Bun 1.4.4 and zellij 0.45.1 without changing global tools.
+   needed later for phone access. No preinstalled Bun is required. With a matching release binary, the current
+   installer needs neither Bun nor a dependency install. Older releases, macOS x64, Linux musl, source/ref/archive
+   installs and `--runtime bun` use private pinned Bun 1.4.4; that fallback additionally needs `unzip`.
+   Optional private zellij 0.45.1 does not replace global tools. The original pilot has no binary asset.
 3. Work in a new user-owned scratch directory, not a project or an existing backend.
    Choose and record an absolute, empty install path and port:
 
@@ -72,8 +74,10 @@ sha256sum -c install.sh.sha256
 
 Require an `install.sh: OK` result. Read the downloaded `install.sh` before running
 it. Checksums fetched over HTTPS detect corruption, not a compromised publisher.
-The installer also fetches `aiki-v0.1.0-pilot.1.tar.gz` and its sibling `.sha256`,
-compares SHA-256 before extraction, and verifies pinned Bun/zellij archive hashes.
+For the original pilot, the installer fetches `aiki-v0.1.0-pilot.1.tar.gz` and its sibling `.sha256`,
+compares SHA-256 before extraction, and verifies pinned Bun/zellij archive hashes. For newer binary releases,
+the current installer prefers the matching executable and requires its sidecar digest **and** matching
+`SHA256SUMS` entry before running it. A missing binary can select Bun; a download/checksum failure cannot.
 Never skip a mismatch. Install with the explicit version:
 
 ```sh
@@ -218,7 +222,12 @@ aiki status
 
 Select only one update command. Updates follow the saved pilot/stable channel; `--channel pilot|stable`
 switches it, and `--version TAG` wins. Older installers need one exact-tag update to gain channel support.
-Settings → About has release notes and a backend-wide daily-check switch. No source-checkout notices by default.
+Settings → About has release notes and a backend-wide daily-check switch. Binary and Bun installs share the
+same saved version/channel identity; source checkouts have no notices by default. New binary-aware updaters
+prefer an executable; `aiki update --runtime bun` explicitly selects the pinned-Bun path. Rollback can cross
+runtime types without changing the saved channel. To move directly from an older updater to a binary release,
+review/rerun the new installer with the same `--dir` and an explicit tag; an older updater may first install
+that release through Bun.
 Updates do not restart the server. `aiki rollback` selects the
 retained previous code release while stopped, but does not undo database migrations;
 read release notes before downgrading. There is no automatic health rollback.

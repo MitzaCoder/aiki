@@ -44,6 +44,7 @@ test('native binary builds use standard runners, clean smoke tests and productio
 	expect(upload.with?.['if-no-files-found']).toBe('error');
 	const releaseCommands = workflow.jobs.release!.steps.map(step => step.run ?? '').join('\n');
 	expect(releaseCommands).toContain('sha256sum --check');
+	expect(releaseCommands).toContain('cat ./*.sha256 > SHA256SUMS');
 	expect(releaseCommands).toContain('for platform in linux-x64 linux-arm64 darwin-arm64');
 	for (const line of releaseCommands.split('\n').filter(line => line.includes('gh release create'))) expect(line).toContain('--draft');
 	expect(releaseCommands).not.toMatch(/gh release (edit|publish)/);

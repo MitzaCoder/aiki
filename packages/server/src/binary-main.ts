@@ -1,4 +1,5 @@
-/** Standalone distribution entry. Installer lifecycle/update commands remain in scripts/aiki.ts (T137). */
+/** One executable for standalone use and the shared installed lifecycle CLI. */
+import { installedCliRequested, runInstalledCli } from "../../../scripts/aiki.ts";
 import { registerBunOAuthFlows } from "@earendil-works/pi-ai/bun-oauth";
 import { registerLazyBedrockProvider } from "@earendil-works/pi-ai/lazy-bedrock-provider";
 import { packagedResources } from "./packaged-resources.ts";
@@ -10,6 +11,7 @@ registerBunOAuthFlows();
 registerLazyBedrockProvider();
 
 export async function runBinaryEntry(args = process.argv.slice(2)): Promise<void> {
+	if (installedCliRequested(args)) return runInstalledCli(args);
 	const loaded = loadServerEnv();
 	const settings = { ...loaded, AIKI_WEB_DIR: loaded.AIKI_WEB_DIR || "embedded" };
 	const [command = "start", ...rest] = args;

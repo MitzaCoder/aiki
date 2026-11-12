@@ -180,6 +180,10 @@ jobs:
           done
       - name: Hash installer
         run: sha256sum install.sh > .preview/releases/install.sh.sha256
+      - name: Collect release checksum manifest
+        run: |
+          cd .preview/releases
+          cat ./*.sha256 > SHA256SUMS
       - name: Stage draft tag assets
         env:
           GH_TOKEN: ${{ github.token }}

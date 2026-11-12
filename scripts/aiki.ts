@@ -1,18 +1,20 @@
 #!/usr/bin/env bun
 import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { childEnvironment } from "../packages/server/src/child-environment.ts";
+import { packagedResources } from "../packages/server/src/packaged-resources.ts";
+import { mkdtempSync } from "node:fs";
 
 import { fetchChannelRelease, releaseChannel, type UpdateChannel } from "../packages/protocol/src/release-versions.ts";
 
 export const BUN_VERSION = "1.4.4";
-type Installation = { root: string; config: string; data: string; launcher: string; version: string; channel?: UpdateChannel };
+type Installation = { root: string; config: string; data: string; launcher: string; version: string; channel?: UpdateChannel; release?: string };
 
 /** Resolve before invoking the checksum-verifying installer. Explicit versions always win. */
 export async function updateSelection(args: string[], installation: Pick<Installation, "version" | "channel">, transport: typeof fetch = fetch): Promise<{ version: string; channel: UpdateChannel }> {
 	let version: string | undefined;
-	let channel = installation.channel ?? releaseChannel(installation.version);
+	let channel = installation.channel || releaseChannel(installation.version);
 	for (let i = 0; i < args.length; i++) {
 		const option = args[i];
 		if (option === "--channel" || option === "--version") {
@@ -70,6 +72,13 @@ function atomicLink(root: string, name: string, target: string): void {
 	rmSync(temporary, { force: true });
 	symlinkSync(target, temporary);
 	renameSync(temporary, join(root, name));
+}
+function atomicText(path: string, text: string, mode = 0o600): void {
+	const temporary = `${path}.incoming-${process.pid}`;
+	try {
+		writeFileSync(temporary, text, { mode, flag: "wx" });
+		renameSync(temporary, path);
+	} finally { rmSync(temporary, { force: true }); }
 }
 function running(root: string): boolean {
 	try {
@@ -129,24 +138,38 @@ async function service(installation: Installation, action: string, print: boolea
 	console.log(`User service ${action === "install" ? "installed" : "removed"}.`);
 }
 
-async function main(args: string[]): Promise<void> {
+/** The launcher uses the same installation metadata for both runtimes; --version always probes the executable itself. */
+export function installedCliRequested(args: string[]): boolean {
+	return args[0] !== "--version" && (Boolean(process.env.AIKI_INSTALL_DIR) || args[0] === "activate" || args[0] === "uninstall");
+}
+
+async function installedServerEntry(root: string, settings: Readonly<Record<string, string | undefined>>, args: string[]): Promise<void> {
+	const { runServerEntry } = packagedResources.release
+		? await import("../packages/server/src/main.ts")
+		: await import(join(realpathSync(join(root, "current")), "packages/server/src/main.ts"));
+	await runServerEntry(settings, args);
+}
+
+export async function runInstalledCli(args: string[]): Promise<void> {
 	const [command = "help", ...rest] = args;
 	if (command === "activate") {
-		const [root, config, version, launcher, selectedChannel] = rest;
+		const [root, config, version, launcher, selectedChannel, releaseName = version] = rest;
 		if (!root || !config || !version || !launcher) throw new Error("Incomplete activation");
-		const old = existsSync(join(root, ".aiki-install.json")) ? metadata(root) : undefined;
-		if (old?.version !== version) requireStopped(root);
-		if (old && old.version !== version && existsSync(join(root, "current"))) atomicLink(root, "previous", `releases/${old.version}`);
-		atomicLink(root, "current", `releases/${version}`);
 		if (selectedChannel && selectedChannel !== "pilot" && selectedChannel !== "stable") throw new Error("Invalid update channel");
-		const installation: Installation = { root, config: old?.config ?? config, data: old?.data ?? join(root, "data"), version, launcher,
-			channel: (selectedChannel as UpdateChannel | undefined) ?? old?.channel ?? releaseChannel(version) };
-		writeFileSync(join(root, ".aiki-install.json"), JSON.stringify(installation, null, 2));
+		if (![version, `${version}-bun`, `${version}-binary`].includes(releaseName)) throw new Error("Invalid release directory");
+		const old = existsSync(join(root, ".aiki-install.json")) ? metadata(root) : undefined;
+		const changed = old?.version !== version || (old.release ?? old.version) !== releaseName;
+		if (changed) requireStopped(root);
+		if (old && changed && existsSync(join(root, "current"))) atomicLink(root, "previous", `releases/${old.release ?? old.version}`);
+		atomicLink(root, "current", `releases/${releaseName}`);
+		const installation: Installation = { root, config: old?.config ?? config, data: old?.data ?? join(root, "data"), version, launcher, ...(releaseName !== version ? { release: releaseName } : {}),
+			channel: (selectedChannel as UpdateChannel | undefined) || old?.channel || releaseChannel(version) };
+		atomicText(join(root, ".aiki-install.json"), JSON.stringify(installation, null, 2));
 		mkdirSync(installation.config, { recursive: true });
 		const configFile = join(installation.config, "server.env");
 		if (!existsSync(configFile)) writeFileSync(configFile, "# Local Aiki server settings\n", { mode: 0o600, flag: "wx" });
 		mkdirSync(dirname(launcher), { recursive: true });
-		writeFileSync(launcher, `#!/bin/sh\n# Aiki launcher: ${root}\nexport AIKI_INSTALL_DIR=${shellQuote(root)}\nexport PATH=${shellQuote(join(root, "tools/bin"))}:"$PATH"\nexec ${shellQuote(join(root, `runtime/bun-${BUN_VERSION}/bin/bun`))} "$AIKI_INSTALL_DIR/current/scripts/aiki.ts" "$@"\n`, { mode: 0o755 });
+		atomicText(launcher, `#!/bin/sh\n# Aiki launcher: ${root}\nexport AIKI_INSTALL_DIR=${shellQuote(root)}\nexport PATH=${shellQuote(join(root, "tools/bin"))}:"$PATH"\nif [ -x "$AIKI_INSTALL_DIR/current/aiki" ]; then\n  exec "$AIKI_INSTALL_DIR/current/aiki" "$@"\nfi\nexec ${shellQuote(join(root, `runtime/bun-${BUN_VERSION}/bin/bun`))} "$AIKI_INSTALL_DIR/current/scripts/aiki.ts" "$@"\n`, 0o755);
 		// Retain just current and previous; do not collect data/config or unknown top-level paths.
 		const { readdirSync } = await import("node:fs");
 		const keep = new Set([realpathSync(join(root, "current")), existsSync(join(root, "previous")) ? realpathSync(join(root, "previous")) : ""]);
@@ -166,10 +189,10 @@ async function main(args: string[]): Promise<void> {
 		AIKI_DATA_DIR: installation.data,
 		AIKI_CONFIG_DIR: installation.config,
 		AIKI_HOST: "127.0.0.1",
-		AIKI_WEB_DIR: join(root, "current/apps/web/build"),
+		AIKI_WEB_DIR: packagedResources.web ? "embedded" : join(root, "current/apps/web/build"),
 		...(!installation.version.startsWith("ref-") ? {
 			AIKI_INSTALLED_VERSION: installation.version,
-			AIKI_UPDATE_CHANNEL: installation.channel ?? releaseChannel(installation.version),
+			AIKI_UPDATE_CHANNEL: installation.channel || releaseChannel(installation.version),
 		} : {}),
 		...(process.env.AIKI_PORT ? { AIKI_PORT: process.env.AIKI_PORT } : {}),
 	});
@@ -185,15 +208,14 @@ async function main(args: string[]): Promise<void> {
 			const effective = resolvedServerConfig(settings);
 			console.log(`Aiki data: ${effective.dataDir}\nAiki config: ${effective.configDir}`);
 			// Resolve the selected release now; a running process never changes imports underneath itself.
-			const entry = join(realpathSync(join(root, "current")), "packages/server/src/main.ts");
-			const { runServerEntry } = await import(entry);
-			await runServerEntry(settings, []); break;
+			await installedServerEntry(root, settings, []); break;
 		}
 		case "auth": {
 			// Explicit env-file/data settings identify this installation even in an agent child shell.
-			const { runServerEntry } = await import(join(realpathSync(join(root, "current")), "packages/server/src/main.ts"));
-			await runServerEntry(settings, ["auth", ...rest]); break;
+			await installedServerEntry(root, settings, ["auth", ...rest]); break;
 		}
+		case "health-check":
+			await installedServerEntry(root, settings, ["auth", "health-check", JSON.stringify({ type: "server.status", id: "installed-health" })]); break;
 		case "open":
 			console.log(url);
 			if (process.env.AIKI_NO_BROWSER === "1") break;
@@ -239,8 +261,15 @@ async function main(args: string[]): Promise<void> {
 			requireStopped(root);
 			console.log("Back up your data first: rollback changes code, not database migrations. Restart manually after update.");
 			const selection = await updateSelection(rest, installation);
-			await run(["sh", join(root, "current/install.sh"), "--dir", root, "--no-service", ...rest,
-				"--version", selection.version, "--channel", selection.channel]); break;
+			// A host shell cannot read Bun\'s embedded filesystem. Unpack only this script into an owned 0700 directory.
+			const temporary = packagedResources.installer ? mkdtempSync(join(root, ".update-")) : undefined;
+			try {
+				const installer = temporary ? join(temporary, "install.sh") : join(root, "current/install.sh");
+				if (temporary) writeFileSync(installer, await Bun.file(packagedResources.installer!).arrayBuffer().then(bytes => new Uint8Array(bytes)), { mode: 0o600 });
+				await run(["sh", installer, "--dir", root, "--no-service", ...rest,
+					"--version", selection.version, "--channel", selection.channel]);
+			} finally { if (temporary) rmSync(temporary, { recursive: true, force: true }); }
+			break;
 		}
 		case "rollback": {
 			requireStopped(root);
@@ -249,7 +278,9 @@ async function main(args: string[]): Promise<void> {
 			const current = realpathSync(join(root, "current"));
 			atomicLink(root, "current", previous); atomicLink(root, "previous", current);
 			installation.version = readFileSync(join(previous, ".ready"), "utf8").trim();
-			writeFileSync(join(root, ".aiki-install.json"), JSON.stringify(installation, null, 2));
+			if (basename(previous) === installation.version) delete installation.release;
+			else installation.release = basename(previous);
+			atomicText(join(root, ".aiki-install.json"), JSON.stringify(installation, null, 2));
 			console.log(`Selected ${installation.version}. Data was not rolled back. Run aiki start.`); break;
 		}
 		case "service": await service(installation, rest[0] || "", rest.includes("--print")); break;
@@ -270,6 +301,6 @@ async function main(args: string[]): Promise<void> {
 	}
 }
 if (import.meta.main) {
-	try { await main(process.argv.slice(2)); }
+	try { await runInstalledCli(process.argv.slice(2)); }
 	catch (error) { console.error(`aiki: ${error instanceof Error ? error.message : error}`); process.exitCode = 1; }
 }

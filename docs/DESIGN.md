@@ -62,8 +62,10 @@ remain off until explicitly enabled or supplied an installed-release identity.
 Native standard-runner CI builds Linux x64 baseline, Linux arm64 and macOS arm64, runs isolated
 no-Bun-on-PATH production/faux acceptance and generates checksums. The existing tag-only draft
 job rechecks/downloads these beside its source/installer assets; no auto-publication is added.
-Installer/update lifecycle is deliberately unchanged until the binary-selection follow-up with
-T137. Host tools remain external. See [build measurements and limits](research/single-binary-build.md).
+Binary releases also embed the shared installed CLI and installer script. The installed launcher selects the
+current release's executable, or its source CLI with private Bun; bare standalone runs still have no installation
+identity. Binary updates unpack only the installer script into an owned 0700 temporary directory for the host
+shell, then remove it. Host tools remain external. See [build measurements and limits](research/single-binary-build.md).
 
 
 ## Installed-release update notices
@@ -85,15 +87,27 @@ the row after dismissal; chat shows a quiet banner until that version is dismiss
 
 ## Local installer and first run
 
-The public installer ships a versioned source/web archive and a private, checksum-pinned Bun runtime (no Node
-fallback), for Linux and macOS x64/arm64; Windows uses WSL. `~/.local/bin/aiki` selects an immutable release under
+The public installer prefers a versioned executable for Linux glibc x64/arm64 and macOS arm64. It validates
+both the exact-name `.sha256` sidecar and `SHA256SUMS` entry before chmod/execution. Only a missing asset (404),
+an unsupported binary platform, or explicit `--runtime bun` chooses the source/web archive and private,
+checksum-pinned Bun runtime; network or checksum errors fail closed. Source/ref/local-archive installs retain
+that Bun path. macOS x64 and Linux musl use pinned Bun; Windows uses WSL. Release CI includes the aggregate
+manifest alongside the existing checksums and still creates drafts only. `~/.local/bin/aiki` selects an immutable release under
 `${XDG_DATA_HOME:-~/.local/share}/aiki`, with separate `data/` and XDG config. `--dir` puts configuration there too,
 for isolated installs. Updating prepares dependencies before switching `current`; `previous` retains one rollback
 candidate. Neither updating nor rollback restarts a running process or reverses storage migrations: stop first and
 back up before upgrades. Uninstall preserves data/config unless explicitly purged. The owner's `deploy/` remains
 independent; no installer action uses its units, roots or watcher.
 
-Only the installed CLI opts into `AIKI_WEB_DIR`. The server then serves the static SPA after API routes, with
+Both runtime types use T137's `.aiki-install.json` version/channel, explicit data/config targeting and installed
+private settings. Executable presence selects runtime, not identity. Explicit same-tag runtime changes use
+`TAG-bun`/`TAG-binary` release directories, with an optional directory name in that same metadata; normal releases
+keep the legacy version-only layout. Each current/previous link, metadata file and launcher is replaced
+atomically; they are not one filesystem transaction.
+A retained binary lifecycle driver activates historical Bun releases so their older CLIs cannot strand rollback
+behind a Bun-only launcher. Rollback preserves channel and mutable data, including across runtime types.
+
+The installed CLI and standalone binary opt into `AIKI_WEB_DIR`. The server then serves the static SPA after API routes, with
 GET/HEAD, safe path resolution, no-store HTML/service-worker responses and immutable hashed assets. Its fixed
 loopback origins are accepted for WebSockets; no reflected Host/Origin allow-list. `/aiki-local.json` advertises
 same-origin discovery; hosted builds without this endpoint retain their existing multi-backend setup. Fresh local

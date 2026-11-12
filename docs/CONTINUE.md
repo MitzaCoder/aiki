@@ -1,5 +1,26 @@
 # Continue
 
+## T72 part 2: binary-first installation and mixed-runtime rollback
+
+The installer prefers matching glibc Linux x64/arm64 and macOS arm64 executables, checking the exact sidecar
+and SHA256SUMS before execution. Only absent/unsupported assets or `--runtime bun` take the pinned-Bun path;
+checksum/network errors fail closed. Release CI now emits the aggregate manifest, still on drafts only.
+The binary embeds the shared installed CLI and installer. The launcher dispatches by the selected release;
+updates and rollback keep T137's saved channel/version, explicit data/config and installed update identity.
+Same-tag runtime switches use immutable variant directories recorded in the existing metadata. A retained
+binary driver keeps historical Bun activations from replacing the launcher with an incompatible one.
+
+Fake-release installer tests cover fresh binaries, missing assets, both checksum sources, no activation on
+failure, Bun→binary, rollback/channel retention and explicit same-tag runtime selection. Real local-asset
+smoke passes with env -i, temp HOME/data/config and no Bun on child PATH: fresh install without a Bun runtime,
+start/status/owner health/Welcome HTML, installed notices enabled with the saved version/channel, clean stops,
+both update directions and rollback. Historical T137 CLI/installer files were included in one source fixture
+to verify binary→old-Bun→binary rollback. Fake zellij and a private pinned-Bun cache avoid unrelated downloads;
+no provider, device enrollment, real service, push, main move or GitHub workflow was used. Owned temp trees
+are removed. See INSTALL/AGENT-INSTALL and `scripts/smoke-install.ts` for reproduction.
+Sequential final gates pass: root 2,451 tests / 91,587 assertions, typecheck, private-term/generic/Gitleaks
+public check and rebuilt production/faux binary smoke (standalone notices off; installed notices on in E2E).
+
 ## T72 part 1: standalone binary builds
 
 `build-binary.ts` embeds neutral web assets, separately bundled codemode/Photon workers and WASM,
