@@ -68,9 +68,9 @@ exec "$AIKI_TEST_CURL" -fsSL "$AIKI_TEST_ORIGIN/\${url#${releasePrefix}}" -o "$o
 test('bootstrap dry run verifies a pinned default and forwards arguments without word splitting', async () => {
 	const run = await rehearseBootstrap(['--no-service', '--dir', '/tmp/example install']);
 	expect(run.exitCode).toBe(0);
-	expect(run.stdout).toContain('verified GitHub release installer v0.1.0-pilot.2');
-	expect(run.forwarded).toEqual(['--version', 'v0.1.0-pilot.2', '--no-service', '--dir', '/tmp/example install']);
-	expect(run.requests).toEqual(['/v0.1.0-pilot.2/install.sh', '/v0.1.0-pilot.2/install.sh.sha256']);
+	expect(run.stdout).toContain('verified GitHub release installer v0.1.0-pilot.3');
+	expect(run.forwarded).toEqual(['--version', 'v0.1.0-pilot.3', '--no-service', '--dir', '/tmp/example install']);
+	expect(run.requests).toEqual(['/v0.1.0-pilot.3/install.sh', '/v0.1.0-pilot.3/install.sh.sha256']);
 	expect(run.leftovers).toEqual([]);
 });
 

@@ -191,6 +191,7 @@ jobs:
         run: |
           notes="docs/releases/$GITHUB_REF_NAME.md"
           test -f "$notes"
+          test "$(head -n 1 "$notes")" = "# Aiki $GITHUB_REF_NAME"
           case "$GITHUB_REF_NAME" in
             *-*) gh release create "$GITHUB_REF_NAME" --verify-tag --draft --notes-file "$notes" --prerelease .preview/releases/* install.sh ;;
             *) gh release create "$GITHUB_REF_NAME" --verify-tag --draft --notes-file "$notes" .preview/releases/* install.sh ;;

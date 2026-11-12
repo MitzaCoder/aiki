@@ -78,3 +78,23 @@ test('the pinned dedicated browser is installed before root/browser tests and it
 	expect(setup).toContain('sha256sum --check');
 	expect(setup).toContain('chrome-for-testing-public');
 });
+
+test('current pilot identities and reviewed notes agree', async () => {
+	const version = '0.1.0-pilot.3';
+	for (const path of ['apps/web', 'packages/client', 'packages/protocol', 'packages/server']) {
+		const manifest = await Bun.file(new URL('../' + path + '/package.json', import.meta.url)).json();
+		expect(manifest.version).toBe(version);
+	}
+	const common = await Bun.file(new URL('../packages/protocol/src/common.ts', import.meta.url)).text();
+	expect(common).toContain('SERVER_VERSION = "' + version + '"');
+	const android = await Bun.file(new URL('../apps/android/app/build.gradle.kts', import.meta.url)).text();
+	expect(android).toContain('releaseTag ?: "v' + version + '"');
+	expect(android).toContain('("0.1.0-pilot.3" to 1_000_003)');
+	const notes = await Bun.file(new URL('../docs/releases/v' + version + '.md', import.meta.url)).text();
+	expect(notes.split('\n')[0]).toBe('# Aiki v' + version);
+	expect(notes).toContain('aiki update\naiki start');
+	expect(notes).toContain('1000003');
+	expect(notes).not.toMatch(/\]\((?!https:\/\/)/);
+	const commands = workflow.jobs.release!.steps.map(step => step.run ?? '').join('\n');
+	expect(commands).toContain('test "$(head -n 1 "$notes")" = "# Aiki $GITHUB_REF_NAME"');
+});

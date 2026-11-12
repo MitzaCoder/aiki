@@ -1,6 +1,6 @@
 # Pilot release procedure
 
-Target: **v0.1.0-pilot.2**, GitHub prerelease. This document grants no permission to
+Target: **v0.1.0-pilot.3**, GitHub prerelease. This document grants no permission to
 push, tag, publish or move `main`. Do those steps only after the owner's explicit go.
 Releasing is independent of the deployment watcher; never move `main` as a release
 step or run deployment/service commands. The earlier audit is in
@@ -16,7 +16,7 @@ password, and never prints that password. The script prints the paths and public
 certificate fingerprint. **Securely back up both files before distribution**; losing
 the key or its password prevents normal same-package updates. Never attach those
 files to a release or send them to CI. Keep the alias `aiki-pilot` with the backup.
-Pilot.2 must reuse pilot.1's owner-held key; do not create a replacement identity.
+Pilot.3 must reuse pilot.2's owner-held key; do not create a replacement identity.
 Preparation builds only unsigned/debug-signed APKs. The owner signs the approved
 source commit locally and attaches the result to the draft by hand.
 
@@ -37,25 +37,25 @@ macOS/WSL remain experimental.
 
 ## Exact published asset list
 
-For `TAG=v0.1.0-pilot.2`, publish exactly these files (not the staging directories):
+For `TAG=v0.1.0-pilot.3`, publish exactly these files (not the staging directories):
 
 | Asset | Produced by |
 | --- | --- |
-| `aiki-v0.1.0-pilot.2.tar.gz` | Tag workflow: neutral backend/source and built web |
-| `aiki-v0.1.0-pilot.2.tar.gz.sha256` | Tag workflow |
-| `aiki-v0.1.0-pilot.2-{linux-x64,linux-arm64,darwin-arm64}` | Tag workflow: three native executables |
+| `aiki-v0.1.0-pilot.3.tar.gz` | Tag workflow: neutral backend/source and built web |
+| `aiki-v0.1.0-pilot.3.tar.gz.sha256` | Tag workflow |
+| `aiki-v0.1.0-pilot.3-{linux-x64,linux-arm64,darwin-arm64}` | Tag workflow: three native executables |
 | Each executable's `.sha256` and `.licenses.txt` | Tag workflow |
 | `install.sh` | Tag workflow, repository installer |
 | `install.sh.sha256` | Tag workflow |
-| `aiki-v0.1.0-pilot.2-android-universal.apk` | Local signing script |
-| `aiki-v0.1.0-pilot.2-android-universal.apk.sha256` | Local signing script |
-| `aiki-v0.1.0-pilot.2-android-notices-and-source.tar.gz` | Local notices bundler |
-| `aiki-v0.1.0-pilot.2-android-notices-and-source.tar.gz.sha256` | Local notices bundler |
+| `aiki-v0.1.0-pilot.3-android-universal.apk` | Local signing script |
+| `aiki-v0.1.0-pilot.3-android-universal.apk.sha256` | Local signing script |
+| `aiki-v0.1.0-pilot.3-android-notices-and-source.tar.gz` | Local notices bundler |
+| `aiki-v0.1.0-pilot.3-android-notices-and-source.tar.gz.sha256` | Local notices bundler |
 | `RELEASE-MANIFEST.json` | Local signing script: source commit, tag, package, versions, APK hash and certificate hash |
 | `RELEASE-NOTES.md` | Copy the reviewed friend-facing notes, adding exact manifest details |
 | `SHA256SUMS` | Owner, after downloading the exact workflow assets and adding local assets |
 
-Do not distribute the unsigned APK, debug APK, upgrade-test pilot.3 APK, Gradle
+Do not distribute the unsigned APK, debug APK, upgrade-test pilot.4 APK, Gradle
 cache, private properties, signing files or preparation logs. `*.signature.txt` is
 local verification evidence, not a required published asset. Checksums detect
 corruption, not a compromised publisher; send the certificate fingerprint by a
@@ -112,7 +112,7 @@ in the local shell, never their contents in commands/logs:
 - `AIKI_RELEASE_KEY_ALIAS`: optional, default `aiki-pilot`.
 
 ```sh
-TAG=v0.1.0-pilot.2
+TAG=v0.1.0-pilot.3
 # Set COMMIT to the full approved commit; it is not a mutable branch name.
 apps/android/scripts/sign-release.sh "$TAG" .preview/pilot-assets "$COMMIT"
 apps/android/scripts/bundle-release-notices.sh "$TAG" .preview/pilot-assets "$COMMIT"
@@ -124,7 +124,7 @@ and checks the release's manifest/DEX/notice assets and neutral BuildConfig, ali
 with `zipalign -P 16`, signs with `apksigner`, verifies the signature, and prints the
 certificate SHA-256 fingerprint. Review `RELEASE-MANIFEST.json` and compare the
 certificate against the backed-up identity. Package must be `io.github.mitzacoder.aiki`.
-VersionName must be `0.1.0-pilot.2`, code **1000002**; the Android README documents
+VersionName must be `0.1.0-pilot.3`, code **1000003**; the Android README documents
 the increasing numeric scheme and current-pilot default. Firebase/relay/backend suggestion
 fields are empty; example App Link hosts are intentionally inert.
 
@@ -133,13 +133,13 @@ only the specified Aiki commit, not ignored/untracked files or ancestors. Inspec
 its contents and source marker. Keep generated notice JSON/offset metadata together
 with the licence bytes. No signing key is needed for library replacement/rebuilding.
 
-Install the retained signed pilot.1 APK on an owned emulator, launch, and create
-synthetic saved settings. Install the signed pilot.2 APK with `adb install -r`, then
-confirm saved settings survive a cold process start and code is 1000002. A further
-same-key pilot.3 upgrade rehearsal must use a separate smoke-only output directory. Try the unsigned release APK with
+Install the retained signed pilot.2 APK on an owned emulator, launch, and create
+synthetic saved settings. Install the signed pilot.3 APK with `adb install -r`, then
+confirm saved settings survive a cold process start and code is 1000003. A further
+same-key pilot.4 upgrade rehearsal must use a separate smoke-only output directory. Try the unsigned release APK with
 `adb install -r`: it must fail for missing certificates. Record results. Never
 uninstall to work around a signature mismatch, never distribute the smoke-only
-pilot.3, and never test on the operator's physical device. No server is needed for
+pilot.4, and never test on the operator's physical device. No server is needed for
 this saved-settings test; HTTPS pairing/auth renewal is a separate acceptance gate.
 
 ## 3. After the owner's go: push the one tag and inspect its draft
@@ -166,7 +166,7 @@ manually publish a partial release or retarget a public tag. One publisher only.
 
 Download the workflow assets into a fresh staging directory. Copy the locally
 signed APK, its checksum, notices/source archive, its checksum and manifest there.
-Copy `docs/releases/v0.1.0-pilot.2.md` as `RELEASE-NOTES.md`; append the exact commit,
+Copy `docs/releases/v0.1.0-pilot.3.md` as `RELEASE-NOTES.md`; append the exact commit,
 versionCode/name, certificate fingerprint and APK digest from the manifest. Verify
 the workflow archive's `aiki/RELEASE.json` records the same tag/commit and the web
 has no personal backend suggestions. Do not substitute a locally rebuilt backend

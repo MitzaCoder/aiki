@@ -3,7 +3,7 @@
 # Fetch only an exact GitHub release installer, verify it, then forward arguments.
 set -eu
 umask 077
-version=v0.1.0-pilot.2
+version=v0.1.0-pilot.3
 explicit_version=false
 fail() { printf 'aiki bootstrap: %s\n' "$*" >&2; exit 1; }
 select_version() {

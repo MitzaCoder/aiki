@@ -42,7 +42,7 @@ Pages cannot provide HTTP redirects, so the domain serves a small, reviewable PO
 shell **bootstrap**, not a second copy of the full installer that might silently
 drift from the release. Download/review it before running; do not use `curl | sh`.
 
-- The default is pinned to `v0.1.0-pilot.2`, never GitHub's `latest` (which excludes
+- The default is pinned to `v0.1.0-pilot.3`, never GitHub's `latest` (which excludes
   prereleases). `--version TAG` selects that exact release's installer and is passed
   unchanged to it. `--version latest`, path fragments and URLs are rejected.
 - It downloads `install.sh` and `install.sh.sha256` only from that version under

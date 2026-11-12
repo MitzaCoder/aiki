@@ -1,5 +1,52 @@
 # Continue
 
+## T159: pilot.3 prepared, not published
+
+Prepared `v0.1.0-pilot.3` from the approved main tip. Package/protocol identity,
+Android default `0.1.0-pilot.3` / 1000003, current install/site links and reviewed
+release notes agree. Historical pilot.1/pilot.2 notes and update fixtures stay
+unchanged. The tag workflow still stages only a draft; it also checks that the
+reviewed notes' heading matches the exact tag.
+
+The notes cover local Notion callback/error fixes, Copy sign-in link, and the
+bottom-left version/update notice. Pilot.2 already follows its saved pilot
+channel (later pilots and stable releases): stop Aiki, `aiki update`, start Aiki.
+No exact version is needed unless the channel was changed or pinning is intended.
+The local-origin workaround may stay or be removed; preserve other trusted origins.
+Android installs over the old APK with the same owner key, never uninstall.
+
+Built neutral source/web and all three executable targets with Bun 1.4.4.
+Linux x64 was exercised natively; ARM64 execution awaits native release CI.
+Checksum-verified published pilot.2 source assets updated to the local pilot.3
+binary using plain `aiki update`. Only fetch/curl transport was redirected to a
+local fake release feed; published updater code and candidate executable were
+unchanged. Fresh binary install and upgrade used `env -i`, USER, temporary HOMEs,
+no Bun on child PATH, owned `setsid` processes and PID-based shutdown. A private
+Bun cache and inert zellij fixture avoided unrelated tool downloads.
+
+Status, owner health, required auth, pilot channel, preserved synthetic state,
+rendered Welcome and bottom-left pilot.3 identity pass. Real paired browsers
+reproduced pilot.2's Notion failure on both local hostnames. Fresh and updated
+pilot.3 installations reach Notion's authorize URL and account login on both,
+without an account or origin workaround. T159 retains before/after screenshots,
+two short installed-UI recordings and desktop/phone site proof. Temporary
+installations and owned backend processes were removed.
+
+Sequential root/web gates pass: root 2,535 tests / 92,335 assertions; typecheck;
+web check zero diagnostics, 1,071 tests / 79,795 assertions and production build.
+Android: 914 JVM tests (two opt-in skips), debug assembly and lint pass (zero
+errors, 49 warnings, four hints). Neutral unsigned release assembly/seam checks
+pass; APK metadata confirms versionName/code. Gradle stopped after both builds.
+The existing Google/Tink old-protobuf-gencode warnings remain; no dependency
+change was made. Site/workflow tests pass 18 tests / 121 assertions; protocol
+generation check passes 382 DTOs / 105 overloads. Private/generic/Gitleaks guard
+passes. Rehearsal assets, temporary installs and owned browser/profile are cleaned.
+
+No signing key, real account, model inference, physical device, tag, push, workflow
+run, publication, main movement or deployment. Local rehearsal outputs are not
+publishable assets: rebuild from the approved merged commit, run native CI, and
+let the owner sign/verify the APK and combined draft before publication.
+
 ## T156: installed local Notion sign-in
 
 Published pilot.2 reproduces on both local hostnames: pairing/WS accept the

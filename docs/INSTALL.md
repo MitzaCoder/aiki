@@ -7,12 +7,12 @@ keeps loopback binding; network/Tailscale HTTPS setup is separate. Do not forwar
 
 ## Install
 
-Install the `v0.1.0-pilot.2` prerelease after publication:
+Install the `v0.1.0-pilot.3` prerelease after publication:
 
 ```sh
-curl -fL https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.2/install.sh -o install.sh
+curl -fL https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.3/install.sh -o install.sh
 # Read install.sh before running it.
-sh install.sh --version v0.1.0-pilot.2
+sh install.sh --version v0.1.0-pilot.3
 ```
 
 The short command is `curl -fsSL https://aikilabs.dev/install.sh | sh`.
@@ -21,12 +21,12 @@ For a review before execution, download the domain bootstrap instead:
 ```sh
 curl -fL https://aikilabs.dev/install.sh -o install.sh
 # Read install.sh before running it.
-sh install.sh --version v0.1.0-pilot.2
+sh install.sh --version v0.1.0-pilot.3
 ```
 
 The [small bootstrap](../site/install.sh) downloads the exact version's `install.sh` and `install.sh.sha256`
 from GitHub Releases, validates the checksum, then runs that installer with the same arguments. No version
-means the pinned `v0.1.0-pilot.2`, not latest. An explicit `--version TAG` selects both the installer and release;
+means the pinned `v0.1.0-pilot.3`, not latest. An explicit `--version TAG` selects both the installer and release;
 `--version latest` is deliberately rejected. All other arguments (including `--no-service`) pass through.
 It requires HTTPS for both downloads and redirects, never executes an unverified installer, and cleans its
 temporary downloads on exit. The verified release installer still checks its own archives and runtimes.
@@ -41,7 +41,7 @@ For releases with a matching executable, the current installer downloads it inst
 It requires both the executable's `.sha256` sidecar and its matching entry in `SHA256SUMS` before execution.
 Only an absent binary (HTTP 404), an unsupported binary platform, or `--runtime bun` selects the existing
 pinned-Bun source/web fallback. Network errors or bad/missing checksums never trigger a weaker fallback.
-Pilot.2 supplies Linux x64/arm64 and macOS arm64 executables; pilot.1 predates them and uses Bun.
+Pilot.2 and later supply Linux x64/arm64 and macOS arm64 executables; pilot.1 predates them and uses Bun.
 
 Install **git** for repositories, **jj** for isolated workers, and **Tailscale** for future phone access. Missing
 tools are explained without blocking local setup (except git is required for `--ref`). On minimal Linux images,
@@ -54,7 +54,7 @@ The default tries to install and start a **user** service. Without a user system
 launchd GUI session (macOS), continue in the foreground instead:
 
 ```sh
-sh install.sh --version v0.1.0-pilot.2 --no-service
+sh install.sh --version v0.1.0-pilot.3 --no-service
 export PATH="$HOME/.local/bin:$PATH"   # if the installer says it is missing
 aiki start                             # keep this terminal open
 # In another terminal:
@@ -70,24 +70,17 @@ choose a project folder, then choose its coordinator model. Providers still conn
 Claude Code and Codex CLIs are not required. Subscription access is subject to provider policy/account eligibility;
 paid API keys are the straightforward alternative. A saved credential is not proof of successful inference.
 
-## Notion sign-in on pilot.2
+## Notion sign-in
 
-Pilot.2's installed shell accepts local browsers for pairing but omits those origins
-from the MCP OAuth callback allowlist. Switching between `localhost` and `127.0.0.1`
-does not fix it. The next release accepts both exact local origins automatically.
+Pilot.3 fixes “Could not start MCP sign-in” on local installs opened through either
+`localhost` or `127.0.0.1`. Both exact local callback origins are accepted at the
+actual Aiki port. If you added the pilot.2 `AIKI_ALLOWED_ORIGINS` workaround to
+`server.env`, you can keep or remove those local entries after upgrading. Preserve
+any other explicitly trusted origins you still need; never add a wildcard.
 
-Until upgrading, stop Aiki and add this line to its configuration `server.env`
-(default `~/.config/aiki/server.env`), then restart:
-
-```sh
-AIKI_ALLOWED_ORIGINS=http://localhost:7317,http://127.0.0.1:7317
-```
-
-Use your actual Aiki port. Preserve any existing explicitly trusted origins in the
-comma-separated list; do not use a wildcard or add an untrusted website. This does
-not disable device authentication or change the loopback listener. Notion accepts
-both local callback hostnames. Its authorization page requires a Notion account
-before consent; no account is needed to start sign-in and open that page.
+Use **Copy sign-in link** to finish sign-in in another browser, then paste its
+callback URL back into the initiating app if needed. Notion requires an account
+before consent; no account is needed to start sign-in and open its authorize page.
 
 ## Commands and paths
 
@@ -144,11 +137,14 @@ leaves the selected release unchanged. An interrupted install can leave `.instal
 confirming no installer is running.
 
 Settings → About shows available versions and release notes. Installed releases check the public GitHub API
-about once a day, without credentials; turn this off there for the whole backend. Dismissal hides the small banner
+about once a day, without credentials; turn this off there for the whole backend. Dismissal hides the bottom-left update notice
 for that version, not the About row. Source/deploy checkouts do not check unless explicitly enabled in About.
-**Pilot.1 users:** stop Aiki, run `aiki update --version v0.1.0-pilot.2` once, then start it.
+**Pilot.2 users:** stop Aiki, run `aiki update`, then start it. Pilot.2 already follows
+its saved pilot channel, which includes later pilots and stable releases; no `--version` is needed
+unless you deliberately switched channels or want an exact tag.
+**Pilot.1 users:** stop Aiki, run `aiki update --version v0.1.0-pilot.3` once, then start it.
 Later updates use plain `aiki update` while stopped. Install the Android APK over the old app;
-the release uses the same owner signing key, versionName `0.1.0-pilot.2`, code 1000002.
+the release uses the same owner signing key, versionName `0.1.0-pilot.3`, code 1000003.
 An older installer without channel support needs that first exact-version update to acquire this behavior.
 For an installation whose updater predates binary support, download/review the new installer and rerun it with
 an explicit reviewed `--version TAG` and the same `--dir` to switch directly. An old updater may first install the
