@@ -25,34 +25,6 @@ const val UPDATE_INSTRUCTIONS = "Stop Aiki, then aiki update, then start it."
 fun visibleReleaseUpdate(state: ReleaseUpdateState?): Boolean =
     state?.schemaVersion == 1L && state.enabled && state.available != null && state.available.version != state.dismissedVersion
 
-/** The same backend-wide preference and dismissal on every project and device. */
-@Composable
-fun ReleaseUpdateBanner(backend: BackendSession) {
-    val connection by backend.client.state.collectAsStateWithLifecycle()
-    val status by backend.serverStatus.status.collectAsStateWithLifecycle()
-    if (!connection.supports(RELEASE_UPDATES_FEATURE)) return
-    val updates = status?.updates
-    if (!visibleReleaseUpdate(updates)) return
-    val release = updates?.available ?: return
-    val scope = rememberCoroutineScope()
-    var error by remember { mutableStateOf<String?>(null) }
-    ToneBanner(null) {
-        Text("Aiki ${release.version} is available.", style = MaterialTheme.typography.bodySmall)
-        SelectionContainer { Text(UPDATE_INSTRUCTIONS, style = MaterialTheme.typography.bodySmall) }
-        Row {
-            ReleaseNotesButton(release.notesUrl)
-            TextButton(onClick = {
-                scope.launch {
-                    try { backend.client.request(ReleaseUpdatesSetRequest(dismissVersion = release.version)); backend.serverStatus.refresh() }
-                    catch (e: CancellationException) { throw e }
-                    catch (_: Exception) { error = "Could not dismiss. Try again when connected." }
-                }
-            }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Dismiss update notice") }
-        }
-        error?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-    }
-}
-
 @Composable
 private fun ReleaseNotesButton(url: String) {
     val uri = LocalUriHandler.current
@@ -63,12 +35,16 @@ private fun ReleaseNotesButton(url: String) {
 fun ReleaseUpdateAbout(backend: BackendSession) {
     val connection by backend.client.state.collectAsStateWithLifecycle()
     val status by backend.serverStatus.status.collectAsStateWithLifecycle()
-    if (!connection.supports(RELEASE_UPDATES_FEATURE)) return
-    val updates = status?.updates?.takeIf { it.schemaVersion == 1L } ?: return
+    val updates = status?.updates?.takeIf { connection.supports(RELEASE_UPDATES_FEATURE) && it.schemaVersion == 1L }
     val scope = rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     SettingsGroup(title = backend.config.name) {
+        GroupNote("Aiki ${backendVersion(connection.hello?.server?.version, status) ?: "—"}")
+        if (updates == null) {
+            GroupNote("Update checks are not available on this backend.")
+            return@SettingsGroup
+        }
         GroupNote(updates.installedVersion?.let { "Installed $it · ${updates.channel} channel" } ?: "Source checkout · checks off by default")
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp).heightIn(min = 48.dp)) {
             Text("Check for Aiki updates", Modifier.weight(1f).padding(vertical = 12.dp))
@@ -89,6 +65,16 @@ fun ReleaseUpdateAbout(backend: BackendSession) {
                 GroupNote("Aiki ${release.version} is available.")
                 ReleaseNotesButton(release.notesUrl)
                 SelectionContainer { GroupNote(UPDATE_INSTRUCTIONS) }
+                if (updates.dismissedVersion != release.version) TextButton(onClick = {
+                    saving = true
+                    scope.launch {
+                        try { backend.client.request(ReleaseUpdatesSetRequest(dismissVersion = release.version)); backend.serverStatus.refresh(); error = null }
+                        catch (e: CancellationException) { throw e }
+                        catch (_: Exception) { error = "Could not dismiss. Try again when connected." }
+                        finally { saving = false }
+                    }
+                }, enabled = !saving, modifier = Modifier.heightIn(min = 48.dp)) { Text("Dismiss update notice") }
+                else GroupNote("Update notice dismissed.")
             } else GroupNote("No newer release found yet.")
         }
         error?.let { GroupNote(it) }

@@ -1,5 +1,32 @@
 # Design
 
+## Version in navigation (T155)
+
+The desktop projects sidebar and phone drawer reserve a quiet footer link below
+Usage and Settings for the connected backend's identity. It opens Settings →
+About, where update notices remain available with release notes, the exact
+manual `aiki update` instructions and per-version dismissal. An enabled,
+undismissed update changes the footer to `Aiki v… → v… available` plus an accent
+dot; dismissal removes that announcement, not the running version or About's
+details. The former chat update banner is removed on both clients to avoid a
+duplicate notice. Existing Android updates also use notes/manual backend update
+instructions; no APK installer path is introduced. The collapsed rail uses `v` with
+the full label as its accessible name and tooltip. Both clients follow the open
+project's backend; outside a project they prefer the first ready backend, then
+the first configured one. A reconnect retains its last known identity.
+
+Version precedence is installed release (`server.status.updates.installedVersion`),
+release tag or short commit (`server.status.release`), then `dev` for a known
+source checkout. Before status arrives, or on older backends without status,
+hello's server version is the fallback. Installed metadata is the identity used
+by `aiki version`; packaged `release.name` is also used by standalone
+`aiki --version`. Hello's package constant alone cannot identify a source deploy.
+No answer means unknown, not the client's version presented as the backend's.
+Web adds its bundled package version only
+when it differs; Android uses the same backend text and keeps its own build in
+About. Labels normalize a release's optional `v` prefix. About also shows the
+backend identity for source checkouts; no protocol or polling change is needed.
+
 ## Chat file attachments (T140 / D66)
 
 Chat accepts arbitrary files without unpacking archives. Uploads go to private,
@@ -137,7 +164,8 @@ GitHub requests have a 15-second timeout, no retries/pagination; 403/429 extend 
 Offline/invalid responses keep the last cache quietly. Corrupt settings fail closed without stopping the backend.
 `release-updates` advertises `server.updates.set`; optional `server.status.updates` has `schemaVersion: 1`, so old
 clients keep working. Settings/dismissal are backend-wide, across projects and devices. Web/Android About retain
-the row after dismissal; chat shows a quiet banner until that version is dismissed. Nothing downloads or installs.
+the row after dismissal; the navigation version footer announces undismissed updates (T155), replacing the original
+chat banner. Nothing downloads or installs.
 
 ## Local installer and first run
 

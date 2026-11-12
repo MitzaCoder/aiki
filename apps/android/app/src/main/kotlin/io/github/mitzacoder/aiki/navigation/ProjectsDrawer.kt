@@ -31,6 +31,8 @@ import io.github.mitzacoder.aiki.features.settings.ProjectDirectoryBrowser
 import io.github.mitzacoder.aiki.features.settings.canBrowseDirectories
 import io.github.mitzacoder.aiki.features.settings.connectionLabel
 import io.github.mitzacoder.aiki.features.status.StatusGlyphs
+import io.github.mitzacoder.aiki.features.status.aikiVersionLabel
+import io.github.mitzacoder.aiki.features.status.visibleReleaseUpdate
 import io.github.mitzacoder.aiki.protocol.ProjectSummary
 import io.github.mitzacoder.aiki.ui.components.*
 import io.github.mitzacoder.aiki.ui.theme.Jarvis
@@ -179,6 +181,28 @@ private fun ColumnScope.ProjectsNav(repository: HarnessRepository, current: Dest
     HorizontalDivider()
     FooterItem(NavGlyphs.Gauge, "Usage", "Subscription limits", "Usage: subscription limits and when they reset", current == Destination.Usage, rail) { navigate(Destination.Usage) }
     FooterItem(NavGlyphs.Settings, "Settings", "Appearance, backends, notifications", "Settings: appearance, backends, notifications, archived projects", current is Destination.Settings, rail) { navigate(Destination.Settings()) }
+    val versionConnections = sessions.associate { backend ->
+        backend.config.key to key(backend.config.key) { backend.client.state.collectAsStateWithLifecycle().value }
+    }
+    val versionBackend = sessions.firstOrNull { it.config.key == currentChat?.backendKey }
+        ?: sessions.firstOrNull { versionConnections[it.config.key]?.status == ConnectionStatus.Ready }
+        ?: sessions.firstOrNull()
+    val versionConnection = versionBackend?.let { versionConnections[it.config.key] }
+    val versionStatus = key(versionBackend?.config?.key) {
+        versionBackend?.serverStatus?.status?.collectAsStateWithLifecycle()?.value
+    }
+    val versionText = aikiVersionLabel(versionConnection?.hello?.server?.version, versionStatus)
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClickLabel = "About and updates") {
+            navigate(Destination.Settings(GeneralPage(GeneralSection.About)))
+        }.padding(horizontal = if (rail) 4.dp else 24.dp, vertical = 8.dp)
+            .semantics(mergeDescendants = true) { contentDescription = "$versionText — About and updates" },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = if (rail) Arrangement.Center else Arrangement.spacedBy(6.dp),
+    ) {
+        if (visibleReleaseUpdate(versionStatus?.updates)) Box(Modifier.size(6.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+        Text(if (rail) "v" else versionText, style = MaterialTheme.typography.labelSmall, color = Jarvis.colors.fgSubtle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    }
     Spacer(Modifier.height(if (rail) 8.dp else 16.dp))
     adding?.let { backend ->
         var error by remember(backend) { mutableStateOf<String?>(null) }

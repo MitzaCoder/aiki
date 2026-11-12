@@ -1,5 +1,29 @@
 # Continue
 
+## T155: version and update notice in navigation
+
+Web's sidebar/phone drawer and Android's navigation foot now show the selected
+backend's installed version, release tag/short commit or `dev`; old backends
+fall back to hello. Web adds its package build only when different. Tap/click
+opens About. An undismissed T137 update adds `→ v… available` and an accent dot.
+The separate chat update banners are removed on both clients; About retains
+notes, exact manual `aiki update` instructions and per-version dismissal. No
+protocol, updater, APK installation path or polling change. Collapsed rails use
+`v` plus the update dot and full accessible text (web also has a tooltip).
+
+Synthetic proof uses createSetup and a fake release feed, an owned headless
+browser and a separate emulator only. T155 retains desktop/phone light/dark web
+and Android light/dark before/after screenshots, including up-to-date and update
+states, plus About/dismissal recordings. No physical device, push, main move or
+deployment. Label unit tests cover both clients, dev/commit/legacy identities,
+web mismatch and update enablement/schema/per-version dismissal.
+
+Sequential gates pass: root 2,531 tests / 92,288 assertions; typecheck; web check
+zero diagnostics, 1,070 tests / 79,792 assertions and build; Android 914 JVM tests
+(two opt-in skips), debug assembly and lint (zero errors, 49 warnings, four hints);
+private/generic/Gitleaks public check. Gradle stopped. The first lint attempt was
+interrupted by another workspace's shared Gradle stop; the idle rerun passed.
+
 ## T154: MCP sign-in in another browser
 
 Web and Android now offer Copy sign-in link beside Sign in. Copy starts without

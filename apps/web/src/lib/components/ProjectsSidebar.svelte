@@ -7,6 +7,9 @@
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import XIcon from '@lucide/svelte/icons/x';
 	import { page } from '$app/state';
+	import { version as webVersion } from '../../../package.json';
+	import { aikiVersionLabel, versionBackend } from '#lib/aiki-version.js';
+	import { visibleReleaseUpdate } from '#lib/release-updates.js';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { usageModal } from '#lib/usage-modal.svelte.js';
 	import ConnectionBadge from '#lib/components/ConnectionBadge.svelte';
@@ -47,6 +50,9 @@
 	const wide = new MediaQuery(PROJECTS_NAV_WIDE_QUERY);
 	const current = $derived(currentProject(page.url.pathname));
 	const usageOpen = $derived(usageModal.open);
+	const identityBackend = $derived(versionBackend(harness.backends, current?.backendId));
+	const versionText = $derived(aikiVersionLabel(identityBackend?.connection.server?.version, identityBackend?.status, webVersion));
+	const updateAvailable = $derived(visibleReleaseUpdate(identityBackend?.status?.updates));
 	const attentionLinks = $derived(needsYouLinks(harness.backends));
 	const settingsOpen = $derived(page.url.pathname === '/settings' || page.url.pathname.startsWith('/settings/'));
 
@@ -318,6 +324,18 @@
 						</span>
 					</span>
 				{/if}
+			</a>
+			<a
+				href="/settings/about"
+				onclick={() => projectsNav.closeDrawer()}
+				data-aiki-version
+				class="flex min-h-9 items-center gap-1.5 rounded-lg px-1.5 py-1 text-[0.6875rem] leading-4 text-(--chat-fg-subtle) hover:bg-(--chat-surface-2) focus-visible:outline-2 focus-visible:outline-(--primary)"
+				class:justify-center={rail}
+				title={`${identityBackend ? `${identityBackend.name}: ` : ''}${versionText} — About and updates`}
+				aria-label={`${versionText} — About and updates`}
+			>
+				{#if updateAvailable}<span class="size-1.5 shrink-0 rounded-full bg-(--primary)" aria-hidden="true"></span>{/if}
+				<span class="min-w-0 break-words">{rail ? 'v' : versionText}</span>
 			</a>
 		</div>
 	</div>
