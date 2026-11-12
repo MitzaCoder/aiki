@@ -5,6 +5,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { childEnvironment } from "../packages/server/src/child-environment.ts";
 import { packagedResources } from "../packages/server/src/packaged-resources.ts";
 import { mkdtempSync } from "node:fs";
+import { superviseInstallation, selectRetainedRelease } from "./installed-supervisor.ts";
 
 import { fetchChannelRelease, releaseChannel, type UpdateChannel } from "../packages/protocol/src/release-versions.ts";
 
@@ -88,6 +89,12 @@ function running(root: string): boolean {
 	} catch { return false; }
 }
 function requireStopped(root: string): void {
+	if (existsSync(join(root, "supervisor.pid"))) {
+		const pid = Number(readFileSync(join(root, "supervisor.pid"), "utf8"));
+		let alive = false;
+		if (Number.isSafeInteger(pid) && pid > 0) try { process.kill(pid, 0); alive = true; } catch { /* Stale supervisor. */ }
+		if (alive && !(process.env.AIKI_UPDATE_CHILD === "1" && process.ppid === pid)) throw new Error("Aiki is running. Stop its supervisor before changing releases.");
+	}
 	if (running(root)) throw new Error("Aiki is running. Stop the foreground process (Ctrl-C) or your user service before changing releases.");
 }
 async function run(command: string[], options: { env?: Record<string, string | undefined> } = {}): Promise<void> {
@@ -187,6 +194,8 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 		...childEnvironment(),
 		AIKI_ENV_FILE: join(installation.config, "server.env"),
 		AIKI_DATA_DIR: installation.data,
+		AIKI_INSTALL_DIR: root,
+		AIKI_UPDATE_SUPERVISED: process.env.AIKI_UPDATE_CHILD === "1" ? "1" : undefined,
 		AIKI_CONFIG_DIR: installation.config,
 		AIKI_HOST: "127.0.0.1",
 		AIKI_WEB_DIR: packagedResources.web ? "embedded" : join(root, "current/apps/web/build"),
@@ -201,6 +210,7 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 	const url = `http://127.0.0.1:${port}`;
 	switch (command) {
 		case "start": {
+			if (process.env.AIKI_UPDATE_CHILD !== "1") { await superviseInstallation(installation, settings); break; }
 			requireStopped(root);
 			try { writeFileSync(join(root, "server.pid"), String(process.pid), { mode: 0o600, flag: "wx" }); }
 			catch { throw new Error("server.pid already exists. If a previous process crashed, confirm it is stopped before removing this stale file."); }
@@ -257,8 +267,9 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 			catch { console.log(`Port ${port}: in use; aiki status checks whether it is Aiki. Set AIKI_PORT for another port.`); }
 			console.log("Tailscale alone is not authentication. Do not expose this server to the network."); break;
 		}
+		case "stage-update":
 		case "update": {
-			requireStopped(root);
+			if (command === "update") requireStopped(root);
 			console.log("Back up your data first: rollback changes code, not database migrations. Restart manually after update.");
 			const selection = await updateSelection(rest, installation);
 			// A host shell cannot read Bun\'s embedded filesystem. Unpack only this script into an owned 0700 directory.
@@ -267,7 +278,7 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 				const installer = temporary ? join(temporary, "install.sh") : join(root, "current/install.sh");
 				if (temporary) writeFileSync(installer, await Bun.file(packagedResources.installer!).arrayBuffer().then(bytes => new Uint8Array(bytes)), { mode: 0o600 });
 				await run(["sh", installer, "--dir", root, "--no-service", ...rest,
-					"--version", selection.version, "--channel", selection.channel]);
+					"--version", selection.version, "--channel", selection.channel, ...(command === "stage-update" ? ["--stage-only"] : [])]);
 			} finally { if (temporary) rmSync(temporary, { recursive: true, force: true }); }
 			break;
 		}
@@ -276,11 +287,7 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 			if (!existsSync(join(root, "previous"))) throw new Error("No previous release retained");
 			const previous = realpathSync(join(root, "previous"));
 			const current = realpathSync(join(root, "current"));
-			atomicLink(root, "current", previous); atomicLink(root, "previous", current);
-			installation.version = readFileSync(join(previous, ".ready"), "utf8").trim();
-			if (basename(previous) === installation.version) delete installation.release;
-			else installation.release = basename(previous);
-			atomicText(join(root, ".aiki-install.json"), JSON.stringify(installation, null, 2));
+			selectRetainedRelease(installation, previous, current);
 			console.log(`Selected ${installation.version}. Data was not rolled back. Run aiki start.`); break;
 		}
 		case "service": await service(installation, rest[0] || "", rest.includes("--print")); break;

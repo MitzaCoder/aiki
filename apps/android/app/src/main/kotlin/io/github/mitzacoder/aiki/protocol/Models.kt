@@ -3216,6 +3216,35 @@ data class ReleaseUpdateStateAvailable(
 )
 
 @Serializable
+data class SelfUpdateState(
+    @kotlinx.serialization.EncodeDefault val `schemaVersion`: Long = 1L,
+    val `enabled`: Boolean,
+    val `disabledReason`: String?,
+    val `phase`: String,
+    val `attempt`: String,
+    val `fromVersion`: String,
+    val `toVersion`: String,
+    val `notesUrl`: String,
+    val `agents`: Long,
+    val `message`: String
+)
+
+@Serializable
+data class ServerUpdateRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "server.update",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `action`: String,
+    val `version`: String
+)
+
+@Serializable
+data class ServerUpdateResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "server.update",
+    val `id`: String,
+    val `selfUpdate`: SelfUpdateState
+)
+
+@Serializable
 data class ReleaseUpdatesSetRequest(
     @kotlinx.serialization.EncodeDefault val `type`: String = "server.updates.set",
     val `id`: String = java.util.UUID.randomUUID().toString(),
@@ -3232,6 +3261,7 @@ data class ReleaseUpdatesSetResponse(
 
 @Serializable
 data class ServerStatus(
+    val `selfUpdate`: SelfUpdateState? = null,
     val `updates`: ReleaseUpdateState? = null,
     val `release`: ReleaseInfo?,
     val `deploy`: DeployStatus?,

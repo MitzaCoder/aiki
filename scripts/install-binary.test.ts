@@ -55,7 +55,7 @@ async function fixture() {
 	async function bunRelease(version: string) {
 		const tree = join(home, `source-${version}`, "aiki");
 		await mkdir(join(tree, "scripts"), { recursive: true });
-		for (const file of ["install.sh", "scripts/aiki.ts", "packages/protocol/src/release-versions.ts",
+		for (const file of ["install.sh", "scripts/aiki.ts", "scripts/installed-supervisor.ts", "packages/server/src/self-update.ts", "packages/server/src/errors.ts", "packages/protocol/src/release-versions.ts",
 			"packages/server/src/child-environment.ts", "packages/server/src/packaged-resources.ts", "packages/server/src/server-env.ts",
 			"packages/server/src/server-settings.ts", "packages/server/src/data-dir.ts", "packages/server/src/origins.ts"]) {
 			await mkdir(resolve(tree, file, ".."), { recursive: true });
@@ -80,6 +80,20 @@ async function fixture() {
 	}
 	return { root, install, cli, metadata, binary, bunRelease, requests, assets, base };
 }
+
+test("stage-only verifies beside a running release without changing links or metadata", async () => {
+	const setup = await fixture();
+	await setup.binary("v0.1.0-pilot.1"); await setup.binary("v0.1.0-pilot.2");
+	expect((await setup.install("--version", "v0.1.0-pilot.1")).code).toBe(0);
+	await writeFile(join(setup.root, "server.pid"), String(process.pid));
+	const before = await setup.metadata();
+	const staged = await setup.install("--version", "v0.1.0-pilot.2", "--stage-only");
+	expect(staged.code).toBe(0); expect(staged.message).toContain("Staged");
+	expect(await setup.metadata()).toEqual(before);
+	expect(await readlink(join(setup.root, "current"))).toContain("v0.1.0-pilot.1");
+	expect(existsSync(join(setup.root, "releases/v0.1.0-pilot.2/.ready"))).toBe(true);
+	expect(existsSync(join(setup.root, "previous"))).toBe(false);
+});
 
 test("fresh binary install tolerates licence assets and validates both checksums without preparing Bun", async () => {
 	const setup = await fixture(); const version = "v0.1.0-pilot.1";

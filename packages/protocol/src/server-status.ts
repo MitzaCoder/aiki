@@ -87,7 +87,35 @@ export const ReleaseUpdatesSetResponseSchema = Type.Object({
 export type ReleaseUpdatesSetRequest = Static<typeof ReleaseUpdatesSetRequestSchema>;
 export type ReleaseUpdatesSetResponse = Static<typeof ReleaseUpdatesSetResponseSchema>;
 
+export const SelfUpdateStateSchema = Type.Object({
+	schemaVersion: Type.Literal(1),
+	enabled: Type.Boolean(),
+	disabledReason: Type.Union([Type.String(), Type.Null()]),
+	phase: Type.Union([Type.Literal("idle"), Type.Literal("preparing"), Type.Literal("waiting"), Type.Literal("restarting"), Type.Literal("checking"), Type.Literal("succeeded"), Type.Literal("rolled_back"), Type.Literal("failed"), Type.Literal("cancelled")]),
+	attempt: Type.String(),
+	fromVersion: Type.String(),
+	toVersion: Type.String(),
+	notesUrl: Type.String(),
+	agents: Type.Integer({ minimum: 0 }),
+	message: Type.String(),
+});
+export type SelfUpdateState = Static<typeof SelfUpdateStateSchema>;
+export const ServerUpdateRequestSchema = Type.Object({
+	type: Type.Literal("server.update"),
+	id: RequestIdSchema,
+	action: Type.Union([Type.Literal("start"), Type.Literal("cancel"), Type.Literal("force")]),
+	version: Type.String({ maxLength: 200 }),
+});
+export const ServerUpdateResponseSchema = Type.Object({
+	type: Type.Literal("server.update"),
+	id: RequestIdSchema,
+	selfUpdate: SelfUpdateStateSchema,
+});
+export type ServerUpdateRequest = Static<typeof ServerUpdateRequestSchema>;
+export type ServerUpdateResponse = Static<typeof ServerUpdateResponseSchema>;
+
 export const ServerStatusSchema = Type.Object({
+	selfUpdate: Type.Optional(SelfUpdateStateSchema),
 	updates: Type.Optional(ReleaseUpdateStateSchema),
 	release: Type.Union([ReleaseInfoSchema, Type.Null()]),
 	deploy: Type.Union([DeployStatusSchema, Type.Null()], { description: "Null when no deploy wrote a status yet." }),

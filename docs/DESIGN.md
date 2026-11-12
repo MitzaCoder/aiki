@@ -26,6 +26,37 @@ submission path, then opens that chat. Select a project on this backend if none 
 selected; do not create a project, install software or sign in automatically.
 
 
+## Installed self-update (T139 / D65)
+
+Only a managed release started through the installed CLI's supervisor can self-update.
+Source checkouts, `--ref` installs and deploy-watcher backends report a reason instead.
+Any authenticated paired owner can start/cancel an update; the session ID and action
+are logged, never its token. Clients confirm the exact from → to version and link
+release notes. Force while busy requires a separate confirmation.
+
+The existing installer gains stage-only mode: identical platform selection,
+checksum verification and private Bun fallback, but no activation, launcher rewrite
+or garbage collection. Backend-wide state is persisted separately from update
+notices. After staging, wait for zero running conversation turns and workers;
+Cancel leaves the running release untouched. Opening harnesses count as busy
+because they may resume queued work; the final hold also rejects project opens.
+New work is held during the final switch. No URL, shell argument or service name comes from a client.
+
+`aiki start` is a persistent supervisor, both in a terminal and as the service's
+main process. It owns its child, stops it before activation, starts the selected
+release and probes the owner-only health socket for up to 30 seconds. Failed
+activation/startup/health restores the retained release using the same code swap
+as `aiki rollback`, then starts it again. systemd and launchd keep supervising the
+same parent: no service-manager command or detached cgroup escape is needed.
+The small supervisor remains resident until a full stop/start; later releases must
+keep its transaction/health contract backward-compatible. An interrupted switch is recovered from the persisted transaction on next start.
+Clients reconnect normally and read the persisted outcome. Code rollback cannot
+undo data migrations; release authors must retain backward-compatible storage.
+
+Pilot.3 and older releases lack this supervisor/API and require one manual `aiki update` while
+stopped before one-click updates are available. Android updates the backend, not
+its APK. Native macOS service behavior requires native rehearsal.
+
 ## Version in navigation (T155)
 
 The desktop projects sidebar and phone drawer reserve a quiet footer link below
@@ -34,7 +65,8 @@ About, where update notices remain available with release notes, the exact
 manual `aiki update` instructions and per-version dismissal. An enabled,
 undismissed update changes the footer to `Aiki v… → v… available` plus an accent
 dot; dismissal removes that announcement, not the running version or About's
-details. The former chat update banner is removed on both clients to avoid a
+details. Eligible installed backends also expose T139's Update now control here
+and beside this navigation footer. The former chat update banner is removed on both clients to avoid a
 duplicate notice. Existing Android updates also use notes/manual backend update
 instructions; no APK installer path is introduced. The collapsed rail uses `v` with
 the full label as its accessible name and tooltip. Both clients follow the open
@@ -191,7 +223,8 @@ Offline/invalid responses keep the last cache quietly. Corrupt settings fail clo
 `release-updates` advertises `server.updates.set`; optional `server.status.updates` has `schemaVersion: 1`, so old
 clients keep working. Settings/dismissal are backend-wide, across projects and devices. Web/Android About retain
 the row after dismissal; the navigation version footer announces undismissed updates (T155), replacing the original
-chat banner. Nothing downloads or installs.
+chat banner. Notices alone never download or install; an owner-confirmed self-update
+uses the separate T139 transaction above.
 
 ## Local installer and first run
 
@@ -203,7 +236,7 @@ that Bun path. macOS x64 and Linux musl use pinned Bun; Windows uses WSL. Releas
 manifest alongside the existing checksums and still creates drafts only. `~/.local/bin/aiki` selects an immutable release under
 `${XDG_DATA_HOME:-~/.local/share}/aiki`, with separate `data/` and XDG config. `--dir` puts configuration there too,
 for isolated installs. Updating prepares dependencies before switching `current`; `previous` retains one rollback
-candidate. Neither updating nor rollback restarts a running process or reverses storage migrations: stop first and
+candidate. Manual CLI updating/rollback never restarts a running process or reverses storage migrations: stop first and
 back up before upgrades. Uninstall preserves data/config unless explicitly purged. The owner's `deploy/` remains
 independent; no installer action uses its units, roots or watcher.
 

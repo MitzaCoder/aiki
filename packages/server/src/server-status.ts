@@ -140,6 +140,7 @@ export type ServerStatusServiceOptions = {
 	/** Free space per filesystem, as last measured; omitted leaves `disks` out. */
 	disks?: () => DiskStatus[];
 	updates?: () => ReleaseUpdateState;
+	selfUpdate?: () => import("@aiki/protocol").SelfUpdateState;
 };
 
 /**
@@ -150,6 +151,7 @@ export type ServerStatusServiceOptions = {
  */
 export class ServerStatusService {
 	readonly #updates: (() => ReleaseUpdateState) | undefined;
+	readonly #selfUpdate: (() => import("@aiki/protocol").SelfUpdateState) | undefined;
 	readonly #busy: () => Promise<BusyState>;
 	readonly #releaseRoot: string;
 	readonly #deployStatusFile: string | null;
@@ -172,6 +174,7 @@ export class ServerStatusService {
 
 	private constructor(options: ServerStatusServiceOptions) {
 		this.#updates = options.updates;
+		this.#selfUpdate = options.selfUpdate;
 		this.#busy = options.busy;
 		this.#releaseRoot = options.releaseRoot ?? resolveReleaseRoot();
 		this.#deployStatusFile =
@@ -223,6 +226,7 @@ export class ServerStatusService {
 			busy: await this.#readBusy(),
 			startedAt: this.#startedAt,
 			...(this.#updates ? { updates: this.#updates() } : {}),
+			...(this.#selfUpdate ? { selfUpdate: this.#selfUpdate() } : {}),
 			...(this.#disks === undefined ? {} : { disks: this.#disks() }),
 		};
 	}

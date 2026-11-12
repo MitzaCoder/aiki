@@ -54,7 +54,7 @@ try {
 	trackedSourcePaths = tracked.split("\0").filter(Boolean);
 	await mkdir(tree);
 	// Explicit allow-list: Android, deployment targets, local config and conversation data are never copied.
-	for (const path of ["package.json", "bun.lock", "tsconfig.json", "LICENSE", "README.md", "install.sh", "scripts/aiki.ts", "packages/protocol", "packages/client", "packages/server", "apps/web"]) {
+	for (const path of ["package.json", "bun.lock", "tsconfig.json", "LICENSE", "README.md", "install.sh", "scripts/aiki.ts", "scripts/installed-supervisor.ts", "packages/protocol", "packages/client", "packages/server", "apps/web"]) {
 		await copyPublic(join(source, path), join(tree, path));
 	}
 	if (existsSync(join(source, "docs/INSTALL.md"))) await copyPublic(join(source, "docs/INSTALL.md"), join(tree, "docs/INSTALL.md"));

@@ -92,6 +92,8 @@ export type ClientConnectionOptions = {
 	/** The server's release, deploy outcome and busy state, for `server.status`. */
 	serverStatus: () => Promise<ServerStatus>;
 	releaseUpdates?: ReleaseUpdates;
+	selfUpdate?: import("./self-update.ts").SelfUpdate;
+	updateHolding?: () => boolean;
 	/** `server.drain`: start, extend or (0) end the drain; answers when it ends and how many tool calls execute now. */
 	drain: (timeoutMs: number) => { drainingUntil: string | null; toolCalls: number };
 	/** Subscription usage for `subscriptions.usage`; told when a credential is set or deleted. */
@@ -139,6 +141,8 @@ export class ClientConnection {
 	readonly #notifications: Notifier;
 	readonly #features: readonly string[];
 	readonly #releaseUpdates: ReleaseUpdates | undefined;
+	readonly #selfUpdate: import("./self-update.ts").SelfUpdate | undefined;
+	readonly #updateHolding: (() => boolean) | undefined;
 	readonly #serverStatus: () => Promise<ServerStatus>;
 	readonly #drain: ClientConnectionOptions["drain"];
 	readonly #subscriptionUsage: SubscriptionUsageService | undefined;
@@ -168,6 +172,8 @@ export class ClientConnection {
 		this.#features = options.features;
 		this.#serverStatus = options.serverStatus;
 		this.#releaseUpdates = options.releaseUpdates;
+		this.#selfUpdate = options.selfUpdate;
+		this.#updateHolding = options.updateHolding;
 		this.#drain = options.drain;
 		this.#subscriptionUsage = options.subscriptionUsage;
 		this.#requestLog = options.requestLog;
@@ -316,6 +322,7 @@ export class ClientConnection {
 		}
 
 		try {
+			if (this.#updateHolding?.() && !request.type.startsWith("auth.") && request.type !== "server.status" && request.type !== "server.drain" && !/\.(list|get|watch|page)$/.test(request.type)) throw new Error("Aiki is restarting for an update. Try again after reconnecting.");
 			if (
 				request.type.startsWith("notifications.") &&
 				"deviceId" in request &&
@@ -706,6 +713,14 @@ export class ClientConnection {
 					this.#respond({ type: "artifacts.delete", id: request.id });
 					return;
 				}
+				case "server.update": {
+					if (!this.#selfUpdate) throw new Error("Self-update is unsupported");
+					const actor = this.#deviceAuth?.identity?.sessionId;
+					if (!actor) throw new DeviceAuthError("auth_required");
+					const selfUpdate = await this.#selfUpdate.request(request, actor);
+					this.#respond({ type: "server.update", id: request.id, selfUpdate });
+					return;
+				}
 				case "server.updates.set": {
 					if (!this.#releaseUpdates || !this.#features.includes("release-updates")) throw new Error("Release updates are unsupported");
 					const updates = await this.#releaseUpdates.set(request);
@@ -951,6 +966,7 @@ export class ClientConnection {
 					// The user typed into a finished or stopped background thread: it works again.
 					await this.#manager.reviveThread(request.projectId, request.threadId);
 					if (!this.#authorized(0, request.id)) return;
+					if (this.#updateHolding?.()) throw new Error("Aiki is restarting for an update. Try again after reconnecting.");
 					const submission = await conversation.submit(
 						{
 							type: "input",

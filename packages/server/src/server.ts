@@ -5,6 +5,7 @@ import { McpService } from "./mcp.ts";
  */
 import { serverSettings } from "./server-settings.ts";
 import { isIP } from "node:net";
+import { existsSync } from "node:fs";
 import type { ServerWebSocket } from "bun";
 import { DeviceAuth, DeviceAuthError, type AuthOptions, type Identity } from "./device-auth.ts";
 import { authFailure, authJson, handleAuthHttp, bearer } from "./device-auth-http.ts";
@@ -67,6 +68,9 @@ import { ProjectManager } from "./runtime.ts";
 import { GithubReviewReader, ScheduleEventPoller, ScheduleEventStore } from "./schedule-events.ts";
 import { type RunCommand } from "./host-commands.ts";
 import { ScheduleScheduler, ScheduleStore } from "./schedules.ts";
+import { SelfUpdate, selfUpdateDisabledReason } from "./self-update.ts";
+import { childEnvironment as updateChildEnvironment } from "./child-environment.ts";
+import { resolveDeployStatusFile, resolveReleaseRoot } from "./server-status.ts";
 import { ReleaseUpdates, type ReleaseUpdateOptions } from "./release-updates.ts";
 import { ServerStatusService } from "./server-status.ts";
 import { FcmSender, loadFcmServiceAccount, resolveFcmKeyFile } from "./fcm.ts";
@@ -635,7 +639,34 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		...options.updates,
 		onChange: () => { void serverStatus.changed(); },
 	});
-	const serverStatus = await ServerStatusService.create({
+	let serverStatus!: ServerStatusService;
+	let updateHolding = false;
+	const possibleDeployFile = options.status?.deployStatusFile ?? resolveDeployStatusFile(options.status?.releaseRoot ?? resolveReleaseRoot());
+	const watcherManaged = Boolean(options.status?.deployStatusFile || serverSettings.AIKI_DEPLOY_STATUS_FILE ||
+		(possibleDeployFile && (!serverSettings.AIKI_INSTALL_DIR || existsSync(possibleDeployFile))));
+	const selfUpdate = new SelfUpdate({
+		root: serverSettings.AIKI_INSTALL_DIR,
+		disabledReason: selfUpdateDisabledReason(serverSettings, watcherManaged),
+		updates: () => releaseUpdates.state, busy: () => manager.busy(),
+		stage: async (version, channel) => {
+			const root = serverSettings.AIKI_INSTALL_DIR!;
+			const installation = await Bun.file(join(root, ".aiki-install.json")).json();
+			const child = Bun.spawn([installation.launcher, "stage-update", "--version", version, "--channel", channel,
+				...(serverSettings.AIKI_RELEASE_BASE_URL ? ["--release-base-url", serverSettings.AIKI_RELEASE_BASE_URL] : [])],
+				{ env: { ...updateChildEnvironment(), AIKI_INSTALL_DIR: root }, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
+			const [code, , stderr] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
+			if (code !== 0) throw new Error(stderr.trim().slice(-1000) || "Release verification/preparation failed");
+		},
+		hold: holding => {
+			const wasHolding = updateHolding;
+			updateHolding = holding; manager.restartHolding = holding;
+			if (holding) manager.drain.drain(60_000);
+			else if (wasHolding) manager.drain.end();
+		},
+		onChange: () => { void serverStatus?.changed(); }, log,
+	});
+	serverStatus = await ServerStatusService.create({
+		selfUpdate: () => selfUpdate.state,
 		updates: () => releaseUpdates.state,
 		busy: () => manager.busy(),
 		disks: () => diskMonitor?.disks ?? [],
@@ -682,6 +713,8 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		features,
 		serverStatus: () => serverStatus.status(),
 		releaseUpdates,
+		selfUpdate,
+		updateHolding: () => updateHolding || selfUpdate.holding,
 		drain: (timeoutMs) => {
 			manager.drain.drain(timeoutMs);
 			const until = manager.drain.drainingUntil;
@@ -1110,6 +1143,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			await memoryMaintenance.stop().catch(() => undefined);
 			await releaseUpdates.stop();
 			serverStatus.stop();
+			selfUpdate.stop();
 			manager.drain.stop();
 			diskMonitor?.stop();
 			notifications.stop();

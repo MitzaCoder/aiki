@@ -13,6 +13,7 @@ archive=
 runtime=auto
 release_base=$REPOSITORY/releases/download
 no_service=0
+stage_only=0
 uninstall=0
 purge=0
 custom_dir=0
@@ -29,6 +30,7 @@ while [ "$#" -gt 0 ]; do
  --runtime) need_value "$@"; runtime=$2; case $runtime in auto|bun|binary) ;; *) die '--runtime must be auto, bun or binary' ;; esac; shift 2 ;;
  --release-base-url) need_value "$@"; release_base=$2; case $release_base in https://*|http://127.0.0.1:*|http://localhost:*) ;; *) die 'Release base URL requires HTTPS (or loopback HTTP for local assets)' ;; esac; shift 2 ;;
  --no-service) no_service=1; shift ;;
+ --stage-only) stage_only=1; no_service=1; shift ;;
  --uninstall) uninstall=1; shift ;;
  --purge) purge=1; shift ;;
  --help) printf '%s\n' 'Usage: install.sh [--version TAG] [--dir PATH] [--no-service]' '                  [--runtime auto|bun|binary] [--ref REF | --archive FILE]' '                  [--release-base-url URL] [--uninstall [--purge]]'; exit 0 ;;
@@ -216,6 +218,10 @@ if [ ! -x "$root/tools/bin/zellij" ]; then
   tar -xzf "$work/zellij.tar.gz" -C "$root/tools/bin" zellij
   chmod 755 "$root/tools/bin/zellij"
  else say 'Could not download zellij. App terminals are unavailable; re-run the installer to retry. Chat still works.'; fi
+fi
+if [ "$stage_only" = 1 ]; then
+ say "Staged $version at $release; running release unchanged"
+ exit 0
 fi
 # Prefer a binary lifecycle driver even when selecting a historical Bun release: its old CLI may write a Bun-only launcher.
 driver=

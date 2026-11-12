@@ -331,6 +331,8 @@ export class ProjectManager {
 	readonly #toolCallCapMs: number;
 	/** Every project's tool calls go through it: `server.drain` holds them, `busy().toolCalls` counts them. */
 	readonly drain: ToolCallDrain;
+	/** Admission is held across the final idle recheck and restart. */
+	restartHolding = false;
 	readonly #workFinished: { minWorkMs: number; quietMs: number };
 	readonly #diskWarnings: (() => string[]) | undefined;
 	readonly #requestLog: RequestLog | undefined;
@@ -519,6 +521,7 @@ export class ProjectManager {
 	 */
 	async open(projectId: string): Promise<{ project: Project; runtime: ProjectRuntime }> {
 		const project = await this.store.require(projectId);
+		if (this.restartHolding) throw new ServerError("bad_request", "Aiki is restarting for an update. Try again after reconnecting.");
 		let entry = this.#runtimes.get(projectId);
 		if (entry?.runtime !== undefined && entry.state === "open") return { project, runtime: entry.runtime };
 		if (entry?.opening !== undefined) {
@@ -639,7 +642,9 @@ export class ProjectManager {
 		const open = [...this.#runtimes.values()].filter(
 			(entry): entry is RuntimeEntry & { runtime: ProjectRuntime } => entry.state === "open" && entry.runtime !== undefined,
 		);
-		const busy: BusyState = { conversations: 0, workers: 0, toolCalls: this.drain.toolCalls };
+		// An opening harness may resume queued work; finish opening before declaring the backend idle.
+		const opening = [...this.#runtimes.values()].filter(entry => entry.state === "opening").length;
+		const busy: BusyState = { conversations: opening, workers: 0, toolCalls: this.drain.toolCalls };
 		for (const entry of open) {
 			const runtime = entry.runtime;
 			// Main and every background thread: each is a coordinator conversation with workers of its own.
@@ -782,6 +787,7 @@ export class ProjectManager {
 	/** Run a schedule now, opening the project if it was closed. */
 	async runSchedule(projectId: string, scheduleId: string): Promise<ScheduleRun> {
 		const { runtime } = await this.open(projectId);
+		if (this.restartHolding) throw new Error("Aiki is restarting for an update");
 		return runtime.schedules.runNow(scheduleId);
 	}
 
@@ -798,6 +804,7 @@ export class ProjectManager {
 		const due = Number.isFinite(stored) ? stored : this.#clock();
 		try {
 			const { runtime } = await this.open(projectId);
+			if (this.restartHolding) return;
 			await runtime.schedules.fire(schedule, trigger, due);
 		} catch (error) {
 			const message = errorMessage(error);
@@ -837,6 +844,7 @@ export class ProjectManager {
 		const schedule = await this.#schedules.find(projectId, scheduleId);
 		if (schedule === undefined) throw new ServerError("unknown_schedule", `No schedule "${scheduleId}" in this project`, { scheduleId });
 		const { runtime } = await this.open(projectId);
+		if (this.restartHolding) throw new Error("Aiki is restarting for an update");
 		return runtime.schedules.fireEvent(schedule, request, options);
 	}
 

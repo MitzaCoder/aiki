@@ -17,7 +17,7 @@ async function setup() {
 	await writeFile(join(root, ".aiki-managed"), "aiki-installer-v1\n");
 	async function run(...args: string[]) {
 		const child = Bun.spawn([process.execPath, cli, ...args], {
-			env: { HOME: home, PATH: `${join(home, "bin")}:${process.env.PATH}`, AIKI_INSTALL_DIR: root, AIKI_NO_BROWSER: "1", AIKI_DATA_DIR: join(home, "foreign-data"), AIKI_CONFIG_DIR: join(home, "foreign-config"), AIKI_ENV_FILE: join(home, "foreign.env") },
+			env: { HOME: home, PATH: `${join(home, "bin")}:${process.env.PATH}`, AIKI_INSTALL_DIR: root, AIKI_UPDATE_CHILD: "1", AIKI_NO_BROWSER: "1", AIKI_DATA_DIR: join(home, "foreign-data"), AIKI_CONFIG_DIR: join(home, "foreign-config"), AIKI_ENV_FILE: join(home, "foreign.env") },
 			stdout: "pipe", stderr: "pipe",
 		});
 		const [code, out, err] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);

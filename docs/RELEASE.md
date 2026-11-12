@@ -61,6 +61,31 @@ local verification evidence, not a required published asset. Checksums detect
 corruption, not a compromised publisher; send the certificate fingerprint by a
 trusted invitation channel too.
 
+## Self-update release acceptance
+
+A release containing T139 adds an installed `aiki start` supervisor. Older pilots
+must acquire it once with a manual stopped update; publishing new web/Android
+clients cannot add the API to an already running pilot.2 or pilot.3 backend. Clients keep
+manual instructions for those backends. The button updates backend code, not APKs.
+
+Before distributing an updater-capable release, rehearse in an empty environment,
+a disposable HOME, distinct loopback ports and `--no-service`: verify published
+pilot installation, manual bootstrap to updater-capable code, owner-confirmed
+staging, two held synthetic turns, Cancel, force's second confirmation, healthy
+restart and checksum failure without a switch. Serve a separately versioned broken
+candidate from a local fake release feed and prove automatic code rollback and
+client reconnect. No real model accounts, production service or deploy watcher.
+Repeat under an owned temporary user unit/launch agent on each native platform
+when available; foreground rehearsal alone does not certify launchd/systemd.
+
+The supervisor probes owner-socket `server.status`, including the selected
+installed version, for 30 seconds; arbitrary HTTP 200 is not health. It keeps a
+recovery journal before activation, restores old code on interrupted switching,
+and uses the same link/metadata selection as manual `aiki rollback`. **Storage
+migrations must remain readable by the retained release**: rollback changes code,
+not data. Add migration compatibility and native macOS service behavior to the
+publisher's review. Never publish the synthetic test builds/fake feed.
+
 ## 1. Freeze and check the source, without publishing
 
 Review the final merged commit and **exact ref ancestry** intended for public push;

@@ -129,12 +129,27 @@ Linux logs use the user journal.
 
 ## Updating, rollback, backup and removal
 
-**Stop Aiki, then `aiki update`, then start it.** For a user service use `aiki service remove`; for foreground use Ctrl-C. Updating never
-restarts a running server or interrupts a tool call. It verifies/prepares the binary (or source/frozen dependencies) before
-switching the `current` symlink, then keeps the previous release only. A later update removes older releases.
-Run `aiki start` (or `aiki service install`) and check `aiki status` afterward. A failed download/checksum/build
-leaves the selected release unchanged. An interrupted install can leave `.install-lock`; remove it only after
-confirming no installer is running.
+**One-click updates:** on a release with self-update support, use **Update now** beside the navigation version
+or in Settings → About. Review the exact from → to version and release notes, then confirm. Any paired owner
+device can do this; the backend logs its session ID. The backend downloads and verifies the same binary or
+source/private-Bun fallback as `aiki update`, on the saved pilot/stable channel. While agents work, it shows
+“Waiting for 2 agents to finish…” with Cancel. “Update now anyway” requires another confirmation and interrupts
+running agents. Cancel is available before the switch, not while restarting.
+
+`aiki start` keeps a small supervisor alive, whether started in a terminal, systemd --user or launchd. It stops
+its child before switching code, restarts and checks the owner-only health socket for up to 30 seconds. Failure
+restores the retained code and restarts it automatically. Clients reconnect and show “Updated to v…” or
+“Update failed, rolled back: …”. A rollback whose old code is also unhealthy reports that separately.
+No service-manager command is needed during an update. Keep the supervisor running until the outcome appears.
+An interrupted switch is restored on the next `aiki start`. The supervisor and `server.pid` locks must not be
+removed while their processes are alive. Native macOS launchd rehearsal is still required.
+
+**Manual CLI updates/rollback:** stop Aiki first (Ctrl-C for foreground; `aiki service remove` for an installed
+user service), run `aiki update` or `aiki rollback`, then `aiki start` or `aiki service install`.
+The CLI refuses changes while the supervisor/server runs. Download/checksum/build failures leave the selected
+release unchanged. An interrupted install can leave `.install-lock`; remove it only after confirming no installer
+is running. `install.sh --stage-only` prepares a release beside the current one without activating it.
+Source/development checkouts and deploy-watcher hosts cannot self-update; About explains why.
 
 Settings → About shows available versions and release notes. Installed releases check the public GitHub API
 about once a day, without credentials; turn this off there for the whole backend. Dismissal hides the bottom-left update notice
@@ -143,8 +158,11 @@ for that version, not the About row. Source/deploy checkouts do not check unless
 its saved pilot channel, which includes later pilots and stable releases; no `--version` is needed
 unless you deliberately switched channels or want an exact tag.
 **Pilot.1 users:** stop Aiki, run `aiki update --version v0.1.0-pilot.3` once, then start it.
-Later updates use plain `aiki update` while stopped. Install the Android APK over the old app;
-the release uses the same owner signing key, versionName `0.1.0-pilot.3`, code 1000003.
+**Pilot.3 and older releases lack the self-update API/supervisor.** After a release containing it is
+published, acquire it with one manual `aiki update` while stopped before using the button.
+Later manual updates still use plain `aiki update`. Self-update changes the backend, never Android's APK.
+Install the Android APK over the old app; the release uses the same owner signing key,
+versionName `0.1.0-pilot.3`, code 1000003.
 An older installer without channel support needs that first exact-version update to acquire this behavior.
 For an installation whose updater predates binary support, download/review the new installer and rerun it with
 an explicit reviewed `--version TAG` and the same `--dir` to switch directly. An old updater may first install the
@@ -152,8 +170,9 @@ new release through Bun; subsequent updates use its binary-aware installer. Neve
 
 Back up `data/` and your config directory **while stopped**, plus repositories separately. These include provider
 credentials, conversations, artifacts and absolute repository paths: protect backups like secrets. A code rollback
-does **not** undo database migrations, so consult release notes before downgrading. There is no automatic
-health-triggered rollback or nightly update channel in this first installer.
+does **not** undo database migrations, so consult release notes before downgrading. Automatic health rollback
+has the same limitation: release storage changes must remain backward-compatible. No nightly channel or unattended
+scheduled installation is enabled; each update requires an owner's confirmation.
 
 ```sh
 sh install.sh --uninstall               # keeps state/config; removes its launcher/runtime/releases/tools/service
