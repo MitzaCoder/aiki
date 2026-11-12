@@ -640,14 +640,18 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		onChange: () => { void serverStatus.changed(); },
 	});
 	let serverStatus!: ServerStatusService;
-	let updateHolding = false;
 	const possibleDeployFile = options.status?.deployStatusFile ?? resolveDeployStatusFile(options.status?.releaseRoot ?? resolveReleaseRoot());
 	const watcherManaged = Boolean(options.status?.deployStatusFile || serverSettings.AIKI_DEPLOY_STATUS_FILE ||
 		(possibleDeployFile && (!serverSettings.AIKI_INSTALL_DIR || existsSync(possibleDeployFile))));
-	const selfUpdate = new SelfUpdate({
+	let selfUpdate!: SelfUpdate;
+	selfUpdate = new SelfUpdate({
 		root: serverSettings.AIKI_INSTALL_DIR,
 		disabledReason: selfUpdateDisabledReason(serverSettings, watcherManaged),
-		updates: () => releaseUpdates.state, busy: () => manager.busy(),
+		updates: () => releaseUpdates.state, drain: manager.drain,
+		waitTimeoutMs: (() => {
+			const value = Number(serverSettings.AIKI_UPDATE_WAIT_TIMEOUT_MS ?? 300_000);
+			return Number.isFinite(value) && value >= 0 ? value : 300_000;
+		})(),
 		stage: async (version, channel) => {
 			const root = serverSettings.AIKI_INSTALL_DIR!;
 			const installation = await Bun.file(join(root, ".aiki-install.json")).json();
@@ -657,13 +661,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			const [code, , stderr] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
 			if (code !== 0) throw new Error(stderr.trim().slice(-1000) || "Release verification/preparation failed");
 		},
-		hold: holding => {
-			const wasHolding = updateHolding;
-			updateHolding = holding; manager.restartHolding = holding;
-			if (holding) manager.drain.drain(60_000);
-			else if (wasHolding) manager.drain.end();
-		},
-		onChange: () => { void serverStatus?.changed(); }, log,
+		onChange: () => { manager.restartHolding = selfUpdate?.holding ?? false; void serverStatus?.changed(); }, log,
 	});
 	serverStatus = await ServerStatusService.create({
 		selfUpdate: () => selfUpdate.state,
@@ -714,7 +712,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		serverStatus: () => serverStatus.status(),
 		releaseUpdates,
 		selfUpdate,
-		updateHolding: () => updateHolding || selfUpdate.holding,
+		updateHolding: () => selfUpdate.holding,
 		drain: (timeoutMs) => {
 			manager.drain.drain(timeoutMs);
 			const until = manager.drain.drainingUntil;

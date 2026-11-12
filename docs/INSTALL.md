@@ -132,9 +132,13 @@ Linux logs use the user journal.
 **One-click updates:** on a release with self-update support, use **Update now** beside the navigation version
 or in Settings → About. Review the exact from → to version and release notes, then confirm. Any paired owner
 device can do this; the backend logs its session ID. The backend downloads and verifies the same binary or
-source/private-Bun fallback as `aiki update`, on the saved pilot/stable channel. While agents work, it shows
-“Waiting for 2 agents to finish…” with Cancel. “Update now anyway” requires another confirmation and interrupts
-running agents. Cancel is available before the switch, not while restarting.
+source/private-Bun fallback as `aiki update`, on the saved pilot/stable channel. When ready, it holds new tool calls and waits only for commands already running,
+not agents or turns. It shows “Waiting for 1 running command (bun test, 3m)…” with Cancel.
+After five minutes, “Restart anyway” appears and requires a second confirmation:
+running commands may be killed and unsafe to retry. Set `AIKI_UPDATE_WAIT_TIMEOUT_MS`
+in `server.env` to change this cap. The prompt keeps new calls held until the commands
+finish or you choose. Cancel releases them without changing the running release.
+Conversations and held calls resume after restart. Cancel is unavailable during restart.
 
 `aiki start` keeps a small supervisor alive, whether started in a terminal, systemd --user or launchd. It stops
 its child before switching code, restarts and checks the owner-only health socket for up to 30 seconds. Failure

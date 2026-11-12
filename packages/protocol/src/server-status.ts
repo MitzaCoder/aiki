@@ -96,7 +96,10 @@ export const SelfUpdateStateSchema = Type.Object({
 	fromVersion: Type.String(),
 	toVersion: Type.String(),
 	notesUrl: Type.String(),
+	/** Legacy field; self-update no longer waits for agents. */
 	agents: Type.Integer({ minimum: 0 }),
+	toolCalls: Type.Optional(Type.Integer({ minimum: 0 })),
+	restartAllowed: Type.Optional(Type.Boolean()),
 	message: Type.String(),
 });
 export type SelfUpdateState = Static<typeof SelfUpdateStateSchema>;

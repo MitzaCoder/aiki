@@ -2,6 +2,12 @@
  * Build v0.1.0-pilot.2-test (source) and v0.1.0-pilot.3-test (binary) first.
  * --home must be below the OS temporary directory and contain the published pilot.2 install.
  * Uses only fake models; serves local assets, never changes a host service.
+ * --tool-calls uses a source baseline already built with a faux provider that runs bash sleep 20
+ * (or sleep 120 for a user message containing "long"). /run waits for actual execution.
+ * --source-candidate serves a checksum-verified source candidate with the same faux provider,
+ * allowing a real durable conversation to resume without accounts. These are synthetic assets,
+ * not publishable releases. Use self-update-web-proof.ts --waiting-proof; --long keeps the
+ * wait visible for Android capture. The five-second cap here is only a rehearsal setting.
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { mkdir, rm } from 'node:fs/promises';
@@ -18,7 +24,7 @@ const root = join(home, 'install');
 const launcher = join(home, '.local/bin/aiki');
 const baseline = 'v0.1.0-pilot.2-test', target = 'v0.1.0-pilot.3-test', broken = 'v0.1.0-pilot.4-broken';
 const url = 'http://127.0.0.1:18439';
-const env = { HOME: home, PATH: process.env.PATH!, AIKI_PORT: '18439' };
+const env = { HOME: home, USER: 'synthetic', PATH: process.env.PATH!, AIKI_PORT: '18439' };
 const digest = (body: Uint8Array | string) => new Bun.CryptoHasher('sha256').update(body).digest('hex');
 const bad = `#!/bin/sh\nif [ "$1" = --version ]; then echo 'Aiki ${broken}'; exit 0; fi\necho 'Synthetic startup failure' >&2\nexit 42\n`;
 let supervisor: ReturnType<typeof Bun.spawn> | undefined;
@@ -41,15 +47,30 @@ function seed(version: string) {
  writeFileSync(join(root, 'data/release-updates.json'), JSON.stringify({ enabled: true, dismissedVersion: null, nextCheckAt: Date.now() + 86_400_000, etag: null, stable: null, pilot: { version, notesUrl: `https://github.com/MitzaCoder/aiki/releases/tag/${version}` } }), { mode: 0o600 });
 }
 async function start() {
- supervisor = Bun.spawn([launcher, 'start'], { env, stdin: 'ignore', stdout: Bun.file(join(home, 'rehearsal-server.log')), stderr: Bun.file(join(home, 'rehearsal-server-error.log')) });
+ supervisor = Bun.spawn(['setsid', launcher, 'start'], { env, stdin: 'ignore', stdout: Bun.file(join(home, 'rehearsal-server.log')), stderr: Bun.file(join(home, 'rehearsal-server-error.log')) });
  for (let i = 0; i < 100; i++) {
   try { await owner(['health-check', JSON.stringify({ type: 'server.status', id: 'demo-health' })]); return; } catch { await Bun.sleep(100); }
  }
  throw new Error('Rehearsal server did not start');
 }
 let client: TestClient | undefined;
+const projectIds: string[] = [];
 const feed = Bun.serve({ hostname: '127.0.0.1', port: 18440, async fetch(request) {
  const path = new URL(request.url).pathname;
+ if (path === '/run') {
+  if (!client) return new Response('Not ready', {status:503});
+  for (const projectId of projectIds) {
+   const result = await client.request({type:'conversation.submit', projectId, requestId:crypto.randomUUID(), content:new URL(request.url).searchParams.has('long') ? 'Run a long synthetic command.' : 'Run sleep 20 for the synthetic update rehearsal.'});
+   if (result.type === 'error') throw new Error(JSON.stringify(result));
+  }
+  for(let i=0;i<100;i++) {
+   const status = await client.request({type:'server.status'});
+   if(status.type === 'server.status' && (status.status.busy.toolCalls ?? 0) > 0) return new Response('Synthetic command executing');
+   await Bun.sleep(100);
+  }
+  throw new Error('Synthetic command did not start');
+  return new Response('Synthetic commands submitted');
+ }
  if (path === '/idle') { writeFileSync(join(home, 'release-agents'), 'done'); return new Response('Synthetic agents released'); }
  if (path === '/prepare-broken') {
   client?.close(); await stop(); seed(broken); await start(); return new Response('Broken candidate available');
@@ -60,8 +81,9 @@ const feed = Bun.serve({ hostname: '127.0.0.1', port: 18440, async fetch(request
   if (path.endsWith('/' + name + '.sha256') || path.endsWith('/SHA256SUMS')) return new Response(`${digest(bad)}  ${name}\n`);
  }
  if (path.startsWith(`/releases/${target}/`)) {
-  const name = `aiki-${target}-linux-x64`;
+  const name = args.includes('--source-candidate') ? `aiki-${target}.tar.gz` : `aiki-${target}-linux-x64`;
   const file = Bun.file(join(assets, name));
+  if (args.includes('--source-candidate') && path.includes('linux-x64')) return new Response('Source-only synthetic candidate', {status:404});
   if (path.endsWith('/' + name)) return new Response(file);
   if (path.endsWith('/' + name + '.sha256') || path.endsWith('/SHA256SUMS')) return new Response(`${digest(new Uint8Array(await file.arrayBuffer()))}  ${name}\n`);
  }
@@ -74,7 +96,7 @@ try {
  // The target is the unmodified checksum-verified production binary built from the workspace.
  const entry = join(root, 'current/packages/server/src/main.ts');
  let source = readFileSync(entry, 'utf8');
- if (!source.includes('syntheticSelfUpdateFaux')) {
+ if (!args.includes('--tool-calls') && !source.includes('syntheticSelfUpdateFaux')) {
   source = source.replace('const server = await startServer({', `const { fauxProvider, fauxAssistantMessage } = await import('@earendil-works/pi-ai/providers/faux');
   const { createModels } = await import('@earendil-works/pi-ai');
   const { FileCredentialStore } = await import('./credentials.ts');
@@ -88,8 +110,9 @@ try {
   const server = await startServer({ models:syntheticModels,`);
   writeFileSync(entry, source);
  }
+ await mkdir(join(root, 'data'), {recursive:true});
  await mkdir(join(home, 'agent'), { recursive: true }); await mkdir(join(home, 'claude'), { recursive: true });
- writeFileSync(join(root, 'config/server.env'), `AIKI_PORT=18439\nAIKI_TIMEZONE=UTC\nAIKI_AGENT_DIR=${join(home, 'agent')}\nAIKI_CLAUDE_DIR=${join(home, 'claude')}\nAIKI_ALLOWED_ORIGINS=${url},http://localhost:18439\nAIKI_RELEASE_BASE_URL=http://127.0.0.1:18440/releases\n`, { mode: 0o600 });
+ writeFileSync(join(root, 'config/server.env'), `AIKI_UPDATE_WAIT_TIMEOUT_MS=5000\nAIKI_PORT=18439\nAIKI_TIMEZONE=UTC\nAIKI_AGENT_DIR=${join(home, 'agent')}\nAIKI_CLAUDE_DIR=${join(home, 'claude')}\nAIKI_ALLOWED_ORIGINS=${url},http://localhost:18439\nAIKI_RELEASE_BASE_URL=http://127.0.0.1:18440/releases\n`, { mode: 0o600 });
  seed(target); await rm(join(home, 'release-agents'), { force: true }); await start();
  const grant = await owner(['pair', '--local']) as { code: string; url: string };
  const code = new URL(grant.url).hash.slice('#bootstrap='.length);
@@ -100,13 +123,14 @@ try {
  writeFileSync(join(home, 'fixture.json'), JSON.stringify(fixture), { mode: 0o600 });
  client = await TestClient.open({ url } as HarnessServer);
  await client.request({ type: 'hello', protocolVersion: 1, auth: { accessToken: session.accessToken } });
- for (const name of ['Paper garden', 'Tiny observatory']) {
+ for (const name of (args.includes('--tool-calls') ? ['Paper garden'] : ['Paper garden', 'Tiny observatory'])) {
   const path = join(home, name.toLowerCase().replaceAll(' ', '-')); await mkdir(path, { recursive: true });
   writeFileSync(join(path, 'README.md'), '# Synthetic project\n');
   const added = await client.request({ type: 'projects.add', path });
   if (added.type !== 'projects.add') throw new Error(JSON.stringify(added));
-  const projectId = added.project.id;
+  const projectId = added.project.id; projectIds.push(projectId);
   await client.request({ type: 'projects.configure', projectId, name, coordinatorModel: { provider: 'faux', modelId: 'faux-1' } });
+  if (args.includes('--tool-calls')) continue;
   const submitted = await client.request({ type: 'conversation.submit', projectId, requestId: crypto.randomUUID(), content: [{ type: 'text', text: 'Wait quietly for the synthetic rehearsal to finish.' }] });
   if (submitted.type === 'error') throw new Error(JSON.stringify(submitted));
  }

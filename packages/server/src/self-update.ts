@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ReleaseUpdateState, SelfUpdateState, ServerUpdateRequest } from "@aiki/protocol";
-import type { BusyState } from "./server-status.ts";
+import type { ToolCallDrain } from "./drain.ts";
 import { ServerError } from "./errors.ts";
 
 export const SELF_UPDATE_FILE = "self-update.json";
@@ -40,12 +40,12 @@ type SelfUpdateOptions = {
 	root?: string;
 	disabledReason: string | null;
 	updates: () => ReleaseUpdateState;
-	busy: () => Promise<BusyState>;
+	drain: ToolCallDrain;
+	waitTimeoutMs?: number;
+	now?: () => number;
 	stage: (version: string, channel: string) => Promise<void>;
 	onChange: () => void;
 	log: (message: string) => void;
-	/** Synchronously hold admission before the final idle recheck. */
-	hold?: (holding: boolean) => void;
 };
 
 /** Backend owns preparation/wait; the installed supervisor owns restart/health/rollback. */
@@ -55,6 +55,8 @@ export class SelfUpdate {
 	#poll: ReturnType<typeof setInterval>;
 	#ticking = false;
 	#closed = false;
+	#release: (() => void) | undefined;
+	#waitingSince = 0;
 	constructor(options: SelfUpdateOptions) {
 		this.#options = options;
 		this.#state = { schemaVersion: 1, enabled: options.disabledReason === null, disabledReason: options.disabledReason,
@@ -80,21 +82,31 @@ export class SelfUpdate {
 			const updates = this.#options.updates();
 			const target = updates.available;
 			if (!updates.enabled || !target || target.version !== request.version || !/^v?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?$/.test(target.version)) throw new ServerError("bad_request", "The available release changed. Review it and confirm again.");
-			this.#set({ phase: "preparing", attempt: crypto.randomUUID(), fromVersion: updates.installedVersion!, toVersion: target.version, notesUrl: target.notesUrl, agents: 0, message: "Downloading and verifying release…" });
+			this.#set({ phase: "preparing", attempt: crypto.randomUUID(), fromVersion: updates.installedVersion!, toVersion: target.version, notesUrl: target.notesUrl, agents: 0, toolCalls: 0, restartAllowed: false, message: "Downloading and verifying release…" });
 			this.#options.log(`self-update: start ${this.#state.fromVersion} -> ${target.version} by session ${actor}`);
 			void this.#prepare(target.version, updates.channel);
 		} else {
 			if (this.state.phase !== "waiting" || request.version !== this.state.toVersion) throw new ServerError("bad_request", "This update is no longer waiting");
 			this.#options.log(`self-update: ${request.action} ${request.version} by session ${actor}`);
-			if (request.action === "cancel") this.#set({ phase: "cancelled", message: "Update cancelled. Running release unchanged." });
-			else await this.#switch(true);
+			if (request.action === "cancel") {
+				this.#release?.(); this.#release = undefined;
+				this.#set({ phase: "cancelled", restartAllowed: false, message: "Update cancelled. Running release unchanged." });
+			} else {
+				if (!this.#state.restartAllowed) throw new ServerError("bad_request", "Running commands have not reached the wait limit");
+				this.#switch(true);
+			}
 		}
 		return this.state;
 	}
 	async #prepare(version: string, channel: string): Promise<void> {
 		try {
 			await this.#options.stage(version, channel);
-			if (!this.#closed) { this.#set({ phase: "waiting", message: "Waiting for agents to finish…" }); await this.tick(); }
+			if (!this.#closed) {
+				this.#release = this.#options.drain.acquire();
+				this.#waitingSince = (this.#options.now ?? Date.now)();
+				this.#set({ phase: "waiting", message: "Waiting for running commands…" });
+				await this.tick();
+			}
 		} catch (error) { if (!this.#closed) this.#fail(error); }
 	}
 	async tick(): Promise<void> {
@@ -107,22 +119,22 @@ export class SelfUpdate {
 		this.#ticking = true;
 		try { await this.#switch(false); } finally { this.#ticking = false; }
 	}
-	async #switch(force: boolean): Promise<void> {
-		const busy = await this.#options.busy();
+	#switch(force: boolean): void {
 		if (this.#state.phase !== "waiting") return;
-		const agents = busy.conversations + busy.workers;
-		if (!force && (agents || busy.toolCalls)) {
-			const message = `Waiting for ${agents} agent${agents === 1 ? "" : "s"} to finish…`;
-			if (agents !== this.#state.agents || message !== this.#state.message) this.#set({ agents, message });
+		const toolCalls = this.#options.drain.toolCalls;
+		if (!force && toolCalls) {
+			const now = (this.#options.now ?? Date.now)();
+			const restartAllowed = now - this.#waitingSince >= (this.#options.waitTimeoutMs ?? 300_000);
+			const commands = this.#options.drain.runningCommands.map(call => {
+				const seconds = Math.max(0, Math.floor((now - call.started) / 1000));
+				return `${call.label}, ${seconds >= 60 ? `${Math.floor(seconds / 60)}m` : `${seconds}s`}`;
+			}).join("; ");
+			const message = `Waiting for ${toolCalls} running command${toolCalls === 1 ? "" : "s"}${commands ? ` (${commands})` : ""}…`;
+			if (message !== this.#state.message || restartAllowed !== this.#state.restartAllowed) this.#set({ agents: 0, toolCalls, restartAllowed, message });
 			return;
 		}
-		this.#options.hold?.(true);
-		try {
-			const rechecked = await this.#options.busy();
-			if (!force && (rechecked.conversations || rechecked.workers || rechecked.toolCalls)) { this.#options.hold?.(false); return; }
-			if (this.#state.phase !== "waiting") { this.#options.hold?.(false); return; }
-			this.#set({ phase: "restarting", agents, message: "Updating… Clients will reconnect automatically." });
-		} catch (error) { this.#options.hold?.(false); throw error; }
+		// The deploy's beforeTool hook is already holding: no new execution can race this synchronous check.
+		this.#set({ phase: "restarting", agents: 0, toolCalls, restartAllowed: false, message: "Updating… Clients will reconnect automatically." });
 	}
 	#set(change: Partial<SelfUpdateState>): void {
 		this.#state = { ...this.#state, ...change };
@@ -130,7 +142,7 @@ export class SelfUpdate {
 		this.#options.onChange();
 	}
 	#fail(error: unknown): void {
-		this.#options.hold?.(false);
+		this.#release?.(); this.#release = undefined;
 		this.#set({ phase: "failed", message: `Update failed before restart: ${error instanceof Error ? error.message : String(error)}` });
 	}
 	stop(): void { this.#closed = true; clearInterval(this.#poll); }

@@ -32,15 +32,23 @@ Only a managed release started through the installed CLI's supervisor can self-u
 Source checkouts, `--ref` installs and deploy-watcher backends report a reason instead.
 Any authenticated paired owner can start/cancel an update; the session ID and action
 are logged, never its token. Clients confirm the exact from → to version and link
-release notes. Force while busy requires a separate confirmation.
+release notes. Restart anyway is offered only after the wait cap and requires a separate confirmation.
 
 The existing installer gains stage-only mode: identical platform selection,
 checksum verification and private Bun fallback, but no activation, launcher rewrite
 or garbage collection. Backend-wide state is persisted separately from update
-notices. After staging, wait for zero running conversation turns and workers;
-Cancel leaves the running release untouched. Opening harnesses count as busy
-because they may resume queued work; the final hold also rejects project opens.
-New work is held during the final switch. No URL, shell argument or service name comes from a client.
+notices. After staging, acquire the deploy watcher's `ToolCallDrain` hold: new
+model tool calls wait in pi-durable's `beforeTool` hook, before execution intent.
+Only already executing calls delay the switch; conversations, workers, generation
+and opening harnesses do not. Held calls resume after restart. Nested calls belong
+to the already running outer call and are not held separately. With zero executing
+calls the backend switches immediately. Cancel releases the hold without changing
+the release. After `AIKI_UPDATE_WAIT_TIMEOUT_MS` (default 300000 / five minutes),
+the waiting state shows command names and elapsed time plus Restart anyway and
+Cancel. The cap never silently releases calls or forces a restart; a second
+confirmation warns that running commands may be interrupted and unsafe to retry.
+New admission is blocked only during the final switch.
+No URL, shell argument or service name comes from a client.
 
 `aiki start` is a persistent supervisor, both in a terminal and as the service's
 main process. It owns its child, stops it before activation, starts the selected

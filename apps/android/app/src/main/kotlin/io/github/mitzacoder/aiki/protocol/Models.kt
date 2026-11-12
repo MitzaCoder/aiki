@@ -3226,6 +3226,8 @@ data class SelfUpdateState(
     val `toVersion`: String,
     val `notesUrl`: String,
     val `agents`: Long,
+    val `toolCalls`: Long? = null,
+    val `restartAllowed`: Boolean? = null,
     val `message`: String
 )
 

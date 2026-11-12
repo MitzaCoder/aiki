@@ -3,6 +3,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ReleaseUpdateState, SelfUpdateState } from "@aiki/protocol";
+import { ToolCallDrain } from "../src/drain.ts";
+import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { SelfUpdate, selfUpdateDisabledReason } from "../src/self-update.ts";
 import { createSetup, TestClient } from "./support.ts";
 import { authSecret } from "../src/device-auth.ts";
@@ -14,41 +16,56 @@ const updates: ReleaseUpdateState = { schemaVersion: 1, enabled: true, installed
 async function settle(predicate: () => boolean) { for (let i = 0; i < 100 && !predicate(); i++) await Bun.sleep(5); expect(predicate()).toBe(true); }
 function fixture(stage: () => Promise<void> = async () => {}) {
 	const root = mkdtempSync(join(tmpdir(), "aiki-self-update-"));
-	let busy = { conversations: 1, workers: 1, toolCalls: 0 };
+	let busy = { conversations: 1, workers: 1, toolCalls: 1 };
+	let now = 0;
+	const drain = new ToolCallDrain({ log: () => {} });
+	Object.defineProperty(drain, "toolCalls", { get: () => busy.toolCalls });
+	Object.defineProperty(drain, "runningCommands", { get: () => busy.toolCalls ? [{ label: "bun test", started: 0 }] : [] });
 	const log: string[] = [];
-	const hold: boolean[] = [];
-	const service = new SelfUpdate({ root, disabledReason: null, updates: () => updates, busy: async () => busy, stage, onChange: () => {}, log: line => log.push(line), hold: holding => hold.push(holding) });
-	cleanup.push(() => { service.stop(); rmSync(root, { recursive: true, force: true }); });
-	return { service, log, hold, setBusy: (value: typeof busy) => { busy = value; } };
+	const service = new SelfUpdate({ root, disabledReason: null, updates: () => updates, drain, now: () => now, stage, onChange: () => {}, log: line => log.push(line) });
+	cleanup.push(() => { service.stop(); drain.end(); rmSync(root, { recursive: true, force: true }); });
+	return { service, log, drain, advance: (ms: number) => { now += ms; }, setBusy: (value: typeof busy) => { busy = value; } };
 }
 const start = { action: "start" as const, version: updates.available!.version };
 
-test("verified release waits for every conversation/worker, then hands off exactly when idle", async () => {
-	let stages = 0;
-	const { service, setBusy, log, hold } = fixture(async () => { stages++; });
+test("holds new calls as soon as ready; only executing calls delay the restart, never turns/workers", async () => {
+	const { service, setBusy, log, drain } = fixture();
 	await service.request(start, "synthetic-owner");
-	await settle(() => service.state.phase === "waiting");
-	expect(service.state.message).toBe("Waiting for 2 agents to finish…");
-	expect(stages).toBe(1);
+	await settle(() => service.state.message.includes("bun test"));
+	expect(service.state.message).toBe("Waiting for 1 running command (bun test, 0s)…");
+	let released = false;
+	void drain.hold(BACKGROUND_CONTEXT).then(() => { released = true; });
+	await Bun.sleep(10); expect(released).toBe(false);
 	await expect(service.request(start, "another-owner")).rejects.toThrow("already");
-	setBusy({ conversations: 0, workers: 1, toolCalls: 0 }); await service.tick();
-	expect(service.state.agents).toBe(1);
-	setBusy({ conversations: 0, workers: 0, toolCalls: 0 }); await service.tick();
-	expect(service.state.phase).toBe("restarting"); expect(hold).toEqual([true]);
+	setBusy({ conversations: 7, workers: 9, toolCalls: 0 }); await service.tick();
+	expect(service.state.phase).toBe("restarting"); expect(released).toBe(false);
 	expect(log[0]).toContain("synthetic-owner");
 });
-test("cancel leaves code unchanged; force is a separate waiting-only action", async () => {
-	const { service, hold } = fixture();
+test("no running calls restarts immediately, even with active turns", async () => {
+	const { service, setBusy } = fixture();
+	setBusy({ conversations: 3, workers: 2, toolCalls: 0 });
+	await service.request(start, "owner"); await settle(() => service.state.phase === "restarting");
+});
+test("cap prompts without releasing calls; cancel releases; force is separate and capped", async () => {
+	const { service, drain, advance } = fixture();
+	await service.request(start, "owner"); await settle(() => service.state.message.includes("bun test"));
+	await expect(service.request({ ...start, action: "force" }, "owner")).rejects.toThrow("wait limit");
+	let released = false;
+	const held = drain.hold(BACKGROUND_CONTEXT).then(() => { released = true; });
+	advance(180_000); await service.tick();
+	expect(service.state.message).toContain("bun test, 3m"); expect(service.state.restartAllowed).toBe(false);
+	advance(120_000); await service.tick(); expect(service.state.restartAllowed).toBe(true);
+	expect(service.state.phase).toBe("waiting"); expect(released).toBe(false);
+	await service.request({ ...start, action: "cancel" }, "owner"); await held;
+	expect(service.state.phase).toBe("cancelled"); expect(released).toBe(true);
 	await service.request(start, "owner"); await settle(() => service.state.phase === "waiting");
-	await service.request({ ...start, action: "cancel" }, "owner"); await service.tick();
-	expect(service.state.phase).toBe("cancelled"); expect(hold).toEqual([]);
-	await service.request(start, "owner"); await settle(() => service.state.phase === "waiting");
+	advance(300_000); await service.tick();
 	await service.request({ ...start, action: "force" }, "owner"); expect(service.state.phase).toBe("restarting");
 });
 test("verification failure never requests a restart", async () => {
-	const { service, hold } = fixture(async () => { throw new Error("SHA256SUMS mismatch"); });
+	const { service } = fixture(async () => { throw new Error("SHA256SUMS mismatch"); });
 	await service.request(start, "owner"); await settle(() => service.state.phase === "failed");
-	expect(service.state.message).toContain("SHA256SUMS mismatch"); expect(hold).not.toContain(true);
+	expect(service.state.message).toContain("SHA256SUMS mismatch");
 });
 test("stale target, source and watcher installs fail closed", async () => {
 	const { service } = fixture();

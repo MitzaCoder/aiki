@@ -1,12 +1,50 @@
 # Continue
 
+## T139 / Q173: wait only for running commands
+
+Self-update now acquires the deploy watcher's existing `ToolCallDrain` beforeTool
+hold after staging. New model tool calls wait before their execution intent;
+nested calls remain part of the already running outer call. Only executing calls
+delay restart, never turns, workers or generation. A zero count switches at once.
+An explicit releasable hold shares the deploy gate without inheriting its automatic
+timeout: after `AIKI_UPDATE_WAIT_TIMEOUT_MS` (default 300000), show command labels,
+elapsed time and Restart anyway. The cap keeps calls held; a separate confirmation
+warns about interrupted commands. Cancel and preparation failure release the hold.
+Legacy `agents` stays zero; optional `toolCalls` / `restartAllowed` are additive.
+Project admission is blocked only at the final restart, not during the wait.
+
+The prior backend's agent-wait message was reproduced in a temporary install.
+The fixed source candidate was checksum-verified by the real installer, staged
+while the faux conversation executed `sleep 20`, then switched by the installed
+supervisor after that call finished. The tool result is successful, not interrupted;
+opening the conversation after reconnect resumes generation and shows “Synthetic
+conversation continued after restart.” Candidate and baseline use synthetic faux
+providers, no accounts. A separate sleep-120 run with a five-second test cap proves
+the web/Android wait and second confirmation. This is a source-candidate rehearsal,
+not a new production-binary or native-service-manager rehearsal. No real service,
+main movement, push, physical device or provider account was used.
+
+Replay uses self-update-demo.ts --tool-calls --source-candidate with explicitly
+synthetic source archives (both main entries register faux), then
+self-update-web-proof.ts --waiting-proof; add --long --leave-waiting for Android.
+All child installations use empty environments, temporary HOME, synthetic USER,
+setsid and PID shutdown. T139 retains desktop light/dark before/after, Android dark
+waiting, the update/reconnect recording and resumed-conversation screenshot.
+The corrected Android artifact is the dark-tagged copy; ignore its earlier
+light-tagged duplicate. Temporary installs, browser and owned emulator are cleaned.
+
+Sequential gates pass: root 2562 tests / 92495 assertions; typecheck; web check
+zero diagnostics, 1073 tests / 79812 assertions and build; Android JVM tests and
+debug assembly (920 JVM tests, two opt-in skips). Gradle stopped.
+Private-denylist/generic and Gitleaks checks pass.
+
 ## T139: installed self-update and health rollback
 
 Installed release backends expose Update now beside the navigation version and in
 About on web/Android. Confirm freezes from → to and notes; a second confirm is
-required to interrupt agents. Preparation uses the existing checksum-verifying
-installer's new stage-only mode. Progress waits for all conversation turns and
-workers, supports Cancel, holds admission across the final idle recheck, then
+required to interrupt running commands after the wait cap. Preparation uses the existing checksum-verifying
+installer's new stage-only mode. Progress waits only for executing tool calls while holding new ones,
+supports Cancel, holds admission across the final switch, then
 hands off to `aiki start`'s persistent supervisor. Its parent PID survives under
 foreground, systemd and launchd; it stops/starts only its child, never invokes a
 service manager. Owner-socket version health has a 30-second deadline. A recovery

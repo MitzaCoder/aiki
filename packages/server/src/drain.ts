@@ -37,6 +37,8 @@ export class ToolCallDrain {
 	readonly #log: (message: string) => void;
 	/** Calls the model made whose `execute()` is running now. */
 	#executing = 0;
+	readonly #running = new Map<string, { label: string; started: number }>();
+	#holds = 0;
 	/** Nested calls seen by the hook and not executed yet, by call ID, so the wrap leaves them out of the count. */
 	readonly #nested = new Set<string>();
 	#until: number | undefined;
@@ -55,6 +57,25 @@ export class ToolCallDrain {
 		return this.#executing;
 	}
 
+	get runningCommands(): { label: string; started: number }[] { return [...this.#running.values()]; }
+
+	/** Hold using the deploy hook until the owner explicitly releases it, including after a prompt timeout. */
+	acquire(): () => void {
+		this.#holds++;
+		this.#begin();
+		let released = false;
+		return () => {
+			if (released) return;
+			released = true;
+			this.#holds--;
+			if (!this.#holds && this.#until === undefined) this.end();
+		};
+	}
+
+	#begin(): void {
+		if (this.#ended === undefined) this.#ended = new Promise(resolve => { this.#end = resolve; });
+	}
+
 	/** When the drain ends unless extended, or undefined when not draining. */
 	get drainingUntil(): number | undefined {
 		return this.#until;
@@ -67,9 +88,7 @@ export class ToolCallDrain {
 			return;
 		}
 		if (this.#ended === undefined) {
-			this.#ended = new Promise((resolve) => {
-				this.#end = resolve;
-			});
+			this.#begin();
 			this.#log(`drain: holding new tool calls for ${Math.round(timeoutMs / 1000)}s; ${this.#executing} executing`);
 		}
 		this.#until = this.#now() + timeoutMs;
@@ -85,6 +104,7 @@ export class ToolCallDrain {
 		if (this.#timer !== undefined) clearTimeout(this.#timer);
 		this.#timer = undefined;
 		this.#until = undefined;
+		if (this.#holds) return;
 		const end = this.#end;
 		this.#ended = undefined;
 		this.#end = undefined;
@@ -135,11 +155,15 @@ export class ToolCallDrain {
 			execute: async (args, api, context) => {
 				// A replay-safe call rerun after a restart skips the hook; it is not nested then, so it is counted.
 				const nested = this.#nested.delete(api.callId);
-				if (!nested) this.#executing += 1;
+				if (!nested) {
+					this.#executing += 1;
+					const command = tool.name === "bash" && typeof args === "object" && args !== null && "command" in args && typeof args.command === "string" ? args.command.split("\n")[0]!.slice(0, 120) : tool.name;
+					this.#running.set(api.callId, { label: command, started: this.#now() });
+				}
 				try {
 					return await tool.execute(args, api, context);
 				} finally {
-					if (!nested) this.#executing -= 1;
+					if (!nested) { this.#executing -= 1; this.#running.delete(api.callId); }
 				}
 			},
 		};

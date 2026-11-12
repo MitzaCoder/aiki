@@ -119,6 +119,16 @@ describe("ToolCallDrain", () => {
 	});
 });
 
+it("an explicit update hold survives deploy timeout/end and releases independently", async () => {
+	const drain = new ToolCallDrain({ log: () => {} });
+	const release = drain.acquire();
+	drain.drain(10);
+	let ran = false;
+	const held = drain.hold(BACKGROUND_CONTEXT).then(() => { ran = true; });
+	await Bun.sleep(30); drain.end(); expect(ran).toBe(false);
+	release(); release(); await held; expect(ran).toBe(true);
+});
+
 describe("server.drain", () => {
 	it("holds new tool calls until the drain ends and counts the executing ones", async () => {
 		const test = await setup();

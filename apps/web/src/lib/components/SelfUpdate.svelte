@@ -33,7 +33,7 @@
 		{#if update?.phase === 'waiting'}
 			<div class="flex flex-wrap gap-2">
 				<button class="min-h-11 rounded-lg border border-(--chat-border) px-3 text-sm" disabled={saving} onclick={() => request('cancel', update!.toVersion)}>Cancel</button>
-				<button class="min-h-11 rounded-lg border border-(--chat-border) px-3 text-sm" disabled={saving} onclick={() => ask('force')}>Update now anyway</button>
+				{#if update.restartAllowed}<button class="min-h-11 rounded-lg border border-(--chat-border) px-3 text-sm" disabled={saving} onclick={() => ask('force')}>Restart anyway</button>{/if}
 			</div>
 		{/if}
 	{:else}
@@ -48,17 +48,17 @@
 <Dialog.Root open={confirm !== null} onOpenChange={(open) => { if (!open) confirm = null; }}>
 	<Dialog.Content class="sm:max-w-lg">
 		<Dialog.Header>
-			<Dialog.Title>{confirm === 'force' ? 'Interrupt agents and update?' : 'Update Aiki?'}</Dialog.Title>
+			<Dialog.Title>{confirm === 'force' ? 'Interrupt running commands?' : 'Update Aiki?'}</Dialog.Title>
 			<Dialog.Description>
 				{backend.name}: {confirmedFromVersion} → {confirmedVersion}
 			</Dialog.Description>
 		</Dialog.Header>
-		<p class="text-sm">{confirm === 'force' ? 'Running agents will be interrupted. Update now anyway?' : 'The release will be verified, then Aiki waits for all agents to finish before restarting. Your clients reconnect automatically.'}</p>
+		<p class="text-sm">{confirm === 'force' ? 'Running commands will be interrupted and may not be safe to retry. Restart anyway?' : 'The release will be verified, then Aiki holds new tool calls and waits only for running commands before restarting. Your clients reconnect automatically.'}</p>
 		<p class="text-sm">If the new release is not healthy within 30 seconds, Aiki restores the old code. This does not undo data migrations. Back up important data first.</p>
 		<a class="min-h-11 content-center text-sm underline" href={confirmedNotesUrl} target="_blank" rel="noopener noreferrer">Release notes</a>
 		<Dialog.Footer>
 			<button class="min-h-11 rounded-lg border border-(--chat-border) px-4" onclick={() => confirm = null}>Cancel</button>
-			<button class="min-h-11 rounded-lg bg-(--primary) px-4 text-(--primary-foreground)" disabled={saving} onclick={() => request(confirm!, confirmedVersion)}>{confirm === 'force' ? 'Interrupt and update' : 'Confirm update'}</button>
+			<button class="min-h-11 rounded-lg bg-(--primary) px-4 text-(--primary-foreground)" disabled={saving} onclick={() => request(confirm!, confirmedVersion)}>{confirm === 'force' ? 'Confirm restart' : 'Confirm update'}</button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

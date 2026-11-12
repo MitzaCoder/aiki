@@ -46,7 +46,26 @@ await page.run(async fixture => {
  await new Promise<void>((resolve, reject) => { const tx = db.transaction('credentials', 'readwrite'); tx.objectStore('credentials').put(credential, JSON.stringify([credential.backendId, credential.origin])); tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); }); db.close();
 }, fixture);
 await navigate(); await waitFor('Update now');
-if (args.includes('--setup')) {
+if (args.includes('--waiting-proof')) {
+ await theme('dark');
+ const writes: Promise<unknown>[] = []; const timestamps: number[] = []; let count = 0;
+ await mkdir(join(out, 'frames'), { recursive: true });
+ page.onFrame = frame => { timestamps.push(frame.metadata.timestamp); writes.push(Bun.write(join(out, 'frames', String(count++).padStart(5, '0') + '.jpg'), Buffer.from(frame.data, 'base64'))); void page.call('Page.screencastFrameAck', { sessionId: frame.sessionId }); };
+ await page.call('Page.startScreencast', { format: 'jpeg', quality: 75, maxWidth: 1440, maxHeight: 1000 });
+ await fetch('http://127.0.0.1:18440/run' + (args.includes('--long') ? '?long' : ''));
+ await Bun.sleep(800);
+ await click('Update now'); await click('Confirm update', true);
+ await waitFor(args.includes('--before') ? 'agents to finish' : 'Waiting for 1 running command (sleep', 30_000);
+ for (const mode of ['light','dark']) { await theme(mode); await shot(`web-desktop-${mode}-waiting-${args.includes('--before') ? 'before' : 'after'}`); }
+ if (args.includes('--long') || args.includes('--before')) {
+  if (!args.includes('--leave-waiting')) { await click('Cancel'); await waitFor('Update cancelled'); }
+ } else {
+  await waitFor('Updated to v0.1.0-pilot.3-test', 60_000); await shot('web-desktop-dark-success-after');
+ }
+ await page.call('Page.stopScreencast'); page.onFrame = undefined; await Promise.all(writes);
+ await Bun.write(join(out,'frames.ffconcat'), timestamps.map((timestamp,index)=>`file 'frames/${String(index).padStart(5,'0')}.jpg'\nduration ${index+1<timestamps.length ? Math.max(.04,timestamps[index+1]!-timestamp) : 1}\n`).join(''));
+ console.log('Recording frames',count); page.close();
+} else if (args.includes('--setup')) {
  for (const mode of ['light', 'dark']) {
   await theme(mode); await shot(`web-desktop-${mode}-button`);
   await click('Update now'); await waitFor('Confirm update'); await shot(`web-desktop-${mode}-confirm`);
@@ -57,28 +76,5 @@ if (args.includes('--setup')) {
  await click('Update now'); await waitFor('Confirm update'); await shot('web-phone-dark-confirm');
  await click('Cancel', true); page.close();
 } else {
- await theme('dark');
- const writes: Promise<unknown>[] = []; const timestamps: number[] = []; let count = 0;
- await mkdir(join(out, 'frames'), { recursive: true });
- page.onFrame = frame => { timestamps.push(frame.metadata.timestamp); writes.push(Bun.write(join(out, 'frames', String(count++).padStart(5, '0') + '.jpg'), Buffer.from(frame.data, 'base64'))); void page.call('Page.screencastFrameAck', { sessionId: frame.sessionId }); };
- await page.call('Page.startScreencast', { format: 'jpeg', quality: 80, maxWidth: 1440, maxHeight: 1000 });
- await click('Update now'); await waitFor('Confirm update'); await Bun.sleep(600); await click('Confirm update', true);
- await waitFor('Waiting for 2 agents to finish', 30_000);
- for (const mode of ['light', 'dark']) { await theme(mode); await shot(`web-desktop-${mode}-waiting`); }
- await click('Cancel'); await waitFor('Update cancelled'); await Bun.sleep(500);
- await click('Update now'); await click('Confirm update', true); await waitFor('Waiting for 2 agents to finish');
- await click('Update now anyway'); await waitFor('Interrupt and update'); await shot('web-desktop-dark-force-confirm'); await click('Cancel', true);
- await fetch('http://127.0.0.1:18440/idle');
- await waitFor('Updating…', 15_000); await shot('web-desktop-dark-updating');
- await waitFor('Updated to v0.1.0-pilot.3-test', 45_000);
- for (const mode of ['light', 'dark']) { await theme(mode); await shot(`web-desktop-${mode}-success`); }
- await fetch('http://127.0.0.1:18440/prepare-broken'); await waitFor('v0.1.0-pilot.4-broken', 15_000);
- await click('Update now'); await click('Confirm update', true);
- try { await waitFor('Updating…', 10_000); await theme('light'); await shot('web-desktop-light-updating'); } catch { /* A dead-on-start candidate can roll back before the first frame. */ }
- await waitFor('Update failed, rolled back:', 45_000);
- for (const mode of ['light', 'dark']) { await theme(mode); await shot(`web-desktop-${mode}-rollback`); }
- await Bun.sleep(1500);
- await page.call('Page.stopScreencast'); page.onFrame = undefined; await Promise.all(writes);
- await Bun.write(join(out, 'frames.ffconcat'), timestamps.map((timestamp, index) => `file 'frames/${String(index).padStart(5, '0')}.jpg'\nduration ${index + 1 < timestamps.length ? Math.max(.04, timestamps[index + 1]! - timestamp) : 1}\n`).join(''));
- console.log('Recording frames', count); page.close();
+ page.close(); throw new Error('Pass --setup or --waiting-proof (with the command rehearsal fixture)');
 }

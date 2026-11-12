@@ -53,7 +53,7 @@ fun SelfUpdateControls(backend: BackendSession, compact: Boolean = false) {
             Text(update?.message.orEmpty(), style = MaterialTheme.typography.bodySmall)
             if (update?.phase == "waiting") {
                 TextButton(onClick = { request("cancel", update.toVersion) }, enabled = !saving) { Text("Cancel") }
-                TextButton(onClick = { ask("force") }, enabled = !saving) { Text("Update now anyway") }
+                if (update.restartAllowed == true) TextButton(onClick = { ask("force") }, enabled = !saving) { Text("Restart anyway") }
             }
         } else {
             if (update?.phase in listOf("succeeded", "rolled_back", "failed", "cancelled")) Text(update?.message.orEmpty(), style = MaterialTheme.typography.bodySmall)
@@ -65,16 +65,16 @@ fun SelfUpdateControls(backend: BackendSession, compact: Boolean = false) {
     confirmation?.let { action ->
         AlertDialog(
             onDismissRequest = { confirmation = null },
-            title = { Text(if (action == "force") "Interrupt agents and update?" else "Update Aiki?") },
+            title = { Text(if (action == "force") "Interrupt running commands?" else "Update Aiki?") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("${backend.config.name}: $confirmedFromVersion → $confirmedVersion")
-                    Text(if (action == "force") "Running agents will be interrupted. Update now anyway?" else "The release will be verified, then Aiki waits for all agents to finish before restarting. Clients reconnect automatically.")
+                    Text(if (action == "force") "Running commands will be interrupted and may not be safe to retry. Restart anyway?" else "The release will be verified, then Aiki holds new tool calls and waits only for running commands before restarting. Clients reconnect automatically.")
                     Text("If the new release is not healthy within 30 seconds, Aiki restores the old code. This does not undo data migrations. Back up important data first.")
                     TextButton(onClick = { uri.openUri(confirmedNotesUrl) }) { Text("Release notes") }
                 }
             },
-            confirmButton = { TextButton(onClick = { request(action, confirmedVersion) }, enabled = !saving) { Text(if (action == "force") "Interrupt and update" else "Confirm update") } },
+            confirmButton = { TextButton(onClick = { request(action, confirmedVersion) }, enabled = !saving) { Text(if (action == "force") "Confirm restart" else "Confirm update") } },
             dismissButton = { TextButton(onClick = { confirmation = null }) { Text("Cancel") } },
         )
     }
