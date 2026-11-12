@@ -166,6 +166,7 @@ fun ChatServerBanners(context: ProjectScreenContext, modifier: Modifier = Modifi
     LaunchedEffect(backend) { while (true) { delay(SERVER_STATUS_REFRESH_MS); backend.serverStatus.refresh() } }
     val openStorage = if (connection.supports(HarnessFeature.STORAGE)) { { context.navigate(Destination.ProjectSettings(context.route, io.github.mitzacoder.aiki.features.settings.ProjectSection.Storage)) } } else null
     Column(modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        ReleaseUpdateBanner(backend)
         DeployBanner(context.repository, backend)
         DiskBanner(backend, openStorage)
     }

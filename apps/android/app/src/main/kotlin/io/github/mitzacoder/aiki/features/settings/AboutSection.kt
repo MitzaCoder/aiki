@@ -11,11 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.oss.licenses.v2.OssLicensesMenuActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.mitzacoder.aiki.data.HarnessRepository
+import io.github.mitzacoder.aiki.features.status.ReleaseUpdateAbout
 import io.github.mitzacoder.aiki.BuildConfig
 
 /** Offline notices remain accessible without any backend or relay account. */
 @Composable
-fun AboutSection() {
+fun AboutSection(repository: HarnessRepository) {
+    val sessions by repository.sessions.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var document by remember { mutableStateOf<String?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -23,6 +27,7 @@ fun AboutSection() {
             GroupNote("Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             GroupNote("A client for your own Aiki backend. The pilot has no phone push notifications.")
         }
+        sessions.forEach { backend -> key(backend.config.key) { ReleaseUpdateAbout(backend) } }
         SettingsGroup(title = "Open-source licences") {
             GroupNote("Sora editor and language-textmate 0.24.6 use LGPL-2.1. Library source and replacement instructions are included with this release.")
             TextButton(onClick = { document = "Sora-NOTICE.txt" }) { Text("Sora notice and source") }
