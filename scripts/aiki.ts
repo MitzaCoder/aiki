@@ -4,8 +4,27 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { childEnvironment } from "../packages/server/src/child-environment.ts";
 
+import { fetchChannelRelease, releaseChannel, type UpdateChannel } from "../packages/protocol/src/release-versions.ts";
+
 export const BUN_VERSION = "1.4.4";
-type Installation = { root: string; config: string; data: string; launcher: string; version: string };
+type Installation = { root: string; config: string; data: string; launcher: string; version: string; channel?: UpdateChannel };
+
+/** Resolve before invoking the checksum-verifying installer. Explicit versions always win. */
+export async function updateSelection(args: string[], installation: Pick<Installation, "version" | "channel">, transport: typeof fetch = fetch): Promise<{ version: string; channel: UpdateChannel }> {
+	let version: string | undefined;
+	let channel = installation.channel ?? releaseChannel(installation.version);
+	for (let i = 0; i < args.length; i++) {
+		const option = args[i];
+		if (option === "--channel" || option === "--version") {
+			const value = args[++i];
+			if (!value || value.startsWith("--")) throw new Error(`${option} needs a value`);
+			if (option === "--version") version = value;
+			else if (value === "pilot" || value === "stable") channel = value;
+			else throw new Error("--channel must be pilot or stable");
+		}
+	}
+	return { version: version ?? (args.includes("--ref") ? installation.version : (await fetchChannelRelease(channel, transport)).version), channel };
+}
 const shellQuote = (path: string) => `'${path.replaceAll("'", "'\\''")}'`;
 const xml = (text: string) => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
@@ -113,13 +132,15 @@ async function service(installation: Installation, action: string, print: boolea
 async function main(args: string[]): Promise<void> {
 	const [command = "help", ...rest] = args;
 	if (command === "activate") {
-		const [root, config, version, launcher] = rest;
+		const [root, config, version, launcher, selectedChannel] = rest;
 		if (!root || !config || !version || !launcher) throw new Error("Incomplete activation");
 		const old = existsSync(join(root, ".aiki-install.json")) ? metadata(root) : undefined;
 		if (old?.version !== version) requireStopped(root);
 		if (old && old.version !== version && existsSync(join(root, "current"))) atomicLink(root, "previous", `releases/${old.version}`);
 		atomicLink(root, "current", `releases/${version}`);
-		const installation: Installation = { root, config: old?.config ?? config, data: old?.data ?? join(root, "data"), version, launcher };
+		if (selectedChannel && selectedChannel !== "pilot" && selectedChannel !== "stable") throw new Error("Invalid update channel");
+		const installation: Installation = { root, config: old?.config ?? config, data: old?.data ?? join(root, "data"), version, launcher,
+			channel: (selectedChannel as UpdateChannel | undefined) ?? old?.channel ?? releaseChannel(version) };
 		writeFileSync(join(root, ".aiki-install.json"), JSON.stringify(installation, null, 2));
 		mkdirSync(installation.config, { recursive: true });
 		const configFile = join(installation.config, "server.env");
@@ -146,6 +167,10 @@ async function main(args: string[]): Promise<void> {
 		AIKI_CONFIG_DIR: installation.config,
 		AIKI_HOST: "127.0.0.1",
 		AIKI_WEB_DIR: join(root, "current/apps/web/build"),
+		...(!installation.version.startsWith("ref-") ? {
+			AIKI_INSTALLED_VERSION: installation.version,
+			AIKI_UPDATE_CHANNEL: installation.channel ?? releaseChannel(installation.version),
+		} : {}),
 		...(process.env.AIKI_PORT ? { AIKI_PORT: process.env.AIKI_PORT } : {}),
 	});
 	const port = settings.AIKI_PORT || "7317";
@@ -213,7 +238,9 @@ async function main(args: string[]): Promise<void> {
 		case "update": {
 			requireStopped(root);
 			console.log("Back up your data first: rollback changes code, not database migrations. Restart manually after update.");
-			await run(["sh", join(root, "current/install.sh"), "--dir", root, "--no-service", ...rest]); break;
+			const selection = await updateSelection(rest, installation);
+			await run(["sh", join(root, "current/install.sh"), "--dir", root, "--no-service", ...rest,
+				"--version", selection.version, "--channel", selection.channel]); break;
 		}
 		case "rollback": {
 			requireStopped(root);

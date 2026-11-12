@@ -7,6 +7,7 @@ REPOSITORY=https://github.com/MitzaCoder/aiki
 root=${AIKI_INSTALL_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aiki}
 config=${XDG_CONFIG_HOME:-$HOME/.config}/aiki
 version=latest
+channel=
 ref=
 archive=
 no_service=0
@@ -19,6 +20,7 @@ need_value() { [ "$#" -ge 2 ] || die "$1 needs a value"; [ -n "$2" ] || die "$1 
 while [ "$#" -gt 0 ]; do
  case $1 in
  --version) need_value "$@"; version=$2; shift 2 ;;
+ --channel) need_value "$@"; channel=$2; case $channel in pilot|stable) ;; *) die '--channel must be pilot or stable' ;; esac; shift 2 ;;
  --dir) need_value "$@"; root=$2; custom_dir=1; shift 2 ;;
  --ref) need_value "$@"; ref=$2; shift 2 ;;
  --archive) need_value "$@"; archive=$2; shift 2 ;;
@@ -110,6 +112,7 @@ if [ -n "$ref" ]; then
  git -C "$work/git" archive FETCH_HEAD | tar -xf - -C "$work/source"
 else
  if [ "$version" = latest ]; then
+  [ "$channel" != pilot ] || die 'For a first pilot install use --version TAG; afterward aiki update follows the saved channel'
   latest=$(curl --connect-timeout 15 --max-time 30 -fsSLI -o /dev/null -w '%{url_effective}' "$REPOSITORY/releases/latest")
   version=${latest##*/}
  fi
@@ -166,7 +169,7 @@ if [ ! -x "$root/tools/bin/zellij" ]; then
   chmod 755 "$root/tools/bin/zellij"
  else say 'Could not download zellij. App terminals are unavailable; re-run the installer to retry. Chat still works.'; fi
 fi
-"$bun" "$release/scripts/aiki.ts" activate "$root" "$config" "$version" "$launcher"
+"$bun" "$release/scripts/aiki.ts" activate "$root" "$config" "$version" "$launcher" "$channel"
 # Print the export literally for the user's shell.
 # shellcheck disable=SC2016
 case :$PATH: in *:"$HOME/.local/bin":*) ;; *) say 'Add ~/.local/bin to PATH: export PATH="$HOME/.local/bin:$PATH"' ;; esac
