@@ -4,7 +4,7 @@ import { activityTracking, taskActivity, endActivitySource, setActivityPhase, ty
 import type { Models } from "@earendil-works/pi-ai";
 import { DEFAULT_REPORT_AUDIT } from "@aiki/protocol";
 import { ReportAuditService, type ReportAuditRecord } from "./report-audit.ts";
-import { initializeTaskFreshness, coverReportSection, noteTaskFact, markReportStale, prepareReportNudges, acknowledgeReportNudge, reportDueAt, sweepReportAge, substantiveTaskMentions, REPORT_SWEEP_MS, type ReportSection, type TaskFact, type TaskReportTracking, type ReportOutbox } from "./task-freshness.ts";
+import { initializeTaskFreshness, coverReportSection, noteTaskFact, markReportStale, prepareReportNudges, acknowledgeReportNudge, reportDueAt, sweepReportAge, substantiveTaskMentions, reportChatUserTasks, REPORT_SECTIONS, REPORT_SWEEP_MS, type ReportSection, type TaskFact, type TaskReportTracking, type ReportOutbox } from "./task-freshness.ts";
 import { stateKind } from "./state-identity.ts";
 /**
  * The board: the coordinator's tasks, questions for the user and decisions, kept as a durable document on the
@@ -2699,7 +2699,7 @@ export class BoardService {
  }
 
  /** Called once at run end; no chat text or report rewrite is added to the timeline. */
- async noteChat(content: string, written: ReadonlySet<string>, key: string, threadId = "main"): Promise<void> {
+ async noteChat(content: string, written: ReadonlySet<string>, key: string, threadId = "main", userTasks: ReadonlyMap<string, number> = new Map()): Promise<void> {
   if (this.#options.taskFreshness === false) return;
   await this.#commit(HARNESS_WRITER, (state) => {
    if (!claimHarnessKey(state, key)) return;
@@ -2708,9 +2708,17 @@ export class BoardService {
    const valid = new Set(state.tasks.map((task) => task.id));
    const mentioned = new Set<string>();
    for (const source of sources) for (const id of substantiveTaskMentions(source.text, valid)) {
-    if (written.has(id) || mentioned.has(id)) continue;
+    const userAt = userTasks.get(id);
+    const task = state.tasks.find(task => task.id === id)!;
+    if (userAt === undefined || written.has(id) || mentioned.has(id) || task.status === "done" || task.status === "dropped") continue;
+    // A queued user message can have been answered by a report write in the preceding turn.
+    const sections = REPORT_SECTIONS.filter(name => {
+     const writtenAt = task.report.freshness?.[name].writtenAt;
+     return writtenAt == null || Date.parse(writtenAt) <= userAt;
+    });
+    if (sections.length === 0) continue;
     mentioned.add(id);
-    noteTaskFact(state, id, { actor: "harness", kind: "chat", reason: "discussed in chat", at: this.#iso() });
+    noteTaskFact(state, id, { actor: "harness", kind: "chat", reason: "discussed in chat", sections, at: this.#iso() });
     const tracking = state.reportTracking?.[id];
     if (tracking !== undefined) tracking.chatEvidence = [...(tracking.chatEvidence ?? []), { snippet: source.text.replace(/\s+/g, " ").slice(0, 240), source: source.key }].slice(-2);
    }
@@ -3196,14 +3204,20 @@ function createBoardExtension(service: BoardService): Extension {
   afterRun: async (run, api, context) => {
    if (!service.isCoordinator(api.conversationId)) return undefined;
    const written = new Set<string>();
+   const userTasks = new Map<string, number>();
+   const validIds = new Set((await service.state()).tasks.map(task => task.id));
    let cursor;
    const texts: string[] = [];
    do {
     const page = await api.entries({ minEntryId: run.first, maxEntryId: run.last }, 200, cursor, context);
     for (const entry of page.items) for (const message of entry.model ?? []) {
+     if (entry.kind === "pi.user" && message.role === "user") {
+      const text = typeof message.content === "string" ? message.content : message.content.filter(block => block.type === "text").map(block => block.text).join("\n");
+      for (const id of reportChatUserTasks(text, validIds)) userTasks.set(id, Math.max(userTasks.get(id) ?? 0, message.timestamp));
+     }
      if (message.role === "toolResult" && message.toolName === "board" && !message.isError) {
       for (const block of message.content) if (block.type === "text") {
-       const id = /^Rewrote the report of (T[1-9]\d*)\b/.exec(block.text)?.[1];
+       const id = /^(?:Rewrote the report of |F[1-9]\d* on )(T[1-9]\d*)\b/.exec(block.text)?.[1];
        if (id !== undefined) written.add(id);
       }
      }
@@ -3216,7 +3230,7 @@ function createBoardExtension(service: BoardService): Extension {
     cursor = page.next;
    } while (cursor !== undefined);
    await service.endTaskFocus(api.conversationId, String(run.first));
-   await service.noteChat(texts.join("\n"), written, `report-chat:${api.conversationId}:${run.first}:${run.last}`, service.threadIdOf(api.conversationId));
+   await service.noteChat(texts.join("\n"), written, `report-chat:${api.conversationId}:${run.first}:${run.last}`, service.threadIdOf(api.conversationId), userTasks);
    return undefined;
   },
  })] });

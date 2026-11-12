@@ -155,13 +155,26 @@ polls/tokens or folded group count. Label: `written 2 h ago · 6 events since ·
 expand reason `Q121 answered; work advanced`. Empty: `No results yet · work finished`.
 
 **Layered fallbacks (recommend 1, 2, 4 on; 3 optional, bounded):**
-1. Outgoing coordinator reply/thread message mentions `T71`/`task T12` with substantive
-   content and no report write that turn → mark unwritten sections stale, reason “discussed
-   in chat”. Parse valid project IDs outside quoted/code blocks; exclude generated transport
-   prefixes, bare IDs/links and known “filed under T…” templates. Deterministic conservative
-   heuristic: ≥40 other text characters, or explicit structured taskId plus non-template
-   text. Keep up to two bounded snippets/source refs, no timeline echo. No semantic truth
-   claim; some false positives are acceptable coverage warnings. Costs zero model tokens.
+1. Only replies to **user chat about an explicit task** qualify for “discussed in chat”.
+   The user must name a valid task ID (a short `T12?` counts), or use its task/feedback
+   scope. Intersect those subjects with substantive outgoing reply/thread-message mentions
+   (≥40 other text characters, outside quotes/code/links/transport/templates). Skip tasks
+   whose report or feedback state was successfully written that run, and done/dropped tasks.
+   Per section, skip Results/Next written after that user input's transcript timestamp;
+   only remaining sections become stale. With several user inputs about one task, use the
+   latest timestamp. Harness-only turns (`[check-in]`, `[board]`, `[reports]`, worker/thread
+   reports and `[from …]` messages) never qualify. Keep two bounded snippets/source refs,
+   no timeline echo or model calls. This is a coverage warning, not a semantic truth claim.
+
+   **T135 noise correction:** the original reply-only mention rule repeatedly woke the
+   coordinator for check-ins, closure acknowledgements and already-handled feedback. A
+   `[reports]` reply naming another task could create a ping-pong nudge. Gate on the input
+   instead of trying to infer novelty from reply prose: harness events have their own
+   structured rules, incidental reply IDs are not new user subjects, and a report written
+   after a queued user input already has a chance to cover it. Unscoped user messages with
+   no task IDs deliberately do not trigger this fallback, even if the reply files a new
+   task. Structured facts and the age/audit/manual fallbacks remain available. No transcript
+   replay or semantic classifier is required to make this decision predictable.
 2. Age backstop: in_progress/review/waiting, section older than latest meaningful activity
    **and** ≥2 h old → stale; include substantive chat mentions as activity. Unknown legacy
    coverage with new activity qualifies. Quiet old reports alone produce no nags.

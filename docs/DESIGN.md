@@ -1631,14 +1631,23 @@ and suppressed nudges. Causes preserve the first important reasons and latest ca
 No individual tool/progress/poll is a fact. Legacy dates are approximate from the shared report timestamp,
 coverage unknown: normalization itself neither creates a fact nor queues a nudge.
 
-At turn end an outgoing coordinator reply or delivered thread message mentioning valid task IDs outside
-quotes/code/transport prefixes/templates, with at least 40 other characters, records a harness-detected
-“discussed in chat” gap for reports not written in that run: both unwritten sections become stale and may
-nudge, at most once per task per turn. This fallback is not a coordinator-authored action. Successful
-board tool results, including nested tool results, establish same-run writes and prevent the fallback. Outgoing thread messages are durably held until the sender's run ends so a later write
-in that turn can cover them. Two bounded snippet/source references are retained internally; no chat is
-added to the timeline. The age backstop runs at most hourly per project (last sweep persisted), only for
-in_progress/review/waiting and only when meaningful activity is newer than a section at least two hours
+At turn end the “discussed in chat” fallback only considers tasks explicitly named in user inputs
+(valid typed IDs, even a short `T12?`, or a `[task T12, feedback F3]` scope). Harness-only turns answering
+`[check-in]`, `[board]`, `[reports]`, worker/thread reports or `[from …]` messages never qualify: their
+structured lifecycle rules already cover task facts. An outgoing coordinator reply or delivered thread
+message must also mention that same task outside quotes/code/links/transport prefixes/templates, with
+at least 40 other characters. Incidental reply IDs and unscoped user messages without task IDs do not
+qualify. Done/dropped tasks never count. Successful report or feedback-state board tool results,
+including nested tool results, exclude that task for the whole run. Otherwise only Results/Next sections
+not written after the relevant user input's transcript timestamp become stale and may nudge (latest
+user timestamp per task when several inputs are placed in one run). This covers a queued user message
+already reflected in a preceding turn's report. At most one harness-detected chat fact per task per turn;
+this is a coverage warning, not an inference that the reply contains new facts. Outgoing thread messages
+are durably held until the sender's run ends so a later write in that turn can cover them; harness-only
+turns consume and discard these candidates too. Two bounded snippet/source references are retained
+internally; no chat is added to the timeline. T135 narrows the earlier reply-only heuristic to avoid
+no-op rewrites and cross-task `[reports]` ping-pong. The age backstop runs at most hourly per project
+(last sweep persisted), only for in_progress/review/waiting and only when meaningful activity is newer than a section at least two hours
 old. Coordinator-authored facts and starts/resumes do not refresh that activity clock, so the backstop
 cannot turn them into delayed self-nudges. Quiet old reports never wake anyone; the sweep is a coverage
 warning, not another counted fact.

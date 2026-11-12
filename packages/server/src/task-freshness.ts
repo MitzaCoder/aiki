@@ -1,5 +1,5 @@
 /** Deterministic report coverage and durable nudge admission. No model calls or timeline writes. */
-import type { BoardReportSection, BoardTask, BoardWriter } from "@aiki/protocol";
+import { BOARD_PREFIX, CHECK_IN_PREFIX, THREAD_FINISHED_PREFIX, THREAD_MESSAGE_PREFIX, WORKER_REPORT_PREFIX, type BoardReportSection, type BoardTask, type BoardWriter } from "@aiki/protocol";
 import { estimateTextTokens } from "@earendil-works/pi-ai/utils/estimate";
 import type { BoardState } from "./board.ts";
 
@@ -253,14 +253,27 @@ export function acknowledgeReportNudge(state: BoardState, key: string, submissio
  state.reportOutbox = state.reportOutbox!.filter((item) => item.key !== key);
 }
 
+/** Only explicit user subjects qualify; harness messages already have structured freshness rules. */
+export function reportChatUserTasks(content: string, validIds: ReadonlySet<string>): string[] {
+ const text = content.trimStart();
+ if ([BOARD_PREFIX, CHECK_IN_PREFIX, THREAD_FINISHED_PREFIX, THREAD_MESSAGE_PREFIX, WORKER_REPORT_PREFIX, "[reports]"].some(prefix => text.startsWith(prefix))) return [];
+ const scoped = /^\[task (T[1-9]\d*)(?:, feedback F[1-9]\d*)?\]/.exec(text)?.[1];
+ return [...new Set([...(scoped && validIds.has(scoped) ? [scoped] : []), ...taskMentions(text, validIds, 0)])];
+}
+
 /** Conservative mention fallback: no quote/code/transport/template mining, no bare IDs or links. */
 export function substantiveTaskMentions(content: string, validIds: ReadonlySet<string>): string[] {
+ return taskMentions(content, validIds, 40);
+}
+
+function taskMentions(content: string, validIds: ReadonlySet<string>, minimumProse: number): string[] {
  const prose = content.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~/g, "").replace(/`[^`]*`/g, "")
   .replace(/^\s*>.*$/gm, "").replace(/\[[^\]]*\]\([^)]*\)/g, "")
   .replace(/https?:\/\/\S+/g, "").replace(/^\s*\[(?:from |thread |worker |board|reports|task )[^\]]*\]/gm, "")
-  .replace(/[^.!?\n]*(?:filed under|tracked (?:in|under)|recorded (?:in|under))\s+(?:task\s+)?T\d+[^.!?\n]*[.!?]?/gi, "")
+  // Match each sentence once: an unanchored sentence-prefix wildcard retries quadratically on long user inputs.
+  .replace(/[^.!?\n]+[.!?]?/g, sentence => /(?:filed under|tracked (?:in|under)|recorded (?:in|under))\s+(?:task\s+)?T\d+/i.test(sentence) ? "" : sentence)
   .replace(/"[^"\n]*"|“[^”\n]*”/g, "");
  const ids = [...new Set(prose.match(/\bT[1-9]\d*\b/g) ?? [])].filter((id) => validIds.has(id));
  const other = prose.replace(/\b(?:task\s+)?T\d+\b/gi, "").replace(/\s+/g, " ").trim();
- return other.length >= 40 ? ids : [];
+ return other.length >= minimumProse ? ids : [];
 }

@@ -1,5 +1,36 @@
 # Continue
 
+## T135: quiet chat-mention freshness fallback
+
+“Discussed in chat” now requires a user input explicitly naming the task (typed ID or
+its task/feedback scope) and a substantive outgoing mention of that same task. Replies
+to harness-only check-in/board/reports/worker/thread messages never qualify, including
+outgoing thread-tool messages saved for turn end. Incidental reply IDs and done/dropped
+tasks do not count. Successful report or feedback-state writes in the same run exempt
+the task; a preceding-turn Results/Next write after the user input's transcript timestamp
+exempts that section. Multiple user inputs use the latest timestamp per task. Unscoped
+messages with no IDs intentionally rely on structured facts/other fallbacks, not chat mining.
+
+Freshness suite: 46 tests / 277 assertions pass, including a long-input parsing regression
+and the durable T1 nudge → rewrite
+T1 → mention T2 replay, which creates no T2 stale mark or second nudge. Only one existing
+test changed: its two unscoped prompts now explicitly name T1; the reply-only rule was
+what it encoded. New tests cover input sources, feedback with/without report writes,
+failed feedback writes, incidental T2, closed tasks and per-section preceding-turn coverage.
+No real coordinator transcript was read/replayed; all fixtures use createSetup and synthetic
+messages. Typecheck and private-denylist/generic/Gitleaks checks pass (existing ignored
+operator config supplied externally; this workspace has no deploy/local config).
+
+Follow-up isolated runs found a real regression: memory failed 5/5 on this change and
+passed 5/5 on its parent. Applying the existing mention heuristic to user input exposed
+its quadratic sentence-prefix template regex on 40 KB unpunctuated filler messages.
+Match sentences once, then test each for templates; a 100 KB regression covers this path.
+Both memory (22 tests) and report-audit (17 tests) now pass five isolated runs each;
+report-audit also passed all five runs on both original revisions. The earlier full runs
+had a memory timeout, and one also saw report-audit storage idle instead of checked.
+The audit's startup empty-snapshot/coalescing race needs separate test synchronization.
+Server-only; no UI proof, push, deployment or main movement.
+
 ## T134: deterministic worker-workspace storage checks
 
 The storage timeout was a failed spawn, not slow cleanup: parallel `worker_spawn`

@@ -5,7 +5,7 @@ import { HARNESS_FEATURES, LEGACY_HARNESS_FEATURES } from "../../protocol/src/pr
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { BoardDoc, BoardService, addDecision, moveTaskForWorker, changeOwner, askQuestion, coordinatorWriter, emptyBoardState, normalizeBoard, saveTask, settleQuestion, writeReport, type BoardState } from "../src/board.ts";
-import { acknowledgeReportNudge, markReportStale, noteTaskFact, prepareReportNudges, reportDueAt, substantiveTaskMentions, sweepReportAge, type TaskFact } from "../src/task-freshness.ts";
+import { acknowledgeReportNudge, markReportStale, noteTaskFact, prepareReportNudges, reportDueAt, substantiveTaskMentions, reportChatUserTasks, sweepReportAge, type TaskFact } from "../src/task-freshness.ts";
 import { createSetup, errorOf, TestClient } from "./support.ts";
 
 const START = Date.parse("2026-11-12T12:00:00.000Z");
@@ -342,6 +342,26 @@ it("mention heuristic accepts substantive task prose and rejects quotes, code, p
 	for (const text of ["T1", "task T1", `> T1 ${substantive}`, `\`\`\`\nT1 ${substantive}\n\`\`\``, `\`T1 ${substantive}\``, `“T1 ${substantive}”`, `[from T1] ${substantive}`, `[task T1, feedback F1] ${substantive}`, `Filed under T1. ${substantive}`, `[T1](https://example.invalid/tasks/T1) ${substantive}`, `T99 ${substantive}`]) expect(substantiveTaskMentions(text, valid)).toEqual([]);
 });
 
+it("user subject parsing handles long unpunctuated inputs without quadratic template scans", () => {
+ const valid = new Set(["T1"]);
+ const long = "x".repeat(100_000);
+ expect(reportChatUserTasks(long, valid)).toEqual([]);
+ expect(reportChatUserTasks(`T1 ${long}`, valid)).toEqual(["T1"]);
+ expect(reportChatUserTasks(`${long} filed under T1.`, valid)).toEqual([]);
+ expect(reportChatUserTasks(`Tracked in T1. T1 ${long}`, valid)).toEqual(["T1"]);
+}, 1000);
+
+it("user subjects accept short IDs and task feedback scopes but exclude harness inputs and quoted mentions", () => {
+ const valid = new Set(["T1", "T2"]);
+ expect(reportChatUserTasks("T1?", valid)).toEqual(["T1"]);
+ expect(reportChatUserTasks("[task T1, feedback F1] What changed?", valid)).toEqual(["T1"]);
+ expect(reportChatUserTasks("[task T1] Compare with T2", valid)).toEqual(["T1", "T2"]);
+ for (const text of ["What changed?", "T99?", "> T1", "`T1`", '"T1"']) expect(reportChatUserTasks(text, valid)).toEqual([]);
+ for (const prefix of ["[check-in]", "[board]", "[reports]", "[worker fern reported]", "[worker fern failed: error]", "[thread fern finished]", "[thread fern failed: error]", "[from fern]"]) {
+  expect(reportChatUserTasks(`  ${prefix} What changed on T1?`, valid)).toEqual([]);
+ }
+});
+
 it("button/audit use the same stale path, do not move status, and are feature-gated; old task DTOs remain valid", () => {
 	const state = task(); write(state, { results: "Tests", next: "Continue" });
 	markReportStale(state, "T1", ["results"], "new evidence", at(), "user");
@@ -442,7 +462,7 @@ it("outgoing coordinator prose stales and nudges once per turn; a same-turn repo
   fauxAssistantMessage([fauxToolCall("board", { action: "write_report", id: "T1", results: "- Synthetic verification passed", next: "Owner: review the assets", coveredEventSeq: 1 })], { stopReason: "toolUse" }),
   fauxAssistantMessage("T1 now has synthetic verification evidence and is ready for a careful owner review before publication."),
  ]);
- const first = await runtime.conversation.submit({ type: "input", content: "Discuss the evidence.", requestId: "mention-first" }, BACKGROUND_CONTEXT);
+ const first = await runtime.conversation.submit({ type: "input", content: "Discuss the evidence for T1.", requestId: "mention-first" }, BACKGROUND_CONTEXT);
  await first.wait(BACKGROUND_CONTEXT); await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
  const mentioned = await runtime.board.state();
  for (const section of ["results", "next"] as const) expect(meta(mentioned)[section]).toMatchObject({ stale: true, reasons: ["discussed in chat"], eventsSince: 1 });
@@ -451,7 +471,7 @@ it("outgoing coordinator prose stales and nudges once per turn; a same-turn repo
  prepareReportNudges(mentioned, START + 60_000, owner);
  expect(mentioned.reportOutbox).toHaveLength(1);
  expect(mentioned.reportOutbox![0]!.admissions).toHaveLength(1);
- const second = await runtime.conversation.submit({ type: "input", content: "Read and rewrite the report.", requestId: "mention-rewrite" }, BACKGROUND_CONTEXT);
+ const second = await runtime.conversation.submit({ type: "input", content: "Read and rewrite the report for T1.", requestId: "mention-rewrite" }, BACKGROUND_CONTEXT);
  await second.wait(BACKGROUND_CONTEXT); await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
  expect((await runtime.board.state()).tasks[0]!.report.freshness!.next).toMatchObject({ stale: false, coveredEventSeq: 1 });
  const rewritten = await runtime.board.state();
@@ -473,4 +493,122 @@ it("coordinator milestones count without invalidation and report rewrites alone 
  expect((await runtime.board.timeline("T1")).entries.length).toBe(before.entries.length + 1);
  await runtime.board.writeReport(commit, { taskId: "T1", sections: { results: "- Synthetic tests and assets checked" }, by, coveredEventSeq: 1, milestone: "Delivery advanced" }, "noop-milestone");
  expect(meta(await runtime.board.state()).results).toMatchObject({ stale: false, eventsSince: 1 });
+}, 15_000);
+
+it.each([
+ "[check-in] Both workers progressing (T1).",
+ "[board] T1 closed.",
+ "[reports] T1 Next stale: worker reported. Read tasks; rewrite stale sections with evidence.",
+ "[worker fern reported] T1 verification complete.",
+ "[thread fern finished] T1 verification complete.",
+ "[from fern] T1 verification complete.",
+])("harness-only reply adds no discussed-in-chat fact: %s", async input => {
+ const { setup, runtime } = await integration();
+ const reply = "T1 now has synthetic verification evidence and is ready for a careful owner review before publication.";
+ // Thread tools (including code mode) preserve their outgoing messages for the same after-run check.
+ await runtime.board.recordReportChat("main", reply, "synthetic-thread-message");
+ setup.faux.setResponses([fauxAssistantMessage(reply)]);
+ const turn = await runtime.conversation.submit({ type: "input", content: input, requestId: "harness-only" }, BACKGROUND_CONTEXT);
+ await turn.wait(BACKGROUND_CONTEXT); await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
+ const state = await runtime.board.state();
+ expect(state.tasks[0]!.eventSeq).toBe(0);
+ for (const section of ["results", "next"] as const) expect(meta(state)[section].stale).toBe(false);
+ expect(state.reportTracking!.T1!.pending).toBeUndefined();
+ expect(state.reportChatCandidates?.main).toBeUndefined();
+}, 15_000);
+
+it("answering a reports nudge can rewrite T1 and mention T2 without starting a ping-pong nudge", async () => {
+ const { setup, runtime } = await integration();
+ await runtime.board.saveTask({ task: { title: "Synthetic companion deployment", description: "", acceptance: null, status: "in_progress", blockedBy: [], blockedReason: null, writeScopes: [] } }, "coordinator");
+ const commit = <R>(change: Parameters<typeof runtime.harness.commit<R>>[0]) => runtime.harness.commit(change, BACKGROUND_CONTEXT);
+ for (const taskId of ["T1", "T2"]) await runtime.board.writeReport(commit, { taskId, sections: { results: "Synthetic checks passed", next: "Review evidence" }, by }, `initial-${taskId}`);
+ await runtime.board.noteTaskFact("T1", { actor: "worker", kind: "worker_report", reason: "worker reported", at: at(-30_000) });
+ setup.faux.setResponses([
+  fauxAssistantMessage([fauxToolCall("board", { action: "write_report", id: "T1", results: "Synthetic checks reviewed", next: "Deploy together with companion task" })], { stopReason: "toolUse" }),
+  fauxAssistantMessage("T1 has been rewritten with the latest evidence; I will deploy it together with T2 after verification."),
+ ]);
+ await runtime.board.checkReports();
+ await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
+ const state = await runtime.board.state();
+ expect(state.tasks[0]!.eventSeq).toBe(1);
+ expect(meta(state).results.stale).toBe(false);
+ expect(meta(state).next.stale).toBe(false);
+ expect(state.tasks[1]!.eventSeq).toBe(0);
+ expect(state.tasks[1]!.report.freshness!.results.stale).toBe(false);
+ expect(state.reportTracking!.T2!.pending).toBeUndefined();
+ prepareReportNudges(state, START + 60_000, owner);
+ expect(state.reportOutbox).toEqual([]);
+ const entries = await runtime.conversation.entries({}, 100, undefined, BACKGROUND_CONTEXT);
+ const reportInputs = entries.items.filter(entry => entry.kind === "pi.user" && JSON.stringify(entry.model).includes("[reports]"));
+ expect(reportInputs).toHaveLength(1);
+ expect(JSON.stringify(reportInputs[0]!.model)).toContain("T1");
+}, 15_000);
+
+it.each(["What changed on T1?", "[task T1, feedback F1] What changed?"])("only tasks in the user's message count: %s", async input => {
+ const { setup, runtime } = await integration();
+ await runtime.board.saveTask({ task: { title: "Unrelated synthetic task", description: "", acceptance: null, status: "in_progress", blockedBy: [], blockedReason: null, writeScopes: [] } }, "coordinator");
+ setup.faux.setResponses([fauxAssistantMessage("T1 now has synthetic verification evidence and is ready for a careful owner review. T2 also has synthetic assets ready for a separate review.")]);
+ const turn = await runtime.conversation.submit({ type: "input", content: input, requestId: "user-subject" }, BACKGROUND_CONTEXT);
+ await turn.wait(BACKGROUND_CONTEXT); await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
+ const state = await runtime.board.state();
+ expect(state.tasks[0]!.eventSeq).toBe(1);
+ expect(meta(state).results.reasons).toEqual(["discussed in chat"]);
+ expect(meta(state).next.reasons).toEqual(["discussed in chat"]);
+ expect(state.tasks[1]!.eventSeq).toBe(0);
+ expect(state.tasks[1]!.report.freshness!.results.stale).toBe(false);
+ expect(state.reportTracking!.T2!.pending).toBeUndefined();
+}, 15_000);
+
+it.each([false, true])("feedback handled in the same turn suppresses mentions (with report write: %s)", async withReport => {
+ const { setup, runtime } = await integration();
+ const feedback = await runtime.board.recordFeedback({ taskId: "T1", text: "What changed?", images: 0, threadId: "main", requestId: "feedback-subject" });
+ const before = (await runtime.board.state()).tasks[0]!.eventSeq;
+ setup.faux.setResponses([
+  fauxAssistantMessage([fauxToolCall("board", { action: "feedback", id: "T1", feedbackId: feedback.id, state: "addressed", note: "Answered in chat" })], { stopReason: "toolUse" }),
+  ...(withReport ? [fauxAssistantMessage([fauxToolCall("board", { action: "write_report", id: "T1", results: "Synthetic checks passed", next: "Review the evidence" })], { stopReason: "toolUse" })] : []),
+  fauxAssistantMessage("T1 now has synthetic verification evidence and is ready for a careful owner review before publication."),
+ ]);
+ const turn = await runtime.conversation.submit({ type: "input", content: `[task T1, feedback ${feedback.id}] What changed?`, requestId: "feedback-answer" }, BACKGROUND_CONTEXT);
+ await turn.wait(BACKGROUND_CONTEXT); await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
+ const state = await runtime.board.state();
+ expect(state.tasks[0]!.eventSeq).toBe(before! + 1); // only the structured feedback-addressed fact
+ for (const section of ["results", "next"] as const) expect(meta(state)[section].reasons).not.toContain("discussed in chat");
+ expect((await runtime.board.timeline("T1")).feedback[0]!.state).toBe("addressed");
+}, 15_000);
+
+it("failed feedback writes do not exempt a user discussion", async () => {
+ const { setup, runtime } = await integration();
+ setup.faux.setResponses([
+  fauxAssistantMessage([fauxToolCall("board", { action: "feedback", id: "T1", feedbackId: "F99", state: "addressed" })], { stopReason: "toolUse" }),
+  fauxAssistantMessage("T1 now has synthetic verification evidence and is ready for a careful owner review before publication."),
+ ]);
+ const turn = await runtime.conversation.submit({ type: "input", content: "What changed on T1?", requestId: "failed-feedback" }, BACKGROUND_CONTEXT);
+ await turn.wait(BACKGROUND_CONTEXT); await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
+ expect(meta(await runtime.board.state()).results.reasons).toEqual(["discussed in chat"]);
+}, 15_000);
+
+it.each(["done", "dropped"] as const)("mentions of %s tasks never count even in a user turn", async status => {
+ const { setup, runtime } = await integration();
+ const row = (await runtime.board.state()).tasks[0]!;
+ await runtime.board.saveTask({ taskId: row.id, expectedRevision: row.revision, task: { ...row, status } }, "coordinator");
+ const before = (await runtime.board.state()).tasks[0]!.eventSeq;
+ setup.faux.setResponses([fauxAssistantMessage("T1 now has synthetic verification evidence and is ready for a careful owner review before publication.")]);
+ const turn = await runtime.conversation.submit({ type: "input", content: "What changed on T1?", requestId: "closed-mention" }, BACKGROUND_CONTEXT);
+ await turn.wait(BACKGROUND_CONTEXT); await runtime.conversation.waitForIdle(BACKGROUND_CONTEXT);
+ const state = await runtime.board.state();
+ expect(state.tasks[0]!.eventSeq).toBe(before);
+ expect(meta(state).results.stale).toBe(false);
+ expect(state.reportTracking!.T1!.pending).toBeUndefined();
+}, 15_000);
+
+it.each([true, false])("a preceding-turn rewrite after the user message covers only rewritten sections (both: %s)", async both => {
+ const { runtime } = await integration();
+ const commit = <R>(change: Parameters<typeof runtime.harness.commit<R>>[0]) => runtime.harness.commit(change, BACKGROUND_CONTEXT);
+ await runtime.board.writeReport(commit, { taskId: "T1", sections: { results: "Synthetic checks passed", ...(both ? { next: "Review the evidence" } : {}) }, by }, "preceding-turn-write");
+ const reply = "T1 now has synthetic verification evidence and is ready for a careful owner review before publication.";
+ await runtime.board.noteChat(reply, new Set(), "later-turn", "main", new Map([["T1", START - 1]]));
+ const state = await runtime.board.state();
+ expect(meta(state).results.stale).toBe(false);
+ expect(meta(state).next.stale).toBe(!both);
+ expect(state.tasks[0]!.eventSeq).toBe(both ? 0 : 1);
 }, 15_000);
