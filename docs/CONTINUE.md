@@ -1,5 +1,36 @@
 # Continue
 
+## T154: MCP sign-in in another browser
+
+Web and Android now offer Copy sign-in link beside Sign in. Copy starts without
+opening consent, reuses an in-memory pending URL, and shows the return hint.
+Android keeps an inline write-only callback field visible while pending. Web's
+callback strips its query and offers “Sign-in almost done” plus full-URL Copy
+when local routing, authentication or the matching pending flow is absent.
+Only a saved backend/flow pair on an authenticated connection may auto-complete;
+legacy backend-only routing falls back to copy-back. No code is submitted from
+the copy-back screen. Neither client persists authorization/callback URLs.
+
+Binding was already correct: authenticated paired session ID survives socket
+reconnect and token renewal; another paired session cannot complete or cancel.
+Auth-off flows remain bound to their original socket. No server/protocol change
+was needed. The new real-socket regression proves reconnect, other-session
+rejection and one-use pasted completion; PKCE/issuer/state checks are unchanged.
+
+T154 retains desktop/phone light/dark web before/after shots, callback screens
+in a separate Chromium profile, connected states and a full copy → consent →
+copy-back → reconnect → paste recording. Android emulator-only light/dark shots
+and recording prove actual clipboard copy, hint and visible pending field.
+Replay web with `mcp-oauth-web-demo.ts` and `mcp-copy-link-proof.ts`, Vite :5186
+and separate Chromium user-data profiles on CDP :9386/:9387. Fake peers are
+synthetic; SSE peers flush initial bytes and send keepalives. No real accounts,
+physical device, push, main move or deployment.
+
+Final sequential gates pass: root 2,527 tests / 92,265 assertions; typecheck;
+web check zero diagnostics, 1,066 tests / 79,769 assertions, build; Android 910
+JVM tests (two opt-in skips), debug assembly and lint (zero errors, 49 warnings).
+Gradle daemons stopped. No new dependency or generated protocol changes.
+
 ## T152: pilot.2 prepared, not published
 
 Prepared `v0.1.0-pilot.2` on the T151 main tip. Package/server identity, current

@@ -12,10 +12,14 @@
   let busy = $state(false);
   let error = $state('');
   let redirectUrl = $state('');
+  let authorization = $state<{ flowId: string; url: string } | undefined>();
+  let copied = $state(false);
+  let manualCopy = $state(false);
   const flow = $derived(server.oauthFlow);
   const pending = $derived(flow?.status === 'pending');
   $effect(() => {
     if (!pending) redirectUrl = '';
+    if (authorization && (!pending || flow?.flowId !== authorization.flowId)) { authorization = undefined; copied = false; manualCopy = false; }
     if (server.status === 'connected') error = '';
   });
   async function run(action: () => Promise<void>) {
@@ -27,7 +31,26 @@
   function signIn() {
     redirectUrl = '';
     // No await before this helper: its popup must open in the click's user activation.
-    void run(async () => { await startMcpOAuth(backend, server.id); await refresh(); });
+    void run(async () => {
+      const started = await startMcpOAuth(backend, server.id);
+      await refresh();
+      authorization = started.authorizationUrl ? { flowId: started.flowId, url: started.authorizationUrl } : undefined;
+      copied = false; manualCopy = false;
+    });
+  }
+  async function copySignInLink() {
+    await run(async () => {
+      let link = authorization?.url;
+      if (!link) {
+        const started = await startMcpOAuth(backend, server.id, false);
+        await refresh();
+        authorization = started.authorizationUrl ? { flowId: started.flowId, url: started.authorizationUrl } : undefined;
+        link = authorization?.url;
+      }
+      if (!link) return;
+      try { await navigator.clipboard.writeText(link); copied = true; manualCopy = false; }
+      catch { manualCopy = true; error = 'Clipboard unavailable. Select and copy the sign-in link below.'; }
+    });
   }
   async function cancel() {
     if (!flow) return;
@@ -48,10 +71,13 @@
 <SettingsRow label="Sign in with OAuth" hint="Consent opens in your browser. Credentials stay on this backend." control="full">
   <div class="flex flex-wrap items-center gap-2">
     <Button data-mcp-oauth-sign-in onclick={signIn} disabled={busy || pending}>{server.authKind === 'oauth' && server.hasCredential ? 'Sign in again' : 'Sign in'}</Button>
+    <Button data-mcp-oauth-copy variant="outline" onclick={() => void copySignInLink()} disabled={busy || (pending && !authorization)}>Copy sign-in link</Button>
     {#if pending}<Button data-mcp-oauth-cancel variant="outline" onclick={() => void cancel()} disabled={busy}>Cancel sign-in</Button>{/if}
   </div>
+  {#if copied && pending}<p class="text-sm text-muted-foreground" role="status">Copied — open it in the browser where you're signed in, then come back.</p>{/if}
+  {#if manualCopy && authorization && pending}<input class="min-h-11 w-full rounded-lg border bg-background px-3 text-sm" aria-label="Sign-in link" readonly value={authorization.url} />{/if}
   {#if flow}
-    <p class="text-sm {flow.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'}" role="status">{mcpOAuthFlowLabel(flow)}{pending ? '. Finish consent in the tab that opened, or paste the callback below.' : '.'}</p>
+    <p class="text-sm {flow.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'}" role="status">{mcpOAuthFlowLabel(flow)}{pending ? '. Finish consent in your browser, then paste the callback below if needed.' : '.'}</p>
     {#if flow.error}<p class="text-sm break-words text-destructive" role="alert">{flow.error}</p>{/if}
   {/if}
   {#if pending}

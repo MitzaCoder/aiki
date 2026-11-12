@@ -8,6 +8,23 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class McpTest {
+    @Test fun copyStartsWithoutBrowserAndReusesPendingLink() = kotlinx.coroutines.runBlocking {
+        var starts = 0
+        val copies = mutableListOf<String>()
+        val url = "https://issuer.example.test/authorize?state=synthetic"
+        assertTrue(copyMcpSignInLink(null, { starts++; url }, { copies.add(it) }))
+        assertTrue(copyMcpSignInLink(url, { error("must reuse pending flow") }, { copies.add(it) }))
+        assertEquals(1, starts)
+        assertEquals(listOf(url, url), copies)
+        assertFalse(copyMcpSignInLink(null, { "" }, { error("no link to copy") }))
+        assertFalse(copyMcpSignInLink(null, { null }, { error("start failed") }))
+    }
+    @Test fun clipboardFailureIsNotReportedAsCopied() = kotlinx.coroutines.runBlocking {
+        var failed = false
+        try { copyMcpSignInLink("https://issuer.example.test/authorize", { null }, { error("blocked") }) }
+        catch (_: IllegalStateException) { failed = true }
+        assertTrue(failed)
+    }
     private val redirect = "https://app.example.test/mcp/oauth/callback"
     private fun tool(description: String = "Synthetic page search") = McpOAuthCompleteResponseServerToolsItem(
         name = "read_page", description = description, inputSchema = emptyMap(), policy = "ask")

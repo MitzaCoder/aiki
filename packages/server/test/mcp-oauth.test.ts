@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { createSetup, TestClient } from "./support.ts";
 import { fakeMcpOAuth } from "./mcp-oauth-support.ts";
+import { authSecret } from "../src/device-auth.ts";
 import type { McpCredential } from "../src/credentials.ts";
 const cleanups: (() => Promise<void>)[] = [];
 afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup(); });
@@ -109,4 +110,32 @@ it("serializes concurrent 401/expiry refreshes, persists rotation, invalid_grant
  expect((await mcp.refresh("notion")).status).toBe("needs_sign_in");
  expect(fake.refreshes).toBe(count);
  expect((await mcp.view("notion")).hasCredential).toBe(false);
+}, 20_000);
+
+it("keeps pasted completion bound to the paired session across a socket reconnect", async () => {
+ const test = await createSetup({ auth: { mode: "required" }, allowedOrigins: [origin], terminals: false });
+ cleanups.push(test.cleanup);
+ const fake = fakeMcpOAuth(); cleanups.push(fake.close);
+ async function enroll() {
+  const grant = test.server.auth.bootstrap();
+  return (await test.server.auth.redeem({ grantId: grant.requestId, secret: grant.secret,
+   claimId: crypto.randomUUID(), claimSecret: authSecret("aiki_c1"), label: "Synthetic browser", platform: "web" }, "loopback", true)).credentials!;
+ }
+ async function connect(accessToken: string) {
+  const client = await TestClient.open(test.server); cleanups.push(async () => client.close());
+  expect(await client.request({ type: "hello", protocolVersion: 1, auth: { accessToken } })).toMatchObject({ type: "hello" });
+  return client;
+ }
+ const credentials = await enroll(); const initial = await connect(credentials.accessToken);
+ await initial.request({ type: "mcp.add", serverId: "notion", name: "Synthetic Notion", url: fake.url });
+ const started = await initial.request({ type: "mcp.oauth.start", serverId: "notion", redirectUri });
+ if (started.type !== "mcp.oauth.start") throw new Error("start");
+ initial.close();
+ const redirectUrl = await fake.callback(started.authorizationUrl);
+ const other = await connect((await enroll()).accessToken);
+ expect(await other.request({ type: "mcp.oauth.complete", redirectUrl })).toMatchObject({ type: "error" });
+ expect(await other.request({ type: "mcp.oauth.cancel", flowId: started.flowId })).toMatchObject({ type: "error" });
+ const reconnected = await connect(credentials.accessToken);
+ expect(await reconnected.request({ type: "mcp.oauth.complete", redirectUrl })).toMatchObject({ type: "mcp.oauth.complete", server: { status: "connected" } });
+ expect(await reconnected.request({ type: "mcp.oauth.complete", flowId: started.flowId, redirectUrl })).toMatchObject({ type: "error" });
 }, 20_000);

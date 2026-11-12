@@ -155,7 +155,7 @@ for (const form of ['desktop', 'phone']) for (const mode of ['light', 'dark']) {
     for (const key of Object.keys(localStorage)) if (key.startsWith('aiki.mcpOAuth.')) localStorage.removeItem(key);
   });
   await click(consent.page, '#approve-synthetic', true);
-  await waitText(consent.page, pasted ? 'Return to Aiki' : 'Sign-in complete');
+  await waitText(consent.page, pasted ? 'Sign-in almost done' : 'Sign-in complete');
   if (await consent.page.run(() => Boolean(location.search))) throw new Error('Callback query was not stripped');
   if (pasted) {
     const callback = await consent.page.run(() => document.querySelector<HTMLTextAreaElement>('#callback-url')!.value);

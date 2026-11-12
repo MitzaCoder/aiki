@@ -7,6 +7,14 @@ import java.net.URLDecoder
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
+/** Copy starts no browser and never replaces a still-pending authorization. */
+suspend fun copyMcpSignInLink(existing: String?, start: suspend () -> String?, copy: (String) -> Unit): Boolean {
+    val url = existing ?: start()
+    if (url.isNullOrBlank()) return false // A saved grant may refresh without consent.
+    copy(url)
+    return true
+}
+
 const val MCP_FEATURE = "mcp-servers"
 const val MCP_CALLBACK_PATH = "/mcp/oauth/callback"
 val MCP_ROLES = listOf("coordinator", "workers", "background")

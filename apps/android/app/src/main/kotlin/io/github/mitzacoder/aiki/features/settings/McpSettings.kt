@@ -1,6 +1,9 @@
 package io.github.mitzacoder.aiki.features.settings
 
 import android.net.Uri
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
@@ -92,6 +95,10 @@ private fun McpServerDetails(backend: BackendSession, server: McpOAuthCompleteRe
     var callbackDialog by remember(server.id) { mutableStateOf(false) }
     var confirmRemove by remember(server.id) { mutableStateOf(false) }
     var filter by remember(server.id) { mutableStateOf("") }
+    var copied by remember(server.id) { mutableStateOf(false) }
+    LaunchedEffect(server.oauthFlow?.status) { if (server.oauthFlow?.status != "pending") copied = false }
+    var copyError by remember(server.id) { mutableStateOf(false) }
+    var callbackUrl by remember(server.oauthFlow?.flowId, server.oauthFlow?.status) { mutableStateOf("") }
     fun change(action: suspend () -> Unit) { scope.launch { session.perform { action(); session.reload() } } }
     SettingsGroup(title = server.name) { GroupRow {
         Text("${mcpStatusLabel(server.status)} · ${server.tools.size} tools", style = MaterialTheme.typography.titleMedium)
@@ -108,11 +115,32 @@ private fun McpServerDetails(backend: BackendSession, server: McpOAuthCompleteRe
                     catch (_: Exception) { session.browserFailed() }
                 }
             } }, enabled = !busy && server.oauthFlow?.status != "pending") { Text("Sign in") }
+            OutlinedButton(onClick = { scope.launch {
+                try {
+                    copied = session.copySignInLink(server.id) { url ->
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("MCP sign-in link", url))
+                    }
+                    copyError = false
+                } catch (_: Exception) { copyError = true }
+            } }, enabled = !busy) { Text("Copy sign-in link") }
             OutlinedButton(onClick = { tokenDialog = true }, enabled = !busy) { Text("Paste token") }
             OutlinedButton(onClick = { callbackDialog = true }, enabled = !busy) { Text("Paste callback URL") }
             OutlinedButton(onClick = { change { client.request(McpRefreshRequest(serverId = server.id)) } }, enabled = !busy) { Text("Refresh tools") }
             OutlinedButton(onClick = { change { client.request(McpDisconnectRequest(serverId = server.id)) } }, enabled = !busy) { Text("Disconnect") }
             TextButton(onClick = { confirmRemove = true }, enabled = !busy) { Text("Remove", color = MaterialTheme.colorScheme.error) }
+        }
+        if (copied && server.oauthFlow?.status == "pending") Text("Copied — open it in the browser where you're signed in, then come back.", style = MaterialTheme.typography.bodySmall)
+        if (copyError) Text("Could not copy the sign-in link. Try again.", color = MaterialTheme.colorScheme.error)
+        if (server.oauthFlow?.status == "pending") {
+            OutlinedTextField(callbackUrl, { callbackUrl = it }, label = { Text("Paste callback URL") },
+                visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier.fillMaxWidth(), enabled = !busy)
+            Text("Copy the callback link from your browser and paste it here. It contains a short-lived code; do not share it.", style = MaterialTheme.typography.bodySmall)
+            Button(onClick = {
+                val url = callbackUrl.trim(); callbackUrl = ""
+                scope.launch { session.complete(url) }
+            }, enabled = !busy && callbackUrl.isNotBlank()) { Text("Complete sign-in") }
         }
         Text("Sign-in returns through ${session.redirectUri}. If this backend does not allow the configured web origin, its operator must configure that origin. After signing in, paste the callback URL here if the browser does not return to Aiki.", style = MaterialTheme.typography.bodySmall)
     } }

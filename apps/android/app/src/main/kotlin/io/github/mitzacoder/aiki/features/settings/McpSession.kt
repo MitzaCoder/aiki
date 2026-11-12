@@ -20,7 +20,7 @@ class McpSession(private val client: HarnessClient, private val scope: Coroutine
     private val mutableBusy = MutableStateFlow(false)
     val busy = mutableBusy.asStateFlow()
     val redirectUri = BuildConfig.APP_ORIGIN.trimEnd('/') + MCP_CALLBACK_PATH
-    private data class Pending(val flowId: String, val state: String, val serverId: String)
+    private data class Pending(val flowId: String, val state: String, val serverId: String, val authorizationUrl: String)
     @Volatile private var pending: Pending? = null
 
     init {
@@ -61,13 +61,16 @@ class McpSession(private val client: HarnessClient, private val scope: Coroutine
             val response = client.request(McpOAuthStartRequest(serverId = serverId, redirectUri = redirectUri))
             if (response.authorizationUrl.isNotBlank()) {
                 val state = requireNotNull(mcpAuthorizationState(response.authorizationUrl)) { "The server returned no OAuth state." }
-                pending = Pending(response.flowId, state, serverId)
+                pending = Pending(response.flowId, state, serverId, response.authorizationUrl)
                 authorization = response.authorizationUrl
             }
             reload()
         }
         return authorization
     }
+    suspend fun copySignInLink(serverId: String, copy: (String) -> Unit): Boolean = copyMcpSignInLink(
+        pending?.takeIf { it.serverId == serverId }?.authorizationUrl,
+        { start(serverId) }, copy)
     fun accepts(url: String): Boolean = pending?.state?.let { it == mcpCallbackState(url, redirectUri) } == true
     suspend fun complete(url: String) = perform {
         val flow = pending

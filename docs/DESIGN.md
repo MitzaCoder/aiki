@@ -675,6 +675,26 @@ Web and Android share ordering and count rules, including activity-only fallback
 
 ## MCP servers
 
+T154: Web and Android offer Copy sign-in link next to Sign in. Copy starts
+consent without opening a browser, or reuses the current in-memory pending URL;
+the hint tells the owner to open it in their signed-in browser and come back.
+The pending Paste callback URL field remains visible. Authorization URLs are
+never persisted. A callback browser without the initiating local state/session
+shows “Sign-in almost done” and a full callback Copy button, without submitting
+the code. It strips the address-bar query and keeps the copy value only in memory.
+Automatic completion requires a locally saved backend/flow pair and that flow
+still pending on the authenticated backend. Callback query parameters never
+select a backend. On web, clipboard failures leave a selectable URL for manual
+copy; Android reports a failed copy instead of claiming success.
+
+Keep the existing binding: authenticated device session ID, not socket ID and
+not backend-wide. The same paired session can reconnect/reload and paste; a
+different paired session cannot complete or cancel it. Access/session-token
+renewal retains that identity; revocation, re-pairing or backend restart requires
+starting over. Auth-off connections remain socket-bound
+because they have no authenticated device identity. PKCE, issuer validation,
+ten-minute expiry and consume-before-exchange remain unchanged.
+
 Web settings (stage 3) are gated by `mcp-servers`. Backend settings → MCP
 servers lists status and tool count, adds backend-provided presets or a named
 URL, and opens server details. Details offer write-only pasted-token connection,
@@ -785,9 +805,10 @@ initiating device session (or the original socket without device authentication)
 Authenticated tabs can reload/rejoin; backend restart discards pending flows but
 preserves completed grants. Cancellation never drops an already-rotated refresh.
 
-The web helper `startMcpOAuth(backend,serverId)` saves only backend ID under
-`aiki.mcpOAuth.<state>` and opens consent; the callback strips its query before
-async completion. No routing authority comes from callback parameters. An
+The web helper `startMcpOAuth(backend,serverId)` saves only backend/flow IDs under
+`aiki.mcpOAuth.<state>` and opens consent (or leaves settings open for copy-only
+start); the callback strips its query before async completion. Old backend-only
+routes safely fall back to copy-back. No routing authority comes from callback parameters. An
 unpaired browser shows Copy URL for pasting into the initiating device. Android
 must intercept the same stable callback path and submit its full URL to the
 originating backend using its existing device session; never store MCP tokens
