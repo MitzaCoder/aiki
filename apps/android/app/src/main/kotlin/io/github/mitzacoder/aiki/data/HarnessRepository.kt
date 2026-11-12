@@ -136,7 +136,6 @@ class HarnessRepository(private val store: DeviceStore, private val authStore: D
     suspend fun setTaskFamilyExpanded(backendKey: String, projectId: String, parentId: String, expanded: Boolean) = update {
         it.withFamilyExpansion(backendKey, projectId, parentId, expanded)
     }
-    suspend fun setTopLevelTasksOnly(on: Boolean) = update { it.copy(topLevelTasksOnly = on) }
     suspend fun setMediaSeparate(on: Boolean) = update { it.copy(mediaSeparate = on) }
     /** Hides one deploy attempt's banner on this device until the next attempt. */
     suspend fun dismissDeploy(deploy: DeployStatus) = update { it.copy(dismissedDeploys = addDismissedDeploy(it.dismissedDeploys, deploy)) }

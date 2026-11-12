@@ -1,6 +1,7 @@
 package io.github.mitzacoder.aiki.tasks
 
 import io.github.mitzacoder.aiki.features.tasks.*
+import io.github.mitzacoder.aiki.data.DeviceSettings
 import io.github.mitzacoder.aiki.data.wireJson
 import io.github.mitzacoder.aiki.protocol.*
 import kotlinx.serialization.json.*
@@ -32,9 +33,18 @@ class TaskRelationsTest {
             task("T2").copy(parent = "T1", ledTo = listOf("T3")), task("T3").copy(subtasks = listOf("T4")),
             task("T4").copy(ledTo = listOf("T1")), task("T5"), task("T6").copy(related = listOf("T7")), task("T7"))
         assertEquals(setOf("T1", "T2", "T3", "T4", "T6"), linkedIds("T1", tasks))
-        assertEquals(listOf("T1", "T3", "T4", "T6"), applyTaskFilter(tasks, true, "T1").map { it.id })
-        assertEquals(listOf("T2"), applyTaskFilter(tasks, true, "T2").filter { it.id == "T2" }.map { it.id })
+        assertEquals(listOf("T1", "T2", "T3", "T4", "T6"), applyTaskFilter(tasks, "T1").map { it.id })
+        assertEquals(listOf("T2"), applyTaskFilter(tasks, "T2").filter { it.id == "T2" }.map { it.id })
+        assertEquals(tasks, applyTaskFilter(tasks, null))
         assertEquals(setOf("T99"), linkedIds("T99", tasks))
+    }
+    @Test fun obsoleteTopLevelPreferenceDoesNotHideSubtasksOrResetOtherSettings() {
+        val restored = wireJson.decodeFromString(DeviceSettings.serializer(), """{"topLevelTasksOnly":true,"tasksView":"board","timelineNewestFirst":false}""")
+        assertEquals("board", restored.tasksView)
+        assertFalse(restored.timelineNewestFirst)
+        assertFalse(wireJson.encodeToString(DeviceSettings.serializer(), restored).contains("topLevelTasksOnly"))
+        val tasks = listOf(task("T1"), task("T2").copy(parent = "T1"))
+        assertEquals(tasks, applyTaskFilter(tasks, null))
     }
     @Test fun progressAndBadgeUseCountsNotArrayLength() {
         assertNull(subtaskProgressText(task("T1")))

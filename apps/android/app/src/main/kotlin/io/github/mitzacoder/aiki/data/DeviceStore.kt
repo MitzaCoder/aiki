@@ -30,7 +30,6 @@ data class DeviceSettings(
     val taskFamilyExpansion: Map<String, Map<String, Map<String, Boolean>>> = emptyMap(),
     /** Waiting calendar dates resolve at this local wall time on this device. */
     val workDayStart: String = DEFAULT_WORK_DAY_START,
-    val topLevelTasksOnly: Boolean = false,
     /** Show before/after images individually rather than as one compare slide on this device. */
     val mediaSeparate: Boolean = false,
     /** Deploy attempts whose banner was dismissed on this device (`commit@at`), newest last. */

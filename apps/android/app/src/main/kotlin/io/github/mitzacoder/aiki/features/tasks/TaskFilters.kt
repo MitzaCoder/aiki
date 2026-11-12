@@ -3,21 +3,18 @@ package io.github.mitzacoder.aiki.features.tasks
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.mitzacoder.aiki.data.HarnessFeature
 import io.github.mitzacoder.aiki.navigation.ProjectScreenContext
 import io.github.mitzacoder.aiki.protocol.BoardTask
-import kotlinx.coroutines.launch
 
-/** Shared list/board filters. Top-level is per device; the linked task is per project's live board. */
+/** Shared list/board focus filter, per project's live board. */
 @Composable
 internal fun filteredTasks(context: ProjectScreenContext, tasks: List<BoardTask>, includeSearch: Boolean = true): List<BoardTask> {
     val connection by context.backend.client.state.collectAsStateWithLifecycle()
-    val settings by context.repository.settings.collectAsStateWithLifecycle()
     val focus by context.board.linkedTask.collectAsStateWithLifecycle()
-    val filtered = if (connection.supports(HarnessFeature.TASK_LINKS)) applyTaskFilter(tasks, settings.topLevelTasksOnly, focus) else tasks
+    val filtered = if (connection.supports(HarnessFeature.TASK_LINKS)) applyTaskFilter(tasks, focus) else tasks
     val search = taskSearchState(context, tasks)
     return if (includeSearch && search.query.isNotBlank()) {
         val ids = search.index.search(search.query, filtered.map { it.id }.toSet()).map { it.id }.toSet()
@@ -29,18 +26,11 @@ internal fun filteredTasks(context: ProjectScreenContext, tasks: List<BoardTask>
 internal fun TaskFilters(context: ProjectScreenContext, tasks: List<BoardTask>) {
     val connection by context.backend.client.state.collectAsStateWithLifecycle()
     val search = taskSearchState(context, tasks)
-    val settings by context.repository.settings.collectAsStateWithLifecycle()
     val focus by context.board.linkedTask.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         TaskSearchBox(search)
-        if (connection.supports(HarnessFeature.TASK_LINKS)) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (tasks.any { it.parent != null } || settings.topLevelTasksOnly) FilterChip(
-            selected = settings.topLevelTasksOnly,
-            onClick = { scope.launch { context.repository.setTopLevelTasksOnly(!settings.topLevelTasksOnly) } },
-            label = { Text("Top-level only", style = TaskType.xs) },
-        )
-        focus?.let { id -> InputChip(selected = true, onClick = { context.board.showWithLinked(null) }, label = { Text("Linked to $id · Clear", style = TaskType.xs) }) }
+        if (connection.supports(HarnessFeature.TASK_LINKS) && focus != null) {
+            InputChip(selected = true, onClick = { context.board.showWithLinked(null) }, label = { Text("Linked to $focus · Clear", style = TaskType.xs) })
         }
     }
 }

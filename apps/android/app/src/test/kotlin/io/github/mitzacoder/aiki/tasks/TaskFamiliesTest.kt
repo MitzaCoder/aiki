@@ -81,10 +81,9 @@ class TaskFamiliesTest {
         val after = grouped(quietFamily.map { if (it.id == "T2") it.copy(status = "review") else it })
         assertEquals("T2", after.getValue(TaskSectionId.Review).single().row.task.id)
     }
-    @Test fun filteredArchivedAndUnavailableParentsDoNotSwallowChildren() {
+    @Test fun archivedAndUnavailableParentsDoNotSwallowChildren() {
         assertEquals(listOf("T2"), visible(grouped(listOf(task("T1", archived = true), task("T2").copy(parent = "T1"))).values.single()))
         assertEquals(listOf("T2"), visible(grouped(listOf(task("T2").copy(parent = "T404"))).values.single()))
-        assertEquals(listOf("T1", "T4"), visible(grouped(applyTaskFilter(quietFamily, topLevelOnly = true, focus = null)).values.single()))
     }
     @Test fun leavesHaveNoDisclosureAndStaleCyclesOrSelfLinksDoNotLoseTasks() {
         val families = grouped(listOf(task("T1").copy(parent = "T2"), task("T2").copy(parent = "T1"), task("T3").copy(parent = "T3")), expansion = mapOf("T1" to true, "T2" to true)).values.single()

@@ -2177,7 +2177,7 @@ an ineffective disclosure when every nested child must stay visible. A newly blo
 therefore appears immediately without requiring the user to reopen a family. Waiting sections start open (the user
 may still explicitly fold a whole section); recently closed starts folded unless it contains an open question or
 warning. Filtered, archived or missing
-parents leave visible children at the group root with a parent link. Existing top-level/focus filters still apply.
+parents leave visible children at the group root with a parent link. The linked-task focus filter still applies.
 
 **Choices and access.** Quiet families default collapsed. Explicit true/false choices persist per parent in the
 project/backend-scoped local key `aiki.task-families.v1:<backend>:<project>`; nested choices survive closing their
@@ -2237,7 +2237,7 @@ on a later board update. Ref metadata enriches short fields when the existing re
 
 **Context and controls.** Missing ancestor rows are inserted before their first matching descendant and dimmed;
 cycle guards prevent malformed families looping. Search does not fold away matching subtasks. Existing explicit
-top-level/linked filters and archived visibility remain authoritative, including for context ancestors. List
+the linked-task filter and archived visibility remain authoritative, including for context ancestors. List
 “Show closed” reads/writes the existing recently-closed section expansion choice; closed tasks stay out until it is
 on. Board retains its existing Done/archived rules. Title letters are highlighted without HTML injection; body-only
 hits get a bounded one-line snippet. No matches has its own message. Escape and Clear empty the field. Queries persist
@@ -2454,8 +2454,9 @@ its own list, and a timeline; the description stays the original ask and the rep
 - **Web.** Task sheet: a Related section grouped by kind (each link opens the task; closed and archived ones dimmed), the
   subtasks with status chips and a progress bar, a Feedback section (open first, state and note, Dismiss / Reopen), and
   a Timeline with kind filters. Rows, cards and the legacy board panel show a "↳ T8" chip on subtasks, a subtask count
-  on parents and an open-feedback badge. Two filters, in all three renderers and kept in `tasks-view.svelte.ts`: "Top-level only" (per
-  device; shown once a subtask exists) and "Linked to T8", which keeps that task, every task it links to or that links to it, and
+  on parents and an open-feedback badge. The "Top-level only" filter is removed for now on web and Android;
+  saved choices are ignored, so they cannot hide subtasks. The remaining filter, in all three renderers and kept in
+  `tasks-view.svelte.ts`, is "Linked to T8", which keeps that task, every task it links to or that links to it, and
   everything below it (its subtasks and the tasks found while working on it or on them, to any depth); it is set from the
   sheet's "Show with linked" and cleared with its chip. The feedback and timeline come from one read, `board.task.timeline`,
   repeated when the task's `timelineRevision`, feedback counts, status or report move; the timeline section is folded by default.

@@ -1,7 +1,7 @@
 /**
  * How tasks relate in the app: the links a task has (a parent, subtasks, the task it was found while working on, what
  * it led to, what it waits for and blocks, related tasks), their progress, the feedback entries on it, and the timeline's
- * kinds. Also the two list filters ("only top-level tasks", "this task and everything linked to it"). Pure functions, so
+ * kinds. Also the list focus filter ("this task and everything linked to it"). Pure functions, so
  * they are tested without a component. A backend without `task-links` sends none of the fields; every reader here takes
  * their absence as no links and no feedback.
  */
@@ -137,18 +137,16 @@ export function sortedFeedback(entries: readonly BoardFeedback[]): BoardFeedback
 
 // --- filters -----------------------------------------------------------------------------------------------------
 
-/** The two filters on the task list, the board and the legacy panel. */
+/** The focus filter on the task list, the board and the legacy panel. */
 export type TaskFilter = {
-	/** Hide tasks that are subtasks of another. */
-	topLevelOnly: boolean;
 	/** Show only this task and everything linked to it; null for no focus. */
 	focus: string | null;
 };
 
-export const NO_TASK_FILTER: TaskFilter = { topLevelOnly: false, focus: null };
+export const NO_TASK_FILTER: TaskFilter = { focus: null };
 
 export function filterIsActive(filter: TaskFilter): boolean {
-	return filter.topLevelOnly || filter.focus !== null;
+	return filter.focus !== null;
 }
 
 /**
@@ -181,36 +179,7 @@ export function applyTaskFilter<T extends Pick<BoardTask, "id" | "subtasks" | "p
 ): T[] {
 	if (!filterIsActive(filter)) return tasks as T[];
 	const keep = filter.focus === null ? undefined : linkedIds(filter.focus, tasks);
-	return tasks.filter((task) => (keep === undefined || keep.has(task.id)) && (!filter.topLevelOnly || task.parent == null || task.id === filter.focus));
-}
-
-/** Per device, like the Tasks view's mode. */
-export const TASK_FILTER_STORAGE_KEY = "aiki.task-filter.v1";
-
-export function loadTopLevelOnly(storage: Pick<Storage, "getItem"> | undefined = browserStorage()): boolean {
-	try {
-		return storage?.getItem(TASK_FILTER_STORAGE_KEY) === "top-level";
-	} catch {
-		return false;
-	}
-}
-
-export function saveTopLevelOnly(on: boolean, storage: Pick<Storage, "setItem" | "removeItem"> | undefined = browserStorage()): void {
-	try {
-		if (on) storage?.setItem(TASK_FILTER_STORAGE_KEY, "top-level");
-		else storage?.removeItem(TASK_FILTER_STORAGE_KEY);
-	} catch {
-		// Storage can be full or disabled; the choice holds for this page.
-	}
-}
-
-function browserStorage(): Storage | undefined {
-	if (typeof window === "undefined") return undefined;
-	try {
-		return window.localStorage;
-	} catch {
-		return undefined;
-	}
+	return tasks.filter((task) => keep === undefined || keep.has(task.id));
 }
 
 // --- timeline ----------------------------------------------------------------------------------------------------

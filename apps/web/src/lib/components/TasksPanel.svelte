@@ -100,7 +100,7 @@
 	let decisionsOpen = $state(false);
 
 	const tasks = $derived(board?.tasks ?? []);
-	/** The tasks the two filters let through; every other count reads the whole board. */
+	/** The tasks the focus filter lets through; every other count reads the whole board. */
 	const shownTasks = $derived(applyTaskFilter(tasks, taskFilter.current));
 	const search = useTaskSearch(() => tasks, () => board);
 	const searching = $derived(search.query.trim().length > 0);
@@ -110,7 +110,6 @@
 		const rows = new Map(sections.flatMap(section => section.rows.map(row => [row.task.id, row] as const)));
 		return searchHits.flatMap(hit => { const row = rows.get(hit.id); return row ? [{ row, children: [], canToggle: false, expanded: true, foldedCount: 0 } satisfies TaskFamily] : []; });
 	});
-	const canNarrow = $derived(tasks.some((task) => task.parent != null));
 	const sections = $derived(
 		board?.board === undefined
 			? []
@@ -306,7 +305,7 @@
 						{:else}
 							{openCount} open
 						{/if}
-						<TaskFilters {canNarrow} />
+						<TaskFilters />
 					</div>
 					<Button variant="ghost" size="sm" class="h-7 px-2 text-xs" onclick={() => (adding = true)}>
 						<PlusIcon />Add task

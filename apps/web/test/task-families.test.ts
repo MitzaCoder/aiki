@@ -4,7 +4,6 @@ import {
 	type FamilyExpansion, type TaskFamily
 } from '../src/lib/task-families.js';
 import { taskSections, type TaskRow } from '../src/lib/tasks.js';
-import { applyTaskFilter } from '../src/lib/task-relations.js';
 
 type BoardTask = TaskRow['task'];
 type Question = TaskRow['waiting'][number];
@@ -88,12 +87,10 @@ describe('collapsible task families', () => {
 		const after = grouped(quietFamily.map((entry) => entry.id === 'T2' ? { ...entry, status: 'review' } : entry));
 		expect(after.find(({ section }) => section.id === 'review')!.families[0]!.row.task.id).toBe('T2');
 	});
-	test('filtered, archived and unavailable parents do not swallow their children', () => {
+	test('archived and unavailable parents do not swallow their children', () => {
 		const archived = task('T1', { archived: true });
 		expect(visible(grouped([archived, task('T2', { parent: 'T1' })])[0]!.families)).toEqual(['T2']);
 		expect(visible(grouped([task('T2', { parent: 'T404' })])[0]!.families)).toEqual(['T2']);
-		const filtered = applyTaskFilter(quietFamily, { topLevelOnly: true, focus: null });
-		expect(visible(grouped(filtered)[0]!.families)).toEqual(['T1', 'T4']);
 	});
 	test('leaf rows have no disclosure, stale cycles and self-links do not lose tasks', () => {
 		const families = grouped([task('T1', { parent: 'T2' }), task('T2', { parent: 'T1' }), task('T3', { parent: 'T3' })], [], { T1: true, T2: true })[0]!.families;

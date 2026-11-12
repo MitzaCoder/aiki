@@ -1,5 +1,21 @@
 # Continue
 
+## T158: top-level-only task filter removed for now
+
+Web and Android no longer offer or apply “Top-level only”. Web ignores its old
+localStorage key; Android ignores the old serialized preference and omits it on
+future saves. Previously saved-on choices cannot hide subtasks. Linked-task focus,
+search, archive visibility and family expansion remain unchanged. Focus chips
+still clear normally; no empty filter row is left behind.
+
+Regression coverage checks the obsolete saved choice, linked focus and clear,
+subtask visibility and preservation of unrelated Android settings. Synthetic
+before/after web desktop light/dark and Android emulator light proof is on T158,
+with recordings exercising linked focus and search. Root tests (2,526), typecheck,
+web check/test (1,065)/build, Android unit tests (911, two opt-in skips), assembly,
+lint (zero errors, 49 warnings) and public scans pass. Gradle stopped. No push or
+main movement.
+
 ## T157: MCP preset catalogue and registered OAuth apps
 
 Web and Android Add server now share a searchable, eight-group backend catalogue:

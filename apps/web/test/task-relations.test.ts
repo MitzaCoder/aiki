@@ -2,16 +2,13 @@ import { describe, expect, it } from "bun:test";
 import type { BoardFeedback, BoardTask, BoardTimelineEntry } from "@aiki/protocol";
 import {
 	NO_TASK_FILTER,
-	TASK_FILTER_STORAGE_KEY,
 	applyTaskFilter,
 	feedbackStateWords,
 	hasLinks,
 	linkGroups,
 	linkTarget,
 	linkedIds,
-	loadTopLevelOnly,
 	openFeedbackCount,
-	saveTopLevelOnly,
 	sortedFeedback,
 	subtaskCountText,
 	subtaskFraction,
@@ -106,33 +103,14 @@ describe("filters", () => {
 		expect(applyTaskFilter(TASKS, NO_TASK_FILTER)).toHaveLength(8);
 	});
 
-	it("hides subtasks when only top-level tasks show", () => {
-		expect(applyTaskFilter(TASKS, { topLevelOnly: true, focus: null }).map((entry) => entry.id)).toEqual(["T1", "T5", "T6", "T7", "T8"]);
-	});
-
 	it("shows a task with everything linked to it, and everything below it", () => {
 		// T8 was found while on T4, a subtask of a subtask: it is below T1.
 		expect([...linkedIds("T1", TASKS)].sort()).toEqual(["T1", "T2", "T3", "T4", "T5", "T6", "T8"]);
-		expect(applyTaskFilter(TASKS, { topLevelOnly: false, focus: "T6" }).map((entry) => entry.id)).toEqual(["T1", "T6"]);
-		expect(applyTaskFilter(TASKS, { topLevelOnly: false, focus: "T7" }).map((entry) => entry.id)).toEqual(["T7"]);
+		expect(applyTaskFilter(TASKS, { focus: "T6" }).map((entry) => entry.id)).toEqual(["T1", "T6"]);
+		expect(applyTaskFilter(TASKS, { focus: "T7" }).map((entry) => entry.id)).toEqual(["T7"]);
 		expect([...linkedIds("T99", TASKS)]).toEqual(["T99"]);
-		// Both together: the focus stays even when it is a subtask itself.
-		expect(applyTaskFilter(TASKS, { topLevelOnly: true, focus: "T3" }).map((entry) => entry.id)).toEqual(["T1", "T3", "T8"]);
-	});
-
-	it("remembers only the top-level choice, per device", () => {
-		const store = new Map<string, string>();
-		const storage = {
-			getItem: (key: string) => store.get(key) ?? null,
-			setItem: (key: string, value: string) => void store.set(key, value),
-			removeItem: (key: string) => void store.delete(key),
-		};
-		expect(loadTopLevelOnly(storage)).toBe(false);
-		saveTopLevelOnly(true, storage);
-		expect(store.get(TASK_FILTER_STORAGE_KEY)).toBe("top-level");
-		expect(loadTopLevelOnly(storage)).toBe(true);
-		saveTopLevelOnly(false, storage);
-		expect(loadTopLevelOnly(storage)).toBe(false);
+		// A focused subtask stays visible with its links.
+		expect(applyTaskFilter(TASKS, { focus: "T3" }).map((entry) => entry.id)).toEqual(["T1", "T3", "T4", "T8"]);
 	});
 });
 

@@ -86,9 +86,8 @@
 	const questions = $derived(board?.board === undefined ? [] : openQuestions(board.board));
 	const answered = $derived(board?.board === undefined ? [] : answeredQuestions(board.board));
 	const decisions = $derived(board?.board?.decisions ?? []);
-	/** The tasks the two filters let through; the rest of the panel reads every task. */
+	/** The tasks the focus filter lets through; the rest of the panel reads every task. */
 	const shownTasks = $derived(applyTaskFilter(tasks, taskFilter.current));
-	const canNarrow = $derived(tasks.some((task) => task.parent != null));
 	const groups = $derived(groupTasks(shownTasks, { includeArchived: board?.showArchived === true }));
 	const archived = $derived(board?.showArchived === true ? archivedCount(tasks) : 0);
 	const editingTask = $derived(editing === undefined || editing === 'new' ? undefined : board?.task(editing));
@@ -384,7 +383,7 @@
 					<div class="flex items-center gap-1 px-1">
 						<div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
 							{@render sectionTitle('Tasks')}
-							<TaskFilters {canNarrow} />
+							<TaskFilters />
 						</div>
 						<Button variant="ghost" size="sm" class="h-7 px-2 text-xs" onclick={() => (editing = 'new')}>
 							<PlusIcon />Add task

@@ -54,9 +54,9 @@ fun linkedIds(taskId: String, tasks: List<BoardTask>): Set<String> {
     }
     return ids
 }
-fun applyTaskFilter(tasks: List<BoardTask>, topLevelOnly: Boolean, focus: String?): List<BoardTask> {
+fun applyTaskFilter(tasks: List<BoardTask>, focus: String?): List<BoardTask> {
     val keep = focus?.let { linkedIds(it, tasks) }
-    return tasks.filter { (keep == null || it.id in keep) && (!topLevelOnly || it.parent == null || it.id == focus) }
+    return tasks.filter { keep == null || it.id in keep }
 }
 val TIMELINE_KINDS = listOf("feedback" to "Feedback", "status" to "Status", "worker" to "Workers", "question" to "Questions", "decision" to "Decisions", "milestone" to "Milestones", "link" to "Links")
 fun visibleTimeline(entries: List<BoardTimelineEntry>, hidden: Set<String>): List<BoardTimelineEntry> = entries.filterNot { it.kind in hidden }
