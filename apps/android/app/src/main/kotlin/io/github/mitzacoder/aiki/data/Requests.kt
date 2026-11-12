@@ -52,6 +52,42 @@ suspend fun HarnessClient.request(value: AuthPairingsDenyRequest, explicitNulls:
     value.id, withExplicitNulls(wireJson.encodeToJsonElement(AuthPairingsDenyRequest.serializer(), value).jsonObject, explicitNulls), AuthPairingsDenyResponse.serializer()
 )
 
+suspend fun HarnessClient.request(value: McpListRequest, explicitNulls: Set<String> = emptySet()): McpListResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpListRequest.serializer(), value).jsonObject, explicitNulls), McpListResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: McpAddRequest, explicitNulls: Set<String> = emptySet()): McpAddResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpAddRequest.serializer(), value).jsonObject, explicitNulls), McpAddResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: McpTokenSetRequest, explicitNulls: Set<String> = emptySet()): McpTokenSetResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpTokenSetRequest.serializer(), value).jsonObject, explicitNulls), McpTokenSetResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: McpRefreshRequest, explicitNulls: Set<String> = emptySet()): McpRefreshResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpRefreshRequest.serializer(), value).jsonObject, explicitNulls), McpRefreshResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: McpPolicySetRequest, explicitNulls: Set<String> = emptySet()): McpPolicySetResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpPolicySetRequest.serializer(), value).jsonObject, explicitNulls), McpPolicySetResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: McpRemoveRequest, explicitNulls: Set<String> = emptySet()): McpRemoveResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpRemoveRequest.serializer(), value).jsonObject, explicitNulls), McpRemoveResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: McpDisconnectRequest, explicitNulls: Set<String> = emptySet()): McpDisconnectResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpDisconnectRequest.serializer(), value).jsonObject, explicitNulls), McpDisconnectResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: McpProjectGetRequest, explicitNulls: Set<String> = emptySet()): McpProjectGetResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpProjectGetRequest.serializer(), value).jsonObject, explicitNulls), McpProjectGetResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: McpProjectSetRequest, explicitNulls: Set<String> = emptySet()): McpProjectSetResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpProjectSetRequest.serializer(), value).jsonObject, explicitNulls), McpProjectSetResponse.serializer()
+)
+
 suspend fun HarnessClient.request(value: HelloRequest, explicitNulls: Set<String> = emptySet()): HelloResponse = exchange(
     value.id, withExplicitNulls(wireJson.encodeToJsonElement(HelloRequest.serializer(), value).jsonObject, explicitNulls), HelloResponse.serializer()
 )

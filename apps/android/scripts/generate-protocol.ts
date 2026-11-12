@@ -87,7 +87,7 @@ function emit(name: string, s: Schema, union?: { name: string; by: string }) {
     });
     const supertype = union ? ` : ${union.name}` : name.endsWith("Event") ? " : ProtocolEvent" : "";
     // Relay registration carries capabilities/HMACs; generated DTOs must not leak them through diagnostics.
-    const redacted = ["NotificationsRegisterRelayRequest", "NotificationsConfirmRelayRequest"].includes(name)
+    const redacted = (["NotificationsRegisterRelayRequest", "NotificationsConfirmRelayRequest"].includes(name) || s.properties?.type?.const === "mcp.token.set")
         ? ` {\n    override fun toString(): String = "${name}(redacted)"\n}` : "";
     output.set(name, `@Serializable\ndata class ${name}(\n${fields.join(",\n")}\n)${supertype}${redacted}`);
 }

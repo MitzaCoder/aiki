@@ -1,3 +1,4 @@
+import { McpService } from "./mcp.ts";
 /**
  * The Bun server: `Bun.serve` on the configured interface (loopback by default) and the WebSocket protocol at `/ws`.
  * This is a backend only; the web app is deployed separately and talks to it over the socket.
@@ -529,7 +530,10 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	});
 	// Read by main's check-ins; the monitor starts once the status service it pushes through exists.
 	let diskMonitor: DiskMonitor | undefined;
+	const mcp = new McpService(dataDir, credentials, options.now);
+	await mcp.open();
 	const manager = new ProjectManager({
+		mcp,
 		taskFreshness: features.includes("task-freshness"),
   taskActivity: features.includes("task-activity"),
 		reportAudit: features.includes("report-audit"),
@@ -1103,6 +1107,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			connections.clear();
 			await terminals?.stop().catch(() => undefined);
 			await manager.closeAll();
+			await mcp.close();
 			if (pruneTimer !== undefined) clearInterval(pruneTimer);
 			await requestLogBackfill;
 			await requestLog?.close().catch(() => undefined);

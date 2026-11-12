@@ -304,6 +304,179 @@ data class AuthSessionRevokedEvent(
 ) : ProtocolEvent
 
 @Serializable
+data class McpListRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.list",
+    val `id`: String = java.util.UUID.randomUUID().toString()
+)
+
+@Serializable
+data class McpListResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.list",
+    val `id`: String,
+    val `servers`: List<McpListResponseServersItem>,
+    val `presets`: List<McpListResponsePresetsItem>
+)
+
+@Serializable
+data class McpListResponseServersItem(
+    val `id`: String,
+    val `name`: String,
+    val `url`: String,
+    val `presetId`: String? = null,
+    val `status`: String,
+    val `lastError`: String?,
+    val `hasCredential`: Boolean,
+    val `authKind`: String,
+    val `tools`: List<McpListResponseServersItemToolsItem>
+)
+
+@Serializable
+data class McpListResponseServersItemToolsItem(
+    val `name`: String,
+    val `description`: String? = null,
+    val `inputSchema`: Map<String, JsonElement>,
+    val `annotations`: Map<String, JsonElement>? = null,
+    val `policy`: String
+)
+
+@Serializable
+data class McpListResponsePresetsItem(
+    val `id`: String,
+    val `name`: String,
+    val `url`: String,
+    val `auth`: String
+)
+
+@Serializable
+data class McpAddRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.add",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `serverId`: String,
+    val `name`: String,
+    val `url`: String? = null,
+    val `presetId`: String? = null
+)
+
+@Serializable
+data class McpAddResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.add",
+    val `id`: String,
+    val `server`: McpListResponseServersItem
+)
+
+@Serializable
+data class McpTokenSetRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.token.set",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `serverId`: String,
+    val `token`: String?
+) {
+    override fun toString(): String = "McpTokenSetRequest(redacted)"
+}
+
+@Serializable
+data class McpTokenSetResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.token.set",
+    val `id`: String,
+    val `server`: McpListResponseServersItem
+) {
+    override fun toString(): String = "McpTokenSetResponse(redacted)"
+}
+
+@Serializable
+data class McpRefreshRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.refresh",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `serverId`: String
+)
+
+@Serializable
+data class McpRefreshResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.refresh",
+    val `id`: String,
+    val `server`: McpListResponseServersItem
+)
+
+@Serializable
+data class McpPolicySetRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.policy.set",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `serverId`: String,
+    val `tool`: String,
+    val `policy`: String
+)
+
+@Serializable
+data class McpPolicySetResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.policy.set",
+    val `id`: String,
+    val `server`: McpListResponseServersItem
+)
+
+@Serializable
+data class McpRemoveRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.remove",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `serverId`: String
+)
+
+@Serializable
+data class McpRemoveResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.remove",
+    val `id`: String
+)
+
+@Serializable
+data class McpDisconnectRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.disconnect",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `serverId`: String
+)
+
+@Serializable
+data class McpDisconnectResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.disconnect",
+    val `id`: String,
+    val `server`: McpListResponseServersItem
+)
+
+@Serializable
+data class McpProjectGetRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.project.get",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `projectId`: String
+)
+
+@Serializable
+data class McpProjectGetResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.project.get",
+    val `id`: String,
+    val `servers`: List<McpProjectGetResponseServersItem>
+)
+
+@Serializable
+data class McpProjectGetResponseServersItem(
+    val `serverId`: String,
+    val `enabled`: Boolean,
+    val `roles`: List<String>
+)
+
+@Serializable
+data class McpProjectSetRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.project.set",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `projectId`: String,
+    val `servers`: List<McpProjectGetResponseServersItem>
+)
+
+@Serializable
+data class McpProjectSetResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.project.set",
+    val `id`: String,
+    val `servers`: List<McpProjectGetResponseServersItem>
+)
+
+@Serializable
 data class ErrorResponse(
     @kotlinx.serialization.EncodeDefault val `type`: String = "error",
     val `id`: String? = null,

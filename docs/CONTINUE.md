@@ -1,5 +1,47 @@
 # Continue
 
+## T143: remote MCP core, token auth and lazy discovery
+
+Stage 1 uses standalone pi-mcp 1.5.2 with the existing pi 1.5.1 packages under
+Bun: injectable bearer auth and Streamable HTTP work, including pagination and
+GET-stream `tools/list_changed`. No CLI extension, SDK fallback, stdio, legacy
+SSE, real-account login or client UI. `mcp-servers` gates nine additive settings
+RPCs in `protocol/mcp.ts`; token null clears. Android DTOs/request overloads were
+regenerated and `--check` passes; Android compilation was not run (outside brief).
+
+Definitions/catalogues/policies/project-role choices and expiring approval receipts
+live in 0600 `mcp/servers.json`; secrets in `credentials.json` under `mcp:<id>`,
+hidden from provider credential RPCs. Credential records carry version/URL binding
+and already admit OAuth access/refresh/expiry for T144. HTTPS except loopback;
+redirects rejected; reflected credentials redacted; errors never echo peer text.
+
+Project default is disabled. Coordinator/workers/background role extensions filter
+registration, every nested call checks live scope/policy again, and scheduled
+workers follow coordinator scope. Restart migrates old role selections without
+losing other extension filters. Tools are deferred/tools-only and unsafe-to-replay.
+Only a short harness-authored summary enters prompts; peer instructions are ignored.
+
+Q147's confirmed nonblocking approval flow creates real board questions with exact
+arguments and Approve once / Always allow this tool / Deny. Worker questions route
+to their coordinator; background questions to their thread. Board answers use the
+normal wake route. Once binds project/conversation/server/tool/argument hash for
+15 minutes and is consumed before dispatch; no ambiguous write is auto-retried.
+`McpApprovalBoard` separates board UX from policy; pending approvals survive restart.
+
+Measured synthetic 71-tool catalogue: 234,473 characters / 58,619 estimated tokens,
+never inlined. Full effective prompt plus model definitions: 14,223 without MCP,
+14,275 connected (+52); summary alone 45; actual three-result search 8,985 chars /
+2,247 tokens. Inline codemode section remains byte-identical within its 3,000-token
+budget. DESIGN has the method and contract.
+
+Checks: root **2,434 pass / 0 fail / 91,519 assertions** (202 files; no flaky rerun),
+including ten MCP tests / 99 assertions; root typecheck; web check (zero diagnostics)
+and build; Android generator/check; private denylist/generic/Gitleaks all pass.
+The initial public check lacked this workspace's ignored operator config; the
+successful run supplied the existing external private denylist without copying it.
+No push, main movement, deployment or UI change. Remaining stages: OAuth callbacks/
+refresh (T144), client settings UX, and host-owner local provisioning/import review.
+
 ## T141: MCP configuration research (no product changes)
 
 `docs/research/mcp-servers.md` compares current pi built-in MCP, the separate

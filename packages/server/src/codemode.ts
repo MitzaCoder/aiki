@@ -43,7 +43,7 @@ export function createCodemodeSandbox(options?: { memoryLimitBytes?: number }): 
 }
 
 /** The `codemode` extension: installed for the coordinator and every worker, and never removed for either. */
-export function createHarnessCodemodeExtension(sandbox: CodemodeSandbox): Extension {
-	const extension = createCodemodeExtension({ sandbox, namespaces: CODEMODE_NAMESPACES, models: false });
+export function createHarnessCodemodeExtension(sandbox: CodemodeSandbox, namespaces: CodemodeNamespace[] = []): Extension {
+	const extension = createCodemodeExtension({ sandbox, namespaces: [...CODEMODE_NAMESPACES, ...namespaces], models: false });
 	return { ...extension, wraps: [...(extension.wraps ?? []), flagOneCallScriptWrap] };
 }

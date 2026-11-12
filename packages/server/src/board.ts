@@ -1845,6 +1845,7 @@ export type BoardServiceOptions = {
 type PendingEdit = { before: BoardTask | null; after: BoardTask; notes: string[] };
 
 export class BoardService {
+ onMcpAnswer: ((questionId: string, answer: string) => Promise<void>) | undefined;
 	readonly #options: BoardServiceOptions;
 	readonly audit: ReportAuditService | undefined;
 	#extension: Extension | undefined;
@@ -2343,9 +2344,20 @@ export class BoardService {
 		this.#armEditTimer();
 	}
 
+async requestMcpApproval(input: { text: string; options: string[]; threadId: string; key: string }): Promise<string> {
+  const pending = (await this.state()).questions.find(question => question.status === "open" && question.text === input.text && question.threadId === input.threadId);
+  if (pending) return pending.id;
+  const question = await this.commitFor(change => this.#options.harness.commit(change, BACKGROUND_CONTEXT),
+   (state, now) => askQuestion(state, { text: input.text, options: input.options, threadId: input.threadId, taskId: null, now }),
+   HARNESS_WRITER, `mcp-approval:${input.key}`);
+  this.noticeQuestion(question);
+  return question.id;
+ }
+
 	async answer(input: { questionId: string; expectedRevision: number; answer: string }): Promise<BoardQuestion> {
 		const now = this.#iso();
 		const question = await this.#commit(USER_WRITER, (state) => settleQuestion(state, { ...input, now, actor: "user" }));
+		await this.onMcpAnswer?.(question.id, input.answer);
 		const text = `${BOARD_PREFIX} The user answered ${question.id} (${JSON.stringify(clip(question.text, 200))}): ${input.answer}`;
 		try {
 			// The answer goes to the thread that asked; a question from before threads, or from a thread that is gone, to main.
@@ -3081,6 +3093,7 @@ function createBoardExtension(service: BoardService): Extension {
 							writer,
 							callKey,
 						);
+						if (question.answer) await service.onMcpAnswer?.(question.id, question.answer);
 						return toolText(`${question.id} is ${question.status}.`, { details: { questionId: question.id } });
 					}
 					case "decide": {

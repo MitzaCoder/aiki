@@ -1,3 +1,5 @@
+import { MCP_PRESETS } from "@aiki/protocol";
+import { MCP_CREDENTIAL_PREFIX } from "./mcp.ts";
 import { DeviceAuth, DeviceAuthError, type Identity } from "./device-auth.ts";
 /**
  * One WebSocket connection: handshake, request dispatch, and the watches that push conversation views.
@@ -438,12 +440,30 @@ export class ClientConnection {
 					this.#respond({ type: "models.list", id: request.id, ...catalog });
 					return;
 				}
+    case "mcp.list": case "mcp.add": case "mcp.token.set": case "mcp.refresh": case "mcp.policy.set": case "mcp.remove": case "mcp.disconnect": case "mcp.project.get": case "mcp.project.set": {
+     const mcp = this.#manager.mcp;
+     if (!mcp || !this.#features.includes("mcp-servers")) return this.#unknownRequest(request);
+     switch (request.type) {
+      case "mcp.list": this.#respond({ type: request.type, id: request.id, servers: await mcp.list(), presets: [...MCP_PRESETS] }); break;
+      case "mcp.add": this.#respond({ type: request.type, id: request.id, server: await mcp.add(request) }); break;
+      case "mcp.token.set": this.#respond({ type: request.type, id: request.id, server: await mcp.setToken(request.serverId, request.token) }); break;
+      case "mcp.refresh": this.#respond({ type: request.type, id: request.id, server: await mcp.refresh(request.serverId) }); break;
+      case "mcp.policy.set": this.#respond({ type: request.type, id: request.id, server: await mcp.setPolicy(request.serverId, request.tool, request.policy) }); break;
+      case "mcp.remove": await mcp.remove(request.serverId); this.#respond({ type: request.type, id: request.id }); break;
+      case "mcp.disconnect": this.#respond({ type: request.type, id: request.id, server: await mcp.disconnect(request.serverId) }); break;
+      case "mcp.project.get": case "mcp.project.set": {
+       await this.#manager.store.require(request.projectId);
+       this.#respond({ type: request.type, id: request.id, servers: request.type === "mcp.project.set" ? await mcp.setProject(request.projectId, request.servers) : mcp.project(request.projectId) }); break;
+      }
+     }
+     return;
+    }
 				case "credentials.list": {
 					const credentials = await this.#credentials.list();
 					this.#respond({
 						type: "credentials.list",
 						id: request.id,
-						credentials: credentials.map((credential) => ({
+						credentials: credentials.filter(credential => !credential.providerId.startsWith(MCP_CREDENTIAL_PREFIX)).map((credential) => ({
 							providerId: credential.providerId,
 							type: credential.type,
 						})),
@@ -451,10 +471,12 @@ export class ClientConnection {
 					return;
 				}
 				case "credentials.set": {
+     if (request.providerId.startsWith(MCP_CREDENTIAL_PREFIX)) throw new ServerError("bad_request", "Use MCP credential settings");
 					await this.#setCredential(request.id, request.providerId, request.apiKey);
 					return;
 				}
 				case "credentials.delete": {
+     if (request.providerId.startsWith(MCP_CREDENTIAL_PREFIX)) throw new ServerError("bad_request", "Use MCP credential settings");
 					await this.#deleteCredential(request.id, request.providerId);
 					return;
 				}

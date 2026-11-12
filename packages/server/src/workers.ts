@@ -1,3 +1,4 @@
+import { mcpRoleExtension } from "./mcp.ts";
 import { recordTimelineRun } from "./task-timeline.ts";
 import { activityTracking, endActivitySource } from "./task-activity.ts";
 import { noteTaskFact } from "./task-freshness.ts";
@@ -1598,7 +1599,7 @@ export class WorkerService {
 			model: input.model,
 			thinkingLevel: input.thinkingLevel,
 			cwd: input.workspace ?? checkout,
-			extensions: { remove: [this.extension, ...this.removedExtensions, ...(input.taskId === null ? [this.taskExtension] : [])] },
+			extensions: { add: [mcpRoleExtension(input.scheduleId ? "coordinator" : "workers")], remove: [mcpRoleExtension(input.scheduleId ? "workers" : "coordinator"), mcpRoleExtension("background"), this.extension, ...this.removedExtensions, ...(input.taskId === null ? [this.taskExtension] : [])] },
 			instructions: workerInstructions({
 				id: input.id,
 				title: input.title,

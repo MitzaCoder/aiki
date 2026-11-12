@@ -1,3 +1,4 @@
+import { mcpRoleExtension } from "./mcp.ts";
 import { timelineId, upsertTimelineFact } from "./task-timeline.ts";
 import { stateKind } from "./state-identity.ts";
 /**
@@ -910,7 +911,7 @@ export class ThreadService {
 				model,
 				thinkingLevel,
 				cwd: place.checkout,
-				extensions: { remove: [this.startExtension, ...this.#options.removedExtensions()] },
+				extensions: { add: [mcpRoleExtension("background")], remove: [mcpRoleExtension("coordinator"), mcpRoleExtension("workers"), this.startExtension, ...this.#options.removedExtensions()] },
 				instructions: threadInstructions({
 					id,
 					title,

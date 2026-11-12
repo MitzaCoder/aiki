@@ -1,3 +1,5 @@
+export * from "./mcp.ts";
+import { McpListRequestSchema, McpListResponseSchema, McpAddRequestSchema, McpAddResponseSchema, McpTokenSetRequestSchema, McpTokenSetResponseSchema, McpRefreshRequestSchema, McpRefreshResponseSchema, McpPolicySetRequestSchema, McpPolicySetResponseSchema, McpRemoveRequestSchema, McpRemoveResponseSchema, McpDisconnectRequestSchema, McpDisconnectResponseSchema, McpProjectGetRequestSchema, McpProjectGetResponseSchema, McpProjectSetRequestSchema, McpProjectSetResponseSchema } from "./mcp.ts";
 
 export { type NotificationRelayStatus, NotificationRelayStatusSchema } from "./notifications.ts";
 import {
@@ -715,6 +717,16 @@ import {
 
 /** Everything a client may send. */
 export const ClientMessageSchema = Type.Union([
+	McpListRequestSchema,
+	McpAddRequestSchema,
+	McpTokenSetRequestSchema,
+	McpRefreshRequestSchema,
+	McpPolicySetRequestSchema,
+	McpRemoveRequestSchema,
+	McpDisconnectRequestSchema,
+	McpProjectGetRequestSchema,
+	McpProjectSetRequestSchema,
+
 	AuthRenewRequestSchema,
 	AuthDevicesListRequestSchema,
 	AuthDevicesRenameRequestSchema,
@@ -821,6 +833,16 @@ export const RequestSchema = ClientMessageSchema;
 export type Request = ClientMessage;
 
 export const ResponseSchema = Type.Union([
+	McpListResponseSchema,
+	McpAddResponseSchema,
+	McpTokenSetResponseSchema,
+	McpRefreshResponseSchema,
+	McpPolicySetResponseSchema,
+	McpRemoveResponseSchema,
+	McpDisconnectResponseSchema,
+	McpProjectGetResponseSchema,
+	McpProjectSetResponseSchema,
+
 	AuthRenewResponseSchema,
 	AuthDevicesListResponseSchema,
 	AuthDevicesRenameResponseSchema,
@@ -984,6 +1006,24 @@ export const PROTOCOL_SCHEMAS: Readonly<Record<string, TSchema>> = {
 	AuthSessionRevokedEvent: AuthSessionRevokedEventSchema,
 	ClientMessage: ClientMessageSchema,
 	ServerMessage: ServerMessageSchema,
+	McpListRequest: McpListRequestSchema,
+	McpListResponse: McpListResponseSchema,
+	McpAddRequest: McpAddRequestSchema,
+	McpAddResponse: McpAddResponseSchema,
+	McpTokenSetRequest: McpTokenSetRequestSchema,
+	McpTokenSetResponse: McpTokenSetResponseSchema,
+	McpRefreshRequest: McpRefreshRequestSchema,
+	McpRefreshResponse: McpRefreshResponseSchema,
+	McpPolicySetRequest: McpPolicySetRequestSchema,
+	McpPolicySetResponse: McpPolicySetResponseSchema,
+	McpRemoveRequest: McpRemoveRequestSchema,
+	McpRemoveResponse: McpRemoveResponseSchema,
+	McpDisconnectRequest: McpDisconnectRequestSchema,
+	McpDisconnectResponse: McpDisconnectResponseSchema,
+	McpProjectGetRequest: McpProjectGetRequestSchema,
+	McpProjectGetResponse: McpProjectGetResponseSchema,
+	McpProjectSetRequest: McpProjectSetRequestSchema,
+	McpProjectSetResponse: McpProjectSetResponseSchema,
 	Request: RequestSchema,
 	Response: ResponseSchema,
 	ServerEvent: ServerEventSchema,

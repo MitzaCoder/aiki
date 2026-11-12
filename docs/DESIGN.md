@@ -673,6 +673,80 @@ Web and Android share ordering and count rules, including activity-only fallback
 
 - Tools run on the backend's machine, against repos checked out there.
 
+## MCP servers
+
+Stage 1 is backend-global remote Streamable HTTP with pasted bearer tokens. No
+stdio, legacy SSE, imports, real-account sign-ins or client UI. Definitions and
+cached catalogues live in `mcp/servers.json`; project/role enablement defaults off.
+Credentials use a separate MCP namespace in the harness credentials file, with a
+versioned token/OAuth record so refresh grants can be added in stage 2.
+
+Use standalone pi-mcp transport/client primitives if the Bun compatibility probe
+passes; never its CLI extension. Require HTTPS except loopback development HTTP,
+reject URL credentials, and reject redirects rather than forwarding authorization.
+Never expose transport errors verbatim. Tool descriptions and results are untrusted.
+
+Tools register before scripts as deferred, tools-only durable tools under
+`mcp__<server>__<tool>`. Discovery is namespaced; no schemas enter the 3,000-token
+inline catalogue. A short, harness-written server summary names connected servers
+only. Registration filters project and role; execution rechecks live policy.
+
+Off refuses, Allow executes once, and Ask returns immediately with a board question.
+The owner confirmed this nonblocking flow (Q147). Options are Approve once, Always
+allow this tool, Deny. Once binds the project, conversation, server, tool and exact
+argument hash, expires, and is consumed before dispatch. Workers route questions
+to their coordinator. Answers wake through the existing board route; writes are
+never automatically retried after an ambiguous failure. Approval storage and board
+routing sit behind a small interface. OAuth/UI/local provisioning follow later.
+
+Compatibility: standalone `@earendil-works/pi-mcp` 1.5.2 imports and runs under
+Bun with pi-ai/pi-durable/pi-codemode 1.5.1 unchanged. Its client follows catalogue
+pagination and its Streamable HTTP transport accepts an injected `AuthProvider`.
+The fake peer proves initialization, bearer auth, GET-stream list notifications,
+search/describe/call and restart. No CLI extension or fallback SDK is installed.
+Transport headers are time-bounded, catalogues limited to 1,000 tools/2 MiB per
+message, and redirects rejected. Known bearer/access/refresh values are redacted
+from cached metadata and call results as defense against reflected credentials.
+
+Storage: `mcp/servers.json` holds definitions, tool policies, cached catalogues,
+connection intent, per-project role choices, and 15-minute exact-call approval
+receipts. `credentials.json` holds `mcp:<server-id>` entries, hidden from provider
+credential RPCs. The normal pi credential union supports token (`api_key`) and
+OAuth (`access`, `refresh`, `expires` plus grant metadata); MCP adds
+`mcp: {version: 1, serverUrl}` and refuses a URL-mismatched credential. Both files
+are 0600 atomic JSON. No secrets are stored in project files. Disconnect disables
+registration/calls until refresh; restart preserves intent and cached metadata,
+but reports disconnected until a lazy call or explicit refresh reconnects.
+Scheduled worker runs follow coordinator scope; scheduled background threads
+keep background scope. Old conversation role upgrades preserve other filters.
+
+Settings RPCs: `mcp.list` (including presets), `mcp.add`, `mcp.token.set` (null
+clears), `mcp.refresh`, `mcp.policy.set`, `mcp.remove`, `mcp.disconnect`,
+`mcp.project.get`, `mcp.project.set`. Capability: `mcp-servers` (not assumed for
+legacy hello). Server responses contain only auth kind/hasCredential, never
+credentials. Tokens are write-only; generated Android token DTO diagnostics are
+redacted. UI, OAuth sign-in/refresh and host-local provisioning remain later stages.
+
+Measured by `packages/server/test/mcp.test.ts`, using a synthetic createSetup
+project and chars/4 (ceiling), replaying the effective system sections and model
+tool definitions, with the inline catalogue included exactly once:
+
+| Case | Estimated tokens |
+| --- | ---: |
+| No MCP enabled | 14,223 |
+| One connected 71-tool synthetic Notion-sized server | 14,275 |
+| Increment (summary plus prompt section framing) | 52 |
+| Summary text alone | 45 |
+| Full synthetic catalogue (234,473 characters, never inlined) | 58,619 |
+| Actual `searchTools("page search", {namespace:"notion", limit:3})` result (8,985 characters) | 2,247 |
+
+Fixture descriptions plus schemas are 2–4 KB/tool. The inline codemode section
+is byte-identical with and without these tools: deferred tools consume none of
+its 3,000-token declaration budget. Baseline is the full Aiki prompt, not the
+inline budget. Search cost is incurred only if the script returns/prints those
+three results; scripts may instead retain them privately and return filtered data.
+These are heuristic context costs, not provider billing/tokenizer measurements.
+
 ## Code mode
 
 - pi-durable's `codemode` extension, installed for the coordinator and every worker alike: always on (no setting),

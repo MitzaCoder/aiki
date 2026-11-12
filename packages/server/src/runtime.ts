@@ -1,3 +1,4 @@
+import { configureMcpRole, mcpRoleExtension, type McpService } from "./mcp.ts";
 import { DEFAULT_REPORT_AUDIT } from "@aiki/protocol";
 import { ChatFileStore } from "./chat-files.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
@@ -164,6 +165,7 @@ type RuntimeEntry = {
 	runtime?: ProjectRuntime;
 	/** Stops the worker-list watch of an open runtime. */
 	stopWorkersWatch?: () => Promise<void>;
+ stopMcp?: () => void;
 	stopBoardWatch?: () => Promise<void>;
 	stopTaskChanges?: () => Promise<void>;
 	/** Stops the background threads' watches of an open runtime. */
@@ -175,6 +177,7 @@ type RuntimeEntry = {
 };
 
 export type ProjectManagerOptions = {
+ mcp?: McpService;
 	store: ProjectStore;
 	models: Models;
 	/** Logs every turn's model request; each project installs its extension, which tells it the conversation. */
@@ -288,6 +291,8 @@ function projectSummary(
 
 export class ProjectManager {
 	readonly store: ProjectStore;
+ readonly mcp: McpService | undefined;
+
 	readonly files: ChatFileStore;
 	readonly models: Models;
 	/** Every project's artifacts: `artifact_save` writes them, the `artifacts.*` requests read and delete them. */
@@ -342,6 +347,7 @@ export class ProjectManager {
 	constructor(options: ProjectManagerOptions) {
 		this.store = options.store;
 		this.files = new ChatFileStore(options.store.dataDir);
+ this.mcp = options.mcp;
 		this.models = options.models;
 		this.#log = options.log ?? ((message) => console.log(message));
 		this.artifacts = options.artifacts ?? new ArtifactStore({ dataDir: options.store.dataDir, log: this.#log });
@@ -1081,6 +1087,7 @@ export class ProjectManager {
 			this.#requestLog?.warming.unregister(entry.project.id, true);
 			await entry.stopExtraction?.().catch(() => undefined);
 			await entry.stopWorkFinished?.().catch(() => undefined);
+			entry.stopMcp?.();
 			await entry.stopWorkersWatch?.().catch(() => undefined);
 			await entry.stopBoardWatch?.().catch(() => undefined);
 			await entry.stopThreads?.().catch(() => undefined);
@@ -1358,11 +1365,11 @@ export class ProjectManager {
 		registry.install(threads.finishExtension);
 		registry.install(workers.taskExtension);
 		// The worker a conversation is, and the thread whose worker it is; undefined for a coordinator.
-		const workerOf = async (conversationId: number): Promise<{ workerId: string; threadId: string } | undefined> => {
+		const workerOf = async (conversationId: number): Promise<{ workerId: string; threadId: string; scheduleId: string | null } | undefined> => {
 			for (const place of coordinators.places()) {
 				const state = await workers.state(BACKGROUND_CONTEXT, place.conversationId);
 				const worker = Object.values(state.workers).find((candidate) => candidate.conversationId === conversationId);
-				if (worker !== undefined) return { workerId: worker.id, threadId: place.threadId };
+				if (worker !== undefined) return { workerId: worker.id, threadId: place.threadId, scheduleId: worker.scheduleId ?? null };
 			}
 			return undefined;
 		};
@@ -1382,7 +1389,20 @@ export class ProjectManager {
 		// the cap wraps the tool by name in the registry, which a nested call resolves the same way a model call does.
 		// Installed last so its section (the tools a script can call) renders after every other section's, which fixed
 		// positions (the SYSTEM.md preamble first of all) depend on first-extension-wins insertion order.
-		registry.install(createHarnessCodemodeExtension(this.#codemodeSandbox));
+		let mcpNamespaces: import("@earendil-works/pi-durable/codemode").CodemodeNamespace[] = [];
+  if (this.mcp) {
+   board.onMcpAnswer = (id, answer) => this.mcp!.applyAnswer(project.id, id, answer);
+   entry.stopMcp = this.mcp.bind({ projectId: project.id, registry,
+    role: async id => coordinators.isMain(id) ? "coordinator" : coordinators.isBackground(id) ? "background" : (await workerOf(id))?.scheduleId ? "coordinator" : "workers",
+    thread: async id => coordinators.threadIdOf(id) ?? (await workerOf(id))?.threadId ?? MAIN_THREAD_ID,
+    board: { request: input => board.requestMcpApproval(input), answer: async id => {
+     const question = (await board.state()).questions.find(question => question.id === id);
+     return question?.status === "open" ? undefined : question?.answer ?? "Deny";
+    } },
+    namespaces: namespaces => { mcpNamespaces = namespaces; registry.install(createHarnessCodemodeExtension(this.#codemodeSandbox, mcpNamespaces)); },
+   });
+  }
+  registry.install(createHarnessCodemodeExtension(this.#codemodeSandbox, mcpNamespaces));
 		// Tags each turn's model request with its conversation for the request log. Hooks only, no section or tool, so
 		// no prompt changes with it; workers and threads keep it.
 		if (this.#requestLog !== undefined) {
@@ -1453,7 +1473,7 @@ export class ProjectManager {
 					thinkingLevel: project.coordinator.thinkingLevel,
 					cwd: project.path,
 					// Main never finishes: `thread_finish` is for its background threads. `task_progress` is a worker's.
-					extensions: { remove: [threads.finishExtension, workers.taskExtension] },
+					extensions: { add: [mcpRoleExtension("coordinator")], remove: [threads.finishExtension, workers.taskExtension, mcpRoleExtension("workers"), mcpRoleExtension("background")] },
 				},
 				BACKGROUND_CONTEXT,
 			);
@@ -1462,6 +1482,17 @@ export class ProjectManager {
 			await board.ensureDocument();
 			// Every thread registers as a coordinator before anything resumes, so a resumed turn's tools know it.
 			await threads.open();
+   // Migrate existing conversations too: old children predate role-specific MCP selection.
+   for (const place of coordinators.places()) {
+    if (!coordinators.isMain(place.conversationId)) {
+     const thread = await coordinators.conversation(place.conversationId);
+     if (thread) await configureMcpRole(harness, thread, "background");
+    }
+    for (const worker of Object.values((await workers.state(BACKGROUND_CONTEXT, place.conversationId)).workers)) {
+     const child = await harness.conversation(worker.conversationId as import("@earendil-works/pi-durable").ConversationId, BACKGROUND_CONTEXT);
+     if (child) await configureMcpRole(harness, child, worker.scheduleId ? "coordinator" : "workers");
+    }
+   }
 			// Create this project's memory repository and watch it, so hand edits reach the index and the app.
 			await this.#memory.scope({ scope: "project", projectId: project.id }).ensure();
 			// Compactions that landed while this process was off are extracted on the way in, main's and every thread's;
@@ -1643,6 +1674,7 @@ export class ProjectManager {
 		void harness.closed.then((end) => {
 			const current = this.#runtimes.get(project.id);
 			if (current?.runtime !== runtime) return;
+			current.stopMcp?.();
 			current.runtime = undefined;
 			current.state = end.kind === "failed" ? "failed" : "closed";
 			current.failure = end.kind === "failed" ? errorMessage(end.error) : undefined;
