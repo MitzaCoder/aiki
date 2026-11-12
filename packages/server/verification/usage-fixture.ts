@@ -5,15 +5,29 @@ import { createProvider } from "@earendil-works/pi-ai";
 import { lazyApi } from "@earendil-works/pi-ai/api/lazy";
 import { writeFile } from "node:fs/promises";
 const now = Date.now();
-let resetsRemaining = 2;
+let resetsRemaining = 3;
+let fullRemaining = 1;
+let posts = 0;
+const spent = new Set<string>();
 const fake = Bun.serve({
 	port: 0,
 	fetch(req) {
 		const url = new URL(req.url);
 		const path = url.pathname;
+		if (path === "/fixture-stats") return Response.json({ posts, resetsRemaining, fullRemaining });
 		if (req.method === "POST") {
-			resetsRemaining--;
-			return Response.json({ result: "reset" });
+			if (path !== "/api/organizations/org-synthetic/reset_rate_limits") return new Response("Unexpected spend", { status: 400 });
+			return req.json().then((body) => {
+				if (body.program !== "cedar_ember" || !body.request_id) return new Response("Invalid spend", { status: 400 });
+				if (body.grant_id === "synthetic-full") fullRemaining--;
+				else if (/^synthetic-fable-[0-2]$/.test(body.grant_id) && !spent.has(body.grant_id)) {
+					spent.add(body.grant_id);
+					resetsRemaining--;
+				}
+				else return new Response("Unknown grant", { status: 400 });
+				posts++;
+				return Response.json({ result: "reset" });
+			});
 		}
 		if (path.endsWith("/profile"))
 			return Response.json({
@@ -22,22 +36,26 @@ const fake = Bun.serve({
 			});
 		if (url.searchParams.has("cedar_ember"))
 			return Response.json({
-				eligible: true,
-				grants: [
-					{
-						id: "synthetic-grant",
-						label: "Synthetic saved reset",
-						resets_left: resetsRemaining,
+				eligible: req.headers.get("user-agent") !== "claude-code/2.1.0",
+				ineligible_reason: req.headers.get("user-agent") === "claude-code/2.1.0" ? "surface" : null,
+				grants: req.headers.get("user-agent") === "claude-code/2.1.0" ? [] : [
+					{ id: "synthetic-full", label: "Full reset", resets_left: fullRemaining, usable_now: true, clears: ["five_hour", "seven_day", "seven_day_overage_included"], ends_at: "2026-12-10T22:00:00Z" },
+					...Array.from({ length: 3 }, (_, index) => ({
+						id: `synthetic-fable-${index}`,
+						label: `Synthetic Fable grant ${index + 1}`,
+						type: "full",
+						gives_back_weekly: true,
+						resets_left: spent.has(`synthetic-fable-${index}`) ? 0 : 1,
 						usable_now: true,
-						clears: ["five_hour", "seven_day"],
-						ends_at: new Date(now + 7 * 86400000).toISOString(),
-					},
+						clears: ["five_hour", "seven_day_overage_included"],
+						ends_at: "2027-03-09T07:59:00Z",
+					})),
 				],
 			});
 		return Response.json({
 			cedar_ember: null,
-			five_hour: { utilization: 62, resets_at: new Date(now + 7200000).toISOString() },
-			seven_day: { utilization: 34, resets_at: new Date(now + 3 * 86400000).toISOString() },
+			five_hour: { utilization: posts ? 0 : 62, resets_at: new Date(now + 7200000).toISOString() },
+			seven_day: { utilization: fullRemaining === 0 ? 0 : posts ? 20 : 34, resets_at: new Date(now + 3 * 86400000).toISOString() },
 		});
 	},
 });
@@ -70,7 +88,13 @@ const setup = await createSetup({
 			}),
 		);
 	},
-	subscriptionUsage: { anthropicBaseUrl: `http://localhost:${fake.port}` },
+	subscriptionUsage: {
+		anthropicBaseUrl: `http://localhost:${fake.port}`,
+		fetch: ((input, init) => {
+			if (new URL(String(input)).origin !== `http://localhost:${fake.port}`) throw Error("Fixture refuses non-local provider traffic");
+			return fetch(input, init);
+		}) as typeof fetch,
+	},
 });
 await setup.credentials.modify("anthropic", async () => ({
 	type: "oauth",
@@ -163,7 +187,8 @@ for (const purpose of ["compaction", "memory_extraction", "memory_maintenance"] 
 	);
 	store.insert({ ...row, purpose });
 }
-await writeFile("/tmp/aiki-t78-fixture.json", JSON.stringify({ url: setup.server.url, pid: process.pid }));
+console.log("Temporary fixture paths", setup.dataDir, setup.configDir);
+await writeFile(Bun.argv[2] ?? "/tmp/aiki-t78-fixture.json", JSON.stringify({ url: setup.server.url, fakeUrl: `http://localhost:${fake.port}`, pid: process.pid }));
 console.log("Synthetic usage fixture ready", setup.server.url);
 process.on("SIGTERM", async () => {
 	fake.stop(true);

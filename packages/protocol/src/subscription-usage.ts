@@ -35,6 +35,8 @@ export const SubscriptionResetCreditSchema = Type.Object({
  usable: Type.Boolean(),
  expiresAt: Type.Union([Type.String(), Type.Null()]),
  clears: Type.Array(Type.String()),
+ givesBackWeekly: Type.Optional(Type.Boolean()),
+ unavailableReason: Type.Optional(Type.Union([Type.String(), Type.Null()])),
 });
 export type SubscriptionResetCredit = Static<typeof SubscriptionResetCreditSchema>;
 export const SubscriptionResetsSchema = Type.Object({

@@ -5,6 +5,8 @@ const iso = (v: unknown): string | null =>
 	typeof v === "string" && Number.isFinite(Date.parse(v)) ? new Date(v).toISOString() : null;
 const count = (v: unknown): number | null => (typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null);
 const id = (v: unknown): v is string => typeof v === "string" && /^[A-Za-z0-9_-]{1,160}$/.test(v);
+/** Usage/discovery/spend only; never used for inference. Bump when Claude retires a CLI surface. */
+export const CLAUDE_USAGE_USER_AGENT = "claude-cli/2.1.310 (external, cli)";
 export type ResetTransport = { providerId: string; token: string; baseUrl: string; fetch: typeof fetch; now: number };
 export function resetHeaders(providerId: string, token: string): Record<string, string> {
 	const headers: Record<string, string> = {
@@ -14,7 +16,7 @@ export function resetHeaders(providerId: string, token: string): Record<string, 
 	};
 	if (providerId === "anthropic") {
 		headers["anthropic-beta"] = "oauth-2025-04-20";
-		headers["user-agent"] = "claude-code/2.1.0";
+		headers["user-agent"] = CLAUDE_USAGE_USER_AGENT;
 	} else {
 		headers["user-agent"] = "codex-cli";
 		try {
@@ -107,10 +109,22 @@ export function parseClaudeResets(
 		credits.push({
 			id: raw.id,
 			program,
-			label: typeof raw.label === "string" ? raw.label : "Saved reset",
+			// Fable launch/tenure grants may have different source labels, and type is "full" for both kinds.
+			label: raw.gives_back_weekly === true && raw.clears.includes("five_hour") &&
+				(raw.clears.includes("seven_day_overage_included") || raw.clears.includes("seven_day_fable")) && !raw.clears.includes("seven_day")
+				? "Fable reset" : raw.clears.includes("five_hour") && raw.clears.includes("seven_day")
+					? "Full reset" : typeof raw.label === "string" ? raw.label : "Saved reset",
 			remaining: raw.resets_left as number,
 			expiresAt,
 			clears: raw.clears as string[],
+			givesBackWeekly: raw.gives_back_weekly === true,
+			unavailableReason: raw.paused ? "Paused by provider" : !cooled ? `Available after ${cooldown}` :
+				!status.eligible ? reason ?? "Not eligible" :
+				(expiresAt !== null && Date.parse(expiresAt) <= now) ? "Expired" :
+				(startsAt !== null && Date.parse(startsAt) > now) ? `Available from ${startsAt}` :
+				typeof raw.unavailable_reason === "string" ? raw.unavailable_reason :
+				raw.use_requires_limit && !raw.usable_now ? "Available when a covered limit is reached" :
+				!raw.usable_now ? "Not usable now" : null,
 			usable:
 				status.eligible &&
 				cooled &&

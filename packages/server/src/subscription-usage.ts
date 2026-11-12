@@ -19,7 +19,7 @@ import type { CredentialStore, Models } from "@earendil-works/pi-ai";
 import { PROTOCOL_SCHEMAS, type SubscriptionUsage, type UsageSample, type UsageWindow } from "@aiki/protocol";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
-import { consumeReset, discoverResets, type ResetTransport } from "./subscription-resets.ts";
+import { CLAUDE_USAGE_USER_AGENT, consumeReset, discoverResets, type ResetTransport } from "./subscription-resets.ts";
 import type { SubscriptionResets, SubscriptionsResetRequest } from "@aiki/protocol";
 import { errorMessage } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
@@ -48,6 +48,8 @@ const DEFAULT_RATE_LIMITED_MS = 15 * 60_000;
 const REQUEST_TIMEOUT_MS = 20_000;
 /** The plan comes from a second endpoint; it rarely changes. */
 const PROFILE_MAX_AGE_MS = 6 * 60 * 60_000;
+/** Discovery is more tightly rate-limited than ordinary usage. Spending always rechecks it fresh. */
+const RESET_DISCOVERY_MAX_AGE_MS = 60 * 60_000;
 /** Two samples closer than this collapse into the newer one. */
 const MIN_SAMPLE_GAP_MS = 60_000;
 const MAX_SAMPLES_PER_WINDOW = 1000;
@@ -95,6 +97,7 @@ type ProviderState = {
 	lastAttemptAt: number;
 	blockedUntil: number;
 	profileReadAt: number;
+	resetsReadAt: number;
 	inFlight: Promise<void> | undefined;
 	/** `performance.now()` of the last request or stream event. */
 	lastActivityAt: number;
@@ -175,37 +178,49 @@ export class SubscriptionUsageService {
 	}
 
 	/** Confirmed reset; fresh discovery gates the action. Mutation is never automatically retried. */
- async reset(request: Pick<SubscriptionsResetRequest, "providerId" | "creditId" | "program" | "requestId" | "confirmed">): Promise<{ok:boolean;code:string}> {
-  if(request.confirmed!==true || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(request.requestId)) return {ok:false,code:"confirmation_required"};
-  const key=request.providerId+":"+request.requestId;
-  const signature=JSON.stringify([request.creditId,request.program]);
-  const previous=this.#resetAttempts.get(key);
-  if(previous)return previous.signature===signature?previous.answer:{ok:false,code:"request_id_reused"};
-  if(this.#resetting.has(request.providerId))return {ok:false,code:"reset_in_progress"};
-  if(this.#resetAttempts.size>=128)return {ok:false,code:"too_many_attempts"};
-  this.#resetting.add(request.providerId);
-  const answer=(async()=>{
-   try {
-    const auth=await this.#models.getAuth(request.providerId);
-    const token=auth?.auth.apiKey;
-    const transport=this.#resetTransport(request.providerId,token);
-    if(!transport)return {ok:false,code:"unsupported"};
-    const resets=await discoverResets(transport);
-    const credit=resets?.credits.find(c=>c.id===request.creditId&&c.program===request.program);
-    if(!credit?.usable || credit.remaining<=0)return {ok:false,code:"unavailable"};
-    const result=await consumeReset(transport,credit,request.requestId);
-    await this.#read(request.providerId,{force:true});
-    return result;
-   } catch { return {ok:false,code:"unknown_outcome"}; }
-   finally { this.#resetting.delete(request.providerId); }
-  })();
-  this.#resetAttempts.set(key,{signature,answer});
-  return answer;
- }
- #resetTransport(providerId:string,token:string|undefined):ResetTransport|undefined {
-  if(!token || (providerId!=="anthropic"&&providerId!=="openai-codex"))return undefined;
-  return {providerId,token,baseUrl:providerId==="anthropic"?this.#anthropicBaseUrl:this.#chatgptBaseUrl,fetch:this.#fetch,now:this.#now()};
- }
+	async reset(
+		request: Pick<SubscriptionsResetRequest, "providerId" | "creditId" | "program" | "requestId" | "confirmed">,
+	): Promise<{ ok: boolean; code: string }> {
+		if (request.confirmed !== true || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(request.requestId))
+			return { ok: false, code: "confirmation_required" };
+		const key = request.providerId + ":" + request.requestId;
+		const signature = JSON.stringify([request.creditId, request.program]);
+		const previous = this.#resetAttempts.get(key);
+		if (previous) return previous.signature === signature ? previous.answer : { ok: false, code: "request_id_reused" };
+		if (this.#resetting.has(request.providerId)) return { ok: false, code: "reset_in_progress" };
+		if (this.#resetAttempts.size >= 128) return { ok: false, code: "too_many_attempts" };
+		this.#resetting.add(request.providerId);
+		const answer = (async () => {
+			try {
+				await this.#load();
+				await this.#sync();
+				const auth = await this.#models.getAuth(request.providerId);
+				const transport = this.#resetTransport(request.providerId, auth?.auth.apiKey);
+				if (!transport) return { ok: false, code: "unsupported" };
+				const resets = await discoverResets(transport);
+				const credit = resets?.credits.find(c => c.id === request.creditId && c.program === request.program);
+				if (!credit?.usable || credit.remaining <= 0) return { ok: false, code: "unavailable" };
+				const result = await consumeReset(transport, credit, request.requestId);
+				const state = this.#states.get(request.providerId);
+				// An in-flight read predates this mutation; wait before invalidating its discovery cache.
+				await state?.inFlight;
+				if (state) { state.resetsReadAt = 0; state.blockedUntil = 0; }
+				await this.#read(request.providerId, { force: true });
+				return result;
+			} catch {
+				return { ok: false, code: "unknown_outcome" };
+			} finally {
+				this.#resetting.delete(request.providerId);
+			}
+		})();
+		this.#resetAttempts.set(key, { signature, answer });
+		return answer;
+	}
+
+	#resetTransport(providerId: string, token: string | undefined): ResetTransport | undefined {
+		if (!token || (providerId !== "anthropic" && providerId !== "openai-codex")) return undefined;
+		return { providerId, token, baseUrl: providerId === "anthropic" ? this.#anthropicBaseUrl : this.#chatgptBaseUrl, fetch: this.#fetch, now: this.#now() };
+	}
 
 	/** A client connected: poll while any is. The first one reads whatever is older than the poll interval. */
 	clientConnected(): void {
@@ -327,7 +342,11 @@ export class SubscriptionUsageService {
 				if (apiKey === undefined) throw new Error("No credential to read usage with; log in again");
 				const reading = await reader({ apiKey }, state);
 				const transport = this.#resetTransport(providerId, apiKey);
-				if (providerId !== "anthropic") reading.manualResets = (transport ? await discoverResets(transport) : null) ?? reading.manualResets ?? null;
+				// Reset discovery has its own cache, independent of window/header updates.
+				if (providerId !== "anthropic" || state.resetsReadAt === 0 || this.#now() - state.resetsReadAt >= RESET_DISCOVERY_MAX_AGE_MS) {
+					reading.manualResets = (transport ? await discoverResets(transport) : null) ?? reading.manualResets ?? null;
+					state.resetsReadAt = this.#now();
+				}
 				this.#apply(providerId, reading);
 			} catch (error) {
 				const message = this.#describeFailure(state, error);
@@ -357,12 +376,10 @@ export class SubscriptionUsageService {
 			authorization: `Bearer ${token}`,
 			"anthropic-beta": ANTHROPIC_OAUTH_BETA,
 			accept: "application/json",
-			"user-agent": "claude-code/2.1.0",
+			"user-agent": CLAUDE_USAGE_USER_AGENT,
 		};
 		const usage = await this.#getJson(`${this.#anthropicBaseUrl}/api/oauth/usage`, headers);
-		const hasResetPrograms = isRecord(usage) && ("cedar_ember" in usage || "juniper_tide" in usage);
-		const transport = this.#resetTransport("anthropic", token);
-		const reading: UsageReading = { source: "usage_api", windows: parseClaudeUsage(usage), manualResets: hasResetPrograms && transport ? await discoverResets(transport) : null };
+		const reading: UsageReading = { source: "usage_api", windows: parseClaudeUsage(usage) };
 		if (this.#now() - state.profileReadAt > PROFILE_MAX_AGE_MS) {
 			// The plan and email are extras: a failed profile read leaves the usage standing.
 			try {
@@ -507,6 +524,7 @@ export class SubscriptionUsageService {
 			lastAttemptAt: 0,
 			blockedUntil: 0,
 			profileReadAt: 0,
+			resetsReadAt: 0,
 			inFlight: undefined,
 			lastActivityAt: 0,
 			afterTurnTimer: undefined,

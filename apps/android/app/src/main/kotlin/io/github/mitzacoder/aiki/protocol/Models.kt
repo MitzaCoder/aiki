@@ -1579,7 +1579,9 @@ data class SubscriptionResetCredit(
     val `remaining`: Long,
     val `usable`: Boolean,
     val `expiresAt`: String?,
-    val `clears`: List<String>
+    val `clears`: List<String>,
+    val `givesBackWeekly`: Boolean? = null,
+    val `unavailableReason`: String? = null
 )
 
 @Serializable

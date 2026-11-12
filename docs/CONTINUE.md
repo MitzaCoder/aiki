@@ -1,5 +1,15 @@
 # Continue
 
+## T136: confirmed Anthropic limit resets
+
+Usage/discovery/spend share CLAUDE_USAGE_USER_AGENT (CLI 2.1.310); model calls are unchanged.
+Discovery has a separate hourly cache and no longer depends on usage response markers.
+Confirmed spend still rechecks availability, deduplicates UUIDs and never retries a mutation;
+it now initializes usage state and invalidates discovery before refreshing after a spend.
+Protocol adds optional weekly give-back and per-grant unavailability reasons. Synthetic fixture
+models Full and Fable grants and counts only validated local spends. Targeted server suite:
+25 tests / 119 assertions pass. No real POST, deployment, push or main movement.
+
 ## T135 follow-up: root failures settled
 
 Compared each failing file alone five times on the original fix and its parent:

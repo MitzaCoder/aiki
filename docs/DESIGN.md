@@ -855,6 +855,10 @@ Codex wham usage and rate-limit events/headers, and OpenCode Go usage expose aut
 `cedar_ember=1&skip_spend=1` / `at_wall=1&skip_spend=1` probes and Codex's reset-credit list. Public provider-client
 code documents these undocumented contracts; discovery failure means unknown, not zero. OpenCode Go has no known
 manual reset contract. Each grant shows remaining count, expiry, covered limits and current usability.
+Claude usage/discovery/reset requests share a versioned CLI User-Agent, never model calls. Reset discovery has
+its own hourly cache, independent of window/header samples, invalidated after a confirmed spend. Discovery
+runs even when the normal usage response omits program markers. Optional givesBackWeekly and unavailableReason
+preserve narrower Fable grants (even when type is full) and provider reasons without inferring broad coverage.
 Consumption requires an explicit confirmation, a fresh availability check, one grant and one request UUID; the server
 coalesces duplicates and rejects concurrent provider resets. No automatic redemption or mutation retry. Claude posts
 to its profile organization's `reset_rate_limits`; Codex posts to `wham/rate-limit-reset-credits/consume` with its

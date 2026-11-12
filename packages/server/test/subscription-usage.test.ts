@@ -21,7 +21,7 @@ import {
 	type SubscriptionUsageOptions,
 } from "../src/subscription-usage.ts";
 import { createSetup, TestClient, type TestSetup } from "./support.ts";
-import { parseClaudeResets, parseCodexResets } from "../src/subscription-resets.ts";
+import { CLAUDE_USAGE_USER_AGENT, parseClaudeResets, parseCodexResets } from "../src/subscription-resets.ts";
 
 const HOUR = 3_600_000;
 const T0 = Date.parse("2026-11-04T10:00:00Z");
@@ -75,7 +75,7 @@ function fakeProviders() {
 		port: 0,
 		fetch(request) {
 			const url = new URL(request.url);
-			state.requests.push({ path: url.pathname, headers: Object.fromEntries(request.headers) });
+			state.requests.push({ path: url.pathname + url.search, headers: Object.fromEntries(request.headers) });
 			const json = (status: number, body: unknown) =>
 				new Response(JSON.stringify(body), {
 					status,
@@ -190,6 +190,75 @@ function byProvider(list: SubscriptionUsage[], providerId: string): Subscription
 }
 
 describe("saved subscription resets (fake HTTP only)", () => {
+	it("caches reset discovery separately, discovers without a marker and refreshes after explicit spend", async () => {
+		let discoveries = 0, posts = 0, windows = 0;
+		const headers: string[] = [];
+		const test = await setupService({ fetch: (async (input, init) => {
+			const url = String(input);
+			if (url.includes("/wham/")) return Response.json({ rate_limit: {} });
+			headers.push(new Headers(init?.headers).get("user-agent") ?? "");
+			if (init?.method === "POST") { posts++; return Response.json({ result: "reset" }); }
+			if (url.endsWith("/profile")) return Response.json({ organization: { uuid: "org-synthetic" } });
+			if (url.includes("cedar_ember=1")) { discoveries++; return Response.json({ cedar_ember: { eligible: true, grants: [{ id: "fable", label: "Fable reset", type: "full", resets_left: 3 - posts, usable_now: true, clears: ["five_hour", "seven_day_fable"], gives_back_weekly: true }] } }); }
+			windows++; return Response.json({ five_hour: { utilization: posts ? 0 : 90, resets_at: null } });
+		}) as typeof fetch });
+		const read = () => test.service.usage({ refresh: true });
+		expect(byProvider(await read(), "anthropic").manualResets?.credits[0]).toMatchObject({ remaining: 3, givesBackWeekly: true });
+		await read(); expect(discoveries).toBe(1); expect(posts).toBe(0);
+		test.advance(5 * 60_000); await read(); expect(discoveries).toBe(1);
+		test.advance(55 * 60_000); await read(); expect(discoveries).toBe(2);
+		const request = { providerId: "anthropic", creditId: "fable", program: "cedar_ember", requestId: crypto.randomUUID(), confirmed: true as const };
+		expect(await test.service.reset({ ...request, confirmed: false as never })).toMatchObject({ code: "confirmation_required" });
+		expect(posts).toBe(0);
+		expect(await test.service.reset(request)).toEqual({ ok: true, code: "reset" });
+		expect(posts).toBe(1); expect(discoveries).toBe(4); expect(windows).toBe(5);
+		const refreshed = byProvider(await test.service.usage(), "anthropic");
+		expect(refreshed.windows[0]?.usedPercent).toBe(0); expect(refreshed.manualResets?.available).toBe(2);
+		expect(headers.every(header => header === CLAUDE_USAGE_USER_AGENT)).toBe(true);
+	});
+	it("retains Codex detailed-credit discovery on ordinary refreshes", async () => {
+		const test = await setupService({ fetch: (async (input) => {
+			if (String(input).includes("rate-limit-reset-credits")) return Response.json({ available_count: 1, credits: [{ id: "synthetic-codex", status: "available", expires_at: null }] });
+			return Response.json({ rate_limit: {}, rate_limit_reset_credits: { available_count: 1 } });
+		}) as typeof fetch });
+		for (let index = 0; index < 2; index++) {
+			const usage = byProvider(await test.service.usage({ refresh: true }), "openai-codex");
+			expect(usage.manualResets?.credits[0]?.id).toBe("synthetic-codex");
+		}
+	});
+	it("invalidates a stale discovery that finishes after the confirmed spend", async () => {
+		let discoveries = 0, posts = 0;
+		let release!: () => void;
+		const held = new Promise<void>(resolve => { release = resolve; });
+		const test = await setupService({ fetch: (async (input, init) => {
+			const url = String(input);
+			if (url.includes("/wham/")) return Response.json({ rate_limit: {} });
+			if (init?.method === "POST") { posts++; return Response.json({ result: "reset" }); }
+			if (url.endsWith("/profile")) return Response.json({ organization: { uuid: "org-synthetic" } });
+			if (url.includes("cedar_ember=1")) {
+				const remaining = 3 - posts;
+				discoveries++;
+				if (discoveries === 2) await held;
+				return Response.json({ eligible: true, grants: [{ id: "fable", resets_left: remaining, usable_now: true, clears: ["five_hour"] }] });
+			}
+			return Response.json({ five_hour: { utilization: posts ? 0 : 90, resets_at: null } });
+		}) as typeof fetch });
+		await test.service.usage({ refresh: true });
+		test.advance(HOUR);
+		const staleRead = test.service.usage({ refresh: true });
+		await until(() => discoveries === 2);
+		const spend = test.service.reset({ providerId: "anthropic", creditId: "fable", program: "cedar_ember", requestId: crypto.randomUUID(), confirmed: true });
+		await until(() => posts === 1);
+		release();
+		await staleRead;
+		expect(await spend).toEqual({ ok: true, code: "reset" });
+		expect(discoveries).toBe(4);
+		expect(byProvider(await test.service.usage(), "anthropic").manualResets?.available).toBe(2);
+	});
+	it("keeps narrower full-type grants and provider unavailability reasons", () => {
+		const parsed = parseClaudeResets({ eligible: true, grants: [{ id: "fable", type: "full", label: "Synthetic tenure grant", resets_left: 3, clears: ["five_hour", "seven_day_overage_included"], gives_back_weekly: true, usable_now: false, unavailable_reason: "weekly_limit_not_reached" }] }, "cedar_ember", T0);
+		expect(parsed?.credits[0]).toMatchObject({ label: "Fable reset", givesBackWeekly: true, usable: false, unavailableReason: "weekly_limit_not_reached" });
+	});
 	const credit = {id:"credit-1",status:"available",expires_at:"2027-01-01T00:00:00Z"};
 	it("distinguishes unknown, ineligible, expired and available reset grants", () => {
 		expect(parseCodexResets({},T0)).toBeNull();
