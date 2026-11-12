@@ -7,6 +7,14 @@ import type { Artifact, ArtifactKind } from "@aiki/protocol";
 /** The tool a thread or worker saves an artifact with. */
 export const ARTIFACT_SAVE_TOOL = "artifact_save";
 
+/** Keep same-origin capabilities relative; never rewrite a genuinely remote backend or
+ * treat localhost and 127.0.0.1 as the same browser/credential origin.
+ */
+export function artifactBrowserUrl(url: string, pageOrigin: string): string {
+	const parsed = new URL(url, pageOrigin);
+	return parsed.origin === pageOrigin ? `${parsed.pathname}${parsed.search}${parsed.hash}` : url;
+}
+
 export const ARTIFACT_KINDS: readonly ArtifactKind[] = ["video", "image", "audio", "text", "file"];
 
 const KIND_LABELS: Record<ArtifactKind, { one: string; many: string }> = {

@@ -8,6 +8,7 @@ import {
 	ZOOM_FIT,
 	ZOOM_MAX,
 	artifactFromCall,
+	artifactBrowserUrl,
 	artifactIdFromResult,
 	artifactSaveCall,
 	artifactTitle,
@@ -47,6 +48,14 @@ function artifact(overrides: Partial<Artifact> = {}): Artifact {
 		...overrides,
 	};
 }
+
+test("same-origin artifact capabilities stay relative; remote and alternate loopback origins stay absolute", () => {
+	expect(artifactBrowserUrl("http://localhost:7317/artifacts/p/a?token=synthetic", "http://localhost:7317")).toBe("/artifacts/p/a?token=synthetic");
+	for (const remote of ["http://127.0.0.1:7317", "http://localhost:7318", "https://backend.example"]) {
+		const url = `${remote}/artifacts/p/a?token=synthetic`;
+		expect(artifactBrowserUrl(url, "http://localhost:7317")).toBe(url);
+	}
+});
 
 describe("labels", () => {
 	test("a title falls back to the file name", () => {

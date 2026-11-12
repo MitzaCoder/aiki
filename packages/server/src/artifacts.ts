@@ -655,6 +655,7 @@ export async function serveArtifact(
 		signer: ArtifactUrlSigner;
 		allowedOrigins: readonly string[];
 		exactOrigins?: boolean;
+		log?: (message: string) => void;
 	},
 ): Promise<Response | undefined> {
 	const url = new URL(request.url);
@@ -694,42 +695,61 @@ export async function serveArtifact(
 	const disposition = options.signer.verify(projectId, artifactId, url.searchParams.get("token"));
 	if (disposition === undefined) return text(403, "Invalid or expired artifact token");
 
-	const artifact = await options.store.get(projectId, artifactId);
-	const file = artifact === undefined ? undefined : Bun.file(options.store.filePath(artifact));
-	if (artifact === undefined || file === undefined || !(await file.exists())) return text(404, "No such artifact");
+	try {
+		const artifact = await options.store.get(projectId, artifactId);
+		const file = artifact === undefined ? undefined : Bun.file(options.store.filePath(artifact));
+		if (artifact === undefined || file === undefined || !(await file.exists())) return text(404, "No such artifact");
 
-	if (options.signer.verify(projectId, artifactId, url.searchParams.get("token")) === undefined)
-		return text(403, "Invalid or expired artifact token");
-	const sessionId = options.signer.sessionId(url.searchParams.get("token"));
-	const size = file.size;
-	const headers: Record<string, string> = {
-		...cors,
-		"content-type": artifact.mimeType.startsWith("text/") ? `${artifact.mimeType}; charset=utf-8` : artifact.mimeType,
-		"content-disposition": contentDisposition(
-			["text/html", "image/svg+xml"].includes(artifact.mimeType) ? "attachment" : disposition,
-			artifact.name,
-		),
-		"accept-ranges": "bytes",
-		"cache-control": "private, no-store",
-		"referrer-policy": "no-referrer",
-		"x-content-type-options": "nosniff",
-		// An HTML or SVG artifact must not run script on the backend's origin.
-		"content-security-policy":
-			"sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'",
-	};
-	const range = parseRange(request.headers.get("range"), size);
-	if (range === null) return text(416, "Range not satisfiable", { "content-range": `bytes */${size}` });
-	if (range === undefined) {
-		headers["content-length"] = String(size);
-		return new Response(request.method === "HEAD" ? null : options.signer.stream(file, sessionId), {
-			status: 200,
-			headers,
-		});
+		if (options.signer.verify(projectId, artifactId, url.searchParams.get("token")) === undefined)
+			return text(403, "Invalid or expired artifact token");
+		const sessionId = options.signer.sessionId(url.searchParams.get("token"));
+		const size = file.size;
+		const headers: Record<string, string> = {
+			...cors,
+			"content-type": artifact.mimeType.startsWith("text/") ? `${artifact.mimeType}; charset=utf-8` : artifact.mimeType,
+			"content-disposition": contentDisposition(
+				["text/html", "image/svg+xml"].includes(artifact.mimeType) ? "attachment" : disposition,
+				artifact.name,
+			),
+			"accept-ranges": "bytes",
+			"cache-control": "private, no-store",
+			"referrer-policy": "no-referrer",
+			"x-content-type-options": "nosniff",
+			// An HTML or SVG artifact must not run script on the backend's origin.
+			"content-security-policy":
+				"sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'",
+		};
+		const range = parseRange(request.headers.get("range"), size);
+		if (range === null) return text(416, "Range not satisfiable", { "content-range": `bytes */${size}` });
+		// Read small text responses before committing headers. A disk/read failure must be an HTTP
+		// error with CORS, not a rejected body after a promised Content-Length ("Failed to fetch").
+		const start = range?.start ?? 0;
+		const end = range?.end ?? size - 1;
+		const length = Math.max(0, end - start + 1);
+		if (artifact.kind === "text" && length <= 256 * 1024 && request.method !== "HEAD") {
+			const bytes = await file.slice(start, end + 1).arrayBuffer();
+			if (bytes.byteLength !== length) throw new Error("artifact_size_changed");
+			if (options.signer.verify(projectId, artifactId, url.searchParams.get("token")) === undefined)
+				return text(403, "Invalid or expired artifact token");
+			headers["content-length"] = String(bytes.byteLength);
+			if (range) headers["content-range"] = `bytes ${start}-${end}/${size}`;
+			return new Response(bytes, { status: range ? 206 : 200, headers });
+		}
+		if (range === undefined) {
+			headers["content-length"] = String(size);
+			return new Response(request.method === "HEAD" ? null : options.signer.stream(file, sessionId), {
+				status: 200,
+				headers,
+			});
+		}
+		headers["content-range"] = `bytes ${range.start}-${range.end}/${size}`;
+		headers["content-length"] = String(range.end - range.start + 1);
+		return new Response(
+			request.method === "HEAD" ? null : options.signer.stream(file.slice(range.start, range.end + 1), sessionId),
+			{ status: 206, headers },
+		);
+	} catch {
+		options.log?.(`artifacts: could not read ${projectId}/${artifactId}`);
+		return text(500, "The backend could not read this artifact. Retry or save the file again.");
 	}
-	headers["content-range"] = `bytes ${range.start}-${range.end}/${size}`;
-	headers["content-length"] = String(range.end - range.start + 1);
-	return new Response(
-		request.method === "HEAD" ? null : options.signer.stream(file.slice(range.start, range.end + 1), sessionId),
-		{ status: 206, headers },
-	);
 }

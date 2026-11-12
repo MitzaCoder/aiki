@@ -16,12 +16,13 @@ import {
 	normalizeTags,
 } from "@aiki/protocol";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ARTIFACT_TAG_GUIDANCE, createArtifactExtension, resolveArtifactSource } from "../src/artifact-tools.ts";
-import { ArtifactStore, ArtifactUrlSigner, detectMimeType, parseRange } from "../src/artifacts.ts";
+import { ArtifactStore, ArtifactUrlSigner, detectMimeType, parseRange, serveArtifact } from "../src/artifacts.ts";
 import { createSetup, errorOf, TestClient, type TestSetup } from "./support.ts";
+import { authSecret } from "../src/device-auth.ts";
 
 const cleanups: (() => Promise<void>)[] = [];
 const clients: TestClient[] = [];
@@ -244,6 +245,81 @@ describe("artifact_save", () => {
 	});
 });
 
+describe("temporary paths and text transport", () => {
+	it.each(["off", "optional", "required"] as const)("allows both installed loopback shell origins for text GET/Range/OPTIONS in %s mode", async (mode) => {
+		const webDir = await mkdtemp(join(tmpdir(), "artifact-web-"));
+		const test = await createSetup({ auth: { mode }, allowedOrigins: [], webDir });
+		cleanups.push(test.cleanup, () => rm(webDir, { recursive: true, force: true }));
+		const client = await TestClient.open(test.server);
+		clients.push(client);
+		if (mode === "required") {
+			const grant = test.server.auth.bootstrap();
+			const result = await test.server.auth.redeem({ grantId: grant.requestId, secret: grant.secret, claimId: crypto.randomUUID(), claimSecret: authSecret("aiki_c1"), label: "Synthetic browser", platform: "web" }, "loopback", true);
+			await client.request({ type: "hello", protocolVersion: 1, auth: { accessToken: result.credentials!.accessToken } });
+		} else await client.hello();
+		const added = await client.request({ type: "projects.add", path: test.projectDir });
+		if (added.type !== "projects.add") throw errorOf(added);
+		const projectId = added.project.id;
+		const content = "# Report\nCafé ✓\n".repeat(900);
+		await writeFile(join(test.projectDir, "report.md"), content);
+		const artifact = await test.server.artifacts.save({ projectId, sourcePath: join(test.projectDir, "report.md"), title: null, note: null, threadId: "main", workerId: null, taskId: null });
+		const url = await urlOf(client, projectId, artifact.id);
+		const loopbacks = [test.server.url, test.server.url.replace("127.0.0.1", "localhost")];
+		for (const origin of loopbacks) {
+			for (const range of [undefined, "bytes=0-262143"]) {
+				const response = await fetch(url, { headers: { origin, ...(range ? { range } : {}) } });
+				expect(response.status).toBe(range ? 206 : 200);
+				expect(response.headers.get("access-control-allow-origin")).toBe(origin);
+				expect(response.headers.get("access-control-expose-headers")).toContain("Content-Range");
+				expect(await response.text()).toBe(content);
+			}
+			const preflight = await fetch(url, { method: "OPTIONS", headers: { origin, "access-control-request-method": "GET", "access-control-request-headers": "range" } });
+			expect(preflight.status).toBe(204);
+			expect(preflight.headers.get("access-control-allow-origin")).toBe(origin);
+			expect(preflight.headers.get("access-control-allow-headers")?.toLowerCase()).toContain("range");
+		}
+		for (const origin of ["https://evil.example", "http://localhost:1", "http://127.0.0.1:1", "null"]) {
+			const response = await fetch(url, { headers: { origin } });
+			expect(response.headers.get("access-control-allow-origin")).toBeNull();
+			await response.arrayBuffer();
+		}
+	}, 30_000);
+
+	it("resolves both spellings of a symlinked system temp root, with or without a trailing slash", async () => {
+		const root = await mkdtemp(join(tmpdir(), "artifact-temp-"));
+		cleanups.push(() => rm(root, { recursive: true, force: true }));
+		const real = join(root, "private", "var", "folders", "sample", "T");
+		await mkdir(real, { recursive: true });
+		await mkdir(join(root, "project"));
+		await symlink(join(root, "private", "var"), join(root, "var"));
+		const alias = join(root, "var", "folders", "sample", "T");
+		await writeFile(join(real, "report.md"), "# café ✓\n");
+		const previous = process.env.TMPDIR;
+		try {
+			for (const suffix of ["", "/"]) {
+				process.env.TMPDIR = alias + suffix;
+				for (const from of [real, alias]) {
+					expect(await resolveArtifactSource({ path: join(from, "report.md"), cwd: join(root, "project"), projectPath: join(root, "project"), dataDir: join(root, "data"), workspaceDirs: [] })).toEqual({ ok: true, path: await realpath(join(real, "report.md")) });
+				}
+			}
+		} finally { if (previous === undefined) delete process.env.TMPDIR; else process.env.TMPDIR = previous; }
+	});
+
+	it("returns readable CORS errors when storage fails before a text response", async () => {
+		const signer = new ArtifactUrlSigner({ secret: Buffer.alloc(32) });
+		const { path } = signer.sign("p", "a", "inline");
+		const logs: string[] = [];
+		const response = await serveArtifact(new Request(`http://backend.example${path}`, { headers: { origin: APP_ORIGIN, range: "bytes=0-262143" } }), {
+			store: { get: async () => { throw new Error("disk unavailable"); } } as unknown as ArtifactStore,
+			signer, allowedOrigins: [APP_ORIGIN], log: line => logs.push(line),
+		});
+		expect(response?.status).toBe(500);
+		expect(response?.headers.get("access-control-allow-origin")).toBe(APP_ORIGIN);
+		expect(await response?.text()).toContain("could not read this artifact");
+		expect(logs).toEqual(["artifacts: could not read p/a"]);
+	});
+});
+
 describe("the store", () => {
 	it("refuses a file over the size cap and leaves nothing behind", async () => {
 		const root = await mkdtemp(join(tmpdir(), "artifact-store-"));
@@ -372,6 +448,39 @@ describe("serving and deleting", () => {
 		const download = await fetch(await urlOf(client, projectId, artifact.id, true));
 		expect(download.headers.get("content-disposition")?.startsWith("attachment;")).toBe(true);
 		await download.arrayBuffer();
+	}, 30_000);
+
+	it("serves copied Markdown, text and HTML with exact UTF-8 range lengths after temp sources disappear", async () => {
+		const { test, client, projectId } = await start();
+		const source = join(test.root, "source");
+		const alias = join(test.root, "alias");
+		await mkdir(source);
+		await symlink(source, alias);
+		const content = "# Skill evaluation\n\nCafé ✓\n".repeat(500);
+		for (const extension of ["md", "txt", "html"]) {
+			await writeFile(join(alias, `report.${extension}`), content);
+		}
+		const results = await saveThroughTool(test, client, projectId, ["md", "txt", "html"].map(extension => ({ path: join(alias, `report.${extension}`) })));
+		for (const result of results) expect(result).toContain("Saved artifact");
+		await rm(source, { recursive: true });
+		const bytes = new TextEncoder().encode(content);
+		for (const artifact of await list(client, projectId)) {
+			const url = await urlOf(client, projectId, artifact.id);
+			for (const range of [undefined, "bytes=0-262143", "bytes=10-99"]) {
+				const response = await fetch(url, { headers: { origin: APP_ORIGIN, ...(range ? { range } : {}) } });
+				expect(response.status).toBe(range ? 206 : 200);
+				const expected = range === "bytes=10-99" ? bytes.slice(10, 100) : bytes;
+				expect(response.headers.get("content-length")).toBe(String(expected.length));
+				expect(new Uint8Array(await response.arrayBuffer())).toEqual(expected);
+				if (range) expect(response.headers.get("content-range")).toBe(range === "bytes=10-99" ? `bytes 10-99/${bytes.length}` : `bytes 0-${bytes.length - 1}/${bytes.length}`);
+				expect(response.headers.get("access-control-allow-origin")).toBe(APP_ORIGIN);
+				expect(response.headers.get("access-control-expose-headers")).toContain("Content-Range");
+			}
+			const preflight = await fetch(url, { method: "OPTIONS", headers: { origin: APP_ORIGIN, "access-control-request-method": "GET", "access-control-request-headers": "range" } });
+			expect(preflight.status).toBe(204);
+			expect(preflight.headers.get("access-control-allow-origin")).toBe(APP_ORIGIN);
+			expect(preflight.headers.get("access-control-allow-headers")?.toLowerCase()).toContain("range");
+		}
 	}, 30_000);
 
 	it("never serves without a valid token", async () => {

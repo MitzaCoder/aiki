@@ -9,6 +9,7 @@
 	import Markdown from '#lib/components/markdown/Markdown.svelte';
 	import { formatBytes, isMarkdownArtifact, MEDIA_RETRY_LIMIT, TEXT_PREVIEW_BYTES } from '#lib/artifacts.js';
 	import { useArtifactSource } from '#lib/artifacts.svelte.js';
+	import { ArtifactReadError, artifactReadProblem, readArtifactText } from '#lib/artifact-text.js';
 
 	/**
 	 * A text artifact (a log, a report) read in place: its first `TEXT_PREVIEW_BYTES`, monospace, wrapped or not. A
@@ -28,11 +29,13 @@
 	const markdown = $derived(isMarkdownArtifact(artifact));
 	const rendered = $derived(markdown && !showSource);
 	let failures = 0;
+	let attempt = $state(0);
 
 	const source = useArtifactSource(() => ({ client, projectId: artifact.projectId, artifactId: artifact.id }));
 	const url = $derived(source.current?.url);
 
 	$effect(() => {
+		attempt;
 		if (url === undefined) return;
 		const controller = new AbortController();
 		void read(url, controller.signal);
@@ -41,25 +44,34 @@
 
 	async function read(from: string, signal: AbortSignal): Promise<void> {
 		try {
-			const response = await fetch(from, { headers: { Range: `bytes=0-${TEXT_PREVIEW_BYTES - 1}` }, signal });
-			if (response.status === 401 || response.status === 403 || response.status === 410) {
-				if (failures < MEDIA_RETRY_LIMIT) {
-					failures += 1;
-					await source.current?.recover();
-					return;
-				}
-			}
-			if (!response.ok) throw new Error(`The backend answered ${response.status}.`);
-			const bytes = new Uint8Array(await response.arrayBuffer());
-			const total = Number(/\/(\d+)$/.exec(response.headers.get('content-range') ?? '')?.[1] ?? artifact.size);
-			truncated = bytes.length < total || bytes.length >= TEXT_PREVIEW_BYTES;
-			content = new TextDecoder().decode(bytes.subarray(0, TEXT_PREVIEW_BYTES));
+			const preview = await readArtifactText(from, artifact.size, signal);
+			if (signal.aborted) return;
+			truncated = preview.truncated;
+			content = preview.content;
 			problem = undefined;
 			failures = 0;
 		} catch (error) {
 			if (signal.aborted) return;
-			problem = error instanceof Error ? error.message : String(error);
+			if (error instanceof ArtifactReadError && [401, 403, 410].includes(error.status) && failures < MEDIA_RETRY_LIMIT) {
+				failures += 1;
+				const recovered = await source.current?.recover();
+				if (signal.aborted) return;
+				const renewed = source.current?.url;
+				if (recovered && renewed) {
+					// A URL minted in the same second can be identical; retry explicitly.
+					await read(renewed, signal);
+					return;
+				}
+			}
+			problem = artifactReadProblem(error);
 		}
+	}
+
+	function retry(): void {
+		failures = 0;
+		problem = undefined;
+		if (url === undefined) void source.current?.recover();
+		attempt += 1;
 	}
 </script>
 
@@ -111,8 +123,11 @@
 				The first {formatBytes(TEXT_PREVIEW_BYTES)}{artifact.size > 0 ? ` of ${formatBytes(artifact.size)}` : ''}; download it for the rest.
 			</p>
 		{/if}
-	{:else if problem}
-		<p class="px-3 py-3 text-xs text-(--chat-danger)">Could not read it: {problem}</p>
+	{:else if problem || source.current?.error}
+		<div class="px-3 py-3 text-xs" role="alert">
+			<p class="text-(--chat-danger)">{problem ?? source.current?.error}</p>
+			<button type="button" class="mt-2 min-h-9 rounded-md border border-(--chat-border) px-3 font-medium text-(--chat-fg) hover:bg-(--chat-surface-2)" onclick={retry}>Retry</button>
+		</div>
 	{:else}
 		<p class="px-3 py-3 text-xs text-(--chat-fg-subtle)">Reading…</p>
 	{/if}

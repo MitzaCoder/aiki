@@ -1,5 +1,35 @@
 # Continue
 
+## T149: installed artifact CORS
+
+Reproduced pilot.1/main's text-only failure in real Chromium: the installed page
+at `localhost` and its paired backend at `127.0.0.1` on the same port pass auth/WS,
+but artifact GET lacks CORS because it only uses configured origins, not the two
+fixed installed-shell origins. CDP reports `MissingAllowOriginHeader`; removing
+Range alone does not fix it. Both hostname directions now work in all auth modes.
+Only the existing exact local shell origins are added; remote origins stay explicit.
+Same-origin browser URLs become relative. Small text uses GET, larger reads stay
+bounded even if Range is ignored. Text failures explain retry; token recovery also
+retries when a reminted URL is unchanged. Small server text responses are read
+before headers, with CORS-bearing read errors and a final capability recheck.
+
+Symlinked temp roots (with/without trailing slash), deleted sources, UTF-8 byte
+ranges and .md/.txt/.html are covered. Both source paths and roots already used
+realpath; storage copies files. No macOS path fix was needed. Paired HTTPS remote
+UI/forced preflights pass; deliberately wrong origins and mixed content still fail
+as security requires. A true public-address-to-private PNA deployment was not proven.
+Synthetic installed proof: build web, run `ARTIFACT_DEMO_INSTALLED=1 bun
+packages/server/scripts/artifact-web-demo.ts`, dedicated Chromium CDP :9389, then
+`ARTIFACT_PROOF_PHASE=after bun packages/server/scripts/artifact-installed-proof.ts`.
+The driver writes screenshots, frame timing and network evidence under `/tmp/t149`.
+T149 retains before/after dark desktop shots plus the open/interruption/retry video.
+
+Sequential gates: root 2,509 tests / 92,173 assertions; typecheck; web check zero
+errors/warnings, 1,062 tests / 79,743 assertions, build; public denylist/generic/
+Gitleaks pass using the existing external operator file (workspace default absent).
+No push, main move, deployment or physical device. The friend's Mac itself was not
+available; the exact reported origin/text-versus-image behavior is reproduced here.
+
 ## T141: MCP stack integrated with pending main
 
 All nine MCP changes are rebased onto `msmyzxkq` (chat attachments, standalone

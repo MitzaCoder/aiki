@@ -37,6 +37,8 @@ export async function createSetup(options?: {
 	logins?: StartServerOptions["logins"];
 	log?: StartServerOptions["log"];
 	allowedOrigins?: StartServerOptions["allowedOrigins"];
+	/** Installed SPA shell; still isolated under the fixture's owned paths. */
+	webDir?: StartServerOptions["webDir"];
 	features?: StartServerOptions["features"];
 	/** Where the server reads AGENTS.md and skills; defaults to a directory under the test's own root. */
 	agentDir?: string;
@@ -103,6 +105,7 @@ export async function createSetup(options?: {
 			claudeDir,
 			...(options?.logins === undefined ? {} : { logins: options.logins }),
 			...(options?.allowedOrigins === undefined ? {} : { allowedOrigins: options.allowedOrigins }),
+			...(options?.webDir === undefined ? {} : { webDir: options.webDir }),
 			...(options?.features === undefined ? {} : { features: options.features }),
 			...(options?.now === undefined ? {} : { now: options.now }),
 			...(options?.setTimer === undefined ? {} : { setTimer: options.setTimer }),

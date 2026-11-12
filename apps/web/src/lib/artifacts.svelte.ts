@@ -16,6 +16,7 @@ import {
 } from "@aiki/client";
 import type { Artifact } from "@aiki/protocol";
 import { getContext, setContext } from "svelte";
+import { artifactBrowserUrl } from "./artifacts.js";
 
 /** The default length of a list, as the server answers it. */
 export const ARTIFACT_LIST_LIMIT = 100;
@@ -167,7 +168,7 @@ export class ArtifactSource {
 		try {
 			const answer = await this.#client.readArtifactUrl(this.projectId, this.artifactId, { download: this.download });
 			if (this.#stopped) return false;
-			this.url = answer.url;
+			this.url = typeof window === "undefined" ? answer.url : artifactBrowserUrl(answer.url, window.location.origin);
 			this.expiresAt = answer.expiresAt;
 			this.error = undefined;
 			clearTimeout(this.#timer);

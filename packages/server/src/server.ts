@@ -754,6 +754,12 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			}
 			const origin = request.headers.get("origin");
 			const required = auth.mode === "required";
+			// The installed shell already accepts these exact loopback origins for auth and
+			// WebSockets. Artifact fetches need the same CORS policy when localhost and
+			// 127.0.0.1 name the same installation (images alone do not need CORS).
+			const artifactOrigins = options.webDir
+				? [...allowedOrigins, ...loopback.filter((origin) => localWebOrigin(origin, bunServer.port ?? port))]
+				: allowedOrigins;
 			const originAllowed = isOriginAllowed(origin, allowedOrigins, required || url.pathname.startsWith("/auth/")) ||
 				Boolean(options.webDir && localWebOrigin(origin, bunServer.port ?? port));
 			if (!originAllowed && (required || url.pathname.startsWith("/auth/")))
@@ -764,8 +770,9 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					(await serveArtifact(request, {
 						store: artifacts,
 						signer: artifactSigner,
-						allowedOrigins,
+						allowedOrigins: artifactOrigins,
 						exactOrigins: false,
+						log,
 					})) ?? new Response("Not found", { status: 404 })
 				);
 			const cors: Record<string, string> = { "cache-control": "no-store", vary: "Origin" };
@@ -854,7 +861,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 				}
 			}
 			if (url.pathname.startsWith("/artifacts/")) {
-				return serveArtifact(request, { store: artifacts, signer: artifactSigner, allowedOrigins }).then(
+				return serveArtifact(request, { store: artifacts, signer: artifactSigner, allowedOrigins: artifactOrigins, log }).then(
 					(response) => response ?? new Response("Not found", { status: 404 }),
 				);
 			}
