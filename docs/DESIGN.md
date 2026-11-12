@@ -1,5 +1,31 @@
 # Design
 
+## MCP preset catalogue and registered OAuth apps (T157 / D73)
+
+Add server offers a searchable catalogue grouped by issue tracking, code, docs,
+observability, cloud, databases, design and productivity, and browsers and testing.
+Presets describe authentication, link vendor documentation and token/app creation,
+and never connect or enable a project automatically. Command presets populate the
+existing exact-command review, including environment-secret names. Read-only vendor
+routes are preferred. Only documented, non-secret URL options are allowed; access
+credentials never belong in a URL.
+
+Registered OAuth apps use pi-mcp's `clientId` / `clientSecret` settings, not a
+second OAuth implementation. Users register the exact displayed web-origin callback
+`/mcp/oauth/callback`, then paste an app ID and optional secret. Both stay only in
+backend MCP credentials; forms clear before sending and neither is returned in
+catalogue responses. The callback and settings survive refresh/restart, while PKCE,
+state, issuer, one-use completion and paired-session binding remain unchanged.
+Local installs accept the two fixed loopback shell origins from T156; a vendor may
+still require an HTTPS callback or administrator app approval. Unsupported vendor
+OAuth discovery is not presented as a working integration.
+
+Atlassian and GitHub explain that agents often work better with acli / gh. Their
+button submits a plain setup request through the existing coordinator conversation
+submission path, then opens that chat. Select a project on this backend if none is
+selected; do not create a project, install software or sign in automatically.
+
+
 ## Version in navigation (T155)
 
 The desktop projects sidebar and phone drawer reserve a quiet footer link below

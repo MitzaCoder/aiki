@@ -12,12 +12,12 @@ import io.github.mitzacoder.aiki.protocol.McpOAuthCompleteResponseServer
 
 /** Secrets are transient remember state, never rememberSaveable. */
 @Composable
-internal fun McpCommandForm(busy: Boolean, existing: McpOAuthCompleteResponseServer? = null, submit: (McpImportEntry) -> Unit) {
-    var name by remember { mutableStateOf(existing?.name.orEmpty()) }
-    var command by remember { mutableStateOf(existing?.command?.command.orEmpty()) }
-    var args by remember { mutableStateOf(existing?.command?.args?.let { kotlinx.serialization.json.JsonArray(it.map { value -> kotlinx.serialization.json.JsonPrimitive(value) }).toString() } ?: "[]") }
+internal fun McpCommandForm(busy: Boolean, existing: McpOAuthCompleteResponseServer? = null, preset: io.github.mitzacoder.aiki.protocol.McpListResponsePresetsItem? = null, submit: (McpImportEntry) -> Unit) {
+    var name by remember { mutableStateOf(existing?.name ?: preset?.name.orEmpty()) }
+    var command by remember { mutableStateOf(existing?.command?.command ?: preset?.command?.command.orEmpty()) }
+    var args by remember { mutableStateOf((existing?.command?.args ?: preset?.command?.args)?.let { kotlinx.serialization.json.JsonArray(it.map { value -> kotlinx.serialization.json.JsonPrimitive(value) }).toString() } ?: "[]") }
     var cwd by remember { mutableStateOf(existing?.command?.cwd.orEmpty()) }
-    var env by remember { mutableStateOf("{}") }
+    var env by remember { mutableStateOf(preset?.envNames?.associateWith { kotlinx.serialization.json.JsonPrimitive("") }?.let { kotlinx.serialization.json.JsonObject(it).toString() } ?: "{}") }
     var error by remember { mutableStateOf<String?>(null) }
     var pending by remember { mutableStateOf<McpImportEntry?>(null) }
     SettingsGroup(title = "Command (stdio)") { GroupRow {
@@ -33,6 +33,7 @@ internal fun McpCommandForm(busy: Boolean, existing: McpOAuthCompleteResponseSer
             try {
                 require(name.isNotBlank() && name.length <= 120) { "Name must be 1–120 characters" }
                 val parsed = parseMcpCommand(command, args, cwd)
+                require(preset?.envNames.orEmpty().all { !parseMcpEnvironment(env)[it].isNullOrBlank() }) { "Enter the required environment secrets" }
                 pending = McpImportEntry(name, existing?.id ?: mcpServerIdFromUuid(java.util.UUID.randomUUID().toString()), "command", command, command = parsed, env = if (existing != null && env == "{}") null else parseMcpEnvironment(env), envNames = existing?.envNames)
                 error = null
             } catch (failure: Exception) { error = failure.message ?: "Invalid command" }

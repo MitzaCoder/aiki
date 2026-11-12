@@ -1,5 +1,38 @@
 # Continue
 
+## T157: MCP preset catalogue and registered OAuth apps
+
+Web and Android Add server now share a searchable, eight-group backend catalogue:
+ten remote additions plus Notion, four reviewed command presets, and registered-app
+Slack, Asana, PagerDuty and Canva. GitHub/Linear prefer read-only endpoints;
+Supabase uses read-only mode. Atlassian/GitHub offer a project picker and acli/gh
+setup request through the normal coordinator submission, then open chat. Presets
+never enable projects or execute commands automatically.
+
+pi-mcp 1.5.2 supports configured `clientId` / `clientSecret`; Aiki stores those with
+the exact callback in backend MCP credentials and reuses them for exchange/refresh.
+Fields are transient/write-only, request diagnostics and reflected app credentials
+are redacted. Fake public/confidential no-DCR sign-in, refresh, restart and callback
+replay tests pass. PKCE/state/issuer/device binding and T156 loopback origins remain.
+
+Google Workspace is deliberately omitted: its resource URLs were confirmed, not a
+usable OAuth discovery contract, and pi-mcp lacks Google's offline authorization
+parameters. Postgres uses the documented community MCP Pro restricted mode with
+`DATABASE_URI`, not the archived reference package or credential-bearing argv.
+See `docs/research/mcp-presets.md` for vendor caveats and the replay recipe.
+
+T157 retains live endpoint probes, web desktop/phone light/dark catalogue/search,
+registered-app form and connected proof, CLI hint → actual coordinator chat, and a
+10-second fake-consent recording. Owned Android emulator proof covers catalogue
+and CLI light/dark, app form and Playwright exact-command review. No physical
+phone, real account, downloaded MCP execution, push, main move or deployment.
+
+Sequential gates pass: root 2,555 tests / 92,758 assertions; typecheck; web check
+zero diagnostics, 1,075 tests / 79,818 assertions and build; Android 921 tests
+(two opt-in skips), debug assembly and lint (zero errors, 49 warnings, four hints).
+Gradle stopped; private/generic/Gitleaks public checks pass. T142 was rebased
+upstream during this run; this change rests on its current main revision.
+
 ## T142: command MCP servers and reviewed JSON import
 
 D72 replaces host-only provisioning: any paired web/Android device may save a

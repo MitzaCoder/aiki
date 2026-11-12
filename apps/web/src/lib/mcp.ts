@@ -17,7 +17,7 @@ export function mcpStatus(server: Pick<McpServer, 'status' | 'hasCredential' | '
 }
 /** Never infer OAuth support from a missing credential or an arbitrary server display name. */
 export function mcpSupportsOAuth(server: Pick<McpServer, 'presetId' | 'authKind'>, presets: readonly { id: string; auth: string }[]): boolean {
-  return server.authKind === 'oauth' || presets.some(preset => preset.id === server.presetId && /\boauth\b/i.test(preset.auth));
+  return server.authKind === 'oauth' || presets.some(preset => preset.id === server.presetId && /oauth/i.test(preset.auth));
 }
 export function mcpOAuthFlowLabel(flow: McpOAuthFlow): string {
   switch (flow.status) {

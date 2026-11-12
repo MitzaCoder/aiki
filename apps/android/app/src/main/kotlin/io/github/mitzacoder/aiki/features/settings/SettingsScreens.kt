@@ -68,7 +68,7 @@ fun GeneralSettingsScreen(
                     backend == null -> NotFound("Unknown backend", "This device has no backend with that address. Add it under Backends.")
                     page.accounts -> AccountsPage(backend)
                     page.devices -> DevicesPage(repository, backend)
-                    page.mcp -> McpServersPage(backend)
+                    page.mcp -> McpServersPage(backend, navigate)
                     else -> BackendPage(repository, backend, navigator)
                 }
             }

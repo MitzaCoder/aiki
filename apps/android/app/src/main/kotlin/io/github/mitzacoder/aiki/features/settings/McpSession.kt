@@ -54,11 +54,11 @@ class McpSession(private val client: HarnessClient, private val scope: Coroutine
         catch (e: Exception) { mutableError.value = e.message ?: "MCP request failed." }
         finally { mutableBusy.value = false }
     }
-    suspend fun start(serverId: String): String? {
+    suspend fun start(serverId: String, clientId: String? = null, clientSecret: String? = null): String? {
         var authorization: String? = null
         perform {
             check(pending == null) { "Finish or cancel the pending sign-in first." }
-            val response = client.request(McpOAuthStartRequest(serverId = serverId, redirectUri = redirectUri))
+            val response = client.request(McpOAuthStartRequest(serverId = serverId, redirectUri = redirectUri, clientId = clientId, clientSecret = clientSecret))
             if (response.authorizationUrl.isNotBlank()) {
                 val state = requireNotNull(mcpAuthorizationState(response.authorizationUrl)) { "The server returned no OAuth state." }
                 pending = Pending(response.flowId, state, serverId, response.authorizationUrl)
@@ -68,9 +68,9 @@ class McpSession(private val client: HarnessClient, private val scope: Coroutine
         }
         return authorization
     }
-    suspend fun copySignInLink(serverId: String, copy: (String) -> Unit): Boolean = copyMcpSignInLink(
+    suspend fun copySignInLink(serverId: String, clientId: String? = null, clientSecret: String? = null, copy: (String) -> Unit): Boolean = copyMcpSignInLink(
         pending?.takeIf { it.serverId == serverId }?.authorizationUrl,
-        { start(serverId) }, copy)
+        { start(serverId, clientId, clientSecret) }, copy)
     fun accepts(url: String): Boolean = pending?.state?.let { it == mcpCallbackState(url, redirectUri) } == true
     suspend fun complete(url: String) = perform {
         val flow = pending

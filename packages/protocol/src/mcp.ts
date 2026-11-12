@@ -1,5 +1,6 @@
 /** Remote MCP settings. Secrets are write-only; catalogues are untrusted server metadata. */
 import { type Static, Type } from "typebox";
+import { McpPresetSchema } from "./mcp-presets.ts";
 import { RequestIdSchema } from "./common.ts";
 export const McpRoleSchema = Type.Union([
 	Type.Literal("coordinator"),
@@ -38,6 +39,7 @@ export const McpServerSchema = Type.Object({
 	status: Type.Union([Type.Literal("disconnected"), Type.Literal("connected"), Type.Literal("error"), Type.Literal("needs_sign_in"), Type.Literal("signing_in")]),
 	lastError: Type.Union([Type.String(), Type.Null()]),
 	hasCredential: Type.Boolean(),
+ hasOAuthClient: Type.Optional(Type.Boolean()),
 	oauthFlow: Type.Optional(McpOAuthFlowSchema),
 	authKind: Type.Union([Type.Literal("none"), Type.Literal("token"), Type.Literal("oauth")]),
 	tools: Type.Array(McpToolSchema),
@@ -49,9 +51,7 @@ export const McpProjectServerSchema = Type.Object({
 	roles: Type.Array(McpRoleSchema),
 });
 export type McpProjectServer = Static<typeof McpProjectServerSchema>;
-export const MCP_PRESETS = [
-	{ id: "notion", name: "Notion", url: "https://mcp.notion.com/mcp", auth: "oauth or token", description: "Connect Notion pages and workspace tools. Use OAuth or a Business/Enterprise MCP token (not a REST integration token)." },
-] as const;
+export { MCP_PRESETS, MCP_PRESET_GROUPS, mcpCliSetupMessage, mcpPresetQueryAllowed, type McpPreset } from "./mcp-presets.ts";
 export const McpListRequestSchema = Type.Object({ type: Type.Literal("mcp.list"), id: RequestIdSchema });
 export const McpAddRequestSchema = Type.Object({
 	type: Type.Literal("mcp.add"),
@@ -109,7 +109,7 @@ export const McpListResponseSchema = Type.Object({
 	type: Type.Literal("mcp.list"),
 	id: RequestIdSchema,
 	servers: Type.Array(McpServerSchema),
-	presets: Type.Array(Type.Object({ id: Type.String(), name: Type.String(), url: Type.String(), auth: Type.String(), description: Type.Optional(Type.String()) })),
+	presets: Type.Array(McpPresetSchema),
 });
 export const McpAddResponseSchema = Type.Object({
 	type: Type.Literal("mcp.add"),
@@ -169,6 +169,7 @@ export type McpProjectSetResponse = Static<typeof McpProjectSetResponseSchema>;
 
 export const McpOAuthStartRequestSchema = Type.Object({
  type: Type.Literal("mcp.oauth.start"), id: RequestIdSchema, serverId: Type.String(), redirectUri: Type.String(),
+ clientId: Type.Optional(Type.String()), clientSecret: Type.Optional(Type.String()),
 });
 export const McpOAuthStartResponseSchema = Type.Object({
  type: Type.Literal("mcp.oauth.start"), id: RequestIdSchema, flowId: Type.String(), authorizationUrl: Type.String(), expiresAt: Type.Number(),

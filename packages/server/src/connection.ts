@@ -448,7 +448,7 @@ export class ClientConnection {
      const mcp = this.#manager.mcp;
      if (!mcp || !this.#features.includes("mcp-servers")) return this.#unknownRequest(request);
      switch (request.type) {
-      case "mcp.oauth.start": { await mcp.disconnect(request.serverId); const flow = await mcp.oauth.start(request.serverId, request.redirectUri, this.#deviceAuth?.identity?.sessionId ?? this.#mcpOwner); if (!flow.authorizationUrl) { await mcp.refresh(request.serverId); mcp.oauth.notifyStatus(request.serverId); } this.#respond({ type: request.type, id: request.id, ...flow }); break; }
+      case "mcp.oauth.start": { await mcp.disconnect(request.serverId); const flow = await mcp.oauth.start(request.serverId, request.redirectUri, this.#deviceAuth?.identity?.sessionId ?? this.#mcpOwner, { clientId: request.clientId, clientSecret: request.clientSecret }); if (!flow.authorizationUrl) { await mcp.refresh(request.serverId); mcp.oauth.notifyStatus(request.serverId); } this.#respond({ type: request.type, id: request.id, ...flow }); break; }
       case "mcp.oauth.complete": { const serverId = await mcp.oauth.complete(request, this.#deviceAuth?.identity?.sessionId ?? this.#mcpOwner); const server = await mcp.refresh(serverId); mcp.oauth.notifyStatus(serverId); this.#respond({ type: request.type, id: request.id, server }); break; }
       case "mcp.oauth.cancel": mcp.oauth.cancel(request.flowId, this.#deviceAuth?.identity?.sessionId ?? this.#mcpOwner); this.#respond({ type: request.type, id: request.id }); break;
       case "mcp.list": this.#respond({ type: request.type, id: request.id, servers: await mcp.list(), presets: [...MCP_PRESETS] }); break;

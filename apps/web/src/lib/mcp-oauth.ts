@@ -29,12 +29,12 @@ export function parseMcpOAuthCallback(href: string, storage: Pick<Storage, 'getI
 }
 
 /** Call directly from the Connect click so browsers permit the authorization tab. */
-export async function startMcpOAuth(backend: BackendConnection, serverId: string, openBrowser = true) {
+export async function startMcpOAuth(backend: BackendConnection, serverId: string, openBrowser = true, client?: { clientId?: string; clientSecret?: string }) {
  const popup = openBrowser ? window.open('about:blank', '_blank') : null;
  if (popup) popup.opener = null;
  try {
   const flow = await backend.client.request({ type: 'mcp.oauth.start', serverId,
-   redirectUri: `${location.origin}${MCP_OAUTH_CALLBACK_PATH}` });
+   ...client, redirectUri: `${location.origin}${MCP_OAUTH_CALLBACK_PATH}` });
   if (flow.type === 'error') throw new Error(flow.error.message);
   if (flow.type !== 'mcp.oauth.start') throw new Error('Could not start MCP sign-in: unexpected backend response.');
   if (flow.authorizationUrl) {

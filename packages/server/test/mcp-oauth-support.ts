@@ -1,6 +1,6 @@
 /** Fake OAuth issuer and protected resource, owned by a createSetup test/demo. */
 import { createHash } from "node:crypto";
-export function fakeMcpOAuth(autoApprovePage = false, options: { manualConsent?: boolean } = {}) {
+export function fakeMcpOAuth(autoApprovePage = false, options: { manualConsent?: boolean; registeredClient?: { id: string; secret?: string } } = {}) {
  let access = "synthetic-access-1", refresh = "synthetic-refresh-1", sequence = 1;
  let invalid = false, mismatch = false, registration = true, rejectAccess = false;
  let registrationError: { status: number; body: string } | undefined;
@@ -14,7 +14,7 @@ export function fakeMcpOAuth(autoApprovePage = false, options: { manualConsent?:
    authorization_endpoint: `${issuer}/authorize`, token_endpoint: `${issuer}/token`,
    ...(registration ? { registration_endpoint: `${issuer}/register` } : {}),
    response_types_supported: ["code"], grant_types_supported: ["authorization_code", "refresh_token"],
-   code_challenge_methods_supported: ["S256"], token_endpoint_auth_methods_supported: ["none"],
+   code_challenge_methods_supported: ["S256"], token_endpoint_auth_methods_supported: [options.registeredClient?.secret ? "client_secret_post" : "none"],
    authorization_response_iss_parameter_supported: true,
   });
   if (url.pathname === "/register") {
@@ -24,6 +24,7 @@ export function fakeMcpOAuth(autoApprovePage = false, options: { manualConsent?:
    return Response.json({ ...metadata, client_id: "synthetic-client" }, { status: 201 });
   }
   if (url.pathname === "/authorize") {
+   if (options.registeredClient && url.searchParams.get("client_id") !== options.registeredClient.id) return new Response("Wrong synthetic client", { status: 400 });
    if (url.searchParams.get("code_challenge_method") !== "S256") return new Response("PKCE required", { status: 400 });
    const code = crypto.randomUUID();
    const redirectUri = url.searchParams.get("redirect_uri")!;
@@ -37,6 +38,7 @@ export function fakeMcpOAuth(autoApprovePage = false, options: { manualConsent?:
   }
   if (url.pathname === "/token") {
    const body = new URLSearchParams(await request.text());
+   if (options.registeredClient && (body.get("client_id") !== options.registeredClient.id || (options.registeredClient.secret && body.get("client_secret") !== options.registeredClient.secret))) return Response.json({ error: "invalid_client" }, { status: 400 });
    if (body.get("grant_type") === "refresh_token") {
     refreshes++; inRefresh++; maxRefresh = Math.max(maxRefresh, inRefresh);
     await Bun.sleep(15); inRefresh--;
@@ -63,7 +65,7 @@ export function fakeMcpOAuth(autoApprovePage = false, options: { manualConsent?:
   if (message.id === undefined) return new Response(null, { status: 202 });
   let result: unknown = {};
   if (message.method === "initialize") result = { protocolVersion: "2025-11-25", capabilities: { tools: {} }, serverInfo: { name: "Synthetic OAuth MCP", version: "1" } };
-  if (message.method === "tools/list") result = { tools: [{ name: "read_page", inputSchema: { type: "object" }, annotations: { readOnlyHint: true }, description: `Read synthetic page ${access}` }] };
+  if (message.method === "tools/list") result = { tools: [{ name: "read_page", inputSchema: { type: "object" }, annotations: { readOnlyHint: true }, description: `Read synthetic page ${access} ${options.registeredClient?.id ?? ""} ${options.registeredClient?.secret ?? ""}` }] };
   if (message.method === "tools/call") { calls++; result = { content: [{ type: "text", text: `Synthetic page ${access}` }] }; }
   return Response.json({ jsonrpc: "2.0", id: message.id, result });
  } });

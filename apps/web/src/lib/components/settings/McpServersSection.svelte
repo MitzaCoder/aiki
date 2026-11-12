@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { parseMcpImport, mcpImportId, type McpImportRow, type McpListResponse, type McpPolicy, type McpServer } from '@aiki/protocol';
+  import { MCP_PRESET_GROUPS, parseMcpImport, mcpImportId, type McpImportRow, type McpListResponse, type McpPolicy, type McpServer } from '@aiki/protocol';
   import type { BackendConnection } from '#lib/harness.svelte.js';
-  import { filterMcpTools, mcpServerId, mcpStatus, mcpSupportsOAuth } from '#lib/mcp.js';
+  import { filterMcpTools, mcpServerId, mcpStatus } from '#lib/mcp.js';
   import { mcpRequest } from '#lib/mcp-rpc.js';
   import Banner from '#lib/components/Banner.svelte';
   import { Button } from '#lib/components/ui/button/index.js';
@@ -13,6 +13,7 @@
   import McpToolRow from './McpToolRow.svelte';
   import McpCommandReview from './McpCommandReview.svelte';
   import McpImportReview from './McpImportReview.svelte';
+  import McpCliHint from './McpCliHint.svelte';
   import McpOAuthConnection from './McpOAuthConnection.svelte';
 
   let { backend }: { backend: BackendConnection } = $props();
@@ -26,6 +27,10 @@
   let adding = $state(false);
   let confirmingRemove = $state(false);
   let presetId = $state('');
+  let presetSearch = $state('');
+  const chosenPreset = $derived(presets.find(p => p.id === presetId));
+  const selectedPreset = $derived(presets.find(p => p.id === selected?.presetId));
+  const matchingPresets = $derived(presets.filter(p => `${p.name} ${p.description} ${p.group}`.toLowerCase().includes(presetSearch.toLowerCase().trim())));
   let name = $state('');
   let url = $state('');
   let kind = $state('http');
@@ -74,7 +79,11 @@
   }
   function choosePreset() {
     const preset = presets.find(preset => preset.id === presetId);
-    if (preset) { name = preset.name; url = ''; }
+    if (preset) {
+      name = preset.name; url = preset.url; kind = preset.command ? 'command' : 'http';
+      command = preset.command?.command ?? ''; args = JSON.stringify(preset.command?.args ?? []);
+      env = JSON.stringify(Object.fromEntries((preset.envNames ?? []).map(name => [name, ''])));
+    }
   }
   function prepareAdd() {
     error = '';
@@ -82,6 +91,7 @@
       if (kind === 'command') {
         const rows = parseMcpImport(JSON.stringify({ [name]: { command, args: JSON.parse(args), ...(cwd ? { cwd } : {}), env: JSON.parse(env) } }), servers.filter(s => s.id !== editing).map(s => s.id));
         if (rows[0]?.error) throw new Error(rows[0].error);
+        if (chosenPreset?.envNames?.some(name => !rows[0]?.env?.[name]?.trim())) throw new Error('Enter the required environment secrets.');
         pending = rows; confirmingCommand = true;
       } else void saveRows([{ name: name.trim(), serverId: mcpServerId(name, servers.map(s => s.id)), kind: 'http', target: url, url: url || presets.find(p => p.id === presetId)?.url, renamed: false }]);
     } catch (failure) { error = failure instanceof Error ? failure.message : 'Invalid command'; }
@@ -100,7 +110,7 @@
     await run(async () => {
       for (const row of rows) {
         const response = await mcpRequest(backend, { type: 'mcp.add', serverId: editing ?? row.serverId, name: row.name,
-          ...(row.command ? { command: row.command, ...(editing && env === '{}' ? {} : { env: row.env }), confirmed: true, ...(editing ? { replace: true } : {}) } : { url: row.url, ...(row.transport ? { transport: row.transport } : {}), ...(!importing && presetId ? { presetId } : {}) }) });
+          ...(row.command ? { command: row.command, ...(editing && env === '{}' ? {} : { env: row.env }), confirmed: true, ...(!importing && presetId ? { presetId } : {}), ...(editing ? { replace: true } : {}) } : { url: row.url, ...(row.transport ? { transport: row.transport } : {}), ...(!importing && presetId ? { presetId } : {}) }) });
         if (editing) replace(response.server); else servers = [...servers, response.server];
         if (row.token) await mcpRequest(backend, { type: 'mcp.token.set', serverId: response.server.id, token: row.token });
         open(response.server);
@@ -112,7 +122,7 @@
   }
   function editCommand() {
     if (!selected?.command) return;
-    editing = selected.id; name = selected.name; kind = 'command'; command = selected.command.command;
+    editing = selected.id; presetId = selected.presetId ?? ''; name = selected.name; kind = 'command'; command = selected.command.command;
     args = JSON.stringify(selected.command.args); cwd = selected.command.cwd ?? ''; env = '{}'; adding = true; confirmingCommand = false;
   }
   async function connect() {
@@ -158,6 +168,14 @@
     <p class="text-sm text-muted-foreground" role="status">{busy ? 'Working…' : notice}</p>
     {#if selected}
       <Button variant="outline" class="self-start" disabled={busy} onclick={() => { selectedId = null; token = ''; }}>Back to servers</Button>
+      {#if selectedPreset}
+        <div class="my-3 flex flex-col gap-2 text-sm">
+          <p>{selectedPreset.description}</p>
+          {#if selectedPreset.docsUrl}<a class="underline" href={selectedPreset.docsUrl} target="_blank" rel="noreferrer">Vendor documentation</a>{/if}
+          {#if selectedPreset.tokenUrl}<a class="underline" href={selectedPreset.tokenUrl} target="_blank" rel="noreferrer">Create a token</a>{/if}
+          {#if selectedPreset.cli}<McpCliHint {backend} cli={selectedPreset.cli} />{/if}
+        </div>
+      {/if}
       <SettingsGroup title={selected.name}>
         <SettingsRow label="Connection" hint={selected.command ? JSON.stringify([selected.command.command, ...selected.command.args]) : selected.url} control="full">
           {@const status = mcpStatus(selected)}
@@ -176,8 +194,8 @@
             {#if selected.stderrTail}<pre class="max-h-40 overflow-auto whitespace-pre-wrap text-xs" aria-label="Redacted stderr tail">{selected.stderrTail}</pre>{/if}
           </SettingsRow>
         {:else}
-        {#if mcpSupportsOAuth(selected, presets)}
-          {#key selected.id}<McpOAuthConnection {backend} server={selected} refresh={refreshCatalogue} onserver={replace} />{/key}
+        {#if !selected.command}
+          {#key selected.id}<McpOAuthConnection {backend} preset={selectedPreset} server={selected} refresh={refreshCatalogue} onserver={replace} />{/key}
         {/if}
         <SettingsRow label="Connect with a token" hint={selected.hasCredential ? 'A credential is saved on this backend. Paste to replace it.' : 'Paste an MCP bearer token, not an ordinary integration key.'} for="mcp-token" control="full">
           <form class="flex flex-col gap-2 sm:flex-row" onsubmit={(event) => { event.preventDefault(); void connect(); }}>
@@ -205,7 +223,7 @@
         </SettingsRow>
       </SettingsGroup>
     {:else}
-      <div class="flex flex-wrap items-center justify-between gap-2"><p class="text-sm text-muted-foreground">New servers are off in every project.</p><Button disabled={busy} onclick={() => { adding = true; editing = null; kind = 'http'; confirmingCommand = false; command = ''; args = '[]'; cwd = ''; env = '{}'; presetId = ''; name = ''; url = ''; error = ''; }}>Add server</Button><Button variant="outline" onclick={() => { importing = true; editing = null; review = []; importText = ''; error = ''; }}>Import JSON</Button></div>
+      <div class="flex flex-wrap items-center justify-between gap-2"><p class="text-sm text-muted-foreground">New servers are off in every project.</p><Button disabled={busy} onclick={() => { adding = true; editing = null; kind = 'http'; confirmingCommand = false; command = ''; args = '[]'; cwd = ''; env = '{}'; presetId = ''; presetSearch = ''; name = ''; url = ''; error = ''; }}>Add server</Button><Button variant="outline" onclick={() => { importing = true; editing = null; review = []; importText = ''; error = ''; }}>Import JSON</Button></div>
       <SettingsGroup title="Servers">
         {#each servers as server (server.id)}
           {@const status = mcpStatus(server)}
@@ -224,8 +242,30 @@
   <Dialog.Content class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
     <Dialog.Header><Dialog.Title>{editing ? 'Edit command server' : 'Add MCP server'}</Dialog.Title><Dialog.Description>Runs on this backend. New servers are disabled in projects.</Dialog.Description></Dialog.Header>
     <form class="flex flex-col gap-4" onsubmit={(event) => { event.preventDefault(); prepareAdd(); }}>
+      {#if !editing}
+        <label class="flex flex-col gap-1 text-sm">Search presets<input aria-label="Search presets" class="mcp-input" bind:value={presetSearch} placeholder="Jira, browser, docs…" /></label>
+        <p class="text-xs text-muted-foreground">{matchingPresets.length} presets · select one to see setup details</p>
+        <div class="max-h-64 overflow-y-auto rounded-lg border" aria-label="Preset catalogue">
+          {#each MCP_PRESET_GROUPS as group}
+            {@const entries = matchingPresets.filter(p => (p.group ?? 'Docs') === group)}
+            {#if entries.length}<h3 class="sticky top-0 bg-background px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">{group}</h3>
+              {#each entries as preset}<button type="button" class="block w-full border-t px-3 py-2 text-left hover:bg-muted" aria-pressed={presetId === preset.id} data-mcp-preset={preset.id} onclick={() => { presetId = preset.id; choosePreset(); }}>
+                <span class="block text-sm font-semibold">{preset.name} · {preset.auth.replaceAll('_', ' ')}</span><span class="block truncate text-xs text-muted-foreground">{preset.description}</span>
+              </button>{/each}
+            {/if}
+          {/each}
+          {#if !matchingPresets.length}<p class="p-3 text-sm">No matching presets.</p>{/if}
+        </div>
+        {#if chosenPreset}
+          <p class="text-sm">{chosenPreset.description}</p>
+          {#if chosenPreset.docsUrl}<a class="text-sm underline" href={chosenPreset.docsUrl} target="_blank" rel="noreferrer">Vendor documentation</a>{/if}
+          {#if chosenPreset.tokenUrl}<a class="text-sm underline" href={chosenPreset.tokenUrl} target="_blank" rel="noreferrer">Create a token</a>{/if}
+          {#if chosenPreset.cli}<McpCliHint {backend} cli={chosenPreset.cli} />{/if}
+          <button type="button" class="text-left text-sm underline" onclick={() => { presetId = ''; url = ''; name = ''; }}>Use custom server instead</button>
+        {/if}
+      {/if}
       <label class="flex flex-col gap-1 text-sm font-medium">Server kind
-        <select class="mcp-input" bind:value={kind} disabled={!!editing}><option value="http">Remote URL</option><option value="command">Command (stdio)</option></select>
+        <select class="mcp-input" bind:value={kind} disabled={!!editing || !!presetId}><option value="http">Remote URL</option><option value="command">Command (stdio)</option></select>
       </label>
       <label class="flex flex-col gap-1 text-sm font-medium">Server name<input class="mcp-input" bind:value={name} maxlength="120" required disabled={busy} /></label>
       {#if kind === 'command'}
@@ -235,7 +275,6 @@
         <label class="flex flex-col gap-1 text-sm">Environment (secret JSON object)<input id="mcp-env" class="mcp-input" type="password" autocomplete="off" bind:value={env} /></label>
         {#if editing}<p class="text-xs">Leave environment as an empty object to keep existing values. Remove and re-add to clear them.</p>{/if}
       {:else}
-        <label class="flex flex-col gap-1 text-sm font-medium">Preset<select class="mcp-input" bind:value={presetId} onchange={choosePreset}><option value="">Custom URL</option>{#each presets as preset}<option value={preset.id}>{preset.name} · {preset.auth}</option>{/each}</select></label>
         {#if !presetId}<label class="flex flex-col gap-1 text-sm font-medium">Server URL<input class="mcp-input" type="url" bind:value={url} placeholder="https://mcp.example.test/mcp" required /></label>{:else}<p class="text-sm break-all">{presets.find(p => p.id === presetId)?.url}</p>{/if}
       {/if}
       {#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}

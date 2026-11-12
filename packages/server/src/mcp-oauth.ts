@@ -2,7 +2,7 @@
 import type { CredentialStore } from "@earendil-works/pi-ai";
 import {
  startMcpSignIn, completeMcpSignIn, createMcpAuthProvider,
- type McpOAuthState, type McpOAuthServerStore, type McpSignInRedirect,
+ type McpOAuthSettings, type McpOAuthState, type McpOAuthServerStore, type McpSignInRedirect,
  OAuthIssuerMismatchError, OAuthRegistrationError, McpOAuthAuthorizationRequiredError,
 } from "@earendil-works/pi-mcp/oauth";
 import type { McpOAuthFlow } from "@aiki/protocol";
@@ -23,8 +23,8 @@ function safeError(error: unknown): string {
   return `MCP server refused OAuth client registration (HTTP ${error.status}${reason}). Check the server's redirect address requirements.`;
  }
  if (error instanceof Error && error.message === "Authorization server does not support dynamic client registration")
-  return "MCP server needs a registered client; dynamic registration is not advertised";
- return "MCP OAuth failed; check that the server supports dynamic client registration, then sign in again";
+  return "MCP server needs a registered client. Enter your OAuth app client ID and optional secret";
+ return "MCP OAuth failed; check your app credentials, callback address and server OAuth support, then sign in again";
 }
 type Pending = {
  flow: McpOAuthFlow; owner: string; serverUrl: string; redirectUri: string;
@@ -77,7 +77,7 @@ export class McpOAuth {
      if (cancelled && !(pending?.starting && current?.type === "oauth" && current.refresh && state.tokens?.refresh_token && state.tokens.refresh_token !== current.refresh)) return undefined;
      return {
       type: "oauth", access: state.tokens?.access_token ?? "", refresh: state.tokens?.refresh_token ?? "",
-      expires: state.tokensExpireAt ?? 0, mcp: { version: 1, serverUrl: url, oauth: grant },
+      expires: state.tokensExpireAt ?? 0, mcp: { version: 1, serverUrl: url, oauth: grant, ...((current as McpCredential | undefined)?.mcp?.client ? { client: (current as McpCredential).mcp.client } : {}) },
      };
     });
     if (!pending && !state.tokens?.access_token) await this.needsSignIn(id);
@@ -90,8 +90,14 @@ export class McpOAuth {
    },
   };
  }
- async start(serverId: string, redirectUri: string, owner: string): Promise<{flowId: string; authorizationUrl: string; expiresAt: number}> {
+ async start(serverId: string, redirectUri: string, owner: string, client?: { clientId?: string; clientSecret?: string }): Promise<{flowId: string; authorizationUrl: string; expiresAt: number}> {
   if (!this.origins.some(origin => redirectUri === `${origin}/mcp/oauth/callback`)) return fail("MCP callback must use an allowed web origin and /mcp/oauth/callback");
+  if (client?.clientSecret && !client.clientId?.trim()) return fail("Enter a client ID with the secret");
+  if (client?.clientId !== undefined) {
+   if (!client.clientId.trim() || client.clientId.length > 2048 || /[\r\n\0]/.test(client.clientId) || (client.clientSecret?.length ?? 0) > 8192 || /[\r\n\0]/.test(client.clientSecret ?? "")) return fail("Invalid OAuth app credentials");
+   await this.credentials.modify(`mcp:${serverId}`, async () => ({ type: "oauth", access: "", refresh: "", expires: 0,
+    mcp: { version: 1, serverUrl: this.serverUrl(serverId), client: { clientId: client.clientId!.trim(), ...(client.clientSecret ? { clientSecret: client.clientSecret } : {}), callbackUrl: redirectUri } } }));
+  }
   this.cancelServer(serverId);
   // Bound the retained terminal history as well as live flow count.
   for (const [id, p] of this.#pending) if (p.flow.status !== "pending") this.#pending.delete(id);
@@ -109,7 +115,7 @@ export class McpOAuth {
   try {
    const authorization = await startMcpSignIn({
     serverUrl: pending.serverUrl, store: this.#store(serverId, pending.serverUrl, pending),
-    settings: {}, clientName: "Aiki", redirectUrl: redirectUri, signal: pending.controller.signal,
+    settings: await this.#settings(serverId), clientName: "Aiki", redirectUrl: redirectUri, signal: pending.controller.signal,
    });
    pending.starting = false;
    if (pending.controller.signal.aborted) return fail("MCP sign-in cancelled or expired");
@@ -149,7 +155,7 @@ export class McpOAuth {
   try {
    await completeMcpSignIn({
     serverUrl: pending.serverUrl, store: this.#store(pending.flow.serverId, pending.serverUrl, pending),
-    settings: {}, clientName: "Aiki", redirectUrl: pending.redirectUri, authorization,
+    settings: await this.#settings(pending.flow.serverId), clientName: "Aiki", redirectUrl: pending.redirectUri, authorization,
     response: { state, code, ...(iss ? { iss } : {}) }, signal: pending.controller.signal,
    });
    if (pending.controller.signal.aborted) return fail("MCP sign-in cancelled or expired");
@@ -171,10 +177,15 @@ export class McpOAuth {
  cancelServer(serverId: string): void {
   for (const pending of this.#pending.values()) if (pending.flow.serverId === serverId && pending.flow.status === "pending") this.#emit(pending, "cancelled");
  }
- provider(serverId: string) {
+ async #settings(serverId: string): Promise<McpOAuthSettings> {
+  const credential = await this.credentials.read(`mcp:${serverId}`) as McpCredential | undefined;
+  return credential?.mcp?.serverUrl === this.serverUrl(serverId) ? credential.mcp.client ?? {} : {};
+ }
+ async provider(serverId: string) {
+  const settings = await this.#settings(serverId);
   const provider = createMcpAuthProvider({
    serverUrl: this.serverUrl(serverId), store: this.#store(serverId, this.serverUrl(serverId)),
-   settings: () => ({}), clientName: "Aiki", onChallenge: () => {},
+   settings: () => settings, clientName: "Aiki", onChallenge: () => {},
   });
   this.#providers.add(provider);
   return { ...provider, onUnauthorized: async (context: Parameters<NonNullable<typeof provider.onUnauthorized>>[0]) => {

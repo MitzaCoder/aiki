@@ -1,14 +1,21 @@
 <script lang="ts">
-  import type { McpServer } from '@aiki/protocol';
+  import type { McpServer, McpPreset } from '@aiki/protocol';
   import type { BackendConnection } from '#lib/harness.svelte.js';
   import { startMcpOAuth } from '#lib/mcp-oauth.js';
   import { mcpRequest } from '#lib/mcp-rpc.js';
   import { mcpOAuthFlowLabel } from '#lib/mcp.js';
   import { Button } from '#lib/components/ui/button/index.js';
   import SettingsRow from './SettingsRow.svelte';
-  let { backend, server, refresh, onserver }: {
-    backend: BackendConnection; server: McpServer; refresh: () => Promise<void>; onserver: (server: McpServer) => void;
+  let { backend, server, refresh, onserver, preset }: {
+    backend: BackendConnection; server: McpServer; preset?: McpPreset; refresh: () => Promise<void>; onserver: (server: McpServer) => void;
   } = $props();
+  let ownApp = $state(false); let clientId = $state(''); let clientSecret = $state('');
+  const registeredApp = $derived(ownApp || preset?.auth === 'registered_oauth');
+  const callback = $derived(typeof location === 'undefined' ? '' : `${location.origin}/mcp/oauth/callback`);
+  function takeClient() {
+    const client = registeredApp && clientId.trim() ? { clientId: clientId.trim(), ...(clientSecret ? { clientSecret } : {}) } : undefined;
+    clientId = ''; clientSecret = ''; return client;
+  }
   let busy = $state(false);
   let error = $state('');
   let redirectUrl = $state('');
@@ -32,7 +39,7 @@
     redirectUrl = '';
     // No await before this helper: its popup must open in the click's user activation.
     void run(async () => {
-      const started = await startMcpOAuth(backend, server.id);
+      const started = await startMcpOAuth(backend, server.id, true, takeClient());
       await refresh();
       authorization = started.authorizationUrl ? { flowId: started.flowId, url: started.authorizationUrl } : undefined;
       copied = false; manualCopy = false;
@@ -42,7 +49,7 @@
     await run(async () => {
       let link = authorization?.url;
       if (!link) {
-        const started = await startMcpOAuth(backend, server.id, false);
+        const started = await startMcpOAuth(backend, server.id, false, takeClient());
         await refresh();
         authorization = started.authorizationUrl ? { flowId: started.flowId, url: started.authorizationUrl } : undefined;
         link = authorization?.url;
@@ -69,9 +76,23 @@
 </script>
 
 <SettingsRow label="Sign in with OAuth" hint="Consent opens in your browser. Credentials stay on this backend." control="full">
+  {#if preset?.auth !== 'registered_oauth'}<label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" bind:checked={ownApp} />Use my own OAuth app</label>{/if}
+  {#if registeredApp}
+    <div class="flex flex-col gap-2 rounded-lg border p-3" data-mcp-own-app>
+      <p class="text-sm">Bring your own OAuth app. {server.hasOAuthClient ? 'An app is saved. Leave fields empty to reuse it, or enter a new client ID to replace it.' : 'Create an app and register this exact redirect URL.'}</p>
+      {#if preset?.appUrl}<a class="text-sm underline" href={preset.appUrl} target="_blank" rel="noreferrer">Create an app here</a>{/if}
+      {#if preset?.steps}<ol class="list-inside list-decimal text-sm">{#each preset.steps as step}<li>{step}</li>{/each}</ol>{/if}
+      <label class="text-sm">Redirect URL<input class="min-h-11 w-full rounded-lg border bg-background px-3 text-sm" aria-label="OAuth redirect URL" readonly value={callback} /></label>
+      <Button type="button" variant="outline" onclick={() => void run(async () => { await navigator.clipboard.writeText(callback); })}>Copy redirect URL</Button>
+      <p class="text-xs text-muted-foreground">Local installs allow localhost and 127.0.0.1 at the installed port. Register the exact address you use. The vendor may still require HTTPS or app approval.</p>
+      <label class="text-sm">Client ID (write-only)<input id="mcp-client-id" class="min-h-11 w-full rounded-lg border bg-background px-3" autocomplete="off" bind:value={clientId} /></label>
+      <label class="text-sm">Client secret (optional, write-only)<input id="mcp-client-secret" type="password" class="min-h-11 w-full rounded-lg border bg-background px-3" autocomplete="off" bind:value={clientSecret} /></label>
+      <p class="text-xs text-muted-foreground">Stored only as a credential on this backend, never shown again.</p>
+    </div>
+  {/if}
   <div class="flex flex-wrap items-center gap-2">
-    <Button data-mcp-oauth-sign-in onclick={signIn} disabled={busy || pending}>{server.authKind === 'oauth' && server.hasCredential ? 'Sign in again' : 'Sign in'}</Button>
-    <Button data-mcp-oauth-copy variant="outline" onclick={() => void copySignInLink()} disabled={busy || (pending && !authorization)}>Copy sign-in link</Button>
+    <Button data-mcp-oauth-sign-in onclick={signIn} disabled={busy || pending || (registeredApp && !server.hasOAuthClient && !clientId.trim())}>{server.authKind === 'oauth' && server.hasCredential ? 'Sign in again' : 'Sign in'}</Button>
+    <Button data-mcp-oauth-copy variant="outline" onclick={() => void copySignInLink()} disabled={busy || (pending && !authorization) || (registeredApp && !server.hasOAuthClient && !clientId.trim() && !pending)}>Copy sign-in link</Button>
     {#if pending}<Button data-mcp-oauth-cancel variant="outline" onclick={() => void cancel()} disabled={busy}>Cancel sign-in</Button>{/if}
   </div>
   {#if copied && pending}<p class="text-sm text-muted-foreground" role="status">Copied — open it in the browser where you're signed in, then come back.</p>{/if}

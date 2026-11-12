@@ -13,7 +13,7 @@ import {
 	type ToolRegistration,
 } from "@earendil-works/pi-durable";
 import type { CodemodeNamespace } from "@earendil-works/pi-durable/codemode";
-import { MCP_PRESETS, type McpPolicy, type McpProjectServer, type McpRole, type McpServer } from "@aiki/protocol";
+import { MCP_PRESETS, mcpPresetQueryAllowed, type McpPolicy, type McpProjectServer, type McpRole, type McpServer } from "@aiki/protocol";
 import { McpSseTransport } from "./mcp-sse.ts";
 import { childEnvironment } from "./child-environment.ts";
 import type { McpAddRequest } from "@aiki/protocol";
@@ -85,7 +85,7 @@ export function validateMcpUrl(value: string): string {
 	} catch {
 		return bad("Invalid MCP URL");
 	}
-	if (url.username || url.password || url.hash || url.search)
+	if (url.username || url.password || url.hash || !mcpPresetQueryAllowed(url))
 		return bad("MCP URL must not contain credentials, query or fragment");
 	const loopback = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]";
 	if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback))
@@ -179,6 +179,7 @@ export class McpService {
 			status: this.oauth.flow(id)?.status === "pending" ? "signing_in" : server.status,
 			...(this.oauth.flow(id) ? { oauthFlow: this.oauth.flow(id) } : {}),
 			lastError: server.lastError,
+			hasOAuthClient: Boolean(credential?.mcp.client?.clientId),
 			hasCredential: credential?.type === "api_key" ? true : Boolean(credential?.access),
 			authKind: credential ? (credential.type === "oauth" ? "oauth" : "token") : "none",
 			tools: server.tools.map((tool) => ({
@@ -200,7 +201,7 @@ export class McpService {
  if (!command.trim() || [command, ...args, cwd ?? ""].some(value => value.includes("\0")) || args.length > 256) return bad("Invalid MCP command");
  if (cwd && !cwd.startsWith("/")) return bad("Working directory must be absolute");
  if (Object.entries(input.env ?? {}).some(([name, value]) => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) || name.startsWith("AIKI_") || value.includes("\0"))) return bad("Invalid MCP environment");
- if (input.url || preset || input.transport) return bad("Choose command or URL, not both");
+ if (input.url || (preset && !preset.command) || input.transport) return bad("Choose command or URL, not both");
  }
  const url = input.command ? `stdio:${id}` : validateMcpUrl(input.url ?? preset?.url ?? "");
 		if (!input.name.trim() || input.name.length > 120) return bad("MCP display name must be 1–120 characters");
@@ -341,7 +342,7 @@ export class McpService {
 				client = new McpClient({ name: "aiki", version: "1", requestTimeoutMs: 10_000 });
 				const origin = server.command ? "" : new URL(server.url).origin;
 				const credential = await this.#credential(id);
-				const oauthProvider = credential?.type === "oauth" ? this.oauth.provider(id) : undefined;
+				const oauthProvider = credential?.type === "oauth" ? await this.oauth.provider(id) : undefined;
 				const transport = server.command ? new StdioTransport({
  ...server.command, env: childEnvironment({ ...childEnvironment(), ...credential?.mcp.env }), inheritEnv: false,
  stderr: "pipe", maxStderrBytes: 8192, maxMessageBytes: 2 * 1024 * 1024,
@@ -642,7 +643,7 @@ export class McpService {
 	}
 	async #redact<T>(id: string, value: T): Promise<T> {
 		const credential = await this.#credentials.read(`${MCP_CREDENTIAL_PREFIX}${id}`);
-		const secrets = [ ...Object.values((credential as McpCredential | undefined)?.mcp?.env ?? {}), ...(
+		const secrets = [ (credential as McpCredential | undefined)?.mcp?.client?.clientSecret, (credential as McpCredential | undefined)?.mcp?.client?.clientId, ...Object.values((credential as McpCredential | undefined)?.mcp?.env ?? {}), ...(
 			credential?.type === "api_key" ? [credential.key] : credential ? [credential.access, credential.refresh, (credential as McpCredential).mcp?.oauth?.clientInformation?.client_secret] : []) ];
 		const redactString = (text: string): string => {
 			for (const secret of secrets) if (secret) text = text.split(secret).join("[redacted]");

@@ -10,7 +10,7 @@ const test = await createSetup({ auth: { mode: 'required' }, allowedOrigins: [or
 const fake = fakeMcpOAuth(true, { manualConsent: true });
 // Override the preset only inside this throwaway process: the actual settings Add flow
 // reads backend-provided metadata and can never contact real Notion during the demo.
-Object.assign(MCP_PRESETS[0], { name: 'Synthetic Notion', url: fake.url });
+Object.assign(MCP_PRESETS.find(p => p.id === 'notion')!, { name: 'Synthetic Notion', url: fake.url });
 const grant = test.server.auth.bootstrap();
 const result = await test.server.auth.redeem({ grantId: grant.requestId, secret: grant.secret,
   claimId: crypto.randomUUID(), claimSecret: authSecret('aiki_c1'), label: 'Synthetic browser', platform: 'web' }, 'loopback', true);

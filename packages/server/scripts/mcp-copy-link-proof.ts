@@ -96,8 +96,7 @@ async function pauseRecord(target: ChromiumPage) { await settle(); await target.
 async function add(name: string) {
   await button(page, 'Add server'); await waitText(page, 'Add MCP server');
   await page.run(name => {
-    const preset = document.querySelector<HTMLSelectElement>('select')!;
-    preset.value = 'notion'; preset.dispatchEvent(new Event('change', { bubbles: true }));
+    document.querySelector<HTMLButtonElement>('[data-mcp-preset="notion"]')!.click();
     const input = document.querySelector<HTMLInputElement>('input[maxlength="120"]')!;
     input.value = name; input.dispatchEvent(new Event('input', { bubbles: true }));
   }, name);

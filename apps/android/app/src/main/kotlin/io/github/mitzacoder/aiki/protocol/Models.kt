@@ -58,8 +58,12 @@ data class McpOAuthStartRequest(
     @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.oauth.start",
     val `id`: String = java.util.UUID.randomUUID().toString(),
     val `serverId`: String,
-    val `redirectUri`: String
-)
+    val `redirectUri`: String,
+    val `clientId`: String? = null,
+    val `clientSecret`: String? = null
+) {
+    override fun toString(): String = "McpOAuthStartRequest(redacted)"
+}
 
 @Serializable
 data class McpOAuthStartResponse(
@@ -68,7 +72,9 @@ data class McpOAuthStartResponse(
     val `flowId`: String,
     val `authorizationUrl`: String,
     val `expiresAt`: Double
-)
+) {
+    override fun toString(): String = "McpOAuthStartResponse(redacted)"
+}
 
 @Serializable
 data class McpOAuthCompleteRequest(
@@ -105,6 +111,7 @@ data class McpOAuthCompleteResponseServer(
     val `status`: String,
     val `lastError`: String?,
     val `hasCredential`: Boolean,
+    val `hasOAuthClient`: Boolean? = null,
     val `oauthFlow`: McpOAuthFlow? = null,
     val `authKind`: String,
     val `tools`: List<McpOAuthCompleteResponseServerToolsItem>
@@ -423,8 +430,22 @@ data class McpListResponsePresetsItem(
     val `id`: String,
     val `name`: String,
     val `url`: String,
+    val `group`: String? = null,
     val `auth`: String,
-    val `description`: String? = null
+    val `description`: String? = null,
+    val `docsUrl`: String? = null,
+    val `tokenUrl`: String? = null,
+    val `appUrl`: String? = null,
+    val `steps`: List<String>? = null,
+    val `cli`: String? = null,
+    val `command`: McpListResponsePresetsItemCommand? = null,
+    val `envNames`: List<String>? = null
+)
+
+@Serializable
+data class McpListResponsePresetsItemCommand(
+    val `command`: String,
+    val `args`: List<String>
 )
 
 @Serializable

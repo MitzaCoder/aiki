@@ -87,7 +87,7 @@ it("rejects issuer mismatch and clearly reports missing client registration", as
 }, 20_000);
 it("serializes concurrent 401/expiry refreshes, persists rotation, invalid_grant needs sign-in", async () => {
  const { test, fake, mcp, signIn } = await setup(); await signIn();
- const a = mcp.oauth.provider("notion"), b = mcp.oauth.provider("notion");
+ const a = await mcp.oauth.provider("notion"), b = await mcp.oauth.provider("notion");
  // Both saw the same rejected token; the store lock makes the second use its rotation.
  const token = fake.access; fake.rejectAccess();
  const response = new Response(null, { status: 401 });
@@ -183,4 +183,33 @@ it("reports registration failures without reflecting remote secrets or arbitrary
   if (body.includes("invalid_redirect_uri")) expect(serialized).toContain("invalid_redirect_uri");
   expect((await mcp.view("notion")).oauthFlow).toMatchObject({ status: "failed", error: response.type === "error" ? response.error.message : "" });
  }
+}, 20_000);
+
+for (const secret of [undefined, "synthetic-private-app-secret"]) it(`uses a pre-registered ${secret ? "confidential" : "public"} client with no DCR and retains it across refresh/restart`, async () => {
+ const logs: string[] = [];
+ const test = await createSetup({ allowedOrigins: [origin], terminals: false, log: text => logs.push(text) }); cleanups.push(test.cleanup);
+ const fake = fakeMcpOAuth(false, { registeredClient: { id: "synthetic-pasted-app", ...(secret ? { secret } : {}) } }); cleanups.push(fake.close); fake.noRegistration();
+ const client = await TestClient.open(test.server); cleanups.push(async () => client.close()); await client.hello();
+ const mcp = test.server.manager.mcp!;
+ await mcp.add({ serverId: "own_app", name: "Synthetic own app", url: fake.url });
+ const start = await client.request({ type: "mcp.oauth.start", serverId: "own_app", redirectUri, clientId: "synthetic-pasted-app", ...(secret ? { clientSecret: secret } : {}) });
+ if (start.type !== "mcp.oauth.start") throw new Error(JSON.stringify(start));
+ expect(new URL(start.authorizationUrl).searchParams.get("client_id")).toBe("synthetic-pasted-app");
+ expect(new URL(start.authorizationUrl).searchParams.get("code_challenge_method")).toBe("S256");
+ expect(start.authorizationUrl).not.toContain(secret ?? "not-a-secret");
+ const callback = await fake.callback(start.authorizationUrl);
+ expect(await client.request({ type: "mcp.oauth.complete", flowId: start.flowId, redirectUrl: callback })).toMatchObject({ type: "mcp.oauth.complete", server: { status: "connected", hasOAuthClient: true } });
+ expect(fake.registrations).toBe(0);
+ const credential = await test.credentials.read("mcp:own_app") as McpCredential;
+ expect(credential.mcp.client).toEqual({ clientId: "synthetic-pasted-app", ...(secret ? { clientSecret: secret } : {}), callbackUrl: redirectUri });
+ for (const privateValue of ["synthetic-pasted-app", secret, fake.access, fake.refresh].filter(Boolean) as string[]) {
+  expect(JSON.stringify(await mcp.list())).not.toContain(privateValue);
+  expect(await readFile(mcp.path, "utf8")).not.toContain(privateValue);
+  expect(logs.join("\n")).not.toContain(privateValue);
+ }
+ expect(await client.request({ type: "mcp.oauth.complete", flowId: start.flowId, redirectUrl: callback })).toMatchObject({ type: "error" });
+ fake.rejectAccess(); expect((await mcp.refresh("own_app")).status).toBe("connected"); expect(fake.refreshes).toBe(1);
+ await test.restart(); fake.rejectAccess();
+ expect((await test.server.manager.mcp!.refresh("own_app")).status).toBe("connected"); expect(fake.refreshes).toBe(2);
+ expect(fake.registrations).toBe(0);
 }, 20_000);
