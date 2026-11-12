@@ -7,7 +7,7 @@ keeps loopback binding; network/Tailscale HTTPS setup is separate. Do not forwar
 
 ## Install
 
-The first pilot is the `v0.1.0-pilot.1` prerelease; its downloads become available when published:
+Install the published `v0.1.0-pilot.1` prerelease:
 
 ```sh
 curl -fL https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.1/install.sh -o install.sh
@@ -138,8 +138,8 @@ The workflow does not create tags. GitHub's latest non-prerelease is the only au
 
 ### Troubleshooting
 
-- Pilot download returns 404: confirm the exact prerelease is published and its asset name matches. `/latest` ignores pilots.
-  For pre-publication testing, use `--ref` or a locally built `--archive`.
+- Pilot download returns 404: check the version and asset name. `/latest` ignores pilots.
+  For source testing or a fallback, use `--ref` or a locally built `--archive`.
 - Permission errors: choose an empty user-owned `--dir`; do not run as root.
 - Checksum mismatch: retry on a trusted connection; do not bypass verification.
 - Bun cannot execute: verify OS/architecture and Linux libc compatibility. x64 uses the baseline build (no AVX2

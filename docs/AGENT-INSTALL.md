@@ -2,9 +2,8 @@
 
 Follow these steps in order. Report each check without copying credentials or pairing
 links into chat. Linux is tested; macOS and Windows inside WSL are experimental.
-Use the published **`v0.1.0-pilot.1` prerelease** when available. If its assets are not
-yet published, use the source-checkout path in step 3 instead. Do not use `/latest`:
-GitHub excludes prereleases from it.
+Use the published **`v0.1.0-pilot.1` prerelease**. Step 3 also provides a
+source-checkout fallback. Do not use `/latest`: GitHub excludes prereleases from it.
 
 ## 1. Establish boundaries
 
@@ -81,16 +80,16 @@ Never skip a mismatch. Install with the explicit version:
 sh install.sh --version v0.1.0-pilot.1 --dir "$AIKI_ROOT" --no-service
 ```
 
-If downloads return 404, stop this path. Explain that the prerelease/assets may not
-yet be public; use the following fallback, not an unversioned installer or `/latest`.
+If downloads return 404, stop this path and check the version and asset names.
+Use the following fallback if needed, not an unversioned installer or `/latest`.
 Do not retry a checksum failure via another installation path.
 
-### Source-checkout fallback (works before publication)
+### Source-checkout fallback
 
 Resolve the public main commit once and record its full hash. Fetch that exact
 commit and review its installer. The checkout is only for reading/running the
 installer; `--ref` independently fetches a clean source tree from the public repo.
-This path uses Git/HTTPS integrity, not the unpublished release's checksum files.
+This path uses Git/HTTPS integrity, not release checksum files.
 
 ```sh
 AIKI_REF=$(git ls-remote https://github.com/MitzaCoder/aiki.git refs/heads/main | awk '{print $1}')
@@ -243,7 +242,7 @@ Do not paste surrounding secret output into a report.
 
 | Message | Action |
 | --- | --- |
-| `curl: (22) The requested URL returned error: 404` | Confirm the exact prerelease assets are public. Before publication use the source fallback. |
+| `curl: (22) The requested URL returned error: 404` | Check the version and asset names. Use the source fallback if needed. |
 | `aiki: Install unzip and re-run this installer` | Ask for the named bootstrap utility; similarly for curl/tar. |
 | `aiki: Install sha256sum or shasum to verify downloads` | Supply a checksum utility; never skip verification. |
 | `aiki: Bun checksum mismatch; nothing activated` / `aiki: Aiki archive checksum mismatch; nothing activated` / `aiki: zellij checksum mismatch` | Stop; retry only on a trusted connection. Do not bypass hashes. |

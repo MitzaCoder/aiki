@@ -1,5 +1,20 @@
 # Continue
 
+## T132: shorter README for the published pilot
+
+README is 339 words (was 775, `wc -w`). It keeps both themed graph/board pictures,
+three why bullets, the versioned/review-first installer, Android 12+/HTTPS note,
+coding-agent prompt, one-line pilot limits and the documentation/issues links.
+README and both install guides now describe the pilot as published; the agent's
+source fallback and checksum-failure stop remain intact. GitHub confirms the
+prerelease is public with installer and signed APK assets.
+
+Proof on T132: GitHub GFM API renders with GitHub Markdown light CSS, resolved
+images, full-page 1280px/390px before/after screenshots and a desktop scroll video.
+Scratch files stay outside the repository. Relative link/image targets were checked.
+Public-source denylist/generic and Gitleaks checks pass using existing private
+operator configuration. Docs-only: full suites skipped. No push or main movement.
+
 ## T123: remaining T120 stages integrated and checked
 
 The remaining stages are linear above the unchanged ship tip `tvpnwyzq`:
