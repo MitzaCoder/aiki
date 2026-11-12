@@ -1,5 +1,26 @@
 # Continue
 
+## T135 follow-up: root failures settled
+
+Compared each failing file alone five times on the original fix and its parent:
+memory failed 5/5 on the fix, passed 5/5 on the parent; report-audit passed 5/5
+on both. The memory regression was the old quadratic template regex newly exposed
+to long user inputs. Its linear replacement and a 100 KB regression test are
+squashed into the original T135 change (`mwsxwmpk`). Afterward both files passed
+five isolated runs each.
+
+The audit mismatch is an existing test race, not a freshness regression. A
+controlled model-auth gate reproduces it on the parent: startup captures an empty
+board, new evidence arrives, and an explicit check coalesces onto that existing
+empty-snapshot run, leaving state idle. The storage test now drains startup before
+seeding evidence. A deterministic unit test preserves the coalescing contract;
+production audit behavior/budget/coverage are unchanged. This test-only repair is
+a separate T135 commit.
+
+Final full root run, with no other test/build process started here: **2,420 pass,
+0 fail, 91,360 assertions** (199 files). Typecheck and the private-denylist/generic/
+Gitleaks checks pass. No push, deployment or main movement.
+
 ## T135: quiet chat-mention freshness fallback
 
 “Discussed in chat” now requires a user input explicitly naming the task (typed ID or

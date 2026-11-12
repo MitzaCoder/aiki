@@ -44,6 +44,29 @@ it("fresh-report evaluation: scripted fine preserves prose and deterministic fre
 	await service.stop();
 });
 
+it("an empty startup audit coalesces concurrent checks until its snapshot settles", async () => {
+ const f = fixture(0); const service = f.make();
+ const choosingModel = Promise.withResolvers<void>();
+ const releaseModel = Promise.withResolvers<void>();
+ const checkAuth = f.models.checkAuth.bind(f.models);
+ f.models.checkAuth = async provider => { choosingModel.resolve(); await releaseModel.promise; return checkAuth(provider); };
+ const startup = service.check("idle");
+ await choosingModel.promise; // Startup has already captured the empty board.
+ addTask(f.state);
+ f.faux.setResponses([fine()]);
+ const concurrent = service.check();
+ expect(concurrent).toBe(startup);
+ releaseModel.resolve();
+ await concurrent;
+ expect(f.state.reportAudit!.state).toBe("idle");
+ expect(f.faux.state.callCount).toBe(0);
+ // A test that seeds evidence must drain startup before expecting its own check to run.
+ await service.check();
+ expect(f.state.reportAudit!.state).toBe("checked");
+ expect(f.faux.state.callCount).toBe(1);
+ await service.stop();
+});
+
 it("all triggers share persisted hourly spacing even with new evidence on every idle turn", async () => {
 	const f = fixture(); f.faux.setResponses([fine(), fine()]); const service = f.make();
 	await service.check("idle");
@@ -228,6 +251,8 @@ it("real board storage restores audit coverage and budget; usage attributes repo
 		const added = await manager.add(setup.projectDir);
 		await manager.configure(added.id, { reportAudit: { mode: "model", model: { provider: "faux", modelId: "faux-1" }, dailyTokens: 65000 } });
 		const { runtime } = await manager.open(added.id);
+		// An idle startup check may still hold an empty-board snapshot; drain it before seeding evidence.
+		await runtime.board.audit!.check();
 		await runtime.board.saveTask({ task: { title: "Synthetic check", description: "", acceptance: null, status: "in_progress", blockedBy: [], blockedReason: null, writeScopes: [] } }, "coordinator");
 		await runtime.board.noteTaskFact("T1", { kind: "question_asked", reason: "Question for the next check", at: at() });
 		setup.faux.setResponses([fine()]);
