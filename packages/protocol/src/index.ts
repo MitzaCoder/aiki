@@ -1605,6 +1605,7 @@ export type {
 
 export { HARNESS_FEATURES } from "./projects.ts";
 export type { ReleaseUpdateState, ReleaseUpdatesSetRequest, ReleaseUpdatesSetResponse };
+export * from "./files.ts";
 export { DEFAULT_DRAIN_TIMEOUT_MS, MAX_DRAIN_TIMEOUT_MS } from "./server-status.ts";
 export { PROTOCOL_VERSION, SERVER_NAME, SERVER_VERSION, THINKING_LEVELS } from "./common.ts";
 export { CHECK_IN_PREFIX, WORKER_REPORT_PREFIX } from "./workers.ts";

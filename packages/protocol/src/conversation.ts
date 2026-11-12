@@ -206,6 +206,8 @@ export const ConversationSubmitRequestSchema = Type.Object({
 	),
 	requestId: Type.String({ minLength: 1, description: "Client-chosen deduplication key, scoped to the conversation." }),
 	content: InputContentSchema,
+	/** Uploaded via POST /attachments/<projectId>?threadId=…&name=…; scoped to this conversation. */
+	fileIds: Type.Optional(Type.Array(Type.String({ pattern: "^[a-f0-9]{32}$" }), { maxItems: 8 })),
 	whenBusy: Type.Optional(WhenBusySchema),
 	workerModel: Type.Optional(
 		Type.Union([ModelRefSchema, Type.Null()], {

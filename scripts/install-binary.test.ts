@@ -47,7 +47,10 @@ async function fixture() {
 		const name = `aiki-${version}-linux-x64`;
 		assets.set(`/releases/${version}/${name}`, bytes);
 		assets.set(`/releases/${version}/${name}.sha256`, `${corrupt === "sidecar" ? "0".repeat(64) : digest(bytes)}  ${name}\n`);
-		assets.set(`/releases/${version}/SHA256SUMS`, `${corrupt === "manifest" ? "0".repeat(64) : digest(bytes)}  ${name}\n`);
+		const notices = "Synthetic unpdf licence notice\n";
+		assets.set(`/releases/${version}/${name}.licenses.txt`, notices);
+		// Additional assets/manifest rows must not be mistaken for the selected executable.
+		assets.set(`/releases/${version}/SHA256SUMS`, `${corrupt === "manifest" ? "0".repeat(64) : digest(bytes)}  ${name}\n${digest(notices)}  ${name}.licenses.txt\n`);
 	}
 	async function bunRelease(version: string) {
 		const tree = join(home, `source-${version}`, "aiki");
@@ -78,10 +81,12 @@ async function fixture() {
 	return { root, install, cli, metadata, binary, bunRelease, requests, assets, base };
 }
 
-test("fresh binary install validates both checksums without preparing Bun", async () => {
+test("fresh binary install tolerates licence assets and validates both checksums without preparing Bun", async () => {
 	const setup = await fixture(); const version = "v0.1.0-pilot.1";
 	await setup.binary(version);
-	expect((await setup.install("--version", version)).message).toContain("activated");
+	const installed = await setup.install("--version", version);
+	expect(installed.code).toBe(0); expect(installed.message).toContain("activated");
+	expect(setup.assets.has(`/releases/${version}/aiki-${version}-linux-x64.licenses.txt`)).toBe(true);
 	expect(existsSync(join(setup.root, "current/aiki"))).toBe(true);
 	expect(existsSync(join(setup.root, "runtime"))).toBe(false);
 	expect((await setup.cli("version")).message).toContain(version);

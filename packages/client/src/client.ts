@@ -216,6 +216,8 @@ export type ProjectChange = {
 };
 
 export type SubmitOptions = {
+	/** chat-files-v1: opaque IDs from HTTP uploads to this conversation. */
+	fileIds?: string[];
 	/** The background thread to send to; absent (or "main") for main. */
 	threadId?: string;
 	whenBusy?: WhenBusy;
@@ -683,6 +685,7 @@ export class HarnessClient {
 			...threadField(options.threadId),
 			requestId,
 			content,
+			...(options.fileIds === undefined ? {} : { fileIds: options.fileIds }),
 			...(options.whenBusy === undefined ? {} : { whenBusy: options.whenBusy }),
 			...(options.workerModel === undefined ? {} : { workerModel: options.workerModel }),
 			...(options.workerThinkingLevel === undefined

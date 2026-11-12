@@ -11,6 +11,7 @@ import { configureServerSettings } from "../src/server-settings.ts";
 import { packagedResources } from "../src/packaged-resources.ts";
 import { createCodemodeSandbox } from "../src/codemode.ts";
 import { createPackagedPhotonImages } from "../src/binary-images.ts";
+import { syntheticPdf } from "./pdf-fixture.ts";
 
 const deadline = setTimeout(() => { console.error("Binary smoke deadline exceeded"); process.exit(1); }, 60_000);
 configureServerSettings(loadServerEnv());
@@ -92,6 +93,12 @@ try {
 	const model = { provider: "faux", modelId: "faux-1" };
 	await rpc({ type: "projects.configure", projectId: project.id, coordinatorModel: model, workerModels: [model] });
 	view = (await rpc({ type: "conversation.watch", projectId: project.id })).view;
+	const upload = await fetch(`${server.url}/attachments/${project.id}?name=smoke.pdf`, { method: "POST", headers: { "content-type": "application/pdf" }, body: syntheticPdf(["BINARY_PDF_TEXT_PROBE"]) as BodyInit });
+	assert.equal(upload.status, 200);
+	const pdfFile = await upload.json() as { id: string };
+	await rpc({ type: "conversation.submit", projectId: project.id, requestId: "pdf", content: "Review the PDF", fileIds: [pdfFile.id] });
+	await waitForView(text => text.includes("BINARY_PDF_TEXT_PROBE") && text.includes("text extracted; the original is at"));
+	console.log("PASS: compiled PDF upload, page count and bounded text fallback");
 	await rpc({ type: "conversation.submit", projectId: project.id, requestId: "code", content: "CODEMODE_PROBE" });
 	await waitForView(text => text.includes("Script completed") && text.includes("binary smoke fixture") && text.includes("42"));
 	await rpc({ type: "conversation.submit", projectId: project.id, requestId: "worker", content: "WORKER_PROBE" });

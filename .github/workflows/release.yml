@@ -132,13 +132,14 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
         run: |
           python3 scripts/smoke-binary.py --binary ".preview/binaries/aiki-$VERSION-$PLATFORM" --smoke ".preview/binaries/aiki-$VERSION-$PLATFORM-smoke" | tee .preview/binaries/smoke.log
-      - name: Keep only production executable and checksum
+      - name: Keep production executable, checksum and PDF dependency notices
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: aiki-binary-${{ matrix.platform }}
           path: |
             .preview/binaries/aiki-${{ steps.identity.outputs.version }}-${{ matrix.platform }}
             .preview/binaries/aiki-${{ steps.identity.outputs.version }}-${{ matrix.platform }}.sha256
+            .preview/binaries/aiki-${{ steps.identity.outputs.version }}-${{ matrix.platform }}.licenses.txt
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
@@ -176,7 +177,7 @@ jobs:
           for platform in linux-x64 linux-arm64 darwin-arm64; do
             file="aiki-$GITHUB_REF_NAME-$platform"
             (cd .preview/downloaded-binaries && sha256sum --check "$file.sha256")
-            mv ".preview/downloaded-binaries/$file" ".preview/downloaded-binaries/$file.sha256" .preview/releases/
+            mv ".preview/downloaded-binaries/$file" ".preview/downloaded-binaries/$file.sha256" ".preview/downloaded-binaries/$file.licenses.txt" .preview/releases/
           done
       - name: Hash installer
         run: sha256sum install.sh > .preview/releases/install.sh.sha256

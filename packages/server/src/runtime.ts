@@ -1,4 +1,5 @@
 import { DEFAULT_REPORT_AUDIT } from "@aiki/protocol";
+import { ChatFileStore } from "./chat-files.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 import { chooseAuditModel, emptyAuditRecord, auditDay, type ReportAuditRecord } from "./report-audit.ts";
 import { createHash } from "node:crypto";
@@ -287,6 +288,7 @@ function projectSummary(
 
 export class ProjectManager {
 	readonly store: ProjectStore;
+	readonly files: ChatFileStore;
 	readonly models: Models;
 	/** Every project's artifacts: `artifact_save` writes them, the `artifacts.*` requests read and delete them. */
 	readonly artifacts: ArtifactStore;
@@ -339,6 +341,7 @@ export class ProjectManager {
 
 	constructor(options: ProjectManagerOptions) {
 		this.store = options.store;
+		this.files = new ChatFileStore(options.store.dataDir);
 		this.models = options.models;
 		this.#log = options.log ?? ((message) => console.log(message));
 		this.artifacts = options.artifacts ?? new ArtifactStore({ dataDir: options.store.dataDir, log: this.#log });
@@ -1454,6 +1457,7 @@ export class ProjectManager {
 				},
 				BACKGROUND_CONTEXT,
 			);
+			await this.files.removeDeletedConversations(project.id, async id => (await harness.conversation(id as never, BACKGROUND_CONTEXT)) !== undefined);
 			await workers.ensureDocument();
 			await board.ensureDocument();
 			// Every thread registers as a coordinator before anything resumes, so a resumed turn's tools know it.

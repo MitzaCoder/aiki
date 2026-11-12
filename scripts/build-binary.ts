@@ -80,6 +80,7 @@ try {
 		} }],
 	});
 	if (!build.success) throw new AggregateError(build.logs, "Binary build failed");
+	await writeFile(file + ".licenses.txt", await readFile(join(server, "PDF-LICENSES.txt")));
 	const binary = Bun.file(file);
 	const digest = new Bun.CryptoHasher("sha256").update(await binary.arrayBuffer()).digest("hex");
 	await writeFile(file + ".sha256", `${digest}  ${basename(file)}\n`);

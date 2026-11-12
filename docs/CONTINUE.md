@@ -1,5 +1,33 @@
 # Continue
 
+## T140: arbitrary chat attachments (D66 C)
+
+Added additive `chat-files-v1` HTTP uploads and optional submit `fileIds`; protocol
+version 1 and legacy text/image requests remain valid. Streamed files have a 50 MiB
+cap, private per-conversation backend-data folders, safe ID-prefixed filenames,
+authenticated forced-download responses, and deleted-conversation reconciliation
+on project open. Existing images retain native image blocks and also get saved
+paths. Small (<100 KiB) UTF-8 text-like files are fenced; binary/large files and
+archives remain path-only. Every file has metadata and an absolute tool path in
+ordinary transcript text, so old clients and workers can read it too.
+
+PDFs now use bounded pure-JS text fallback through lazy-loaded unpdf 2.1.0 (MIT,
+bundled PDF.js Apache-2.0; no required native dependencies). Extract at most 200
+pages / 100 KiB UTF-8 with page count and original path; image-only, malformed or
+encrypted PDFs retain only their path. Installed pi-ai 1.5.1 still represents only
+text/image input, so no current model receives native documents. No provider API
+calls or pi-ai patches. Extraction is also exercised by the standalone binary's
+faux smoke; the binary release keeps dependency licence notices beside each asset.
+
+Web adds any-file picker, drop/paste, removable size/type/name chips, authenticated
+history downloads and queued-message retention. Android adds SAF any-file picking,
+ACTION_SEND/SEND_MULTIPLE destination selection, saved file/admission IDs, matching
+chips and SAF downloads with 48dp controls and TalkBack labels. Shared-file uploads
+belong to the chat's scope, not the consumption effect whose keys they clear.
+
+Verification and final change IDs are recorded on T140. Synthetic createSetup/faux
+fixtures only; no phone, live providers/data, deployment, push or main movement.
+
 ## T72 part 2: binary-first installation and mixed-runtime rollback
 
 The installer prefers matching glibc Linux x64/arm64 and macOS arm64 executables, checking the exact sidecar
@@ -87,7 +115,6 @@ Gradle daemons and owned demo processes are stopped. T136 has web desktop/phone 
 Android light/dark before/after screenshots plus both confirmation recordings. Fake counters
 prove Cancel never spends and Confirm spends once, then refreshes grants and windows.
 No real provider POST, deployment, push or main movement by this worker.
-
 ## T135 follow-up: root failures settled
 
 Compared each failing file alone five times on the original fix and its parent:

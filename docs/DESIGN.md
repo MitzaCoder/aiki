@@ -1,5 +1,57 @@
 # Design
 
+## Chat file attachments (T140 / D66)
+
+Chat accepts arbitrary files without unpacking archives. Uploads go to private,
+per-conversation `attachments` directories beneath backend project data, never
+into the project checkout. Each file is capped at 50 MiB; server-generated IDs
+and sanitized, ID-prefixed basenames prevent traversal and collisions. Original
+safe names stay in chip metadata. Downloads
+use authenticated backend HTTP requests, force attachment disposition and disable
+sniffing. `ChatFileStore.removeConversation` removes the entire conversation folder;
+project-open reconciliation removes folders for absent durable conversations.
+Aiki currently archives conversations rather than deleting them; archives retain
+files because their transcripts and download links still exist.
+
+The additive `chat-files-v1` feature leaves protocol version 1 and existing image
+blocks intact. New clients upload bytes over HTTP (not the 32 MiB WebSocket), then
+submit opaque file IDs. The server resolves only files belonging to that
+conversation and adds a short name/size/MIME/absolute-path line to ordinary message
+text, so old clients and workers can read it too. Small UTF-8 text-like files
+(under 100 KiB) are additionally fenced with their name. Binary and large files
+remain path-only; archives stay zipped. PDF native input is capability-gated by
+both pi-ai's content types/provider adapters and model modalities, not by model
+name. Where the installed pi-ai cannot represent documents, PDFs use bounded text
+extraction rather than invented provider blocks. `unpdf` 2.1.0 (MIT; bundled PDF.js
+Apache-2.0) is pure JS with no required native dependencies. It is lazy-loaded on
+first PDF use and remains embedded in Bun-compiled executables. Extraction walks
+at most 200 pages and inlines at most 100 KiB UTF-8, with page count, truncation
+notice and original tool path. Image-only, encrypted or malformed PDFs keep their
+original path without extracted text; no OCR, rendering or archive expansion.
+Installed pi-ai 1.5.1's `UserMessage.content` is text/image only and its
+`MODEL_INPUT_MODALITIES` is `["text", "image"]`. Its Anthropic, OpenAI and Codex
+adapters expose no document/file content block. Therefore **no current model gets
+native PDFs**. Upstream would need document/file user-content types, catalog PDF
+modality/limits and Anthropic Messages document / OpenAI Responses input_file
+conversion (including the Codex adapter), plus replay/serialization support.
+
+Web and Android show removable name/size/type chips before send and downloadable
+chips in history. Pickers, web drop/paste and Android share intents accept any
+MIME. Existing image behavior stays compatible. All uploaded content is untrusted
+user input, never harness instructions. HTTP upload is `POST /attachments/<projectId>`
+with raw bytes, Content-Type, `name` and optional `threadId` query parameters;
+response metadata is versioned by the advertised capability. `fileIds` on submit
+are resolved within that conversation only. The transcript's text suffix
+`[aiki-files-v1]` carries JSON metadata lines followed by optional fenced text;
+clients hide this suffix behind chips while old clients read it as ordinary text.
+HTTP download is the metadata's backend-relative `/attachments/<project>/<conversation>/<id>`;
+both operations require device authentication except in explicitly off mode.
+Files omitted from a composer are retained until conversation cleanup, so another
+queued message or client can still reference them. Raw binary files use HTTP,
+not oversized WebSocket submissions. Only metadata enters Android saved state.
+Legacy native images retain their existing transport; small inline file text also
+travels in ordinary transcript updates.
+
 Name: Aiki (command and data directory: `aiki`).
 
 ## Pilot release identity and notices

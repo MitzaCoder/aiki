@@ -36,6 +36,7 @@ import {
 	TERMINAL_MAX_INPUT_BYTES,
 	draftThreadId,
 	inputImagesError,
+	splitFileMessage,
 	decodeTerminalFrame,
 	encodeTerminalFrame,
 	terminalAckBytes,
@@ -900,14 +901,21 @@ export class ClientConnection {
 					if (request.taskId !== undefined) await this.#manager.requireBoardTask(request.projectId, request.taskId);
 					const { conversation, runtime } = await this.#manager.conversation(request.projectId, request.threadId);
 					if (!this.#authorized(0, request.id)) return;
+					const content = await this.#manager.files.message(request.projectId, conversation.id, request.content, request.fileIds);
+					if (!this.#authorized(0, request.id)) return;
 					// The message becomes a feedback entry on the task, and its ID goes into the reference the coordinator reads.
-					// A re-sent request ID finds its entry. Only what the user typed is recorded, never the harness's own inputs.
+					// A re-sent request ID finds its entry. Record user text/attachment names, never extracted contents or harness inputs.
+					const description = describeContent(request.content);
+					if (request.taskId !== undefined && request.fileIds?.length && !description.text.trim()) {
+						const names = splitFileMessage(describeContent(content).text).files.filter(file => request.fileIds!.includes(file.id)).map(file => file.name);
+						description.text = `Attached files: ${names.join(', ')}`;
+					}
 					const feedback =
 						request.taskId === undefined || !this.#features.includes("task-links")
 							? undefined
 							: await this.#manager.recordBoardFeedback(request.projectId, {
 									taskId: request.taskId,
-									...describeContent(request.content),
+									...description,
 									threadId: request.threadId ?? "main",
 									requestId: request.requestId,
 								});
@@ -919,8 +927,8 @@ export class ClientConnection {
 							type: "input",
 							content:
 								request.taskId === undefined
-									? request.content
-									: withTaskReference(request.content, request.taskId, feedback?.id),
+									? content
+									: withTaskReference(content, request.taskId, feedback?.id),
 							requestId: request.requestId,
 							...(request.whenBusy === undefined ? {} : { whenBusy: request.whenBusy }),
 						},

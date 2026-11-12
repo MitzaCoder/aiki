@@ -720,6 +720,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	const server = Bun.serve<SocketData>({
 		hostname,
 		port,
+		maxRequestBodySize: 51 * 1024 * 1024,
 		async fetch(request, bunServer) {
 			const url = new URL(request.url);
 			if (options.webDir && !localWebOrigin(url.origin, bunServer.port ?? port)) return new Response("Forbidden host", { status: 403 });
@@ -763,7 +764,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 				);
 			const cors: Record<string, string> = { "cache-control": "no-store", vary: "Origin" };
 			if (origin !== null && originAllowed) cors["access-control-allow-origin"] = origin;
-			if (request.method === "OPTIONS" && (required || url.pathname.startsWith("/auth/")))
+			if (request.method === "OPTIONS" && (required || url.pathname.startsWith("/auth/") || url.pathname.startsWith("/attachments/")))
 				return new Response(null, {
 					status: 204,
 					headers: {
@@ -819,6 +820,32 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					status: 426,
 					headers: { upgrade: "websocket" },
 				});
+			}
+			if (url.pathname.startsWith("/attachments/")) {
+				if (!originAllowed) return new Response("Forbidden origin", { status: 403 });
+				if (!features.includes("chat-files-v1")) return new Response("Not found", { status: 404 });
+				try {
+					// No signed/public links: every read/write checks the device's current access token.
+					if (auth.mode !== "off") auth.authenticate(bearer(request));
+					const parts = url.pathname.split("/");
+					const projectId = parts[2] ?? "";
+					await manager.requireProject(projectId);
+					if (request.method === "POST" && parts.length === 3) {
+						if (!request.body) return new Response("Choose a file to attach", { status: 400, headers: cors });
+						const { conversation } = await manager.conversation(projectId, url.searchParams.get("threadId") ?? undefined);
+						const length = request.headers.get("content-length");
+						const file = await manager.files.put(projectId, conversation.id, url.searchParams.get("name") ?? "attachment", request.headers.get("content-type")?.split(";")[0] ?? "application/octet-stream", request.body, length === null ? undefined : Number(length));
+						return Response.json(file, { headers: cors });
+					}
+					if ((request.method === "GET" || request.method === "HEAD") && parts.length === 5) {
+						const file = await manager.files.get(projectId, Number(parts[3]), parts[4]!);
+						return new Response(request.method === "HEAD" ? null : Bun.file(file.path), { headers: { ...cors, "content-type": "application/octet-stream", "content-length": String(file.size), "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`, "x-content-type-options": "nosniff", "content-security-policy": "sandbox", "cross-origin-resource-policy": "same-origin" } });
+					}
+					return new Response("Not found", { status: 404, headers: cors });
+				} catch (error) {
+					if (error instanceof DeviceAuthError) return authFailure(error);
+					return new Response(error instanceof Error ? error.message : "Attachment failed", { status: 400, headers: cors });
+				}
 			}
 			if (url.pathname.startsWith("/artifacts/")) {
 				return serveArtifact(request, { store: artifacts, signer: artifactSigner, allowedOrigins }).then(

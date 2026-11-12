@@ -356,6 +356,7 @@ export const HARNESS_FEATURES = [
 	"terminal",
 	"queued-inputs",
 	"chat-drafts",
+	"chat-files-v1",
 	"notification-hold",
 	"ui-proof",
 	"task-links",
@@ -376,7 +377,7 @@ export type HarnessFeature = (typeof HARNESS_FEATURES)[number];
 
 /** Missing hello.features is never evidence of device-auth support. */
 export const LEGACY_HARNESS_FEATURES = HARNESS_FEATURES.filter(
-	(feature) => feature !== "task-timeline-groups" && feature !== "task-deploys" && feature !== "task-activity" && feature !== "report-audit" && feature !== "task-freshness" && feature !== "task-changes" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
+	(feature) => feature !== "chat-files-v1" && feature !== "task-timeline-groups" && feature !== "task-deploys" && feature !== "task-activity" && feature !== "report-audit" && feature !== "task-freshness" && feature !== "task-changes" && feature !== "fcm-relay-v1" && feature !== "device-auth-v1" && feature !== "device-pairing-v1" && feature !== "device-management-v1",
 );
 
 export const HarnessFeatureSchema = Type.Union([
@@ -417,6 +418,7 @@ export const HarnessFeatureSchema = Type.Union([
 	Type.Literal("terminal"),
 	Type.Literal("queued-inputs"),
 	Type.Literal("chat-drafts"),
+	Type.Literal("chat-files-v1"),
 	Type.Literal("notification-hold"),
 	Type.Literal("ui-proof"),
 	Type.Literal("task-links"),
