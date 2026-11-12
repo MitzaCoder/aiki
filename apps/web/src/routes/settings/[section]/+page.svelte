@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import AboutSection from '#lib/components/settings/AboutSection.svelte';
 	import AppearanceSection from '#lib/components/settings/AppearanceSection.svelte';
 	import ArchivedSection from '#lib/components/settings/ArchivedSection.svelte';
 	import NotificationsSection from '#lib/components/settings/NotificationsSection.svelte';
@@ -11,6 +12,8 @@
 
 {#if section === 'appearance'}
 	<AppearanceSection />
+{:else if section === 'about'}
+	<AboutSection />
 {:else if section === 'notifications'}
 	<NotificationsSection />
 {:else if section === 'archived'}

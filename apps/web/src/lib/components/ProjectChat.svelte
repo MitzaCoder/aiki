@@ -26,6 +26,7 @@
 	import TasksView from '#lib/components/TasksView.svelte';
 	import { taskFilter, tasksView } from '#lib/tasks-view.svelte.js';
 	import ConversationSidebar from '#lib/components/ConversationSidebar.svelte';
+	import ReleaseUpdateBanner from '#lib/components/ReleaseUpdateBanner.svelte';
 	import DeployBanner from '#lib/components/DeployBanner.svelte';
 	import DiskBanner from '#lib/components/DiskBanner.svelte';
 	import { SERVER_STATUS_REFRESH_MS } from '#lib/server-status.js';
@@ -975,6 +976,7 @@
 				<div class="{CHAT_COLUMN_CLASS} shrink-0 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] sm:px-4 sm:pb-4">
 					<div class="mb-2 flex flex-col gap-2">
 						{#if backend.supports('server-status')}
+							<ReleaseUpdateBanner {backend} />
 							<DeployBanner
 								status={backend.status}
 								dismissed={harness.dismissedDeploys}
