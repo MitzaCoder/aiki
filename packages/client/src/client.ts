@@ -310,6 +310,7 @@ export class HarnessClient {
 	readonly #artifactListeners = new Set<(event: ArtifactsChangedEvent) => void>();
 	readonly #draftListeners = new Set<(event: DraftsChangedEvent) => void>();
 	readonly #loginListeners = new Set<(login: AuthLogin) => void>();
+	readonly #mcpOAuthListeners = new Set<(flow: import('@aiki/protocol').McpOAuthFlow) => void>();
 	readonly #errorListeners = new Set<(error: ClientError) => void>();
 	readonly #pending = new Map<string, Pending>();
 	readonly #watches = new Set<ConversationWatch>();
@@ -347,6 +348,12 @@ export class HarnessClient {
 	subscribe(listener: (state: ClientState) => void): () => void {
 		this.#listeners.add(listener);
 		return () => this.#listeners.delete(listener);
+	}
+
+	/** MCP sign-in changes, including completion in another paired tab. Read mcp.list for server status. */
+	onMcpOAuthChanged(listener: (flow: import('@aiki/protocol').McpOAuthFlow) => void): () => void {
+		this.#mcpOAuthListeners.add(listener);
+		return () => this.#mcpOAuthListeners.delete(listener);
 	}
 
 	/** Project state pushed by the server; the project list can stay current without polling. */
@@ -1804,6 +1811,12 @@ export class HarnessClient {
 			}
 			case "terminal.resync": {
 				this.#terminalsById.get(message.terminalId)?.receiveResync();
+				return;
+			}
+			case "mcp.oauth.changed": {
+				for (const listener of this.#mcpOAuthListeners) {
+					try { listener(message.flow); } catch { /* Consumer isolation. */ }
+				}
 				return;
 			}
 			case "credentials.login": {

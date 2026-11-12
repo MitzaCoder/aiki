@@ -1,5 +1,29 @@
 # Continue
 
+## T145: OAuth settings integration
+
+Resolved stage-2 rebase conflicts in the two earlier web changes, preserving the
+OAuth, approval-lifetime and web/compact-row documentation and both fake peers.
+Settings now wires `startMcpOAuth` for OAuth-capable presets or saved OAuth grants.
+A typed client listener delivers `mcp.oauth.changed`; settings quietly rereads
+`mcp.list` with stale-response protection. Waiting, cancelled, expired, failed and
+connected states restore from the backend. Pending flows offer Cancel and a
+write-only Paste callback URL field; its short-lived code clears on submission
+or terminal flow state. Notion preset explanations come from backend metadata.
+No protocol or production-server changes were needed.
+
+Reusable proof: start `bun packages/server/scripts/mcp-oauth-web-demo.ts`, Vite
+on localhost:5186 and dedicated Chromium on CDP :9386, then
+`timeout 180 bun packages/server/scripts/mcp-oauth-web-proof.ts`. This reuses stage
+2's fake issuer/resource and paired-device seeding; only the fixture process
+points its Notion preset at loopback. Manual synthetic consent supports waiting
+screenshots without real accounts. The driver captures details/waiting/paste/
+connected on desktop/phone light/dark, plus the full add → consent → callback →
+connected-settings recording. It also proves reload recovery, cancellation,
+query stripping and pasted completion from a callback without a saved route.
+Final sequential checks pass: web check (zero diagnostics), 1,048 tests / 79,689
+assertions, build; root typecheck and 2,452 tests / 91,653 assertions, no reruns.
+
 ## T145: web MCP settings (stage 3)
 
 Follow-up: compact tool rows now measure 57–58px on desktop, with an inline

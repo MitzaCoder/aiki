@@ -1,6 +1,6 @@
 /** Fake OAuth issuer and protected resource, owned by a createSetup test/demo. */
 import { createHash } from "node:crypto";
-export function fakeMcpOAuth(autoApprovePage = false) {
+export function fakeMcpOAuth(autoApprovePage = false, options: { manualConsent?: boolean } = {}) {
  let access = "synthetic-access-1", refresh = "synthetic-refresh-1", sequence = 1;
  let invalid = false, mismatch = false, registration = true, rejectAccess = false;
  let refreshes = 0, registrations = 0, inRefresh = 0, maxRefresh = 0, calls = 0;
@@ -30,7 +30,7 @@ export function fakeMcpOAuth(autoApprovePage = false) {
    callback.searchParams.set("code", code); callback.searchParams.set("state", url.searchParams.get("state")!);
    callback.searchParams.set("iss", issuer);
    // Synthetic consent only: auto-approve, never a real account.
-   if (autoApprovePage) return new Response(`<!doctype html><meta name="viewport" content="width=device-width"><title>Synthetic consent</title><body style="font:20px system-ui;padding:48px;background:#eef4ff;color:#17243b"><h1>Synthetic OAuth consent</h1><p>Aiki requests pages:read on the fake MCP server.</p><p>Auto-approving for this isolated demo…</p><script>setTimeout(() => location.replace(${JSON.stringify(callback.href)}), 1500)</script>`, { headers: { "content-type": "text/html" } });
+   if (autoApprovePage) return new Response(`<!doctype html><meta name="viewport" content="width=device-width"><title>Synthetic consent</title><body style="font:20px system-ui;padding:48px;background:#eef4ff;color:#17243b"><h1>Synthetic OAuth consent</h1><p>Aiki requests pages:read on the fake MCP server.</p>${options.manualConsent ? '<p>Only synthetic data is shared.</p><button id="approve-synthetic">Approve synthetic access</button><script>document.querySelector("#approve-synthetic").onclick = () => location.replace(' + JSON.stringify(callback.href) + ')</script>' : '<p>Auto-approving for this isolated demo…</p><script>setTimeout(() => location.replace(' + JSON.stringify(callback.href) + '), 1500)</script>'}`, { headers: { "content-type": "text/html" } });
    return Response.redirect(callback.href, 302);
   }
   if (url.pathname === "/token") {

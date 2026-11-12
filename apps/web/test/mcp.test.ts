@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { McpServer } from '@aiki/protocol';
-import { filterMcpTools, mcpProjectServer, mcpServerId, mcpStatus, mcpToolHint } from '../src/lib/mcp.ts';
+import { filterMcpTools, mcpProjectServer, mcpServerId, mcpStatus, mcpToolHint, mcpSupportsOAuth, mcpOAuthFlowLabel } from '../src/lib/mcp.ts';
 import { backendSettingsHref, projectSectionAvailable, projectSettingsHref, settingsParentHref } from '../src/lib/settings.ts';
 
 const tool = (name: string, annotations?: Record<string, unknown>, description?: string): McpServer['tools'][number] => ({ name, annotations, description, policy: 'ask', inputSchema: {} });
@@ -8,8 +8,24 @@ describe('MCP settings', () => {
   test('connection states and write-only credential presence', () => {
     expect(mcpStatus({ status: 'connected', hasCredential: false, lastError: null }).label).toBe('Connected');
     expect(mcpStatus({ status: 'disconnected', hasCredential: true, lastError: null }).label).toBe('Disconnected');
-    expect(mcpStatus({ status: 'error', hasCredential: false, lastError: 'MCP connection failed' }).label).toBe('Needs sign-in');
+    expect(mcpStatus({ status: 'error', hasCredential: false, lastError: 'MCP connection failed' }).label).toBe('Error');
+    expect(mcpStatus({ status: 'needs_sign_in', hasCredential: true, lastError: null }).label).toBe('Needs sign-in');
+    expect(mcpStatus({ status: 'signing_in', hasCredential: false, lastError: null }).label).toBe('Waiting for sign-in');
     expect(mcpStatus({ status: 'error', hasCredential: true, lastError: 'MCP connection failed' }).tone).toBe('err');
+  });
+  test('OAuth support comes only from preset auth or an existing OAuth grant', () => {
+    const presets = [{ id: 'notion', auth: 'OAuth or token' }, { id: 'token', auth: 'token only' }];
+    expect(mcpSupportsOAuth({ presetId: 'notion', authKind: 'none' }, presets)).toBe(true);
+    expect(mcpSupportsOAuth({ presetId: 'token', authKind: 'none' }, presets)).toBe(false);
+    expect(mcpSupportsOAuth({ authKind: 'none' }, presets)).toBe(false);
+    expect(mcpSupportsOAuth({ authKind: 'oauth' }, [])).toBe(true);
+    expect(mcpSupportsOAuth({ presetId: 'unknown', authKind: 'token' }, presets)).toBe(false);
+  });
+  test('OAuth flow labels cover every terminal state without echoing server text', () => {
+    const labels = ['Waiting for sign-in', 'Sign-in finished', 'Sign-in failed', 'Sign-in cancelled', 'Sign-in expired'];
+    (['pending', 'succeeded', 'failed', 'cancelled', 'expired'] as const).forEach((status, index) => {
+      expect(mcpOAuthFlowLabel({ flowId: 'f', serverId: 'notion', expiresAt: 1000, status, error: 'synthetic failure' })).toBe(labels[index]!);
+    });
   });
   test('destructive beats read-only; missing or false hints are not read-only', () => {
     for (const annotations of [undefined, {}, { readOnlyHint: false }, { readOnlyHint: 'true' }]) expect(mcpToolHint({ annotations })).toBe('Write / unknown hint');

@@ -1,5 +1,5 @@
 /** Presentation rules for untrusted remote MCP catalogues. Policies themselves come from the backend. */
-import type { McpProjectServer, McpServer } from '@aiki/protocol';
+import type { McpOAuthFlow, McpProjectServer, McpServer } from '@aiki/protocol';
 export type McpTool = McpServer['tools'][number];
 export const MCP_POLICY_OPTIONS = [
   { value: 'off', label: 'Off' }, { value: 'ask', label: 'Ask' }, { value: 'allow', label: 'Allow' }
@@ -10,9 +10,23 @@ export const MCP_ROLE_OPTIONS = [
 ] as const;
 export function mcpStatus(server: Pick<McpServer, 'status' | 'hasCredential' | 'lastError'>): { label: string; tone: 'ok' | 'warn' | 'err' | 'muted' } {
   if (server.status === 'connected') return { label: 'Connected', tone: 'ok' };
-  if (server.status === 'error') return !server.hasCredential
-    ? { label: 'Needs sign-in', tone: 'warn' } : { label: 'Error', tone: 'err' };
+  if (server.status === 'signing_in') return { label: 'Waiting for sign-in', tone: 'warn' };
+  if (server.status === 'needs_sign_in') return { label: 'Needs sign-in', tone: 'warn' };
+  if (server.status === 'error') return { label: 'Error', tone: 'err' };
   return { label: 'Disconnected', tone: 'muted' };
+}
+/** Never infer OAuth support from a missing credential or an arbitrary server display name. */
+export function mcpSupportsOAuth(server: Pick<McpServer, 'presetId' | 'authKind'>, presets: readonly { id: string; auth: string }[]): boolean {
+  return server.authKind === 'oauth' || presets.some(preset => preset.id === server.presetId && /\boauth\b/i.test(preset.auth));
+}
+export function mcpOAuthFlowLabel(flow: McpOAuthFlow): string {
+  switch (flow.status) {
+    case 'pending': return 'Waiting for sign-in';
+    case 'succeeded': return 'Sign-in finished';
+    case 'failed': return 'Sign-in failed';
+    case 'cancelled': return 'Sign-in cancelled';
+    case 'expired': return 'Sign-in expired';
+  }
 }
 export function mcpToolHint(tool: Pick<McpTool, 'annotations'>): string {
   if (tool.annotations?.destructiveHint === true) return 'Destructive hint';

@@ -683,7 +683,10 @@ with Off / Ask / Allow. Catalogue rows are compact: name and server hint share
 one line, a one-line plain-text description expands on click/tap to its full text,
 and a smaller policy control sits inline on desktop (below on phone). Normal
 desktop rows target 56–72px. Annotations are labelled as server hints, not
-guarantees. OAuth has a reserved integration point for stage 2.
+guarantees. OAuth-capable presets (including Notion) and saved OAuth grants show
+Sign in using `startMcpOAuth`. Live flow events and `mcp.list` restore waiting,
+failed, cancelled, expired and connected states. Pending sign-ins offer Cancel
+and a write-only Paste callback URL field for completion on the initiating device.
 Project settings → MCP starts every server and role disabled; coordinator, workers
 and background threads are independent choices saved on change. Existing board
 questions carry exact-argument approvals, including long JSON on phone screens.
@@ -707,7 +710,7 @@ The core is backend-global remote Streamable HTTP with pasted bearer tokens or
 OAuth. No stdio, legacy SSE or imports. Definitions and
 cached catalogues live in `mcp/servers.json`; project/role enablement defaults off.
 Credentials use a separate MCP namespace in the harness credentials file, with a
-versioned token/OAuth record so refresh grants can be added in stage 2.
+versioned token/OAuth record supporting stage-2 refresh grants.
 
 Use standalone pi-mcp transport/client primitives if the Bun compatibility probe
 passes; never its CLI extension. Require HTTPS except loopback development HTTP,
@@ -725,7 +728,7 @@ allow this tool, Deny. Once binds the project, conversation, server, tool and ex
 argument hash, expires, and is consumed before dispatch. Workers route questions
 to their coordinator. Answers wake through the existing board route; writes are
 never automatically retried after an ambiguous failure. Approval storage and board
-routing sit behind a small interface. Settings UI and local provisioning follow later.
+routing sit behind a small interface. Local provisioning follows separately.
 
 Compatibility: standalone `@earendil-works/pi-mcp` 1.5.2 imports and runs under
 Bun with pi-ai/pi-durable/pi-codemode 1.5.1 unchanged. Its client follows catalogue

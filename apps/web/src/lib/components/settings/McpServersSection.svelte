@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { McpListResponse, McpPolicy, McpServer } from '@aiki/protocol';
   import type { BackendConnection } from '#lib/harness.svelte.js';
-  import { filterMcpTools, mcpServerId, mcpStatus } from '#lib/mcp.js';
+  import { filterMcpTools, mcpServerId, mcpStatus, mcpSupportsOAuth } from '#lib/mcp.js';
   import { mcpRequest } from '#lib/mcp-rpc.js';
   import Banner from '#lib/components/Banner.svelte';
   import { Button } from '#lib/components/ui/button/index.js';
@@ -11,6 +11,7 @@
   import SettingsRow from './SettingsRow.svelte';
   import StatusChip from './StatusChip.svelte';
   import McpToolRow from './McpToolRow.svelte';
+  import McpOAuthConnection from './McpOAuthConnection.svelte';
 
   let { backend }: { backend: BackendConnection } = $props();
   let servers = $state<McpServer[]>([]);
@@ -38,12 +39,24 @@
     try { await action(); } catch (failure) { error = failure instanceof Error ? failure.message : 'MCP request failed.'; }
     finally { busy = false; }
   }
-  async function load() {
-    await run(async () => {
-      const response = await mcpRequest(backend, { type: 'mcp.list' });
-      servers = response.servers; presets = response.presets; loaded = true;
-    });
+  let catalogueSequence = 0;
+  async function refreshCatalogue() {
+    const sequence = ++catalogueSequence;
+    const response = await mcpRequest(backend, { type: 'mcp.list' });
+    if (sequence !== catalogueSequence) return;
+    servers = response.servers; presets = response.presets; loaded = true;
   }
+  $effect(() => {
+    if (!supported) return;
+    return backend.client.onMcpOAuthChanged(flow => {
+      servers = servers.map(server => server.id === flow.serverId ? {
+        ...server, oauthFlow: flow, ...(flow.status === 'pending' ? { status: 'signing_in' as const } : {})
+      } : server);
+      // A second succeeded event follows catalogue connection. Ignore older list replies.
+      void refreshCatalogue().catch(() => { error = 'Could not update sign-in status. Reload servers to try again.'; });
+    });
+  });
+  async function load() { await run(refreshCatalogue); }
   function replace(server: McpServer) {
     servers = servers.map(entry => entry.id === server.id ? server : entry);
   }
@@ -115,9 +128,10 @@
             <Button variant="outline" disabled={busy} onclick={() => void changeConnection('mcp.disconnect')}>Disconnect</Button>
           </div>
         </SettingsRow>
+        {#if mcpSupportsOAuth(selected, presets)}
+          {#key selected.id}<McpOAuthConnection {backend} server={selected} refresh={refreshCatalogue} onserver={replace} />{/key}
+        {/if}
         <SettingsRow label="Connect with a token" hint={selected.hasCredential ? 'A credential is saved on this backend. Paste to replace it.' : 'Paste an MCP bearer token, not an ordinary integration key.'} for="mcp-token" control="full">
-          <!-- OAuth integration point (stage 2): show Sign in when server auth supports OAuth,
-               calling startMcpOAuth(backend, selected.id). Do not infer support from a missing token. -->
           <form class="flex flex-col gap-2 sm:flex-row" onsubmit={(event) => { event.preventDefault(); void connect(); }}>
             <input class="mcp-input min-w-0 flex-1" id="mcp-token" type="password" autocomplete="off" spellcheck="false" bind:value={token} disabled={busy} placeholder="Paste token" />
             <Button type="submit" disabled={busy || !token.trim()}>Connect</Button>
@@ -169,7 +183,8 @@
       </label>
       <label class="flex flex-col gap-1 text-sm font-medium">Server name<input class="mcp-input" bind:value={name} maxlength="120" required disabled={busy} /></label>
       {#if !presetId}<label class="flex flex-col gap-1 text-sm font-medium">Server URL<input class="mcp-input" type="url" bind:value={url} placeholder="https://mcp.example.test/mcp" required disabled={busy} /></label>
-      {:else}<p class="text-sm break-all text-muted-foreground">{presets.find(preset => preset.id === presetId)?.url}</p>{/if}
+      {:else}<p class="text-sm break-all text-muted-foreground">{presets.find(preset => preset.id === presetId)?.url}</p>
+        {#if presets.find(preset => preset.id === presetId)?.description}<p class="text-sm text-muted-foreground">{presets.find(preset => preset.id === presetId)?.description}</p>{/if}{/if}
       <p class="text-xs text-muted-foreground">HTTPS required (except loopback development). No embedded credentials, query or fragment. New servers are disabled in projects.</p>
       {#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
       <Dialog.Footer><Button variant="outline" type="button" disabled={busy} onclick={() => adding = false}>Cancel</Button><Button type="submit" disabled={busy || !name.trim() || (!presetId && !url.trim())}>{busy ? 'Adding…' : 'Add server'}</Button></Dialog.Footer>
