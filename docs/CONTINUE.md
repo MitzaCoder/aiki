@@ -1,5 +1,27 @@
 # Continue
 
+## T141: MCP configuration research (no product changes)
+
+`docs/research/mcp-servers.md` compares current pi built-in MCP, the separate
+pi-mcp-adapter proxy, and Aiki's installed durable 1.5.1 discovery. Built-in pi
+now defaults to codemode-only schemas; adding an ordinary namespace in Aiki
+would still consume its 3,000-token inline declaration budget. Proposed MCP
+tools need deferred/tool-only registration plus a separate server-name summary.
+
+Current Notion docs support OAuth on every plan **and** workspace-owner MCP
+bearer tokens on Business/Enterprise; old OAuth-only advice is stale. The note
+estimates full-schema versus lazy costs, covers headless web/phone callbacks
+(including a browser not paired with the backend), credential refresh, role and
+project enablement, D63's command-execution boundary, and both clients' settings.
+Recommendation: native remote-first integration using standalone pi-mcp, then
+host-owner-provisioned stdio. Upstream pi-mcp is 1.5.2; Bun/released-version
+compatibility remains an implementation check, not a completed integration.
+
+Research only. `bun install`, whitespace/link/count checks and public-CI generic/
+Gitleaks checks pass; no full product suites or UI proof needed. Private-term
+operator scan remains required before any public push. No sign-in, credentialled
+server start, push, deployment or main movement.
+
 ## T140 integration: standalone binary Part 2
 
 The three attachment revisions now sit on `pxvxqzsv` (9636867f), above the full
