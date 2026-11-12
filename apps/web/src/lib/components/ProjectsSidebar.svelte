@@ -8,6 +8,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import { page } from '$app/state';
 	import { version as webVersion } from '../../../package.json';
+	import SelfUpdate from './SelfUpdate.svelte';
 	import { aikiVersionLabel, versionBackend } from '#lib/aiki-version.js';
 	import { visibleReleaseUpdate } from '#lib/release-updates.js';
 	import { MediaQuery } from 'svelte/reactivity';
@@ -337,6 +338,9 @@
 				{#if updateAvailable}<span class="size-1.5 shrink-0 rounded-full bg-(--primary)" aria-hidden="true"></span>{/if}
 				<span class="min-w-0 break-words">{rail ? 'v' : versionText}</span>
 			</a>
+			{#if identityBackend && !rail && (updateAvailable || identityBackend.status?.selfUpdate?.phase !== 'idle')}
+				<SelfUpdate backend={identityBackend} compact />
+			{/if}
 		</div>
 	</div>
 {/snippet}

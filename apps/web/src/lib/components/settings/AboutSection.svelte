@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { harness, type BackendConnection } from '#lib/harness.svelte.js';
 	import { backendVersion } from '#lib/aiki-version.js';
+	import SelfUpdate from '../SelfUpdate.svelte';
 	import SettingsSection from './SettingsSection.svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	let error = $state('');
@@ -40,12 +41,13 @@
 					<p class="text-(--chat-fg-muted)">Checks public GitHub releases about once a day. Does not install or restart anything.</p>
 					{#if updates.enabled && updates.available}
 						<p>Aiki <strong>{updates.available.version}</strong> is available. <a class="underline" href={updates.available.notesUrl} target="_blank" rel="noopener noreferrer">Release notes</a></p>
-						<p>Stop Aiki, then <code>aiki update</code>, then start it.</p>
+						{#if !backend.status?.selfUpdate?.enabled}<p>Stop Aiki, then <code>aiki update</code>, then start it.</p>{/if}
 						{#if updates.dismissedVersion !== updates.available.version}
 							<button type="button" class="min-h-11 self-start underline" disabled={saving} onclick={() => dismiss(backend, updates.available!.version)}>Dismiss update notice</button>
 						{:else}<p class="text-(--chat-fg-muted)">Update notice dismissed.</p>{/if}
 					{:else if updates.enabled}<p>No newer release found yet.</p>{/if}
 				{:else}<p>Update checks are not available on this backend.</p>{/if}
+				<SelfUpdate {backend} />
 			</div>
 		</SettingsGroup>
 	{/each}
