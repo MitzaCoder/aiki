@@ -307,6 +307,9 @@ import {
 	ToolInfoSchema,
 } from "./context.ts";
 import {
+	type ReleaseUpdateState, ReleaseUpdateStateSchema,
+	type ReleaseUpdatesSetRequest, ReleaseUpdatesSetRequestSchema,
+	type ReleaseUpdatesSetResponse, ReleaseUpdatesSetResponseSchema,
 	type DeployStatus,
 	DeployStatusSchema,
 	type DiskStatus,
@@ -746,6 +749,7 @@ export const ClientMessageSchema = Type.Union([
 	WorkersListRequestSchema,
 	ConversationContextRequestSchema,
 	ServerStatusRequestSchema,
+	ReleaseUpdatesSetRequestSchema,
 	ServerDrainRequestSchema,
 	MemoryListRequestSchema,
 	MemoryReadRequestSchema,
@@ -851,6 +855,7 @@ export const ResponseSchema = Type.Union([
 	WorkersListResponseSchema,
 	ConversationContextResponseSchema,
 	ServerStatusResponseSchema,
+	ReleaseUpdatesSetResponseSchema,
 	ServerDrainResponseSchema,
 	MemoryListResponseSchema,
 	MemoryReadResponseSchema,
@@ -1272,6 +1277,9 @@ export const PROTOCOL_SCHEMAS: Readonly<Record<string, TSchema>> = {
 	ConversationContextEvent: ConversationContextEventSchema,
 	ReleaseInfo: ReleaseInfoSchema,
 	DeployStatus: DeployStatusSchema,
+	ReleaseUpdateState: ReleaseUpdateStateSchema,
+	ReleaseUpdatesSetRequest: ReleaseUpdatesSetRequestSchema,
+	ReleaseUpdatesSetResponse: ReleaseUpdatesSetResponseSchema,
 	ServerStatus: ServerStatusSchema,
 	ServerStatusRequest: ServerStatusRequestSchema,
 	ServerStatusResponse: ServerStatusResponseSchema,
@@ -1596,6 +1604,7 @@ export type {
 };
 
 export { HARNESS_FEATURES } from "./projects.ts";
+export type { ReleaseUpdateState, ReleaseUpdatesSetRequest, ReleaseUpdatesSetResponse };
 export { DEFAULT_DRAIN_TIMEOUT_MS, MAX_DRAIN_TIMEOUT_MS } from "./server-status.ts";
 export { PROTOCOL_VERSION, SERVER_NAME, SERVER_VERSION, THINKING_LEVELS } from "./common.ts";
 export { CHECK_IN_PREFIX, WORKER_REPORT_PREFIX } from "./workers.ts";

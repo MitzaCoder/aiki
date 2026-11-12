@@ -62,7 +62,33 @@ export const DiskStatusSchema = Type.Object({
 });
 export type DiskStatus = Static<typeof DiskStatusSchema>;
 
+export const ReleaseUpdateStateSchema = Type.Object({
+	schemaVersion: Type.Literal(1),
+	enabled: Type.Boolean(),
+	installedVersion: Type.Union([Type.String(), Type.Null()]),
+	channel: Type.Union([Type.Literal("pilot"), Type.Literal("stable")]),
+	available: Type.Union([Type.Object({ version: Type.String(), notesUrl: Type.String() }), Type.Null()]),
+	dismissedVersion: Type.Union([Type.String(), Type.Null()]),
+});
+export type ReleaseUpdateState = Static<typeof ReleaseUpdateStateSchema>;
+
+/** Backend-wide, not a project setting. No check is triggered by reading or changing this state. */
+export const ReleaseUpdatesSetRequestSchema = Type.Object({
+	type: Type.Literal("server.updates.set"),
+	id: RequestIdSchema,
+	enabled: Type.Optional(Type.Union([Type.Boolean(), Type.Null()], { description: "null restores installed-only default." })),
+	dismissVersion: Type.Optional(Type.String({ maxLength: 200 })),
+});
+export const ReleaseUpdatesSetResponseSchema = Type.Object({
+	type: Type.Literal("server.updates.set"),
+	id: RequestIdSchema,
+	updates: ReleaseUpdateStateSchema,
+});
+export type ReleaseUpdatesSetRequest = Static<typeof ReleaseUpdatesSetRequestSchema>;
+export type ReleaseUpdatesSetResponse = Static<typeof ReleaseUpdatesSetResponseSchema>;
+
 export const ServerStatusSchema = Type.Object({
+	updates: Type.Optional(ReleaseUpdateStateSchema),
 	release: Type.Union([ReleaseInfoSchema, Type.Null()]),
 	deploy: Type.Union([DeployStatusSchema, Type.Null()], { description: "Null when no deploy wrote a status yet." }),
 	busy: Type.Object(

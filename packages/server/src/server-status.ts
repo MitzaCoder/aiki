@@ -7,6 +7,7 @@
  * every change is pushed as `server.status.changed`; `busy` is computed on demand because a restart only asks for it
  * before restarting.
  */
+import type { ReleaseUpdateState } from "@aiki/protocol";
 import { serverSettings } from "./server-settings.ts";
 import type { DeployStatus, DiskStatus, ReleaseInfo, ServerStatus } from "@aiki/protocol";
 import { existsSync, readFileSync, realpathSync, watch, type FSWatcher } from "node:fs";
@@ -135,6 +136,7 @@ export type ServerStatusServiceOptions = {
 	onChange?: (status: ServerStatus) => void;
 	/** Free space per filesystem, as last measured; omitted leaves `disks` out. */
 	disks?: () => DiskStatus[];
+	updates?: () => ReleaseUpdateState;
 };
 
 /**
@@ -144,6 +146,7 @@ export type ServerStatusServiceOptions = {
  * `server.status` answer is complete.
  */
 export class ServerStatusService {
+	readonly #updates: (() => ReleaseUpdateState) | undefined;
 	readonly #busy: () => Promise<BusyState>;
 	readonly #releaseRoot: string;
 	readonly #deployStatusFile: string | null;
@@ -165,6 +168,7 @@ export class ServerStatusService {
 	#closed = false;
 
 	private constructor(options: ServerStatusServiceOptions) {
+		this.#updates = options.updates;
 		this.#busy = options.busy;
 		this.#releaseRoot = options.releaseRoot ?? resolveReleaseRoot();
 		this.#deployStatusFile =
@@ -215,6 +219,7 @@ export class ServerStatusService {
 			deploy: this.#deploy,
 			busy: await this.#readBusy(),
 			startedAt: this.#startedAt,
+			...(this.#updates ? { updates: this.#updates() } : {}),
 			...(this.#disks === undefined ? {} : { disks: this.#disks() }),
 		};
 	}

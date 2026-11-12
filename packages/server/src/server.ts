@@ -66,6 +66,7 @@ import { ProjectManager } from "./runtime.ts";
 import { GithubReviewReader, ScheduleEventPoller, ScheduleEventStore } from "./schedule-events.ts";
 import { type RunCommand } from "./host-commands.ts";
 import { ScheduleScheduler, ScheduleStore } from "./schedules.ts";
+import { ReleaseUpdates, type ReleaseUpdateOptions } from "./release-updates.ts";
 import { ServerStatusService } from "./server-status.ts";
 import { FcmSender, loadFcmServiceAccount, resolveFcmKeyFile } from "./fcm.ts";
 import { resolvePushRelayEndpoint, validatePushRelayEndpoint } from "./push-relay/settings.ts";
@@ -76,6 +77,7 @@ import { TerminalHost, type TerminalHostOptions, terminalsEnabled } from "./term
 import { resolveToolCallCapMs } from "./tool-caps.ts";
 
 export type StartServerOptions = {
+	updates?: Omit<ReleaseUpdateOptions, "file" | "onChange">;
 	/** Usually `resolveDataDir()`; tests use a temp directory. */
 	dataDir: string;
 	auth?: AuthOptions;
@@ -242,6 +244,7 @@ export type HarnessServer = {
 	readonly maintenanceClock: MemoryMaintenanceClock;
 	/** The release, deploy outcome and busy state this server reports. */
 	readonly serverStatus: ServerStatusService;
+	readonly releaseUpdates: ReleaseUpdates;
 	/** The user's devices and the pushes to them. */
 	readonly notifications: Notifier;
 	/** Every logged-in subscription's rate-limit windows. */
@@ -616,7 +619,15 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	// A note on how the last check of GitHub went reaches the app, and nothing else: it must not wake the poller.
 	schedules.onEventStateChange = pushSchedules;
 
+	const releaseUpdates = await ReleaseUpdates.create({
+		file: join(dataDir, "release-updates.json"),
+		installedVersion: serverSettings.AIKI_INSTALLED_VERSION ?? null,
+		...(serverSettings.AIKI_UPDATE_CHANNEL === "pilot" || serverSettings.AIKI_UPDATE_CHANNEL === "stable" ? { channel: serverSettings.AIKI_UPDATE_CHANNEL } : {}),
+		...options.updates,
+		onChange: () => { void serverStatus.changed(); },
+	});
 	const serverStatus = await ServerStatusService.create({
+		updates: () => releaseUpdates.state,
 		busy: () => manager.busy(),
 		disks: () => diskMonitor?.disks ?? [],
 		...(options.status?.releaseRoot === undefined ? {} : { releaseRoot: options.status.releaseRoot }),
@@ -627,6 +638,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			void notifications.deployProblem(status.deploy);
 		},
 	});
+	releaseUpdates.start();
 	diskMonitor = new DiskMonitor({
 		dataDir,
 		projects: async () => (await store.list()).map((project) => ({ label: project.name, path: project.path })),
@@ -660,6 +672,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		notifications,
 		features,
 		serverStatus: () => serverStatus.status(),
+		releaseUpdates,
 		drain: (timeoutMs) => {
 			manager.drain.drain(timeoutMs);
 			const until = manager.drain.drainingUntil;
@@ -1035,6 +1048,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		memoryMaintenance,
 		maintenanceClock,
 		serverStatus,
+		releaseUpdates,
 		notifications,
 		subscriptionUsage,
 		artifacts,
@@ -1049,6 +1063,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			scheduleEvents.stop();
 			maintenanceClock.stop();
 			await memoryMaintenance.stop().catch(() => undefined);
+			await releaseUpdates.stop();
 			serverStatus.stop();
 			manager.drain.stop();
 			diskMonitor?.stop();

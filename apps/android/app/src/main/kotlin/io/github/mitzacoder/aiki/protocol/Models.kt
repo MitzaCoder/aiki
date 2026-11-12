@@ -10,7 +10,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
 /** Same absent-hello-features fallback as packages/client. An explicit empty list stays empty. */
-val DEFAULT_HARNESS_FEATURES: Set<String> = setOf("projects", "filesystem", "models", "credentials", "logins", "conversation", "workers", "context", "server-status", "memory", "schedules", "memory-maintenance", "notifications", "board", "subscription-usage", "threads", "artifacts", "storage", "drain", "task-reports", "cache-stats", "usage-breakdown", "subscription-resets", "ref-status", "board-moves", "ref-details", "fcm-push", "schedule-events", "project-archive", "filesystem-complete", "filesystem-edit", "artifact-tags", "terminal", "queued-inputs", "chat-drafts", "notification-hold", "ui-proof", "task-links", "task-waiting", "sidebar-attention", "cache-keep-warm")
+val DEFAULT_HARNESS_FEATURES: Set<String> = setOf("projects", "filesystem", "models", "credentials", "logins", "conversation", "workers", "context", "server-status", "release-updates", "memory", "schedules", "memory-maintenance", "notifications", "board", "subscription-usage", "threads", "artifacts", "storage", "drain", "task-reports", "cache-stats", "usage-breakdown", "subscription-resets", "ref-status", "board-moves", "ref-details", "fcm-push", "schedule-events", "project-archive", "filesystem-complete", "filesystem-edit", "artifact-tags", "terminal", "queued-inputs", "chat-drafts", "notification-hold", "ui-proof", "task-links", "task-waiting", "sidebar-attention", "cache-keep-warm")
 
 /** The most refs one `refs.status` reads. */
 const val MAX_REF_STATUS_REFS: Int = 200
@@ -2916,7 +2916,39 @@ data class DeployStatusPending(
 )
 
 @Serializable
+data class ReleaseUpdateState(
+    @kotlinx.serialization.EncodeDefault val `schemaVersion`: Long = 1L,
+    val `enabled`: Boolean,
+    val `installedVersion`: String?,
+    val `channel`: String,
+    val `available`: ReleaseUpdateStateAvailable?,
+    val `dismissedVersion`: String?
+)
+
+@Serializable
+data class ReleaseUpdateStateAvailable(
+    val `version`: String,
+    val `notesUrl`: String
+)
+
+@Serializable
+data class ReleaseUpdatesSetRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "server.updates.set",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `enabled`: Boolean? = null,
+    val `dismissVersion`: String? = null
+)
+
+@Serializable
+data class ReleaseUpdatesSetResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "server.updates.set",
+    val `id`: String,
+    val `updates`: ReleaseUpdateState
+)
+
+@Serializable
 data class ServerStatus(
+    val `updates`: ReleaseUpdateState? = null,
     val `release`: ReleaseInfo?,
     val `deploy`: DeployStatus?,
     val `busy`: ServerStatusBusy,

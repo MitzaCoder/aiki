@@ -31,6 +31,7 @@ export type TestSetup = {
 };
 
 export async function createSetup(options?: {
+	updates?: StartServerOptions["updates"];
 	/** Register extra providers, for example a fake OAuth provider, on the setup's models. */
 	configureModels?: (models: MutableModels) => void;
 	logins?: StartServerOptions["logins"];
@@ -91,6 +92,7 @@ export async function createSetup(options?: {
 	const start = (): Promise<HarnessServer> =>
 		startServer({
 			dataDir,
+			...(options?.updates === undefined ? {} : { updates: options.updates }),
 			auth: options?.auth ?? { mode: "off" },
 			port: 0,
 			models,

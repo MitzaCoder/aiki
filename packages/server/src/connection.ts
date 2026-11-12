@@ -60,6 +60,8 @@ import { WatchWindow, resolveWindowBounds } from "./window.ts";
 import { wireEntry } from "./wire.ts";
 import type { TerminalAttachment, TerminalHost } from "./terminals.ts";
 
+import type { ReleaseUpdates } from "./release-updates.ts";
+
 type WatchState = {
 	handle: ConversationWatch;
 	tracker: WatchWindow;
@@ -86,6 +88,7 @@ export type ClientConnectionOptions = {
 	features: readonly string[];
 	/** The server's release, deploy outcome and busy state, for `server.status`. */
 	serverStatus: () => Promise<ServerStatus>;
+	releaseUpdates?: ReleaseUpdates;
 	/** `server.drain`: start, extend or (0) end the drain; answers when it ends and how many tool calls execute now. */
 	drain: (timeoutMs: number) => { drainingUntil: string | null; toolCalls: number };
 	/** Subscription usage for `subscriptions.usage`; told when a credential is set or deleted. */
@@ -132,6 +135,7 @@ export class ClientConnection {
 	readonly #logins: OAuthLoginManager;
 	readonly #notifications: Notifier;
 	readonly #features: readonly string[];
+	readonly #releaseUpdates: ReleaseUpdates | undefined;
 	readonly #serverStatus: () => Promise<ServerStatus>;
 	readonly #drain: ClientConnectionOptions["drain"];
 	readonly #subscriptionUsage: SubscriptionUsageService | undefined;
@@ -159,6 +163,7 @@ export class ClientConnection {
 		this.#notifications = options.notifications;
 		this.#features = options.features;
 		this.#serverStatus = options.serverStatus;
+		this.#releaseUpdates = options.releaseUpdates;
 		this.#drain = options.drain;
 		this.#subscriptionUsage = options.subscriptionUsage;
 		this.#requestLog = options.requestLog;
@@ -669,6 +674,12 @@ export class ClientConnection {
 					if (!this.#authorized()) return;
 					await this.#manager.artifacts.delete(request.projectId, request.artifactId);
 					this.#respond({ type: "artifacts.delete", id: request.id });
+					return;
+				}
+				case "server.updates.set": {
+					if (!this.#releaseUpdates || !this.#features.includes("release-updates")) throw new Error("Release updates are unsupported");
+					const updates = await this.#releaseUpdates.set(request);
+					this.#respond({ type: "server.updates.set", id: request.id, updates });
 					return;
 				}
 				case "server.status": {
