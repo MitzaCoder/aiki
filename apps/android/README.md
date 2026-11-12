@@ -95,6 +95,26 @@ opt-ins), 0 failures; assemble; lint **18 warnings / 0 errors**. Verification Bu
 Generation: **239 DTOs / 60 request overloads**. Root `bun test` and `bun run typecheck` pass. A full
 `--rerun-tasks` gate takes 70–110 s on this host with warm caches. The round-two figures below are history.
 
+## Remote MCP settings
+
+Backends advertising `mcp-servers` expose Settings → Backends → MCP servers.
+Add a backend-provided preset or named URL, sign in or paste a write-only token,
+refresh tools, and choose Off/Ask/Allow per tool. Tool metadata stays plain text;
+filtering and a bounded lazy list keep large catalogues compact. Project settings
+→ MCP starts disabled, with separate coordinator, workers and background roles.
+Approvals use the ordinary board question card with exact arguments.
+
+OAuth opens a Custom Tab using `harness.appOrigin` / `HARNESS_APP_ORIGIN` as the
+backend-allowlisted web origin, not the backend socket origin. Discovery and hello
+do not report a per-backend web origin; the backend operator must allow the build
+origin or sign-in reports an error. The manifest handles the exact HTTPS path
+`/mcp/oauth/callback` on that configured host, using the same user-selected App
+Link mechanism as project links. No verified-domain claim is made. Completion
+matches OAuth state to the initiating in-memory backend session and reuses its
+client. Paste callback URL is available when the browser cannot return. Cancel
+and progress follow `mcp.oauth.changed`. No token, callback or pending flow is
+saved on the phone; after process death, start sign-in again.
+
 ## Push notifications (FCM) and project links
 
 Firebase is optional at build time. The build reads the app's `google-services.json` from **outside the repo**, named

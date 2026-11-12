@@ -68,6 +68,7 @@ fun GeneralSettingsScreen(
                     backend == null -> NotFound("Unknown backend", "This device has no backend with that address. Add it under Backends.")
                     page.accounts -> AccountsPage(backend)
                     page.devices -> DevicesPage(repository, backend)
+                    page.mcp -> McpServersPage(backend)
                     else -> BackendPage(repository, backend, navigator)
                 }
             }
@@ -131,6 +132,7 @@ private fun ProjectSettingsContent(context: ProjectScreenContext, section: Proje
                 ProjectSection.Tickets -> project.links?.let { TicketsSection(context, it) }
                 ProjectSection.Cache -> PromptCacheSection(context.backend, project)
                 ProjectSection.Storage -> StorageSection(context.backend, project.id)
+                ProjectSection.Mcp -> McpProjectSection(context.backend, project.id)
             }
         }
     }

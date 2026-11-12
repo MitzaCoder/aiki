@@ -35,6 +35,7 @@ class BackendSession(val config: BackendConfig, val client: HarnessClient) : Clo
             io.github.mitzacoder.aiki.features.terminal.TerminalDeck(context.applicationContext, config.key, client, it).also { deck -> terminalDeck = deck } }
     /** The release, last deploy and disks the backend reports (`server-status`), shared by the header, banners and Backends. */
     val serverStatus = ServerStatusStore(client, scope)
+    val mcp = io.github.mitzacoder.aiki.features.settings.McpSession(client, scope)
     init {
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
             client.events.collect { event ->

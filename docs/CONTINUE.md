@@ -1,5 +1,57 @@
 # Continue
 
+## T141: MCP stack integrated with pending main
+
+All nine MCP changes are rebased onto `msmyzxkq` (chat attachments, standalone
+binary, release notices/pilot channel and limit resets). Resolved the Android
+stage's existing docs conflicts, retaining every continuation section newest-first
+and both client descriptions. Rebase conflicts were limited to the research
+continuation, core legacy feature exclusions, server dependency/runtime additions,
+and Android MainActivity. Keep both chat-files and MCP capabilities, stores and
+initialization. Android restores shared files while keeping OAuth callbacks out
+of saved state; both composition locals and callback errors remain wired.
+No settings navigation or composer edits were needed, and no visible behavior
+was redesigned. Generated Kotlin was regenerated rather than manually merged;
+Bun install left the merged lockfile unchanged. Existing UI proof still applies.
+
+Sequential tip gates: root 2,498 tests / 92,008 assertions (217 files, no rerun);
+typecheck; web check zero errors/warnings, 1,057 tests / 79,727 assertions (90
+files), build; protocol --check 382 DTOs / 105 overloads. Android 908 JVM tests
+across 123 suites, two opt-in skips, zero failures/errors; assembly and lint pass
+(zero errors, 49 warnings). Android's first invocation exceeded the four-minute
+tool timeout after tests/assembly; the cached rerun completed in 2m49s. Gradle
+daemons stopped. Public private-denylist/generic/Gitleaks checks pass using the
+existing operator file externally (the default local file is absent). No product
+failure required a fix. No push, bookmark move, deployment or new UI behavior.
+
+## T146: Android remote MCP settings
+
+Capability-gated Backend settings → MCP servers now supports presets/custom URLs,
+write-only token connect, OAuth, refresh/disconnect/confirmed removal, status and
+compact searchable plain-text tool policy rows. Project settings → MCP defaults
+off with coordinator/workers/background roles. No protocol or server changes.
+OAuth uses the configured BuildConfig.APP_ORIGIN and exact callback app-link path;
+hello/discovery has no per-backend web origin, so allowlist mismatches are explained.
+Callback state maps only to the initiating in-memory backend client. No token,
+callback or pending flow is persisted by the app. Process death requires a new flow.
+
+Emulator-only light/dark before/after artifacts cover both settings areas, list,
+add, details/tools, project roles, pending/connected OAuth and long approval JSON.
+Recordings prove add → token → 71 tools → policy Off, and synthetic Custom Tab →
+Copy callback → native Paste callback URL → connected. App-link browser return is
+implemented but not exercised; paste recovery is proven, including activity theme
+recreation during the pending flow. Existing approval wrapping needs no change.
+
+Sequential gates: Android 897 JVM tests (two opt-in skips), debug assembly and lint
+(zero errors, 49 warnings); root typecheck; private-denylist/generic/Gitleaks pass.
+The default guard lacks this workspace's ignored denylist; the existing operator
+file was supplied explicitly without reading its contents. No root test run was
+needed for this Android/docs-only change. Gradle daemons and owned fixture/emulator
+processes are stopped. No real account, physical device, push, main move or deploy.
+The temporary demo uses createSetup, fakeMcpServer/notionSizedTools and fakeMcpOAuth;
+its fake issuer is reverse-forwarded to a synthetic consent/Copy page for the phone.
+The task's proof report retains the replay scripts and artifact index.
+
 ## T145: OAuth settings integration
 
 Resolved stage-2 rebase conflicts in the two earlier web changes, preserving the

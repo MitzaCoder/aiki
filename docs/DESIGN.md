@@ -691,6 +691,21 @@ Project settings → MCP starts every server and role disabled; coordinator, wor
 and background threads are independent choices saved on change. Existing board
 questions carry exact-argument approvals, including long JSON on phone screens.
 
+Android exposes capability-gated Backend settings → MCP servers and Project
+settings → MCP. Backend screens list status/tool counts, presets or URL setup,
+write-only token entry, OAuth, refresh/disconnect/removal, and compact searchable
+plain-text tool rows with Off/Ask/Allow. Project enablement and role choices
+start off. Server descriptions are untrusted text, never Markdown or links.
+Android starts OAuth against BuildConfig.APP_ORIGIN (the configured web origin);
+the backend still validates its allowlist. There is no per-backend web-origin
+field in discovery/hello: an origin mismatch is explained, not guessed from the
+socket URL. The exact /mcp/oauth/callback HTTPS app link uses the existing
+configured app-link host. State maps only to the initiating in-memory backend
+session; callback completion reuses its client. Custom Tabs return through that
+link when the OS permits, with Paste callback URL as recovery. Pending flows and
+callback URLs are never saved in Android state or storage; process death requires
+starting sign-in again. OAuth status broadcasts update progress and cancellation.
+
 Stage 2 adds server-owned OAuth flows through the allowlisted web origin at
 `/mcp/oauth/callback`, with a pasted redirect fallback for unpaired browsers.
 Pending flows are one-use, ten-minute, URL/device-bound state and PKCE; grants
@@ -698,7 +713,7 @@ and dynamic registrations remain in URL-bound `mcp:<id>` credentials. pi-mcp
 owns discovery, issuer checks, PKCE and serialized refresh; Aiki owns routing,
 expiry, cancellation, status broadcasts and secret-safe errors. Invalid grants
 require sign-in, not automatic browser launches. Notion supports OAuth or an MCP
-token. Android app-link interception follows separately.
+token. Web and Android settings and Android app-link interception are described above.
 
 Ask requests remain answerable for seven days. The exact-call approve-once
 window lasts fifteen minutes from the answer, not from the question. Expired or

@@ -36,6 +36,7 @@ enum class ProjectSection(override val id: String, override val label: String, o
     Tickets("tickets", "Tickets and pull requests", "Jira site, prefixes, repositories", SettingsIcon.Ticket),
     Cache("cache", "Prompt cache", "How long Claude keeps a conversation", SettingsIcon.DatabaseZap),
     Storage("storage", "Storage", "Finished workspaces and disk use", SettingsIcon.HardDrive),
+    Mcp("mcp", "MCP", "Remote servers and project roles", SettingsIcon.Server),
 }
 
 fun generalSectionFor(id: String?): GeneralSection? = GeneralSection.entries.firstOrNull { it.id == id }
@@ -54,6 +55,7 @@ fun projectSectionAvailable(section: ProjectSection, has: ProjectSectionSupport)
     ProjectSection.Tickets -> has.links
     ProjectSection.Cache -> has.longPromptCache
     ProjectSection.Storage -> has.supports("storage")
+    ProjectSection.Mcp -> has.supports(MCP_FEATURE)
 }
 
 /** The tone of a status chip (web `StatusChip`). */
@@ -74,7 +76,7 @@ fun projectChips(coordinatorModelSet: Boolean): Map<ProjectSection, SectionChip>
 
 /** Where a General settings screen sits: a section (null is the list), a backend's own page, or its Accounts page. */
 @Serializable
-data class GeneralPage(val section: GeneralSection? = null, val backendKey: String? = null, val accounts: Boolean = false, val devices: Boolean = false)
+data class GeneralPage(val section: GeneralSection? = null, val backendKey: String? = null, val accounts: Boolean = false, val devices: Boolean = false, val mcp: Boolean = false)
 
 /**
  * The screen one step up, for the back button: Accounts to its backend, a backend to the Backends list, a section to the
@@ -82,7 +84,7 @@ data class GeneralPage(val section: GeneralSection? = null, val backendKey: Stri
  */
 fun generalParent(page: GeneralPage): GeneralPage? = when {
     page.section == null -> null
-    page.backendKey != null && (page.accounts || page.devices) -> GeneralPage(GeneralSection.Backends, page.backendKey)
+    page.backendKey != null && (page.accounts || page.devices || page.mcp) -> GeneralPage(GeneralSection.Backends, page.backendKey)
     page.backendKey != null -> GeneralPage(GeneralSection.Backends)
     else -> GeneralPage()
 }

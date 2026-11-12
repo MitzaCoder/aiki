@@ -137,7 +137,7 @@ fun generalSettingsLink(parts: List<String>, backends: List<BackendConfig>): App
     val backendSegment = parts.getOrNull(1)
     if (section == GeneralSection.Backends && backendSegment != null) {
         val backend = resolveBackend(backendSegment, backends) ?: return AppLink.UnknownBackend(backendSegment)
-        return AppLink.Open(listOf(Destination.Settings(GeneralPage(section, backend.key, accounts = parts.getOrNull(2) == "accounts"))))
+        return AppLink.Open(listOf(Destination.Settings(GeneralPage(section, backend.key, accounts = parts.getOrNull(2) == "accounts", mcp = parts.getOrNull(2) == "mcp"))))
     }
     return AppLink.Open(listOf(Destination.Settings(GeneralPage(section))))
 }

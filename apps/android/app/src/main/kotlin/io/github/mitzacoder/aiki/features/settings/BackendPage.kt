@@ -63,6 +63,10 @@ internal fun BackendPage(repository: HarnessRepository, backend: BackendSession,
                 chip = if (providers.isNotEmpty()) ({ StatusChip("$ready of ${providers.size} ready", if (ready > 0) ChipTone.Ok else ChipTone.Warn) }) else null,
             )
         }
+        if (connection.supports(MCP_FEATURE)) SettingsGroup {
+            LinkRow("MCP servers", "Remote tools, sign-in and tool policies.",
+                onClick = { navigator.go(Destination.Settings(GeneralPage(GeneralSection.Backends, backend.config.key, mcp = true)), split) })
+        }
         if (connection.supports("memory-maintenance")) MemoryMaintenanceGroup(backend)
         SettingsGroup(title = "Remove", danger = true) {
             SettingsRow("Remove this backend", hint = "Forgets it on this device. Its projects and data stay on the server.", control = RowControl.Auto) {

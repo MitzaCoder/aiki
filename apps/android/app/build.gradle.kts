@@ -227,6 +227,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:5.5.0")
     implementation("com.google.firebase:firebase-messaging:26.0.1")
     implementation("com.google.firebase:firebase-auth:25.0.0")
+    implementation("androidx.browser:browser:1.9.0")
     implementation("androidx.credentials:credentials:1.6.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.6.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.2.1")

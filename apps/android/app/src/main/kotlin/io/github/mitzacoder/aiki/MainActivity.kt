@@ -29,6 +29,7 @@ class PairingIntentState : ViewModel() {
 
 class MainActivity : ComponentActivity() {
     private var connectPayload by mutableStateOf<String?>(null)
+    private var mcpCallbackError by mutableStateOf(false)
     private val pairingIntent by viewModels<PairingIntentState>()
     private val sharedFiles by viewModels<io.github.mitzacoder.aiki.features.chat.SharedFilesState>()
     private var pairingLink: String?
@@ -47,7 +48,9 @@ class MainActivity : ComponentActivity() {
                 sharedFiles.uris = savedInstanceState.getStringArrayList("shared-files").orEmpty().map(android.net.Uri::parse)
                 sharedFiles.target = savedInstanceState.getString("shared-target")?.let { runCatching { io.github.mitzacoder.aiki.data.wireJson.decodeFromString(io.github.mitzacoder.aiki.navigation.Destination.Chat.serializer(), it) }.getOrNull() }
             }
-        } else readIntent(intent)
+        }
+        // Callback intents are never restored from saved state, including after process death.
+        if (savedInstanceState == null || intent?.data?.path == io.github.mitzacoder.aiki.features.settings.MCP_CALLBACK_PATH) readIntent(intent)
         val repository = (application as HarnessApplication).repository
         val notifications = notifications
         val projectMute = CenterProjectMute(notifications)
@@ -67,6 +70,12 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
                 val codeWrap = remember(settings.codeWrap) { CodeWrapChoice(settings.codeWrap) { stored -> scope.launch { repository.setCodeWrap(stored) } } }
                 CompositionLocalProvider(io.github.mitzacoder.aiki.features.chat.LocalSharedFiles provides sharedFiles, LocalNotificationCenter provides notifications, LocalProjectMute provides projectMute, LocalCodeWrap provides codeWrap) {
+                    if (mcpCallbackError) androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { mcpCallbackError = false },
+                        title = { androidx.compose.material3.Text("Sign-in could not return") },
+                        text = { androidx.compose.material3.Text("No matching MCP sign-in remains on this device. Start sign-in again on the original backend.") },
+                        confirmButton = { androidx.compose.material3.TextButton(onClick = { mcpCallbackError = false }) { androidx.compose.material3.Text("OK") } },
+                    )
                     io.github.mitzacoder.aiki.features.settings.DeviceApprovalDialogs(repository)
                     pairingLink?.let { link -> io.github.mitzacoder.aiki.features.settings.PairDeviceDialog(repository, link) { pairingLink = null; intent?.data = null } }
                     HarnessApp(repository, connectPayload, onConnectHandled = {
@@ -117,6 +126,13 @@ class MainActivity : ComponentActivity() {
         if (intent == null) return
         if (sharedFiles.receive(intent)) { intent.action = Intent.ACTION_MAIN; intent.removeExtra(Intent.EXTRA_STREAM); intent.clipData = null; return }
         val data = intent.dataString
+        if (data != null && runCatching { java.net.URI(data).path == io.github.mitzacoder.aiki.features.settings.MCP_CALLBACK_PATH }.getOrDefault(false)) {
+            intent.data = null // Never persist the one-time callback in Intent/saved state.
+            val repository = (application as HarnessApplication).repository
+            val originating = repository.sessions.value.singleOrNull { it.mcp.accepts(data) }
+            if (originating == null) mcpCallbackError = true else originating.mcp.receiveCallback(data)
+            return
+        }
         if (data != null && io.github.mitzacoder.aiki.features.notifications.relay.validRelayEmailLink(
             data, BuildConfig.RELAY_EMAIL_LINK_DOMAIN)) {
             (application as HarnessApplication).relayEmailLink = data
