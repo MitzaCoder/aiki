@@ -37,6 +37,8 @@
 	import * as Popover from '#lib/components/ui/popover/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import Composer from '#lib/components/chat/Composer.svelte';
+	import { provideFileDownload } from '#lib/chat/file-scope.js';
+	import type { ChatFile } from '@aiki/protocol';
 	import { draftKey } from '#lib/drafts.js';
 	import { draftChannel } from '#lib/draft-channel.js';
 	import EmptyState from '#lib/components/chat/EmptyState.svelte';
@@ -106,6 +108,16 @@
 	};
 
 	const project = $derived(backend.projects.find((entry) => entry.id === projectId));
+	provideFileDownload(async file => {
+		const response = await backend.attachmentRequest(file.url);
+		const url = URL.createObjectURL(await response.blob());
+		const link = document.createElement('a'); link.href = url; link.download = file.name; link.click();
+		setTimeout(() => URL.revokeObjectURL(url), 60_000);
+	});
+	async function uploadFile(file: File): Promise<ChatFile> {
+		const query = new URLSearchParams({ name: file.name, ...(threadId ? { threadId } : {}) });
+		return (await backend.attachmentRequest(`/attachments/${projectId}?${query}`, { method: 'POST', headers: { 'content-type': file.type || 'application/octet-stream' }, body: file })).json();
+	}
 	provideArtifactScope(() => ({ client: backend.client, projectId, available: backend.supports('artifacts') }));
 
 	let session = $state<ChatSession | undefined>(undefined);
@@ -119,7 +131,7 @@
 	let sendError = $state<string | undefined>(undefined);
 	let modelError = $state<string | undefined>(undefined);
 	let transcript = $state<TranscriptHandle | undefined>(undefined);
-	let composer = $state<{ addQuote(quote: string): void; restore(text: string, taskId?: string, images?: HeldImage[]): void } | undefined>(undefined);
+	let composer = $state<{ addQuote(quote: string): void; restore(text: string, taskId?: string, images?: HeldImage[], files?: ChatFile[]): void } | undefined>(undefined);
 	/** The right sidebar: open, which tab, and whether it fills the chat area. */
 	let sidebarOpen = $state(false);
 	let sidebarTab = $state<SidebarTab>('info');
@@ -395,7 +407,7 @@
 			...(threadId === undefined ? {} : { threadId }),
 			supported: () => backend.supports('queued-inputs'),
 			busy: () => busy,
-			restore: (text, task, images) => composer?.restore(text, task, images),
+			restore: (text, task, images, files) => composer?.restore(text, task, images, files),
 			notify: (message) => (sendError = message)
 		});
 		waiting = held;
@@ -669,9 +681,9 @@
 		composer?.addQuote(text);
 	}
 
-	async function send(text: string, taskId?: string, images: HeldImage[] = []): Promise<boolean> {
+	async function send(text: string, taskId?: string, images: HeldImage[] = [], files: ChatFile[] = []): Promise<boolean> {
 		const body = text.trim();
-		if (body.length === 0 && images.length === 0) return true;
+		if (body.length === 0 && images.length === 0 && files.length === 0) return true;
 		if (!canChat) {
 			sendError = 'Choose a coordinator model in the composer before sending.';
 			return false;
@@ -700,10 +712,10 @@
 			};
 			if (waiting?.supported === true) {
 				// A failure stays on the message's own bubble with its text and a Retry, not in the composer.
-				await waiting.send(body, taskId, options, images);
+				await waiting.send(body, taskId, { ...options, fileIds: files.map(file => file.id) }, images, files);
 				return true;
 			}
-			await backend.client.submit(projectId, inputContent(body, images), { ...options, ...(taskId === undefined ? {} : { taskId }) });
+			await backend.client.submit(projectId, inputContent(body, images), { ...options, fileIds: files.map(file => file.id), ...(taskId === undefined ? {} : { taskId }) });
 			return true;
 		} catch (error) {
 			sendError = errorText(error);
@@ -1081,6 +1093,7 @@
 							onThinkingChange={changeThinkingLevel}
 							onWorkerModelChange={changeWorkerModel}
 							onWorkerThinkingChange={changeWorkerThinking}
+							uploadFile={backend.supports('chat-files-v1') ? uploadFile : undefined}
 							onsend={send}
 							onstop={stop}
 						/>

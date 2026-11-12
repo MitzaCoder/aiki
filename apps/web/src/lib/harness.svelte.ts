@@ -123,6 +123,19 @@ export class BackendConnection {
 	memoryMaintenanceError = $state<string | undefined>(undefined);
 	lastError = $state<string | undefined>(undefined);
 
+	/** Attachment bytes always travel to this authenticated backend, never a URL supplied by a file. */
+	async attachmentRequest(path: string, init: RequestInit = {}): Promise<Response> {
+		if (!/^\/attachments\//.test(path) || path.startsWith('//')) throw new Error("Invalid attachment URL");
+		const token = await this.#deviceAuth.prepare();
+		const response = await fetch(new URL(path, this.url), {
+			...init, redirect: "error", cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer",
+			headers: { ...init.headers, ...(token ? { authorization: `Bearer ${token}` } : {}) },
+			signal: AbortSignal.timeout(120_000),
+		});
+		if (!response.ok) throw new Error(await response.text());
+		return response;
+	}
+
 	readonly #deviceAuth: BackendDeviceAuth;
 	authBackendId = $state<string | undefined>(undefined);
 	authMode = $state<string | undefined>(undefined);

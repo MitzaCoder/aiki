@@ -9,7 +9,7 @@
  */
 import type { HarnessClient, SubmitOptions } from "@aiki/client";
 import { imageCountLabel, inputContent, type HeldImage } from "./chat/images.ts";
-import type { ConversationView, EntryRecord, QueuedInput } from "@aiki/protocol";
+import { splitFileMessage, type ChatFile, type ConversationView, type EntryRecord, type QueuedInput } from "@aiki/protocol";
 import {
 	UNLISTED_GRACE_MS,
 	departures,
@@ -32,7 +32,7 @@ export type WaitingDeps = {
 	/** Whether a run is going now. */
 	busy: () => boolean;
 	/** Put text, and the images that were with it, back in the composer. */
-	restore: (text: string, taskId?: string, images?: HeldImage[]) => void;
+	restore: (text: string, taskId?: string, images?: HeldImage[], files?: ChatFile[]) => void;
 	/** Tell the user something about an action. */
 	notify: (message: string) => void;
 	now?: () => number;
@@ -88,12 +88,14 @@ export class WaitingMessages {
 		taskId: string | undefined,
 		options: Omit<SubmitOptions, "requestId" | "taskId">,
 		images: readonly HeldImage[] = [],
+		files: readonly ChatFile[] = [],
 	): Promise<void> {
 		const requestId = `submit-${crypto.randomUUID()}`;
 		const now = this.#deps.now ?? Date.now;
 		const send: LocalSend = {
 			requestId,
 			text,
+			...(files.length === 0 ? {} : { files: [...files] }),
 			...(taskId === undefined ? {} : { taskId }),
 			...(images.length === 0 ? {} : { images: [...images] }),
 			state: "sending",
@@ -178,7 +180,8 @@ export class WaitingMessages {
 	#restoreMessage(message: WaitingMessage): void {
 		const send = this.sends.find((entry) => sendKey(entry.requestId) === message.key);
 		const images = message.images ?? send?.images ?? [];
-		this.#deps.restore(message.text, message.taskId, [...images]);
+		const parsed = splitFileMessage(message.text);
+		this.#deps.restore(parsed.text, message.taskId, [...images], message.files ?? send?.files ?? parsed.files);
 		const missing = (message.imageCount ?? 0) - images.length;
 		if (missing > 0) this.#deps.notify(`The ${imageCountLabel(missing)} of that message cannot be taken back; attach ${missing === 1 ? "it" : "them"} again.`);
 	}

@@ -7,7 +7,7 @@
  * becomes the real user entry (matched by submission ID, never by text). Pure: the screen's `WaitingMessages` holds the
  * state and the requests.
  */
-import type { EntryRecord, QueuedInput } from "@aiki/protocol";
+import { fileMessageText, splitFileMessage, type ChatFile, type EntryRecord, type QueuedInput } from "@aiki/protocol";
 import { parseTaskReference, withTaskReference } from "@aiki/client";
 import type { HeldImage } from "./chat/images.ts";
 import { isTypedInput, type TranscriptItem, type WaitingInfo } from "./transcript.ts";
@@ -16,6 +16,7 @@ import { isTypedInput, type TranscriptItem, type WaitingInfo } from "./transcrip
 export type LocalSend = {
 	/** The deduplication key of the request, reused by a retry so a message the server did admit is not sent twice. */
 	requestId: string;
+	files?: ChatFile[];
 	/** What was typed, without the task reference. */
 	text: string;
 	taskId?: string;
@@ -40,6 +41,7 @@ export type LocalSend = {
 export type WaitingMessage = {
 	/** The element key; the entry it becomes is built with the same one. */
 	key: string;
+	files?: ChatFile[];
 	state: WaitingInfo["state"];
 	/** The text as typed, without the task reference. */
 	text: string;
@@ -73,6 +75,7 @@ function queuedMessage(item: QueuedInput, send: LocalSend | undefined): WaitingM
 		key: send === undefined ? inputKey(item.id) : sendKey(send.requestId),
 		state: "waiting",
 		text: item.text,
+		...(send?.files === undefined ? {} : { files: send.files }),
 		...(item.taskId === undefined ? {} : { taskId: item.taskId }),
 		...(send?.images === undefined ? {} : { images: send.images }),
 		...(item.images === undefined ? {} : { imageCount: item.images }),
@@ -117,6 +120,7 @@ export function waitingMessages(args: {
 		const base = {
 			key: sendKey(send.requestId),
 			text: send.text,
+			...(send.files === undefined ? {} : { files: send.files }),
 			...(send.taskId === undefined ? {} : { taskId: send.taskId }),
 			...(send.images === undefined ? {} : { images: send.images, imageCount: send.images.length }),
 			at: send.at,
@@ -142,7 +146,8 @@ export function waitingMessages(args: {
 
 /** The text of the transcript's own copy of a message: with its task reference, as the server wrote it. */
 function rawText(message: WaitingMessage): string {
-	return message.taskId === undefined ? message.text : withTaskReference(message.taskId, message.text);
+	const text = message.files?.length && splitFileMessage(message.text).files.length === 0 ? message.text + fileMessageText(message.files) : message.text;
+	return message.taskId === undefined ? text : withTaskReference(message.taskId, text);
 }
 
 /** Add the waiting messages to the end of a transcript as user items in their waiting state. */

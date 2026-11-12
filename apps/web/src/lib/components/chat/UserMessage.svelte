@@ -3,6 +3,8 @@
 	import CopyButton from '#lib/components/CopyButton.svelte';
 	import { clockTime, fullTime } from '#lib/chat/time.js';
 	import ImageStrip from './ImageStrip.svelte';
+	import FileChips from './FileChips.svelte';
+	import { splitFileMessage } from '@aiki/protocol';
 	import { dataUrl, imageCountLabel } from '#lib/chat/images.js';
 	import type { TranscriptImage, WaitingInfo } from '#lib/transcript.js';
 	import { waitingStatus } from '#lib/waiting.js';
@@ -65,7 +67,8 @@
 		wasWaiting = isWaiting;
 	});
 
-	const reference = $derived(parseTaskReference(raw));
+	const attachedFiles = $derived(splitFileMessage(raw));
+	const reference = $derived(parseTaskReference(attachedFiles.text));
 	const text = $derived(reference.text);
 	const parts = $derived(splitQuotes(text));
 </script>
@@ -74,6 +77,9 @@
 	class="group flex animate-rise flex-col items-end gap-1.5 motion-reduce:animate-none"
 	data-waiting={waiting?.state}
 >
+	{#if attachedFiles.files.length > 0}
+		<div class="max-w-[90%]"><FileChips files={attachedFiles.files} /></div>
+	{/if}
 	{#if images.length > 0}
 		<div class="flex max-w-[85%] justify-end transition-opacity {waiting !== undefined ? 'opacity-70' : ''}" data-message-images>
 			<ImageStrip

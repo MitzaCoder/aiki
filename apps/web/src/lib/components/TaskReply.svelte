@@ -5,6 +5,7 @@
 	import { draftKey } from '#lib/drafts.js';
 	import { draftChannel } from '#lib/draft-channel.js';
 	import type { BackendConnection } from '#lib/harness.svelte.js';
+	import type { ChatFile } from '@aiki/protocol';
 
 	/** Keyed by task in TaskSheet: its draft and send result cannot leak to the next opened task. */
 	let { backend, projectId, taskId }: { backend: BackendConnection; projectId: string; taskId: string } = $props();
@@ -12,18 +13,21 @@
 	let sent = $state(false);
 	let problem = $state<string | undefined>(undefined);
 
-	async function send(text: string, _pickedTask?: string, images: HeldImage[] = []): Promise<boolean> {
+	async function send(text: string, _pickedTask?: string, images: HeldImage[] = [], files: ChatFile[] = []): Promise<boolean> {
 		problem = undefined;
 		sent = false;
 		try {
 			// The task's own draft is cleared by Composer. Never clear the coordinator's separate chat draft.
-			await backend.client.submit(projectId, inputContent(text, images), { whenBusy: 'steer', taskId, keepDraft: true });
+			await backend.client.submit(projectId, inputContent(text, images), { whenBusy: 'steer', taskId, keepDraft: true, fileIds: files.map(file => file.id) });
 			sent = true;
 			return true;
 		} catch (error) {
 			problem = error instanceof Error ? error.message : String(error);
 			return false;
 		}
+	}
+	async function uploadFile(file: File): Promise<ChatFile> {
+		return (await backend.attachmentRequest(`/attachments/${projectId}?${new URLSearchParams({ name: file.name })}`, { method: 'POST', headers: { 'content-type': file.type || 'application/octet-stream' }, body: file })).json();
 	}
 </script>
 
@@ -41,6 +45,7 @@
 		onModelChange={() => {}}
 		onThinkingChange={() => {}}
 		onstop={() => {}}
+		uploadFile={backend.supports('chat-files-v1') ? uploadFile : undefined}
 		onsend={send}
 	/>
 	<p class="mt-1.5 truncate px-2 text-xs text-(--chat-fg-subtle)" title="Replies go to the coordinator about {taskId}.">

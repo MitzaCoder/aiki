@@ -8,6 +8,7 @@ import { dragHasFiles, imageFilesOf, pasteIsImages } from "./images.ts";
 
 export interface ImageDropOptions {
 	images: MessageImages;
+	onfiles?: (files: File[]) => Promise<void>;
 	/** Nothing is taken while true (the box cannot send). */
 	disabled?: boolean;
 	onover?: (over: boolean) => void;
@@ -18,7 +19,10 @@ export function imageDrop(node: HTMLElement, initial: ImageDropOptions): { updat
 	let depth = 0;
 
 	const paste = (event: ClipboardEvent): void => {
-		if (options.disabled === true || !pasteIsImages(event.clipboardData)) return;
+		if (options.disabled === true) return;
+		const files = Array.from(event.clipboardData?.files ?? []);
+		if (options.onfiles && files.length > 0) { event.preventDefault(); void options.onfiles(files); return; }
+		if (!pasteIsImages(event.clipboardData)) return;
 		event.preventDefault();
 		void options.images.add(imageFilesOf(event.clipboardData));
 	};
@@ -43,6 +47,7 @@ export function imageDrop(node: HTMLElement, initial: ImageDropOptions): { updat
 		event.preventDefault();
 		depth = 0;
 		options.onover?.(false);
+		if (options.onfiles) { void options.onfiles(Array.from(event.dataTransfer?.files ?? [])); return; }
 		const files = imageFilesOf(event.dataTransfer);
 		if (files.length === 0) options.images.error = "Only images can be attached";
 		else void options.images.add(files);

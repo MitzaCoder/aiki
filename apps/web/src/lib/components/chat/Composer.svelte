@@ -16,6 +16,8 @@
 	import { MessageImages } from '#lib/chat/message-images.svelte.js';
 	import type { HeldImage } from '#lib/chat/images.js';
 	import AttachButton from './AttachButton.svelte';
+	import FileChips from './FileChips.svelte';
+	import { INPUT_FILE_MAX_BYTES, INPUT_MAX_FILES, isInputImageMimeType, type ChatFile } from '@aiki/protocol';
 	import ImageStrip from './ImageStrip.svelte';
 	import QuoteChip from './QuoteChip.svelte';
 	import TaskChip from './TaskChip.svelte';
@@ -60,6 +62,7 @@
 		onWorkerModelChange,
 		onWorkerThinkingChange,
 		onsend,
+		uploadFile,
 		onstop
 	}: {
 		models: readonly ModelInfo[];
@@ -100,7 +103,8 @@
 		onWorkerModelChange?: (model: ModelInfo | null) => void;
 		onWorkerThinkingChange?: (level: ThinkingLevel | null) => void;
 		/** Resolves false when the message was not accepted, so the text and images are kept. */
-		onsend: (text: string, taskId?: string, images?: HeldImage[]) => Promise<boolean>;
+		onsend: (text: string, taskId?: string, images?: HeldImage[], files?: ChatFile[]) => Promise<boolean>;
+		uploadFile?: (file: File) => Promise<ChatFile>;
 		onstop: () => void;
 	} = $props();
 
@@ -118,6 +122,22 @@
 	/** The images of the message being written; the draft holds them as references (`attachments`). */
 	const images = new MessageImages({ fetch: channel === undefined ? undefined : (id) => channel.readAttachment(id) });
 	images.setRefs(restored?.attachments ?? []);
+	let files = $state<ChatFile[]>([]);
+	let uploading = $state(0);
+	let fileError = $state<string | undefined>();
+	async function addFiles(chosen: File[]): Promise<void> {
+		fileError = undefined;
+		for (const file of chosen) {
+			if (files.length + images.count >= INPUT_MAX_FILES) { fileError = 'A message holds at most 8 attachments'; break; }
+			if (isInputImageMimeType(file.type)) { await images.add([file]); continue; }
+			if (file.size > INPUT_FILE_MAX_BYTES) { fileError = `${file.name}: each attachment must be at most 50 MB`; continue; }
+			if (!uploadFile) { fileError = 'This backend does not support file attachments'; break; }
+			uploading += 1;
+			try { const uploaded = await uploadFile(file); files = [...files, uploaded]; }
+			catch (e) { fileError = `${file.name}: ${e instanceof Error ? e.message : String(e)}`; }
+			finally { uploading -= 1; }
+		}
+	}
 	let dragging = $state(false);
 	let savedJson = JSON.stringify(restored ?? { text: '', quotes: [] });
 	let focused = false;
@@ -199,7 +219,7 @@
 	const attached = $derived(taskId === undefined || tasks === undefined ? undefined : (tasks.find((task) => task.id === taskId) ?? { id: taskId, title: '', status: 'todo' as const }));
 	const pickerOpen = $derived(tasks !== undefined && (listOpen || trigger !== undefined));
 	const choices = $derived(tasks === undefined ? [] : pickerChoices(tasks, trigger?.query ?? ''));
-	const canSend = $derived(!sending && !disabled && images.ready && (text.trim().length > 0 || quotes.length > 0 || images.count > 0));
+	const canSend = $derived(!sending && !disabled && uploading === 0 && files.length + images.count <= INPUT_MAX_FILES && images.ready && (text.trim().length > 0 || quotes.length > 0 || images.count > 0 || files.length > 0));
 	/** The coordinator's model, when it is known not to read images: the pictures would reach it as a placeholder. */
 	const blindModel = $derived.by(() => {
 		if (!showModelPicker || model === null || images.count === 0) return false;
@@ -228,10 +248,12 @@
 	}
 
 	/** Put a message taken back from the queue in front of what is being written; its task too when none is attached. */
-	export function restore(message: string, task?: string, held: readonly HeldImage[] = []): void {
+	export function restore(message: string, task?: string, held: readonly HeldImage[] = [], restoredFiles: readonly ChatFile[] = []): void {
 		text = text.trim().length === 0 ? message : `${message}\n\n${text}`;
 		if (task !== undefined && taskId === undefined) taskId = task;
 		images.restore(held);
+		files = [...restoredFiles.filter(file => !files.some(held => held.id === file.id)), ...files];
+		if (files.length + images.count > INPUT_MAX_FILES) fileError = 'A message holds at most 8 attachments. Remove files before sending.';
 		requestAnimationFrame(() => {
 			textarea?.focus();
 			autosize();
@@ -307,6 +329,8 @@
 		const sentTask = attached?.id;
 		const sentQuotes = quotes;
 		const sentImages = images.held();
+		const sentFiles = files;
+		files = [];
 		text = '';
 		taskId = undefined;
 		quotes = [];
@@ -320,7 +344,7 @@
 		sync?.flush();
 		try {
 			// On success the draft is already gone: emptying the fields above saved an empty draft.
-			if (!(await onsend(messageWithQuotes(sentQuotes, sent), sentTask, sentImages))) {
+			if (!(await onsend(messageWithQuotes(sentQuotes, sent), sentTask, sentImages, sentFiles))) {
 				// This composer may be gone (the user went to another chat): put the message back in its chat's draft, unless
 				// something newer was typed there since.
 				if (chatKey !== undefined && isEmptyDraft(loadDraft(localStorage, chatKey))) {
@@ -335,6 +359,7 @@
 				taskId = sentTask;
 				quotes = sentQuotes;
 				images.restore(sentImages);
+				files = [...sentFiles, ...files];
 				requestAnimationFrame(autosize);
 			}
 		} finally {
@@ -383,7 +408,7 @@
 	class="composer relative rounded-[1.75rem] border border-(--chat-border) shadow-(--chat-shadow) glass transition-colors {dragging
 		? 'border-(--accent-2) ring-2 ring-(--accent-2)/40'
 		: ''}"
-	use:imageDrop={{ images, disabled, onover: (over) => (dragging = over) }}
+	use:imageDrop={{ images, disabled: disabled || sending || uploading > 0, onfiles: uploadFile ? addFiles : undefined, onover: (over) => (dragging = over) }}
 	data-drop-target={dragging ? 'over' : undefined}
 	onsubmit={(event) => {
 		event.preventDefault();
@@ -416,6 +441,11 @@
 			{/if}
 		</div>
 	{/if}
+	{#if files.length > 0}
+		<div class="px-4 pt-3"><FileChips {files} onremove={id => files = files.filter(file => file.id !== id)} /></div>
+	{/if}
+	{#if uploading > 0}<p role="status" class="px-4 pt-2 text-sm text-(--chat-fg-subtle)">Uploading attachment…</p>{/if}
+	{#if fileError}<p role="alert" class="px-4 pt-2 text-sm text-(--chat-warning)">{fileError}</p>{/if}
 	{#if images.count > 0}
 		<div class="px-4 {attached || quotes.length > 0 ? 'pt-2' : 'pt-3'}" data-composer-images>
 			<ImageStrip
@@ -484,7 +514,7 @@
 		</div>
 
 		<div class="ml-auto flex shrink-0 items-center gap-1.5">
-			<AttachButton {images} {disabled} />
+			<AttachButton {images} disabled={disabled || sending || uploading > 0} onfiles={uploadFile ? addFiles : undefined} />
 			{#if tasks !== undefined}
 				<button
 					type="button"
