@@ -142,6 +142,43 @@ checks on a `vMAJOR.MINOR.PATCH[-pilot.N]` tag and stages a draft with the tarba
 The owner attaches the locally signed APK and notices before publication; see [RELEASE.md](RELEASE.md).
 The workflow does not create tags. The CLI remembers pilot/stable independently of rollback; neither channel updates automatically.
 
+### Single-binary CI assets (installer switch is separate)
+
+CI also builds `aiki-VERSION-linux-x64`, `aiki-VERSION-linux-arm64` and
+`aiki-VERSION-darwin-arm64`, each with a sibling `.sha256`. They join the existing assets on a
+**draft**, never an automatically published release. Linux binaries require glibc; x64 uses Bun's
+baseline target. macOS signing/notarization is separate. The installer and `aiki update` still use
+the pinned-Bun source/web path above; they do not select these binaries yet.
+
+Build and smoke locally on Linux x64, without tags, GitHub releases or service management:
+
+```sh
+bun install --frozen-lockfile
+bun scripts/build-binary.ts --version v0.0.0-test.72 --target bun-linux-x64-baseline --out .preview/binaries
+bun scripts/build-binary.ts --version v0.0.0-test.72 --target bun-linux-x64-baseline --out .preview/binaries \
+  --archive .preview/binaries/aiki-v0.0.0-test.72.tar.gz --smoke
+python3 scripts/smoke-binary.py --binary .preview/binaries/aiki-v0.0.0-test.72-linux-x64 \
+  --smoke .preview/binaries/aiki-v0.0.0-test.72-linux-x64-smoke
+```
+
+The builder uses the same compiler as `bun build --compile`, a neutral staged web build, explicit
+embedded web/worker/WASM files and frozen dependencies. The smoke executable is test-only and is
+never uploaded as a release asset. Use `bun-linux-arm64` or `bun-darwin-arm64` for the other targets;
+cross-compilation alone does not establish that they run. CI smoke-tests each on its native runner.
+The smoke script uses temporary isolated paths, an empty environment and no Bun on runtime PATH.
+
+The standalone binary accepts `start`, `status`, `health-check`, `version`, `--print-config`, `pair`
+and `auth`. It defaults to loopback and required device sign-in on fresh data. Use explicit temporary
+`AIKI_DATA_DIR`, `AIKI_CONFIG_DIR`, `AIKI_AGENT_DIR`, `AIKI_CLAUDE_DIR` and HOME for experiments;
+never aim a test at an existing backend. Installer lifecycle/service/update commands still belong
+to the installed launcher, not this standalone entry.
+
+Measured locally: Linux x64 binary **122.80 MiB**, versus **410.52 MiB** for the neutral installed
+source/dependencies plus pinned Bun. Five warm startup medians were **353.1 ms** binary and
+**404.8 ms** installed Bun CLI. These are not cold-start or inference benchmarks. Full methodology,
+other target sizes, acceptance details and part-2 requirements are in
+[the binary build note](research/single-binary-build.md).
+
 ### Troubleshooting
 
 - Pilot download returns 404: check the version and asset name. `/latest` ignores pilots.

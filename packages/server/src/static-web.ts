@@ -1,4 +1,5 @@
 import { realpath, stat } from "node:fs/promises";
+import { packagedResources } from "./packaged-resources.ts";
 import { extname, resolve, sep } from "node:path";
 
 /** Only fixed loopback authorities, never a reflected Host or arbitrary same-origin URL. */
@@ -22,8 +23,10 @@ export async function serveWeb(request: Request, directory: string): Promise<Res
 			headers: { "content-type": "application/json", "cache-control": "no-store" },
 		});
 	}
-	const root = await realpath(directory);
+	const embedded = directory === "embedded" ? packagedResources.web : undefined;
+	const root = embedded ? "" : await realpath(directory);
 	async function publicFile(name: string): Promise<string | undefined> {
+		if (embedded) return Object.hasOwn(embedded, name) ? embedded[name] : undefined;
 		try {
 			const file = await realpath(resolve(root, `.${name}`));
 			if (!file.startsWith(root + sep) || !(await stat(file)).isFile()) return undefined;

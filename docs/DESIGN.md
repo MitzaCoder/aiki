@@ -41,6 +41,31 @@ JAR. The documented rebuild path permits modified-library debugging, with a sepa
 signed/identified APK. These are technical materials, not legal certification; the
 publisher still reviews the final distribution. See `docs/RELEASE.md`.
 
+## Standalone executable builds
+
+`build-binary.ts` compiles a clean neutral source/web release with pinned Bun 1.4.4. A single
+`packaged-resources.ts` boundary is replaced at build time: exact web URL/file imports, explicit
+bundled worker files, QuickJS/Photon WASM and release metadata. Dependencies are not rewritten.
+Static assets stay inside Bun's executable filesystem, with no extraction/cache race. Codemode
+keeps upstream's off-thread timeout/cancellation; Photon uses serialized disposable image workers,
+not the spike's blocking host-thread fallback. Binary entry registration covers variable OAuth
+and Bedrock loaders; source installs keep their published dependency layout.
+
+The binary's standalone CLI starts the same server/private-settings dispatcher and provides
+owner-socket status/health, auth/pair, version and print-config. Static SPA serving reuses the
+installed server's fixed loopback host/origin, path, MIME and cache rules. Implicit Bun dotenv,
+bunfig, tsconfig and package autoloading is disabled; explicit Aiki server.env loading is retained.
+Fresh state still requires device sign-in. Generic release metadata never discovers a deploy root.
+Embedded version metadata alone does not mark a standalone run as installed: release-update checks
+remain off until explicitly enabled or supplied an installed-release identity.
+
+Native standard-runner CI builds Linux x64 baseline, Linux arm64 and macOS arm64, runs isolated
+no-Bun-on-PATH production/faux acceptance and generates checksums. The existing tag-only draft
+job rechecks/downloads these beside its source/installer assets; no auto-publication is added.
+Installer/update lifecycle is deliberately unchanged until the binary-selection follow-up with
+T137. Host tools remain external. See [build measurements and limits](research/single-binary-build.md).
+
+
 ## Installed-release update notices
 
 The installed CLI passes its recorded version/channel in the private settings snapshot; `--ref` and source/deploy

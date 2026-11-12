@@ -14,8 +14,10 @@ jobs:
       # Downloaded CFT binaries have no Ubuntu AppArmor user-namespace profile. These are trusted local fixtures only.
       CHROMIUM_NO_SANDBOX: '1'
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: 1.4.4
       - name: Install pinned workspace tool
@@ -31,7 +33,7 @@ jobs:
           install -m 755 jj "$RUNNER_TEMP/bin/jj"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - name: Cache pinned headless shell archive
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ runner.tool_cache }}/aiki-headless-shell
           key: cft-linux64-157.0.8103.50-7bf0d41e424efd1d6281c4162993ab9dc5de92fac213c211614905a71c057d0f
@@ -62,19 +64,120 @@ jobs:
           install -m 755 gitleaks "$RUNNER_TEMP/bin/gitleaks"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - run: bun scripts/check-public.ts --public-ci
+  binaries:
+    needs: checks
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: bun-linux-x64-baseline
+            platform: linux-x64
+            machine: x86_64
+          - runner: ubuntu-24.04-arm
+            target: bun-linux-arm64
+            platform: linux-arm64
+            machine: aarch64
+          - runner: macos-15
+            target: bun-darwin-arm64
+            platform: darwin-arm64
+            machine: arm64
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - name: Select build identity and verify native runner
+        id: identity
+        shell: bash
+        env:
+          EXPECTED_MACHINE: ${{ matrix.machine }}
+        run: |
+          test "$(uname -m)" = "$EXPECTED_MACHINE"
+          case "$GITHUB_REF" in
+            refs/tags/*) version="$GITHUB_REF_NAME" ;;
+            *) version="v0.0.0-ci.$GITHUB_RUN_NUMBER" ;;
+          esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Build executable and test-only faux executable
+        env:
+          VERSION: ${{ steps.identity.outputs.version }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          bun scripts/build-binary.ts --version "$VERSION" --target "$TARGET" --out .preview/binaries
+          bun scripts/build-binary.ts --version "$VERSION" --target "$TARGET" --out .preview/binaries --archive ".preview/binaries/aiki-$VERSION.tar.gz" --smoke
+      - name: Verify Linux interpreter is portable
+        if: runner.os == 'Linux'
+        env:
+          VERSION: ${{ steps.identity.outputs.version }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          readelf -l ".preview/binaries/aiki-$VERSION-$PLATFORM" > .preview/binaries/elf.txt
+          case "$PLATFORM" in
+            linux-x64) grep -F '/lib64/ld-linux-x86-64.so.2' .preview/binaries/elf.txt ;;
+            linux-arm64) grep -F '/lib/ld-linux-aarch64.so.1' .preview/binaries/elf.txt ;;
+          esac
+          if grep -F '/nix/store' .preview/binaries/elf.txt; then exit 1; fi
+      - name: Native clean-environment acceptance
+        env:
+          VERSION: ${{ steps.identity.outputs.version }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          python3 scripts/smoke-binary.py --binary ".preview/binaries/aiki-$VERSION-$PLATFORM" --smoke ".preview/binaries/aiki-$VERSION-$PLATFORM-smoke" | tee .preview/binaries/smoke.log
+      - name: Keep only production executable and checksum
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: aiki-binary-${{ matrix.platform }}
+          path: |
+            .preview/binaries/aiki-${{ steps.identity.outputs.version }}-${{ matrix.platform }}
+            .preview/binaries/aiki-${{ steps.identity.outputs.version }}-${{ matrix.platform }}.sha256
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+      - name: Keep native smoke log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: aiki-smoke-${{ matrix.platform }}
+          path: .preview/binaries/smoke.log
+          if-no-files-found: ignore
+          retention-days: 7
   release:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    needs: checks
+    needs: [checks, binaries]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: 1.4.4
       - name: Build neutral source and web release
         run: bun scripts/build-release.ts --version "$GITHUB_REF_NAME" --out .preview/releases
+      - name: Download checked native executables
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: aiki-binary-*
+          merge-multiple: true
+          path: .preview/downloaded-binaries
+      - name: Verify and collect binary checksums
+        run: |
+          for platform in linux-x64 linux-arm64 darwin-arm64; do
+            file="aiki-$GITHUB_REF_NAME-$platform"
+            (cd .preview/downloaded-binaries && sha256sum --check "$file.sha256")
+            mv ".preview/downloaded-binaries/$file" ".preview/downloaded-binaries/$file.sha256" .preview/releases/
+          done
       - name: Hash installer
         run: sha256sum install.sh > .preview/releases/install.sh.sha256
       - name: Stage draft tag assets

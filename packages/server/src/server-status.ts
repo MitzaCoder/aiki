@@ -9,6 +9,7 @@
  */
 import type { ReleaseUpdateState } from "@aiki/protocol";
 import { serverSettings } from "./server-settings.ts";
+import { packagedResources } from "./packaged-resources.ts";
 import type { DeployStatus, DiskStatus, ReleaseInfo, ServerStatus } from "@aiki/protocol";
 import { existsSync, readFileSync, realpathSync, watch, type FSWatcher } from "node:fs";
 import { homedir } from "node:os";
@@ -64,6 +65,7 @@ export function resolveReleaseRoot(from: string = import.meta.dir): string {
 export function resolveDeployStatusFile(releaseRoot: string, env: Environment = serverSettings): string | null {
 	const override = env[DEPLOY_STATUS_FILE_ENV];
 	if (override !== undefined && override.trim().length > 0) return resolve(expandHome(override.trim()));
+	if (packagedResources.release) return null;
 	const real = realpathOf(releaseRoot);
 	if (basename(dirname(real)) !== "releases") return null;
 	return join(dirname(dirname(real)), DEPLOY_STATUS_FILE_NAME);
@@ -74,6 +76,7 @@ const DEPLOY_STATES: ReadonlySet<string> = new Set(["ok", "failed", "rolled_back
 
 /** The release from `RELEASE.json`, or null when there is none (running from a checkout) or it does not validate. */
 export async function readRelease(releaseRoot: string): Promise<ReleaseInfo | null> {
+	if (packagedResources.release) return packagedResources.release;
 	const raw = await readJsonQuietly(join(releaseRoot, RELEASE_FILE_NAME));
 	if (!isRecord(raw)) return null;
 	// The name is the release directory's, so a file that leaves it out still describes the release it sits in.

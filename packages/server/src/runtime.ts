@@ -15,6 +15,8 @@ import type { Conversation, ConversationView, Harness, Registry } from "@earendi
 import { Harness as HarnessImpl, LiveDoc, createRegistry } from "@earendil-works/pi-durable";
 import { AgentExecutionEnv } from "./agent-execution-env.ts";
 import { createNodePhotonImages } from "@earendil-works/pi-durable/images/node";
+import { packagedResources } from "./packaged-resources.ts";
+import { createPackagedPhotonImages } from "./binary-images.ts";
 import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite/node";
 import type { ImageProcessor } from "@earendil-works/pi-durable/tools";
 import { createCodingTools } from "@earendil-works/pi-durable/tools";
@@ -1658,7 +1660,9 @@ export class ProjectManager {
 	async #resolveImages(): Promise<ImageProcessor | undefined> {
 		if (this.#images === null) return undefined;
 		if (this.#images !== undefined) return this.#images;
-		this.#imagesPromise ??= createNodePhotonImages().catch((error: unknown) => {
+		this.#imagesPromise ??= (packagedResources.photonWorker
+			? Promise.resolve(createPackagedPhotonImages())
+			: createNodePhotonImages()).catch((error: unknown) => {
 			this.#log(`image processor unavailable, read returns images unprepared: ${errorMessage(error)}`);
 			return null;
 		});

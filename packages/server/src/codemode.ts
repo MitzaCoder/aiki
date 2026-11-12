@@ -15,7 +15,8 @@
  * another script. `models: false` leaves the model catalog, `models.classify()` and `models.generateImages()` out:
  * they are not part of this harness's tool surface.
  */
-import { CodemodeSandbox } from "@earendil-works/pi-codemode";
+import { CodemodeSandbox, loadQuickJSWasm } from "@earendil-works/pi-codemode";
+import { packagedResources } from "./packaged-resources.ts";
 import type { CodemodeNamespace } from "@earendil-works/pi-durable/codemode";
 import { createCodemodeExtension } from "@earendil-works/pi-durable/codemode";
 import type { Extension } from "@earendil-works/pi-durable";
@@ -34,7 +35,11 @@ const CODEMODE_NAMESPACES: CodemodeNamespace[] = [
 
 /** One sandbox per `ProjectManager`: a worker-thread pool shared by every project it opens, not per-project state. */
 export function createCodemodeSandbox(options?: { memoryLimitBytes?: number }): CodemodeSandbox {
-	return new CodemodeSandbox({ memoryLimitBytes: options?.memoryLimitBytes ?? DEFAULT_CODEMODE_MEMORY_LIMIT_BYTES });
+	return new CodemodeSandbox({
+		memoryLimitBytes: options?.memoryLimitBytes ?? DEFAULT_CODEMODE_MEMORY_LIMIT_BYTES,
+		...(packagedResources.quickjsWasm ? { wasm: loadQuickJSWasm(packagedResources.quickjsWasm) } : {}),
+		...(packagedResources.codemodeWorker ? { workerUrl: packagedResources.codemodeWorker } : {}),
+	});
 }
 
 /** The `codemode` extension: installed for the coordinator and every worker, and never removed for either. */

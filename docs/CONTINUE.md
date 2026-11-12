@@ -1,5 +1,27 @@
 # Continue
 
+## T72 part 1: standalone binary builds
+
+`build-binary.ts` embeds neutral web assets, separately bundled codemode/Photon workers and WASM,
+provider loader hooks and release identity; source installs retain their dependency layout. Native
+standard-runner CI covers Linux x64/arm64 and macOS arm64, checksums and clean no-Bun-on-PATH
+smokes; only successful tags add production binaries to the existing **draft** release. Action
+SHAs are pinned. No installer or update-channel change, push, tag, workflow run or main move.
+
+Local gates pass: root 2,426 tests / 91,413 assertions, typecheck, web build, private public-source /
+Gitleaks and real binary acceptance (UI serving, required auth, owner status/health, faux coordinator,
+codemode/read, shared worker, QuickJS timeout/recovery and off-thread Photon resize). Linux x64:
+122.80 MiB, warm median 353.1 ms vs installed Bun CLI 404.8 ms / 410.52 MiB. ARM64 targets compile
+but native execution awaits CI. See [measurements/limits and part-2 handoff](research/single-binary-build.md):
+installer selection/checksums/activation and lifecycle CLI integration still need coordination with T137.
+
+Rebased onto the T137 update-notice/T136 limit-reset stack, retaining both documentation additions.
+Sequential rebase gates pass: root 2,444 tests / 91,539 assertions, typecheck, web build, rebuilt
+Linux x64 production/faux smoke. Owner status/health still work; the smoke explicitly asserts
+`updates.enabled:false`, `installedVersion:null` and `available:null` without installation identity.
+The rebased x64 production binary is 128,780,464 bytes; earlier size/timing tables are the original
+pre-stack measurements. No push, main move or workflow trigger.
+
 ## T137: installed-release notices and pilot channel
 
 Installed CLI metadata now remembers pilot/stable; unqualified updates select the newest matching public release,
