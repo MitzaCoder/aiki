@@ -267,7 +267,7 @@ export class McpService {
 			this.#state.servers = this.#state.servers.filter((server) => server.id !== id);
 			for (const [project, servers] of Object.entries(this.#state.projects))
 				this.#state.projects[project] = servers.filter((server) => server.serverId !== id);
-			this.#state.approvals = this.#state.approvals.filter((approval) => approval.serverId !== id);
+			// Keep invalidated receipts until a closed project reopens and withdraws its question.
 		});
 	}
 	async refresh(id: string): Promise<McpServer> {
@@ -376,6 +376,7 @@ export class McpService {
 	bind(binding: McpProjectBinding): () => void {
 		this.#bindings.add(binding);
 		this.#publish();
+		void this.pruneApprovals().catch(() => undefined);
 		return () => {
 			this.#bindings.delete(binding);
 		};
@@ -548,10 +549,14 @@ export class McpService {
 	}
 	async #withdrawApprovals(matches: (approval: Approval) => boolean): Promise<void> {
 		for (const approval of this.#state.approvals.filter(approval => !approval.consumed && matches(approval))) {
+			approval.expires = Math.min(approval.expires, this.#now());
 			for (const binding of this.#bindings) {
-				if (binding.projectId === approval.projectId) await binding.board.withdraw(approval.questionId);
+				if (binding.projectId === approval.projectId) {
+					await binding.board.withdraw(approval.questionId);
+					approval.consumed = true;
+				}
 			}
-			approval.consumed = true;
+			// No binding means the project is closed. Leave a tombstone for its next bind.
 		}
 	}
 	/** Also run on list/call/reconnect so restored pending questions are cleaned up. */

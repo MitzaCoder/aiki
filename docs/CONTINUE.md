@@ -27,7 +27,7 @@ T144 artifacts: 12 callback screenshots (success/error/paste, desktop/phone,
 light/dark), plus a short start → fake consent → callback → connected recording.
 No real accounts, physical device, deployment, push or main movement.
 
-Sequential checks: root 2,441 tests / 91,594 assertions; typecheck; web check
+Sequential checks at the final tip: root 2,442 tests / 91,597 assertions; typecheck; web check
 (zero diagnostics), 1,040 tests / 79,640 assertions and build. Android generated
 378 DTOs / 104 request overloads, compiled without MCP fixes; 888 JVM tests
 (two opt-in skips), debug assembly and lint (zero errors, 47 warnings). First
@@ -40,7 +40,10 @@ Gitleaks public checks passed using the operator local denylist (not copied).
 Ask questions last seven days; approve-once gets fifteen minutes from the answer.
 A minute sweep and list/call/catalogue/removal cleanup withdraw open questions
 when expired or removed. Late-answer, restart, expiry and removal regressions
-are covered by the MCP server suite.
+are covered by the MCP server suite. A follow-up keeps invalidated receipts
+for closed projects: listing after restart or removing a server cannot forget
+their open questions; the next project bind withdraws them. The final targeted
+MCP/OAuth suite passes 16 tests / 150 assertions.
 
 ## T143: remote MCP core, token auth and lazy discovery
 

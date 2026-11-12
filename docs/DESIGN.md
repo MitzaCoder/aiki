@@ -686,7 +686,9 @@ token. Settings screens and Android app-link interception follow separately.
 
 Ask requests remain answerable for seven days. The exact-call approve-once
 window lasts fifteen minutes from the answer, not from the question. Expired or
-removed-tool/server requests withdraw their open board questions.
+removed-tool/server requests withdraw their open board questions. Invalidated
+receipts for closed projects survive until the next project bind can withdraw
+the board question; a list or removal without a binding cannot forget it.
 
 The core is backend-global remote Streamable HTTP with pasted bearer tokens or
 OAuth. No stdio, legacy SSE, imports or settings screens yet. Definitions and

@@ -441,3 +441,28 @@ it("withdraws open Ask questions on expiry, catalogue removal and server removal
  expect((await runtime.board.state()).questions.length).toBe(3);
  expect((await runtime.board.state()).questions.every(question => question.status === "withdrawn")).toBe(true);
 }, 25_000);
+
+it("withdraws expired or removed-server questions when their closed project reopens", async () => {
+ let now = Date.now();
+ const { test, mcp, runtime, projectId } = await setup(() => now);
+ await mcp.setProject(projectId, [{ serverId: "notion", enabled: true, roles: ["coordinator"] }]);
+ const write = (await runtime.conversation.agent(BACKGROUND_CONTEXT)).callable.find(tool => tool.name.endsWith("__write_page"))!;
+ await run(write, runtime.conversation.id, { page: "expired" });
+ now += 8 * 24 * 60 * 60_000;
+ // Restart closes project bindings. Listing must not forget the unanswered board question.
+ await test.restart();
+ const service = test.server.manager.mcp!;
+ await service.list();
+ const reopened = (await test.server.manager.open(projectId)).runtime;
+ await service.pruneApprovals();
+ expect((await reopened.board.state()).questions[0]!.status).toBe("withdrawn");
+ await service.refresh("notion");
+ const restored = (await reopened.conversation.agent(BACKGROUND_CONTEXT)).callable.find(tool => tool.name.endsWith("__write_page"))!;
+ await run(restored, reopened.conversation.id, { page: "removed" });
+ await test.restart();
+ await test.server.manager.mcp!.remove("notion"); // Project is still closed.
+ const finalRuntime = (await test.server.manager.open(projectId)).runtime;
+ await test.server.manager.mcp!.pruneApprovals();
+ expect((await finalRuntime.board.state()).questions.length).toBe(2);
+ expect((await finalRuntime.board.state()).questions.every(question => question.status === "withdrawn")).toBe(true);
+}, 25_000);
