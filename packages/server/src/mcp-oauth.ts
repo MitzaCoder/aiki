@@ -3,18 +3,29 @@ import type { CredentialStore } from "@earendil-works/pi-ai";
 import {
  startMcpSignIn, completeMcpSignIn, createMcpAuthProvider,
  type McpOAuthState, type McpOAuthServerStore, type McpSignInRedirect,
- OAuthIssuerMismatchError, McpOAuthAuthorizationRequiredError,
+ OAuthIssuerMismatchError, OAuthRegistrationError, McpOAuthAuthorizationRequiredError,
 } from "@earendil-works/pi-mcp/oauth";
 import type { McpOAuthFlow } from "@aiki/protocol";
 import type { McpCredential } from "./credentials.ts";
 import { ServerError } from "./errors.ts";
 
 const fail = (message: string): never => { throw new ServerError("bad_request", message); };
-const safeError = (error: unknown): string => error instanceof OAuthIssuerMismatchError
- ? "MCP OAuth issuer mismatch; sign in again"
- : error instanceof Error && error.message === "Authorization server does not support dynamic client registration"
- ? "MCP server needs a registered client; dynamic registration is not advertised"
- : "MCP OAuth failed; check that the server supports dynamic client registration, then sign in again";
+function safeError(error: unknown): string {
+ if (error instanceof OAuthIssuerMismatchError) return "MCP OAuth issuer mismatch; sign in again";
+ if (error instanceof OAuthRegistrationError) {
+  // A remote error body can reflect credentials, codes or attacker-supplied text.
+  // Report only a recognized protocol reason and status, never that body's description.
+  let reason = "";
+  try {
+   const code = JSON.parse(error.body).error;
+   if (["invalid_redirect_uri", "invalid_client_metadata", "invalid_software_statement", "unapproved_software_statement"].includes(code)) reason = `; ${code}`;
+  } catch { /* Non-JSON server response: status still explains the failed step. */ }
+  return `MCP server refused OAuth client registration (HTTP ${error.status}${reason}). Check the server's redirect address requirements.`;
+ }
+ if (error instanceof Error && error.message === "Authorization server does not support dynamic client registration")
+  return "MCP server needs a registered client; dynamic registration is not advertised";
+ return "MCP OAuth failed; check that the server supports dynamic client registration, then sign in again";
+}
 type Pending = {
  flow: McpOAuthFlow; owner: string; serverUrl: string; redirectUri: string;
  authorization?: McpSignInRedirect; controller: AbortController; starting: boolean;

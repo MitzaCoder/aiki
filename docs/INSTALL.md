@@ -70,6 +70,25 @@ choose a project folder, then choose its coordinator model. Providers still conn
 Claude Code and Codex CLIs are not required. Subscription access is subject to provider policy/account eligibility;
 paid API keys are the straightforward alternative. A saved credential is not proof of successful inference.
 
+## Notion sign-in on pilot.2
+
+Pilot.2's installed shell accepts local browsers for pairing but omits those origins
+from the MCP OAuth callback allowlist. Switching between `localhost` and `127.0.0.1`
+does not fix it. The next release accepts both exact local origins automatically.
+
+Until upgrading, stop Aiki and add this line to its configuration `server.env`
+(default `~/.config/aiki/server.env`), then restart:
+
+```sh
+AIKI_ALLOWED_ORIGINS=http://localhost:7317,http://127.0.0.1:7317
+```
+
+Use your actual Aiki port. Preserve any existing explicitly trusted origins in the
+comma-separated list; do not use a wildcard or add an untrusted website. This does
+not disable device authentication or change the loopback listener. Notion accepts
+both local callback hostnames. Its authorization page requires a Notion account
+before consent; no account is needed to start sign-in and open that page.
+
 ## Commands and paths
 
 - `aiki start`: foreground, loopback only. Ctrl-C closes it cleanly. It never auto-opens a browser.

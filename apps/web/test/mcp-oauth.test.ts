@@ -58,3 +58,21 @@ it('the no-session callback screen offers full URL copy-back, not an error or ne
   expect(html).not.toContain('<form');
  } finally { await vite.close(); }
 }, 20_000);
+
+
+it('shows the safe backend reason when starting fails and closes the blank consent tab', async () => {
+ const names = ['window', 'location'] as const;
+ const previous = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
+ let closed = 0;
+ Object.defineProperty(globalThis, 'window', { configurable: true, value: { open: () => ({ close() { closed++; }, opener: null }) } });
+ Object.defineProperty(globalThis, 'location', { configurable: true, value: { origin: 'http://localhost:7317' } });
+ try {
+  for (const message of ['MCP callback must use an allowed web origin and /mcp/oauth/callback', 'MCP server refused OAuth client registration (HTTP 400; invalid_redirect_uri).']) {
+   const backend = { client: { request: async () => ({ type: 'error', error: { code: 'bad_request', message } }) } };
+   await expect(startMcpOAuth(backend as never, 'notion')).rejects.toThrow(message);
+  }
+  expect(closed).toBe(2);
+ } finally {
+  names.forEach((name, index) => { const descriptor = previous[index]; if (descriptor) Object.defineProperty(globalThis, name, descriptor); else Reflect.deleteProperty(globalThis, name); });
+ }
+});

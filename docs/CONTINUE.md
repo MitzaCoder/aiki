@@ -1,5 +1,39 @@
 # Continue
 
+## T156: installed local Notion sign-in
+
+Published pilot.2 reproduces on both local hostnames: pairing/WS accept the
+installed shell, but MCP receives only configured origins (empty by default).
+The exact backend error is `MCP callback must use an allowed web origin and
+/mcp/oauth/callback`, before any Notion discovery. This is not a Notion HTTP/DCR
+restriction or a localhost-versus-IP spelling issue. The MCP allowlist now adds
+only the shell's two fixed HTTP origins after binding, at the actual port. Source
+backends remain explicit; PKCE, issuer/state, session binding and T154 are unchanged.
+
+Web start now displays the safe backend reason and avoids duplicating the flow
+error. DCR failures show HTTP status and recognized OAuth codes, never a remote
+body/description that could reflect secrets. Regression tests use a real paired
+socket and fake issuer for both origins, completion, wrong port/scheme/host,
+source-backend refusal, DCR rejection/redaction and popup error propagation.
+
+The published binary was installed in an env-isolated temporary HOME, without a
+service. A neutral patched standalone candidate opens real Notion authorization
+from both hostnames; Notion then requires account login before consent. An
+explicit-origin dev checkout also passes discovery/DCR. No Notion account/grant,
+project/provider credential or native Mac run was used. T156 retains dark desktop
+before/after settings, real external login, safe-error screenshot, a 23-second
+recording and redacted server/error logs. Notion's external login stays light even
+with the browser's dark preference; it was not restyled. Owned processes/install
+and proof staging are removed after artifact capture.
+
+Verified pilot.2 workaround: stop Aiki, list both exact origins and the actual port
+in `AIKI_ALLOWED_ORIGINS` in `server.env`, restart. See INSTALL.md. A fixed release
+removes that configuration step; merely changing browser hostname does not help.
+No dependency, Android, protocol, MCP transport/stdio, push, main move or deployment.
+Sequential gates pass: root 2,530 tests / 92,300 assertions; typecheck; web check
+zero diagnostics, 1,067 tests / 79,772 assertions, build; private-denylist/generic/
+Gitleaks. Neutral Linux x64 production-binary build and installed UI smoke pass.
+
 ## T155: version and update notice in navigation
 
 Web's sidebar/phone drawer and Android's navigation foot now show the selected

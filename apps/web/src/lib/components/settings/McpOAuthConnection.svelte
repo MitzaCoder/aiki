@@ -89,5 +89,5 @@
     </form>
   {/if}
   {#if busy}<p role="status" class="text-xs text-muted-foreground">Updating sign-in…</p>{/if}
-  {#if error}<p role="alert" class="text-sm break-words text-destructive">{error}</p>{/if}
+  {#if error && error !== flow?.error}<p role="alert" class="text-sm break-words text-destructive">{error}</p>{/if}
 </SettingsRow>

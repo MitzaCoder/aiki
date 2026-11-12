@@ -139,3 +139,48 @@ it("keeps pasted completion bound to the paired session across a socket reconnec
  expect(await reconnected.request({ type: "mcp.oauth.complete", redirectUrl })).toMatchObject({ type: "mcp.oauth.complete", server: { status: "connected" } });
  expect(await reconnected.request({ type: "mcp.oauth.complete", flowId: started.flowId, redirectUrl })).toMatchObject({ type: "error" });
 }, 20_000);
+
+
+it("installed shells allow OAuth on both fixed local origins at the actual port, not other authorities", async () => {
+ const test = await createSetup({ webDir: "embedded", allowedOrigins: [], auth: { mode: "required" }, terminals: false });
+ cleanups.push(test.cleanup);
+ const fake = fakeMcpOAuth(); cleanups.push(fake.close);
+ const grant = test.server.auth.bootstrap();
+ const credentials = (await test.server.auth.redeem({ grantId: grant.requestId, secret: grant.secret,
+  claimId: crypto.randomUUID(), claimSecret: authSecret("aiki_c1"), label: "Synthetic browser", platform: "web" }, "loopback", true)).credentials!;
+ const port = new URL(test.server.url).port;
+ await test.server.manager.mcp!.add({ serverId: "notion", name: "Synthetic Notion", url: fake.url });
+ for (const host of ["localhost", "127.0.0.1"]) {
+  const origin = `http://${host}:${port}`;
+  const client = await TestClient.open(test.server, { origin }); cleanups.push(async () => client.close());
+  expect(await client.request({ type: "hello", protocolVersion: 1, auth: { accessToken: credentials.accessToken } })).toMatchObject({ type: "hello" });
+  for (const bad of [`http://${host}:0`, `http://${host}:${Number(port) + 1}`, `https://${host}:${port}`, `http://example.test:${port}`]) {
+   expect(await client.request({ type: "mcp.oauth.start", serverId: "notion", redirectUri: `${bad}/mcp/oauth/callback` })).toMatchObject({ type: "error", error: { message: expect.stringContaining("allowed web origin") } });
+  }
+  const started = await client.request({ type: "mcp.oauth.start", serverId: "notion", redirectUri: `${origin}/mcp/oauth/callback` });
+  if (started.type !== "mcp.oauth.start") throw new Error(JSON.stringify(started));
+  expect(new URL(started.authorizationUrl).searchParams.get("redirect_uri")).toBe(`${origin}/mcp/oauth/callback`);
+  expect(await client.request({ type: "mcp.oauth.complete", redirectUrl: await fake.callback(started.authorizationUrl) })).toMatchObject({ type: "mcp.oauth.complete", server: { status: "connected" } });
+  await test.server.manager.mcp!.setToken("notion", null);
+ }
+ expect(fake.registrations).toBe(2);
+ // A source backend without an installed web shell does not gain implicit local origins.
+ const dev = await createSetup({ allowedOrigins: [], terminals: false }); cleanups.push(dev.cleanup);
+ await dev.server.manager.mcp!.add({ serverId: "notion", name: "Synthetic Notion", url: fake.url });
+ await expect(dev.server.manager.mcp!.oauth.start("notion", `${dev.server.url}/mcp/oauth/callback`, "synthetic")).rejects.toThrow("allowed web origin");
+}, 20_000);
+
+it("reports registration failures without reflecting remote secrets or arbitrary descriptions", async () => {
+ const { fake, start, mcp } = await setup();
+ for (const body of [JSON.stringify({ error: "invalid_redirect_uri", error_description: "synthetic-secret code=synthetic-code" }), "synthetic-secret non-JSON", JSON.stringify({ error: "synthetic-secret" })]) {
+  fake.rejectRegistration(400, body);
+  const response = await start();
+  expect(response.type).toBe("error");
+  if (response.type !== "error") throw new Error("Expected registration error");
+  expect(response.error.message).toContain("refused OAuth client registration (HTTP 400");
+  const serialized = JSON.stringify(response);
+  expect(serialized).not.toContain("synthetic-secret"); expect(serialized).not.toContain("synthetic-code");
+  if (body.includes("invalid_redirect_uri")) expect(serialized).toContain("invalid_redirect_uri");
+  expect((await mcp.view("notion")).oauthFlow).toMatchObject({ status: "failed", error: response.type === "error" ? response.error.message : "" });
+ }
+}, 20_000);

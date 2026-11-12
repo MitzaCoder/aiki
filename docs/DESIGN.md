@@ -843,7 +843,19 @@ originating backend using its existing device session; never store MCP tokens
 on the phone. Stage 3 owns settings screens. DCR is supported; missing DCR reports
 that a registered client is required. Hosted client metadata documents and
 pre-registered-client configuration are not implemented (fixed callback path).
-Only fake issuers/resources have been used, never real Notion accounts.
+Installed shells add only their two fixed HTTP loopback callback origins
+(`localhost` and `127.0.0.1` at the actual bound port), matching the shell's
+existing auth/WebSocket rule. Source backends still require explicit origins;
+no Host header or arbitrary redirect address can extend the allowlist. OAuth
+start errors reach the web UI as the backend's safe reason rather than a generic
+message. Registration failures report HTTP status and recognized OAuth error
+codes, never remote descriptions/bodies that could reflect secrets.
+
+Real published pilot.2 reproduces the missing callback-origin failure on both
+hostnames before discovery. A patched standalone build and an explicitly configured
+dev backend both complete Notion discovery/DCR and open authorization, which leads
+to Notion's account login. No real Notion account or grant was used. Fake peers
+continue to prove completion, session binding, PKCE and secret-safe error mapping.
 
 Measured by `packages/server/test/mcp.test.ts`, using a synthetic createSetup
 project and chars/4 (ceiling), replaying the effective system sections and model

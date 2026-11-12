@@ -530,7 +530,10 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	});
 	// Read by main's check-ins; the monitor starts once the status service it pushes through exists.
 	let diskMonitor: DiskMonitor | undefined;
-	const mcp = new McpService(dataDir, credentials, options.now, allowedOrigins, flow => {
+	// Installed shells also accept two fixed loopback origins. Fill these after binding
+	// so a dynamically selected port is never mistaken for the configured port (or 0).
+	const mcpOrigins = [...allowedOrigins];
+	const mcp = new McpService(dataDir, credentials, options.now, mcpOrigins, flow => {
 		for (const connection of connections) connection.notifyMcpOAuth(flow);
 	});
 	await mcp.open();
@@ -963,6 +966,9 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		},
 	});
 
+	const actualPort = server.port ?? port;
+	if (options.webDir) mcpOrigins.push(`http://127.0.0.1:${actualPort}`, `http://localhost:${actualPort}`);
+
 	auth.onRevoke = async (sessionId) => {
 		for (const ws of sockets)
 			if (ws.data.identity?.sessionId === sessionId) {
@@ -1038,7 +1044,6 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 				},
 			});
 
-	const actualPort = server.port ?? port;
 	log(`aiki: schedules run in ${schedules.timezone}`);
 	log(`aiki: memory maintenance settings ${maintenanceStore.file}`);
 	// Catch up on runs missed while the process was off, then arm the timer for the next one.

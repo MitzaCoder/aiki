@@ -35,7 +35,8 @@ export async function startMcpOAuth(backend: BackendConnection, serverId: string
  try {
   const flow = await backend.client.request({ type: 'mcp.oauth.start', serverId,
    redirectUri: `${location.origin}${MCP_OAUTH_CALLBACK_PATH}` });
-  if (flow.type !== 'mcp.oauth.start') throw new Error('Could not start MCP sign-in. Check the server status in settings.');
+  if (flow.type === 'error') throw new Error(flow.error.message);
+  if (flow.type !== 'mcp.oauth.start') throw new Error('Could not start MCP sign-in: unexpected backend response.');
   if (flow.authorizationUrl) {
    const state = new URL(flow.authorizationUrl).searchParams.get('state');
    if (!state) throw new Error('The server returned an invalid authorization URL.');

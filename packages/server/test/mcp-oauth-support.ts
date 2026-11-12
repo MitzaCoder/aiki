@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 export function fakeMcpOAuth(autoApprovePage = false, options: { manualConsent?: boolean } = {}) {
  let access = "synthetic-access-1", refresh = "synthetic-refresh-1", sequence = 1;
  let invalid = false, mismatch = false, registration = true, rejectAccess = false;
+ let registrationError: { status: number; body: string } | undefined;
  let refreshes = 0, registrations = 0, inRefresh = 0, maxRefresh = 0, calls = 0;
  const codes = new Map<string, { challenge: string; redirectUri: string }>();
  let issuer: string, resource: string;
@@ -18,6 +19,7 @@ export function fakeMcpOAuth(autoApprovePage = false, options: { manualConsent?:
   });
   if (url.pathname === "/register") {
    registrations++;
+   if (registrationError) return new Response(registrationError.body, { status: registrationError.status });
    const metadata = await request.json() as object;
    return Response.json({ ...metadata, client_id: "synthetic-client" }, { status: 201 });
   }
@@ -72,6 +74,7 @@ export function fakeMcpOAuth(autoApprovePage = false, options: { manualConsent?:
   get refreshes() { return refreshes; }, get registrations() { return registrations; }, get maxRefresh() { return maxRefresh; }, get calls() { return calls; },
   invalidGrant() { invalid = true; rejectAccess = true; }, rejectAccess() { rejectAccess = true; },
   mismatchIssuer() { mismatch = true; }, noRegistration() { registration = false; },
+  rejectRegistration(status: number, body: string) { registrationError = { status, body }; },
   async callback(authorizationUrl: string) { const response = await fetch(authorizationUrl, { redirect: "manual", signal: AbortSignal.timeout(5000) }); return response.headers.get("location")!; },
   async close() { await rs.stop(true); await as.stop(true); },
  };
