@@ -7,25 +7,26 @@ keeps loopback binding; network/Tailscale HTTPS setup is separate. Do not forwar
 
 ## Install
 
-Install the published `v0.1.0-pilot.1` prerelease:
+Install the `v0.1.0-pilot.2` prerelease after publication:
 
 ```sh
-curl -fL https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.1/install.sh -o install.sh
+curl -fL https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.2/install.sh -o install.sh
 # Read install.sh before running it.
-sh install.sh --version v0.1.0-pilot.1
+sh install.sh --version v0.1.0-pilot.2
 ```
 
-Alternatively, use the domain bootstrap (download and review it, do not pipe it into a shell):
+The short command is `curl -fsSL https://aikilabs.dev/install.sh | sh`.
+For a review before execution, download the domain bootstrap instead:
 
 ```sh
 curl -fL https://aikilabs.dev/install.sh -o install.sh
 # Read install.sh before running it.
-sh install.sh --version v0.1.0-pilot.1
+sh install.sh --version v0.1.0-pilot.2
 ```
 
 The [small bootstrap](../site/install.sh) downloads the exact version's `install.sh` and `install.sh.sha256`
 from GitHub Releases, validates the checksum, then runs that installer with the same arguments. No version
-means the pinned `v0.1.0-pilot.1`, not latest. An explicit `--version TAG` selects both the installer and release;
+means the pinned `v0.1.0-pilot.2`, not latest. An explicit `--version TAG` selects both the installer and release;
 `--version latest` is deliberately rejected. All other arguments (including `--no-service`) pass through.
 It requires HTTPS for both downloads and redirects, never executes an unverified installer, and cleans its
 temporary downloads on exit. The verified release installer still checks its own archives and runtimes.
@@ -40,7 +41,7 @@ For releases with a matching executable, the current installer downloads it inst
 It requires both the executable's `.sha256` sidecar and its matching entry in `SHA256SUMS` before execution.
 Only an absent binary (HTTP 404), an unsupported binary platform, or `--runtime bun` selects the existing
 pinned-Bun source/web fallback. Network errors or bad/missing checksums never trigger a weaker fallback.
-The published pilot predates the binary assets, so it continues to use Bun.
+Pilot.2 supplies Linux x64/arm64 and macOS arm64 executables; pilot.1 predates them and uses Bun.
 
 Install **git** for repositories, **jj** for isolated workers, and **Tailscale** for future phone access. Missing
 tools are explained without blocking local setup (except git is required for `--ref`). On minimal Linux images,
@@ -53,7 +54,7 @@ The default tries to install and start a **user** service. Without a user system
 launchd GUI session (macOS), continue in the foreground instead:
 
 ```sh
-sh install.sh --version v0.1.0-pilot.1 --no-service
+sh install.sh --version v0.1.0-pilot.2 --no-service
 export PATH="$HOME/.local/bin:$PATH"   # if the installer says it is missing
 aiki start                             # keep this terminal open
 # In another terminal:
@@ -126,7 +127,10 @@ confirming no installer is running.
 Settings → About shows available versions and release notes. Installed releases check the public GitHub API
 about once a day, without credentials; turn this off there for the whole backend. Dismissal hides the small banner
 for that version, not the About row. Source/deploy checkouts do not check unless explicitly enabled in About.
-An older installer without channel support needs one exact `aiki update --version TAG` to acquire this behavior.
+**Pilot.1 users:** stop Aiki, run `aiki update --version v0.1.0-pilot.2` once, then start it.
+Later updates use plain `aiki update` while stopped. Install the Android APK over the old app;
+the release uses the same owner signing key, versionName `0.1.0-pilot.2`, code 1000002.
+An older installer without channel support needs that first exact-version update to acquire this behavior.
 For an installation whose updater predates binary support, download/review the new installer and rerun it with
 an explicit reviewed `--version TAG` and the same `--dir` to switch directly. An old updater may first install the
 new release through Bun; subsequent updates use its binary-aware installer. Never bypass checksum verification.

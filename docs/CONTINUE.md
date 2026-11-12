@@ -1,5 +1,40 @@
 # Continue
 
+## T152: pilot.2 prepared, not published
+
+Prepared `v0.1.0-pilot.2` on the T151 main tip. Package/server identity, current
+install links and site bootstrap now select pilot.2. Android defaults to
+`0.1.0-pilot.2` / 1000002; explicit release inputs still override it. Historical
+pilot.1 notes and version/update fixtures remain unchanged. The release workflow
+uses reviewed per-tag notes, failing closed when absent, and still stages only a
+draft. RELEASE.md now includes standalone assets and preserves their checksum
+coverage when the owner replaces the draft's aggregate after adding Android.
+
+Built neutral source/web plus all three production binary targets with Bun 1.4.4.
+Linux x64 native smoke passes; arm64 Linux/macOS are cross-builds only, awaiting
+native CI. Fresh binary install used no Bun. A checksum-verified published pilot.1
+archive updated through its original updater to pilot.2 via Bun, then the new
+updater switched to the same-tag binary. All children used env -i, temporary HOMEs
+and no Bun on PATH; private Bun and a fake zellij were download-cache fixtures.
+Status, owner health, required auth, rendered Welcome, preserved synthetic state,
+pilot channel and no same-version notice pass. T152 retains site desktop/phone
+screenshots, an install → Privacy recording and fresh/upgraded Welcome proof.
+
+Sequential gates pass: root 2,523 tests / 92,230 assertions; typecheck; web check
+zero diagnostics, 1,063 tests / 79,746 assertions, build; Android 908 tests (two
+opt-in skips), debug assembly and lint (zero errors, 49 warnings); private/generic/
+Gitleaks scan; 17 site/workflow tests; protocol generation. Neutral unsigned release
+assembly/seam checks pass with versionName/code verified in APK metadata. Gradle
+stopped after both builds. AGP's sdkReleaseDependencyData task emits Google/Tink
+old-protobuf-gencode warnings; no dependency change was attempted in release prep.
+
+No owner signing key was read or used. No tag, push, workflow run, publication,
+main movement or deployment. Local candidates are rehearsal outputs, not final
+publishable assets: rebuild from the approved merged commit. Remaining owner steps
+are exact-ref scan/approval, tag push and green native release run, same-key local
+APK signing plus notices, combined draft download/checksum/certificate/upgrade
+review, then explicit publication approval. See RELEASE.md for the commands.
+
 ## T151: CI-only web rune getter failure
 
 The release check's migration push test read `globalThis.$state` before installing

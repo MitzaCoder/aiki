@@ -21,7 +21,7 @@
       <p class="eyebrow">Your machine. Your models. Your work.</p>
       <h1 id="intro-title">A little help.<br>A bigger picture.</h1>
       <p class="lead">Aiki is a personal AI workbench. One coordinator delegates to background agents and brings questions and results back to you.</p>
-      <div class="actions"><a class="button" href="#install">Try the pilot <span aria-hidden="true">↓</span></a><a class="text-link" href="https://github.com/MitzaCoder/aiki/releases/tag/v0.1.0-pilot.1">Pilot release notes <span aria-hidden="true">↗</span></a></div>
+      <div class="actions"><a class="button" href="#install">Try the pilot <span aria-hidden="true">↓</span></a><a class="text-link" href="https://github.com/MitzaCoder/aiki/releases/tag/v0.1.0-pilot.2">Pilot release notes <span aria-hidden="true">↗</span></a></div>
     </section>
     <figure class="graph">
       <picture>
@@ -36,14 +36,14 @@
       <article><span class="point-number" aria-hidden="true">03</span><h2>Come back later.</h2><p>Runs resume after backend restarts. Reports and artifacts stay with their tasks, ready when you are.</p></article>
     </section>
     <section id="install" class="install" aria-labelledby="install-title">
-      <div class="section-heading"><p class="eyebrow">Start on your own machine</p><h2 id="install-title">Make room for a little help.</h2><p>First pilot: <strong>v0.1.0-pilot.1</strong> · Linux tested · macOS/WSL experimental · no phone push.</p></div>
+      <div class="section-heading"><p class="eyebrow">Start on your own machine</p><h2 id="install-title">Make room for a little help.</h2><p>Current pilot: <strong>v0.1.0-pilot.2</strong> · Linux tested · macOS/WSL experimental · no phone push.</p></div>
       <h3>Install, then start</h3>
       <p>Download and read the small bootstrap before running it. It fetches the versioned GitHub release installer and verifies its SHA-256 checksum.</p>
       <pre aria-label="Install commands"><code>curl -fL https://aikilabs.dev/install.sh -o install.sh
 # Read install.sh before running it.
-sh install.sh --version v0.1.0-pilot.1 --no-service
+sh install.sh --version v0.1.0-pilot.2 --no-service
 aiki start</code></pre>
-      <p class="small">You need git; install jj for isolated workers. The pilot installer supplies private Bun and zellij. Checksums detect corruption, not a compromised publisher. <a href="https://github.com/MitzaCoder/aiki/blob/main/docs/INSTALL.md">Full guide &amp; direct GitHub downloads</a>.</p>
+      <p class="small">You need git; install jj for isolated workers. Linux x64/arm64 and macOS arm64 use a standalone executable, with private Bun as a fallback. The installer also supplies zellij. Checksums detect corruption, not a compromised publisher. <a href="https://github.com/MitzaCoder/aiki/blob/main/docs/INSTALL.md">Full guide &amp; direct GitHub downloads</a>.</p>
       <h3>Open your workbench</h3>
       <p>In another terminal:</p>
       <pre aria-label="Open and pair commands"><code>aiki open
@@ -55,7 +55,7 @@ aiki pair</code></pre>
         <blockquote>Install Aiki from https://github.com/MitzaCoder/aiki. Follow docs/AGENT-INSTALL.md exactly and stop where it says to ask me.</blockquote>
         <a href="https://github.com/MitzaCoder/aiki/blob/main/docs/AGENT-INSTALL.md">Read the agent install guide <span aria-hidden="true">↗</span></a>
       </aside>
-      <div class="android"><h3>Take the view with you.</h3><p><a href="https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.1/aiki-v0.1.0-pilot.1-android-universal.apk">Download the signed Android APK</a> (Android 12+). Your phone needs your backend reachable over HTTPS; the APK is not a tunnel.</p></div>
+      <div class="android"><h3>Take the view with you.</h3><p><a href="https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.2/aiki-v0.1.0-pilot.2-android-universal.apk">Download the signed Android APK</a> (Android 12+). Your phone needs your backend reachable over HTTPS; the APK is not a tunnel.</p></div>
     </section>
     <aside class="boundaries" aria-label="Before you begin"><strong>Personal, not sandboxed.</strong> Aiki runs commands with your permissions and provider spending authority. Every paired device has full owner access. This is not a multi-user service. Keep the backend private.</aside>
   </main>

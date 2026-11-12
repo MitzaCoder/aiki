@@ -50,6 +50,10 @@ test('native binary builds use standard runners, clean smoke tests and productio
 	expect(releaseCommands).toContain('for platform in linux-x64 linux-arm64 darwin-arm64');
 	for (const line of releaseCommands.split('\n').filter(line => line.includes('gh release create'))) expect(line).toContain('--draft');
 	expect(releaseCommands).not.toMatch(/gh release (edit|publish)/);
+	expect(releaseCommands).toContain('notes="docs/releases/$GITHUB_REF_NAME.md"');
+	expect(releaseCommands).toContain('test -f "$notes"');
+	for (const line of releaseCommands.split('\n').filter(line => line.includes('gh release create'))) expect(line).toContain('--notes-file "$notes"');
+	expect(releaseCommands).not.toContain('--generate-notes');
 });
 
 test('all release actions are immutable and only the tag release job can write', () => {

@@ -18,13 +18,13 @@ See `docs/RELEASE.md` at the repository root for the owner-only release procedur
 and scrubbed environment; it never reads operator Android configuration. Signing is
 local, with an external owner-held keystore and password file, never GitHub secrets.
 
-Set `-Paiki.version=v0.1.0-pilot.1` (or `AIKI_RELEASE_VERSION`; tag workflows also
+Set `-Paiki.version=v0.1.0-pilot.2` (or `AIKI_RELEASE_VERSION`; tag workflows also
 read `GITHUB_REF_NAME` when `GITHUB_REF_TYPE=tag`). `versionName` drops `v`.
 `versionCode = major*100000000 + minor*1000000 + patch*10000 + stage`, where
 pilot N uses N (1–9998) and stable uses 9999. Major is 0–20, minor/patch 0–99.
 Thus pilot.1 is 1000001, pilot.2 is 1000002, stable 0.1.0 is 1009999;
 the next patch sorts after stable. Never reuse a distributed code or change schemes
-without preserving monotonicity. No release input means `0.0.0-dev`, code 1.
+without preserving monotonicity. No release input means the current pilot, `0.1.0-pilot.2`, code 1000002.
 `:app:checkReleaseVersion` runs parser/order regressions; malformed release inputs fail.
 
 Settings → About and licences is available offline. Sora's LGPL notice/full text,
