@@ -859,6 +859,10 @@ Claude usage/discovery/reset requests share a versioned CLI User-Agent, never mo
 its own hourly cache, independent of window/header samples, invalidated after a confirmed spend. Discovery
 runs even when the normal usage response omits program markers. Optional givesBackWeekly and unavailableReason
 preserve narrower Fable grants (even when type is full) and provider reasons without inferring broad coverage.
+Web limit-reset rows group only matching label/program/scopes/expiry/usability, retain one grant ID per spend,
+and explain weekly give-back separately from a full weekly refill. Reset for free opens a keyboard/focus-managed
+confirmation naming the number available and irreversible effect; Cancel never sends a mutation. Result status
+is announced, and uncertain outcomes block further spending in that view.
 Consumption requires an explicit confirmation, a fresh availability check, one grant and one request UUID; the server
 coalesces duplicates and rejects concurrent provider resets. No automatic redemption or mutation retry. Claude posts
 to its profile organization's `reset_rate_limits`; Codex posts to `wham/rate-limit-reset-credits/consume` with its

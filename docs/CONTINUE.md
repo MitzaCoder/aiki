@@ -7,7 +7,10 @@ Discovery has a separate hourly cache and no longer depends on usage response ma
 Confirmed spend still rechecks availability, deduplicates UUIDs and never retries a mutation;
 it now initializes usage state and invalidates discovery before refreshing after a spend.
 Protocol adds optional weekly give-back and per-grant unavailability reasons. Synthetic fixture
-models Full and Fable grants and counts only validated local spends. Targeted server suite:
+models Full and Fable grants and counts only validated local spends. Web rows group identical grants,
+show human scope explanations and expiry, disable with provider reasons, and use a focus-managed
+confirmation with explicit Confirm/Cancel and announced results. Four row-helper tests and web
+check (zero diagnostics) pass. Targeted server suite:
 25 tests / 119 assertions pass. No real POST, deployment, push or main movement.
 
 ## T135 follow-up: root failures settled
