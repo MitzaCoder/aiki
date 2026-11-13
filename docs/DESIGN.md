@@ -1563,15 +1563,41 @@ Backend (`packages/server/src/threads.ts`, `coordinators.ts`), as built on 2026-
 
 ## Artifacts
 
+### Artifact versions (T166 / D74)
+
+Identity is project + scope + sanitized file basename (case-sensitive). A task ID is the scope when supplied,
+otherwise the conversation (thread ID + worker ID). Workers on one task can update the same artifact. Titles and
+source directories are not identity. Omitting/changing taskId changes scope. Re-saving appends a snapshot of bytes and all metadata,
+including saver thread/worker and saved time (`createdAt`), and replaces the card under its stable artifact ID.
+`artifacts.list` includes retained version metadata; optional `artifactId` finds one outside the recent-list window.
+`artifactId~version` addresses a snapshot with the existing signed URL API. A bare ID follows latest, including board references. URL minting pins even latest to a version so an already
+issued capability cannot change content. HMAC binds the full version address; all existing auth and sandbox rules stay.
+
+Legacy index rows read as version 1 without writes or byte moves. Only the next save extends their metadata. Existing
+same-name cards are not merged retroactively (no lost IDs or history). Version 1 retains its original file location;
+new snapshots use `<artifactId>.versions/<number>/<name>` (a sibling cannot collide with any legacy filename).
+A project write queue serializes copy/index publication; replay receipts keep a durable tool rerun from creating
+another version. Keep the most recent 20 snapshots
+(`ARTIFACT_VERSION_LIMIT`), with monotonic numbers even after pruning. Publish the index before pruning old bytes;
+a crash can leave extra bytes but never references missing bytes. Deleting the artifact deletes all versions.
+Web and Android artifact dialogs and full-screen media viewers select retained metadata and fetch its version address;
+cards show the total saves. Old servers still show a single snapshot without controls. Editing tags targets latest,
+not an older snapshot. Bare-ID web preview leases refresh on the version push; Android poster and image-cache keys
+include the version so a new card thumbnail cannot reuse old pixels. Source diff is deferred.
+
+The tool API is unchanged. Re-saving answers `Saved version 3 of report.html`; the description's added sentence is
+66 UTF-8 bytes, +13 cl100k_base / +14 o200k_base tokens (measured with js-tiktoken; descriptions 194 → 207 / 208).
+No tokenizer is added to the app or tool.
+
 Files a thread or worker keeps for the user (demo videos, screenshots, logs, reports): `artifact_save` copies a file
 from its working directory into the project's artifact store on that backend (`<data>/projects/<id>/artifacts/`).
 The app lists them per thread, worker and task, and plays videos, shows images and reads text inline, from a signed
 URL with byte ranges. They stay on the backend; publishing them elsewhere is up to the user's instructions.
 
-Status: backend done (`packages/server/src/artifacts.ts`, `artifact-tools.ts`); the app is not built yet.
+Backend: `packages/server/src/artifacts.ts`, `artifact-tools.ts`; web and Android viewers share the protocol.
 
-- Store: `<data>/projects/<id>/artifacts/<artifactId>/<name>` plus `index.json` (the `Artifact` rows, newest last). A
-  save copies into `<artifactId>.partial/` and renames it into place before the index names it. MIME from the
+- Store: version 1 at `<data>/projects/<id>/artifacts/<artifactId>/<name>`, later snapshots as above, plus `index.json`
+  (the `Artifact` rows, newest last). A save copies into `<artifactId>.partial/` and renames it into place before the index names it. MIME from the
   extension and the first bytes (the bytes win, except a media extension on a container that holds video or audio:
   `.mkv`, `.weba`, `.ogv`); kind from the MIME; `durationSeconds` from `ffprobe` when it is on PATH. One file may
   have `AIKI_ARTIFACT_MAX_BYTES` (default 2 GiB); a project's total is unbounded.

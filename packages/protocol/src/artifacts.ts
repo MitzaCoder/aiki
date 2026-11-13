@@ -16,7 +16,7 @@ export const ArtifactKindSchema = Type.Union(
 );
 export type ArtifactKind = Static<typeof ArtifactKindSchema>;
 
-export const ArtifactSchema = Type.Object({
+export const ArtifactVersionSchema = Type.Object({
 	id: Type.String({ minLength: 1 }),
 	projectId: ProjectIdSchema,
 	name: Type.String({ minLength: 1, description: "File name, e.g. \"checkout-flow.webm\"." }),
@@ -36,6 +36,14 @@ export const ArtifactSchema = Type.Object({
 	 */
 	tags: Type.Optional(Type.Array(Type.String({ minLength: 1 }), { description: "Normalised: lowercase, unique, in order." })),
 	createdAt: Type.String(),
+	version: Type.Optional(Type.Integer({ minimum: 1 })),
+	versionCount: Type.Optional(Type.Integer({ minimum: 1, description: "Total saves, including pruned versions." })),
+});
+export type ArtifactVersion = Static<typeof ArtifactVersionSchema>;
+
+export const ArtifactSchema = Type.Object({
+	...ArtifactVersionSchema.properties,
+	versions: Type.Optional(Type.Array(ArtifactVersionSchema, { description: "Retained snapshots, oldest first; IDs address immutable versions." })),
 });
 export type Artifact = Static<typeof ArtifactSchema>;
 
@@ -46,6 +54,7 @@ export const ArtifactsListRequestSchema = Type.Object({
 	type: Type.Literal("artifacts.list"),
 	id: RequestIdSchema,
 	projectId: ProjectIdSchema,
+	artifactId: Type.Optional(Type.String({ minLength: 1, description: "Exact stable artifact ID, including retained version metadata." })),
 	threadId: Type.Optional(Type.String({ minLength: 1 })),
 	workerId: Type.Optional(Type.String({ minLength: 1 })),
 	taskId: Type.Optional(Type.String({ minLength: 1 })),

@@ -114,6 +114,36 @@ async function urlOf(client: TestClient, projectId: string, artifactId: string, 
 }
 
 describe("artifact_save", () => {
+	it("updates by name with short version results and pins signed URLs to selected snapshots", async () => {
+		const { test, client, projectId } = await start();
+		const path = join(test.projectDir, "report.html");
+		await writeFile(path, "<h1>First</h1>");
+		const outputs = await saveThroughTool(test, client, projectId, [{ path }, { path }, { path }]);
+		expect(outputs[0]).toStartWith("Saved artifact ");
+		expect(outputs[1]).toBe("Saved version 2 of report.html (text, 14 B).");
+		expect(outputs[2]).toBe("Saved version 3 of report.html (text, 14 B).");
+		const cards = await list(client, projectId);
+		expect(cards).toHaveLength(1);
+		const artifact = cards[0]!;
+		expect(artifact.versionCount).toBe(3);
+		expect(await list(client, projectId, { artifactId: artifact.id })).toEqual([artifact]);
+		expect(await list(client, projectId, { artifactId: "missing" })).toEqual([]);
+		expect(artifact.versions?.map(v => v.version)).toEqual([1, 2, 3]);
+		const latestUrl = await urlOf(client, projectId, artifact.id);
+		expect(new URL(latestUrl).pathname).toEndWith(artifact.id + "~3");
+		await writeFile(path, "<h1>Fourth</h1>");
+		await test.server.artifacts.save({ projectId, sourcePath: path, title: null, note: null, threadId: "main", workerId: null, taskId: null });
+		expect(await (await fetch(latestUrl)).text()).toBe("<h1>First</h1>");
+		const fourthUrl = await urlOf(client, projectId, artifact.id);
+		expect(await (await fetch(fourthUrl)).text()).toBe("<h1>Fourth</h1>");
+		const oldUrl = await urlOf(client, projectId, artifact.id + "~1");
+		expect(await (await fetch(oldUrl)).text()).toBe("<h1>First</h1>");
+		const tampered = oldUrl.replace("~1?", "~4?");
+		expect((await fetch(tampered)).status).toBe(403);
+		const missing = await client.request({ type: "artifacts.url", projectId, artifactId: artifact.id + "~99" });
+		expect(missing.type).toBe("error");
+	});
+
 	it("copies a file from the cwd and from an absolute path, and pushes each save", async () => {
 		const { test, client, projectId } = await start();
 		await mkdir(join(test.projectDir, "out"), { recursive: true });
@@ -345,8 +375,10 @@ describe("the store", () => {
 		expect(await store.save({ ...base, threadId: "main", workerId: "w1", taskId: null, artifactId: "fixed-id" })).toEqual(three);
 		expect(one).toMatchObject({ kind: "video", mimeType: "video/mp4", durationSeconds: 12.5 });
 
-		expect((await store.list("p")).map((artifact) => artifact.id)).toEqual([three.id, two.id, one.id]);
-		expect((await store.list("p", { threadId: "main" })).map((artifact) => artifact.id)).toEqual([three.id, one.id]);
+		expect((await store.list("p")).map((artifact) => artifact.id)).toEqual([three.id, two.id]);
+		expect(two.id).toBe(one.id);
+		expect(two.version).toBe(2);
+		expect((await store.list("p", { threadId: "main" })).map((artifact) => artifact.id)).toEqual([three.id]);
 		expect((await store.list("p", { workerId: "w1", taskId: "T1" })).map((artifact) => artifact.id)).toEqual([two.id]);
 		expect((await store.list("p", { limit: 1 })).map((artifact) => artifact.id)).toEqual([three.id]);
 		expect(await store.list("other")).toEqual([]);
@@ -411,7 +443,7 @@ describe("serving and deleting", () => {
 	it("serves the bytes with ranges, the right headers and CORS for allowed origins", async () => {
 		const { test, client, projectId, artifact } = await withArtifact();
 		const url = await urlOf(client, projectId, artifact.id);
-		expect(url.startsWith(`${test.server.url}/artifacts/${projectId}/${artifact.id}?token=`)).toBe(true);
+		expect(url.startsWith(`${test.server.url}/artifacts/${projectId}/${artifact.id}~1?token=`)).toBe(true);
 
 		const full = await fetch(url, { headers: { origin: APP_ORIGIN } });
 		expect(full.status).toBe(200);

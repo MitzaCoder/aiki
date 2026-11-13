@@ -2,10 +2,10 @@
  * Artifacts: files a conversation keeps for the user (demo videos, screenshots, logs, reports), copied into the
  * project's store in the data directory and served over HTTP from signed URLs.
  *
- * Layout: `<data>/projects/<id>/artifacts/<artifactId>/<name>` holds the bytes and `<data>/projects/<id>/artifacts/
- * index.json` the `Artifact` rows, newest last. A save copies into `<artifactId>.partial/` and renames the directory
- * into place before the index names it, so a crash leaves at most a `.partial` directory, never a row without bytes.
- * Writes to one project's index run one at a time.
+ * Layout: `<data>/projects/<id>/artifacts/<artifactId>/<name>` holds version 1; later snapshots live under
+ * `<artifactId>.versions/<number>/<name>`. `index.json` holds latest rows plus retained version metadata, newest last.
+ * Copy into a partial directory and rename before publishing the index. Serialize the entire save per project.
+ * Legacy rows are read as version 1 without rewriting their metadata or bytes.
  *
  * URLs: `/artifacts/<projectId>/<artifactId>?token=<expiry>.<disposition>.<hmac>`, the HMAC (SHA-256) over the project,
  * artifact, expiry and disposition with a secret kept in `<data>/artifacts-secret` (created on first use, mode 0600).
@@ -17,7 +17,7 @@ import { serverSettings } from "./server-settings.ts";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { constants } from "node:fs";
 import { copyFile, mkdir, open, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
-import { basename, extname, join } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
 import { type Artifact, type ArtifactKind, type ArtifactsChangedEvent, normalizeTags } from "@aiki/protocol";
 import { ServerError, errorMessage } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
@@ -192,7 +192,17 @@ export async function probeDurationSeconds(path: string): Promise<number | null>
 
 // --- the store -----------------------------------------------------------------------------------------------------
 
-type ArtifactIndex = { version: 1; artifacts: Artifact[] };
+type ArtifactIndex = { version: 1; artifacts: Artifact[]; receipts?: Record<string, string> };
+/** Most recent snapshots retained per artifact; numbering never resets. */
+export const ARTIFACT_VERSION_LIMIT = 20;
+
+function snapshots(artifact: Artifact): NonNullable<Artifact["versions"]> {
+	return artifact.versions ?? [{ ...artifact, id: `${artifact.id}~1`, version: 1, versionCount: 1 }];
+}
+
+function withVersions(artifact: Artifact): Artifact {
+	return { ...artifact, version: artifact.version ?? 1, versionCount: artifact.versionCount ?? 1, versions: snapshots(artifact) };
+}
 
 export type ArtifactSaveInput = {
 	projectId: string;
@@ -205,11 +215,12 @@ export type ArtifactSaveInput = {
 	taskId: string | null;
 	/** Free-form tags; normalised on save (`normalizeTags`). */
 	tags?: readonly string[];
-	/** Set by a tool that may run again after a restart, so the rerun finds the artifact it saved instead of a copy. */
+	/** Memoized save-operation ID: a durable replay finds its snapshot instead of appending another version. */
 	artifactId?: string;
 };
 
 export type ArtifactListFilter = {
+	artifactId?: string;
 	threadId?: string;
 	workerId?: string;
 	taskId?: string;
@@ -267,64 +278,97 @@ export class ArtifactStore {
 	}
 
 	filePath(artifact: Artifact): string {
-		return join(this.dir(artifact.projectId), artifact.id, artifact.name);
+		const rootId = artifact.id.split("~")[0]!;
+		const version = artifact.version ?? 1;
+		return version === 1
+			? join(this.dir(artifact.projectId), rootId, artifact.name)
+			: join(this.dir(artifact.projectId), `${rootId}.versions`, String(version), artifact.name);
 	}
 
 	/** Copy a file into the store and record it; a rerun with the same `artifactId` returns the row it saved. */
 	async save(input: ArtifactSaveInput): Promise<Artifact> {
 		const id = input.artifactId ?? newArtifactId(this.#now());
 		if (!ARTIFACT_ID_PATTERN.test(id)) throw new ServerError("bad_request", `Invalid artifact ID "${id}"`);
-		const existing = await this.get(input.projectId, id);
-		if (existing !== undefined) return existing;
+		const pruned: Artifact[] = [];
+		let changed: Artifact | undefined;
+		const saved = await this.#write(input.projectId, async (index) => {
+			const replay = index.receipts?.[id];
+			if (replay !== undefined) {
+				const root = index.artifacts.find((row) => row.id === replay.split("~")[0]);
+				if (root !== undefined) {
+					const snapshot = root.versions?.find((row) => row.id === replay);
+					return snapshot === undefined || snapshot.version === root.version
+						? withVersions(root) : { ...snapshot, id: root.id };
+				}
+			}
+			// Legacy tool calls used the stable artifact ID as their memoized receipt.
+			const legacyReplay = index.artifacts.find((row) => row.id === id);
+			if (legacyReplay !== undefined) return withVersions(legacyReplay);
+			const source = await stat(input.sourcePath);
+			if (!source.isFile()) throw new ServerError("bad_request", `${input.sourcePath} is not a regular file`);
+			this.#refuseSize(source.size, input.sourcePath);
 
-		const source = await stat(input.sourcePath);
-		if (!source.isFile()) throw new ServerError("bad_request", `${input.sourcePath} is not a regular file`);
-		this.#refuseSize(source.size, input.sourcePath);
-
-		const name = artifactFileName(input.sourcePath);
-		const dir = this.dir(input.projectId);
-		const partial = join(dir, `${id}.partial`);
-		const final = join(dir, id);
-		await mkdir(partial, { recursive: true, mode: 0o700 });
-		let artifact: Artifact;
-		try {
-			const copy = join(partial, name);
-			// A copy, never a move: the file stays where the conversation left it.
-			await copyFile(input.sourcePath, copy, constants.COPYFILE_FICLONE);
-			// The source may have grown since it was measured.
-			const size = (await stat(copy)).size;
-			this.#refuseSize(size, input.sourcePath);
-			const mimeType = detectMimeType(name, await readHead(copy));
-			const kind = artifactKind(mimeType);
-			const durationSeconds = kind === "video" || kind === "audio" ? await this.#probeDuration(copy) : null;
-			artifact = {
-				id,
-				projectId: input.projectId,
-				name,
-				title: input.title,
-				note: input.note,
-				kind,
-				mimeType,
-				size,
-				durationSeconds,
-				threadId: input.threadId,
-				workerId: input.workerId,
-				taskId: input.taskId,
-				sourcePath: input.sourcePath,
-				...(normalizeTags(input.tags).length === 0 ? {} : { tags: normalizeTags(input.tags) }),
-				createdAt: new Date(this.#now()).toISOString(),
-			};
-			await rm(final, { recursive: true, force: true });
-			await rename(partial, final);
-		} catch (error) {
-			await rm(partial, { recursive: true, force: true }).catch(() => undefined);
-			throw error;
-		}
-		await this.#write(input.projectId, (index) => {
+			const name = artifactFileName(input.sourcePath);
+			const previous = [...index.artifacts].reverse().find((row) => row.name === name &&
+				(input.taskId !== null ? row.taskId === input.taskId : row.taskId === null && row.threadId === input.threadId && row.workerId === input.workerId));
+			const rootId = previous?.id ?? id;
+			const version = (previous?.version ?? (previous === undefined ? 0 : 1)) + 1;
+			const dir = this.dir(input.projectId);
+			const partial = join(dir, `${id}.partial`);
+			const final = version === 1 ? join(dir, rootId) : join(dir, `${rootId}.versions`, String(version));
+			await mkdir(partial, { recursive: true, mode: 0o700 });
+			let artifact: Artifact;
+			try {
+				const copy = join(partial, name);
+				// A copy, never a move: the file stays where the conversation left it.
+				await copyFile(input.sourcePath, copy, constants.COPYFILE_FICLONE);
+				// The source may have grown since it was measured.
+				const size = (await stat(copy)).size;
+				this.#refuseSize(size, input.sourcePath);
+				const mimeType = detectMimeType(name, await readHead(copy));
+				const kind = artifactKind(mimeType);
+				const durationSeconds = kind === "video" || kind === "audio" ? await this.#probeDuration(copy) : null;
+				artifact = {
+					id: rootId,
+					version,
+					versionCount: version,
+					projectId: input.projectId,
+					name,
+					title: input.title,
+					note: input.note,
+					kind,
+					mimeType,
+					size,
+					durationSeconds,
+					threadId: input.threadId,
+					workerId: input.workerId,
+					taskId: input.taskId,
+					sourcePath: input.sourcePath,
+					...(normalizeTags(input.tags).length === 0 ? {} : { tags: normalizeTags(input.tags) }),
+					createdAt: new Date(this.#now()).toISOString(),
+				};
+				await mkdir(join(final, ".."), { recursive: true, mode: 0o700 });
+				await rm(final, { recursive: true, force: true });
+				await rename(partial, final);
+			} catch (error) {
+				await rm(partial, { recursive: true, force: true }).catch(() => undefined);
+				throw error;
+			}
+			const retained = [...(previous === undefined ? [] : snapshots(previous)), { ...artifact, id: `${rootId}~${version}` }];
+			pruned.push(...retained.slice(0, -ARTIFACT_VERSION_LIMIT));
+			artifact.versions = retained.slice(-ARTIFACT_VERSION_LIMIT);
+			if (previous !== undefined) index.artifacts.splice(index.artifacts.indexOf(previous), 1);
 			index.artifacts.push(artifact);
+			(index.receipts ??= {})[id] = `${rootId}~${version}`;
+			changed = artifact;
+			return artifact;
 		});
-		this.#emit({ type: "artifacts.changed", projectId: input.projectId, artifact, deleted: false });
-		return artifact;
+		if (changed !== undefined) this.#emit({ type: "artifacts.changed", projectId: input.projectId, artifact: changed, deleted: false });
+		// Publish before pruning: failure/crash may retain extra bytes, never lose referenced bytes.
+		for (const snapshot of pruned) {
+			await rm((snapshot.version ?? 1) === 1 ? this.filePath(snapshot) : dirname(this.filePath(snapshot)), { force: true, recursive: true }).catch((error: unknown) => this.#log(`artifacts: prune failed: ${errorMessage(error)}`));
+		}
+		return saved;
 	}
 
 	/** Newest first, narrowed by every filter given. */
@@ -334,16 +378,21 @@ export class ArtifactStore {
 		return index.artifacts
 			.filter(
 				(artifact) =>
+					(filter.artifactId === undefined || artifact.id === filter.artifactId) &&
 					(filter.threadId === undefined || artifact.threadId === filter.threadId) &&
 					(filter.workerId === undefined || artifact.workerId === filter.workerId) &&
 					(filter.taskId === undefined || artifact.taskId === filter.taskId),
 			)
 			.reverse()
-			.slice(0, limit);
+			.slice(0, limit)
+			.map(withVersions);
 	}
 
 	async get(projectId: string, artifactId: string): Promise<Artifact | undefined> {
-		return (await this.#read(projectId)).artifacts.find((artifact) => artifact.id === artifactId);
+		const [rootId, version] = artifactId.split("~");
+		const artifact = (await this.#read(projectId)).artifacts.find((row) => row.id === rootId);
+		if (artifact === undefined) return undefined;
+		return version === undefined ? withVersions(artifact) : snapshots(artifact).find((row) => row.id === artifactId);
 	}
 
 	async require(projectId: string, artifactId: string): Promise<Artifact> {
@@ -367,7 +416,12 @@ export class ArtifactStore {
 			}
 			if (normal.length === 0) delete row.tags;
 			else row.tags = normal;
-			return { ...row };
+			const latest = row.versions?.at(-1);
+			if (latest !== undefined) {
+				if (normal.length === 0) delete latest.tags;
+				else latest.tags = normal;
+			}
+			return withVersions(row);
 		});
 		this.#emit({ type: "artifacts.changed", projectId, artifact, deleted: false });
 		return artifact;
@@ -380,11 +434,16 @@ export class ArtifactStore {
 			if (at === -1) {
 				throw new ServerError("unknown_artifact", `No artifact "${artifactId}" in this project`, { artifactId });
 			}
+			for (const [receipt, address] of Object.entries(index.receipts ?? {})) {
+				if (address.split("~")[0] === artifactId) delete index.receipts![receipt];
+			}
 			return index.artifacts.splice(at, 1)[0] as Artifact;
 		});
-		await rm(join(this.dir(projectId), artifact.id), { recursive: true, force: true }).catch((error: unknown) => {
-			this.#log(`project ${projectId}: could not remove artifact ${artifact.id}: ${errorMessage(error)}`);
-		});
+		for (const directory of [artifact.id, `${artifact.id}.versions`]) {
+			await rm(join(this.dir(projectId), directory), { recursive: true, force: true }).catch((error: unknown) => {
+				this.#log(`project ${projectId}: could not remove artifact ${artifact.id}: ${errorMessage(error)}`);
+			});
+		}
 		this.#emit({ type: "artifacts.changed", projectId, artifact, deleted: true });
 		return artifact;
 	}
@@ -400,16 +459,16 @@ export class ArtifactStore {
 
 	async #read(projectId: string): Promise<ArtifactIndex> {
 		const value = (await readJsonFile(join(this.dir(projectId), ARTIFACTS_INDEX_FILE))) as ArtifactIndex | undefined;
-		return value === undefined ? { version: 1, artifacts: [] } : { version: 1, artifacts: value.artifacts ?? [] };
+		return value === undefined ? { version: 1, artifacts: [] } : { ...value, version: 1, artifacts: value.artifacts ?? [] };
 	}
 
-	async #write<T>(projectId: string, change: (index: ArtifactIndex) => T): Promise<T> {
+	async #write<T>(projectId: string, change: (index: ArtifactIndex) => T | Promise<T>): Promise<T> {
 		const previous = this.#writes.get(projectId) ?? Promise.resolve();
 		const next = previous
 			.catch(() => undefined)
 			.then(async () => {
 				const index = await this.#read(projectId);
-				const result = change(index);
+				const result = await change(index);
 				await writeJsonFile(join(this.dir(projectId), ARTIFACTS_INDEX_FILE), index);
 				return result;
 			});

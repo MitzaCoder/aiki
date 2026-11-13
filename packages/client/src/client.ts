@@ -1127,11 +1127,12 @@ export class HarnessClient {
 	 */
 	async listArtifacts(
 		projectId: string,
-		filter: { threadId?: string; workerId?: string; taskId?: string; limit?: number } = {},
+		filter: { artifactId?: string; threadId?: string; workerId?: string; taskId?: string; limit?: number } = {},
 	): Promise<Artifact[]> {
 		const response = await this.#call<ArtifactsListResponse>({
 			type: "artifacts.list",
 			projectId,
+			...(filter.artifactId === undefined ? {} : { artifactId: filter.artifactId }),
 			...(filter.threadId === undefined ? {} : { threadId: filter.threadId }),
 			...(filter.workerId === undefined ? {} : { workerId: filter.workerId }),
 			...(filter.taskId === undefined ? {} : { taskId: filter.taskId }),

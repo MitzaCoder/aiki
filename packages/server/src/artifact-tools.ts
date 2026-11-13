@@ -129,7 +129,7 @@ export function createArtifactExtension(options: ArtifactToolsOptions): Extensio
 			"(videos play, images and text show inline). Copies the file (it stays where it is) into the project's " +
 			"artifact store on this backend. `path` is relative to your working directory or absolute; it must be a file " +
 			"under your working directory, the project directory or the temp directory. Give `taskId` when it is evidence " +
-			"for a board task. " +
+			"for a board task. Same filename and taskId (else conversation) saves a new version. " +
 			ARTIFACT_TAG_GUIDANCE,
 		parameters: Type.Object({
 			path: Type.String({ minLength: 1, description: "The file to keep." }),
@@ -172,7 +172,7 @@ export function createArtifactExtension(options: ArtifactToolsOptions): Extensio
 				const duration = artifact.durationSeconds === null ? "" : `, ${artifact.durationSeconds.toFixed(1)} s`;
 				const tags = artifact.tags === undefined || artifact.tags.length === 0 ? "" : `, tags ${artifact.tags.join(", ")}`;
 				return toolText(
-					`Saved artifact ${artifact.id}: ${artifact.name} (${artifact.kind}, ${formatBytes(artifact.size)}${duration}${tags}).`,
+					`${(artifact.version ?? 1) > 1 ? `Saved version ${artifact.version} of ${artifact.name}` : `Saved artifact ${artifact.id}: ${artifact.name}`} (${artifact.kind}, ${formatBytes(artifact.size)}${duration}${tags}).`,
 					false,
 					{ artifactId: artifact.id },
 				);

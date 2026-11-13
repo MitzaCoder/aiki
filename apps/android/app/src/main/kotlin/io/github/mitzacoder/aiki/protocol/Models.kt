@@ -1453,7 +1453,31 @@ data class Artifact(
     val `taskId`: String?,
     val `sourcePath`: String,
     val `tags`: List<String>? = null,
-    val `createdAt`: String
+    val `createdAt`: String,
+    val `version`: Long? = null,
+    val `versionCount`: Long? = null,
+    val `versions`: List<ArtifactVersion>? = null
+)
+
+@Serializable
+data class ArtifactVersion(
+    val `id`: String,
+    val `projectId`: String,
+    val `name`: String,
+    val `title`: String?,
+    val `note`: String?,
+    val `kind`: String,
+    val `mimeType`: String,
+    val `size`: Long,
+    val `durationSeconds`: Double?,
+    val `threadId`: String,
+    val `workerId`: String?,
+    val `taskId`: String?,
+    val `sourcePath`: String,
+    val `tags`: List<String>? = null,
+    val `createdAt`: String,
+    val `version`: Long? = null,
+    val `versionCount`: Long? = null
 )
 
 @Serializable
@@ -1461,6 +1485,7 @@ data class ArtifactsListRequest(
     @kotlinx.serialization.EncodeDefault val `type`: String = "artifacts.list",
     val `id`: String = java.util.UUID.randomUUID().toString(),
     val `projectId`: String,
+    val `artifactId`: String? = null,
     val `threadId`: String? = null,
     val `workerId`: String? = null,
     val `taskId`: String? = null,

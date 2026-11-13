@@ -70,7 +70,7 @@ export function scenarioResponse(request: TranscriptContext, root: string) {
 		if (tool === "write") return call("artifact_save", { path: "main-report.md", title: "Main coordinator evidence", taskId: "T1" });
 	}
 	if (input === "R2 main worker" && !tool) return call("worker_spawn", { id: "proof-worker", task: "Save actual worker evidence for T1.", isolation: "shared" });
-	if (input === "R2 flood" && !tool) return call("codemode", { code: `for (let i = 0; i < 501; i++) await tools.artifact_save({ path: ${JSON.stringify(join(project, "proof.bin"))}, title: "Window proof " + i }); return "501 real artifact_save calls completed";` });
+	if (input === "R2 flood" && !tool) return call("codemode", { code: `for (let i = 0; i < 501; i++) { const path = ${JSON.stringify(join(project, "window-proof-"))} + i + ".txt"; await tools.write({ path, content: "Synthetic list-window proof " + i }); await tools.artifact_save({ path, title: "Window proof " + i }); } return "501 real artifact_save calls completed";` });
 	if (input === "R2 message" && !tool) return call("thread_send", { id: PROOF_THREAD, message: "Real steering from main", reply: false });
 	if (input === "R2 inspect") {
 		if (!tool) return call("thread_list", {});

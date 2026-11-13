@@ -668,6 +668,7 @@ export class ClientConnection {
 					await this.#manager.requireProject(request.projectId);
 					if (!this.#authorized()) return;
 					const artifacts = await this.#manager.artifacts.list(request.projectId, {
+						...(request.artifactId === undefined ? {} : { artifactId: request.artifactId }),
 						...(request.threadId === undefined ? {} : { threadId: request.threadId }),
 						...(request.workerId === undefined ? {} : { workerId: request.workerId }),
 						...(request.taskId === undefined ? {} : { taskId: request.taskId }),
@@ -683,7 +684,7 @@ export class ClientConnection {
 					if (this.#artifactUrls === undefined) throw new ServerError("internal", "Artifact URLs are not available");
 					const { path, expiresAt } = this.#artifactUrls.signer.sign(
 						artifact.projectId,
-						artifact.id,
+						artifact.id.includes("~") ? artifact.id : `${artifact.id}~${artifact.version ?? 1}`,
 						request.download === true ? "attachment" : "inline",
 						this.#deviceAuth?.identity?.sessionId,
 					);

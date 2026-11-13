@@ -116,6 +116,8 @@ describe("artifacts.list", () => {
 		expect(Object.keys(requests[0] ?? {}).sort()).toEqual(["id", "projectId", "type"]);
 		expect(requests[1]).toMatchObject({ projectId: "project-1", taskId: "T3", limit: 20 });
 		expect(requests[1]?.threadId).toBeUndefined();
+		await client.listArtifacts("project-1", { artifactId: "a1" });
+		expect(socket.sent.at(-1)).toMatchObject({ type: "artifacts.list", artifactId: "a1" });
 	});
 });
 
@@ -194,6 +196,8 @@ describe("artifactMatches", () => {
 	it("narrows by project, thread, worker and task together", () => {
 		const saved = artifact();
 		expect(artifactMatches(saved, "project-1")).toBe(true);
+		expect(artifactMatches(saved, "project-1", { artifactId: saved.id })).toBe(true);
+		expect(artifactMatches(saved, "project-1", { artifactId: "missing" })).toBe(false);
 		expect(artifactMatches(saved, "project-2")).toBe(false);
 		expect(artifactMatches(saved, "project-1", { threadId: "main", workerId: "w2" })).toBe(true);
 		expect(artifactMatches(saved, "project-1", { workerId: "w3" })).toBe(false);
@@ -218,6 +222,11 @@ describe("applyArtifactChange", () => {
 		expect(applyArtifactChange(list, changed(older, true), "project-1")).toEqual([newer]);
 		expect(applyArtifactChange(list, changed(artifact({ id: "a9" }), true), "project-1")).toBe(list);
 		expect(applyArtifactChange(list, changed(artifact({ id: "a3", taskId: "T9" })), "project-1", { taskId: "T3" })).toBe(list);
+	});
+
+	it("removes a stable card when a new version leaves its saver filter", () => {
+		const moved = { ...older, threadId: "another", version: 2 };
+		expect(applyArtifactChange([older], changed(moved), "project-1", { threadId: older.threadId })).toEqual([]);
 	});
 
 	it("keeps the list within the limit", () => {
