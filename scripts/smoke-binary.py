@@ -119,7 +119,7 @@ def production(command, env, verify):
                 raise RuntimeError("Server exited before readiness")
             if verify:
                 print(line, end="", flush=True)
-            match = re.search(r"Aiki listening on (http://[^ ]+)", line)
+            match = re.search(r"(?:Kemiri|Aiki) listening on (http://[^ ]+)", line)
             if match:
                 elapsed = (time.perf_counter() - started) * 1000
                 url = match.group(1)

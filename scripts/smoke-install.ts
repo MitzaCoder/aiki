@@ -97,7 +97,7 @@ async function checkBackend(installation: Instance, version: string, legacyCli =
 		for await (const chunk of child.stdout) {
 			output += new TextDecoder().decode(chunk);
 			if (!pid && existsSync(join(installation.root, "server.pid"))) pid = Number(await readFile(join(installation.root, "server.pid"), "utf8"));
-			if (output.includes("Aiki listening on")) ready.resolve();
+			if (/(?:Kemiri|Aiki) listening on/.test(output)) ready.resolve();
 		}
 	})();
 	void child.exited.then(code => ready.reject(new Error(`Backend exited (${code}): ${output}`)));
