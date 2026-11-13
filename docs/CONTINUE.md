@@ -1,5 +1,21 @@
 # Continue
 
+## T174: pilot.5 release preparation
+
+Prepared v0.1.0-pilot.5 from the deployed T172 main tip. Package/protocol versions,
+Android default 0.1.0-pilot.5 / 1000005, site bootstrap, download links and release
+notes agree. Pilot.2/3 must pass through pilot.4; pilot.4 binary updates use kemiri.
+Intel Macs, Linux musl and forced Bun installs need pilot.5's downloaded installer
+with the same recorded root: pilot.4's embedded source validator requires aiki/.
+Existing data/config/projects/pairings stay; server.env gets a backed-up key rewrite.
+
+The owner approved publication on T174. Only the release tag may be pushed; do not
+move main here. Publish only after all gates, update/rollback rehearsal and exact
+20-asset verification, including the permanent Android signing certificate. Site
+light/dark desktop/phone before/after screenshots and an install-navigation video
+are saved on T174. Publication and friends' note evidence will be recorded in a
+follow-up continuation entry; this preparation entry is not a publication claim.
+
 ## T172: installed video ranges fail inside the app-shell worker
 
 Reproduced with checksum-verified published pilot.2 and pilot.4 Linux x64

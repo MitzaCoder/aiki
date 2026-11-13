@@ -13,7 +13,7 @@ export const PROTOCOL_VERSION = 1;
 export const ProtocolVersionSchema = Type.Literal(PROTOCOL_VERSION);
 
 export const SERVER_NAME = "Kemiri";
-export const SERVER_VERSION = "0.1.0-pilot.4";
+export const SERVER_VERSION = "0.1.0-pilot.5";
 
 export const RequestIdSchema = Type.String({ minLength: 1, description: "Client-chosen; echoed by the response." });
 export type RequestId = Static<typeof RequestIdSchema>;

@@ -1,7 +1,7 @@
 # Release procedure
 
-The published bridge is **v0.1.0-pilot.4**. This procedure describes the next,
-canonical-only release. The owner chooses its tag and approves publication.
+The bridge is **v0.1.0-pilot.4**. This procedure describes **v0.1.0-pilot.5**,
+the canonical-only release. Owner approval is required for publication.
 Never move main, retarget a published tag, or deploy as a release step.
 Past release notes under `releases/` remain historical records.
 
@@ -15,7 +15,8 @@ release no longer builds legacy asset names or the legacy version probe.
 
 Important source-fallback limit: pilot.4's embedded installer still validates an
 `aiki/` source tree. The next archive uses `kemiri/`. Pilot.4's normal supported
-binary update works; for `--runtime bun` or platforms without a binary, download,
+binary update works. Intel Macs and Linux musl x64/ARM64 have no standalone
+asset; they always use the fallback. For these platforms or `--runtime bun`, download,
 review and run the **new release's installer** with the same `--dir`, rather than
 using pilot.4's embedded installer. Never weaken archive-path or checksum checks.
 

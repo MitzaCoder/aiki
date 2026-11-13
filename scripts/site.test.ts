@@ -105,9 +105,9 @@ exec "$KEMIRI_TEST_CURL" -fsSL "$KEMIRI_TEST_ORIGIN/\${url#${releasePrefix}}" -o
 test('bootstrap dry run verifies a pinned default and forwards arguments without word splitting', async () => {
 	const run = await rehearseBootstrap(['--no-service', '--dir', '/tmp/example install']);
 	expect(run.exitCode).toBe(0);
-	expect(run.stdout).toContain('verified GitHub release installer v0.1.0-pilot.4');
-	expect(run.forwarded).toEqual(['--version', 'v0.1.0-pilot.4', '--no-service', '--dir', '/tmp/example install']);
-	expect(run.requests).toEqual(['/v0.1.0-pilot.4/install.sh', '/v0.1.0-pilot.4/install.sh.sha256']);
+	expect(run.stdout).toContain('verified GitHub release installer v0.1.0-pilot.5');
+	expect(run.forwarded).toEqual(['--version', 'v0.1.0-pilot.5', '--no-service', '--dir', '/tmp/example install']);
+	expect(run.requests).toEqual(['/v0.1.0-pilot.5/install.sh', '/v0.1.0-pilot.5/install.sh.sha256']);
 	expect(run.leftovers).toEqual([]);
 });
 

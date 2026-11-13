@@ -1,6 +1,6 @@
 {
 	"name": "@kemiri/protocol",
-	"version": "0.1.0-pilot.4",
+	"version": "0.1.0-pilot.5",
 	"private": true,
 	"type": "module",
 	"description": "Wire protocol between the aiki server and its clients. TypeBox schemas, and the few pure rules both sides share (cache-misses.ts); no runtime dependencies.",
