@@ -48,13 +48,22 @@ only the deployment job can write Pages and request the deployment OIDC token.
 There is no repository-content write permission, automatic commit or release sync.
 The uploaded artifact is exactly `site/`, not the checkout or its local configuration.
 
+## Pilot.4 publication and live domain
+
+The pilot.4 preparation updates the pinned default and release/APK links together.
+Deploy that site commit only after the release assets are public and verified.
+The current install command uses `https://aikilabs.dev/install.sh`: that endpoint
+returns the bootstrap over HTTPS. The `kemiri.dev/install.sh` check timed out during
+preparation. Keep the live domain for installs until the owner completes and verifies
+the HTTPS/DNS cutover above; the product name and canonical metadata remain Kemiri.
+
 ## Installer trust model
 
 Pages cannot provide HTTP redirects, so the domain serves a small, reviewable POSIX
 shell **bootstrap**, not a second copy of the full installer that might silently
 drift from the release. Download/review it before running; do not use `curl | sh`.
 
-- The default is pinned to `v0.1.0-pilot.3`, never GitHub's `latest` (which excludes
+- The default is pinned to `v0.1.0-pilot.4`, never GitHub's `latest` (which excludes
   prereleases). `--version TAG` selects that exact release's installer and is passed
   unchanged to it. `--version latest`, path fragments and URLs are rejected.
 - It downloads `install.sh` and `install.sh.sha256` only from that version under

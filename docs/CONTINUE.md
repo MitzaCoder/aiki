@@ -1,5 +1,57 @@
 # Continue
 
+## T169: pilot.4 prepared, not published
+
+Prepared `v0.1.0-pilot.4` from the checked Kemiri main tip. Workspace package and
+protocol versions, Android default `0.1.0-pilot.4` / 1000004, bootstrap default,
+current install/site links and reviewed notes agree. Historical releases and
+compatibility fixtures stay unchanged. Notes explain the rename, HTML pages,
+theme/Print/versions, bundled HTML skill, scroll-back fix, supervised updates,
+MCP presets/command servers/imports and the board-filter removal.
+
+Friends stop pilot.3, run `aiki update --version v0.1.0-pilot.4`, then `kemiri start`
+(or `aiki start`). Existing folders/services/data/pairings stay; Android installs
+over the old APK. The release workflow already builds both binary families with
+an explicit legacy version probe and both source names with `aiki/` layout. The
+new regression test resolves its upload matrix and checks the literal asset list:
+25 draft workflow assets, 35 final assets after manual Android/notes/manifest.
+`docs/RELEASE.md` has the exact list and future owner-only tag/upload/publish steps.
+
+Important correction to the task's signing assumption: pilot.3 CI did not sign
+Android, and the current workflow does not either. The owner signs locally and
+attaches both APK/notices naming families. Signing scripts still require the
+`AIKI_RELEASE_KEYSTORE` / `AIKI_RELEASE_PASSWORD_FILE` inputs, not KEMIRI aliases;
+the runbook now says so. Application ID and permanent certificate stay unchanged.
+No signing key or signed production candidate was used during preparation.
+
+Real published, checksum-verified pilot.3 installer and Linux x64 executable
+updated to locally built pilot.4 legacy assets using the installed updater, not
+replacement installer code. Disposable HOME/XDG, env -i with USER, no Bun on child
+PATH, real pinned zellij reused, no services, owned setsid process groups/PID stop.
+A synthetic device was paired through pilot.3's actual owner/HTTP transport.
+Both launchers, legacy/canonical probes, stopped data/config byte hashes, retained
+backend identity/device list, pilot.4 health, rollback and pilot.3 restart pass.
+T169 transcript `mwf0lnub-7d8e58ae94`; rehearsal builds are not publishable assets.
+
+The live `aikilabs.dev/install.sh` returned HTTPS 200 and its downloaded bootstrap
+verified the real pilot.3 installer and ran --help without installing. Kemiri's
+new install endpoint timed out. README/site/install guides keep the live domain
+until the owner verifies the cutover. Old repository release downloads redirect
+successfully to Kemiri. Do not deploy the prepared site default before pilot.4
+assets are public and verified: missing assets fail closed.
+
+T169 has eight desktop/phone light/dark site before/after screenshots, DOM text/
+overflow checks (no horizontal overflow), and the navigation recording
+`mwf0lns7-1acdfeb301`. Final root suite passes 2,631 tests / 93,301 assertions;
+typecheck, zero-diagnostic web check, 1,105 web
+tests/build, 944 Android JVM tests (two skipped), checkReleaseVersion and
+assembleDebug pass. Protocol check reports 388 DTOs / 106 overloads; focused
+site/release tests pass 20 tests / 151 assertions. Private-denylist/generic and
+Gitleaks checks pass. Gradle is stopped. Native ARM execution, macOS service
+acceptance, production signing and real-network Android pairing remain owner/CI
+gates. No physical device, accounts, workflow run, push, tag, publication, main
+movement or deployment operation.
+
 ## T167: merged rename checks and diagnostic cleanup
 
 Merged stack through usrsyrpz passes dependency install, root tests (2,630 /

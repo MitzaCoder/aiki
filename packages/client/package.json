@@ -1,6 +1,6 @@
 {
 	"name": "@kemiri/client",
-	"version": "0.1.0-pilot.3",
+	"version": "0.1.0-pilot.4",
 	"private": true,
 	"type": "module",
 	"description": "Framework-free client for the aiki WebSocket protocol: handshake, requests, watches, reconnects and Chord view ops.",

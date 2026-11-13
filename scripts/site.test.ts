@@ -20,7 +20,7 @@ test('site uses canonical Kemiri links and preserves privacy promises', async ()
 	const root = resolve(import.meta.dir, '../site');
 	const home = await Bun.file(join(root, 'index.html')).text();
 	const privacy = await Bun.file(join(root, 'privacy/index.html')).text();
-	expect(home).toContain('curl -fsSL https://kemiri.dev/install.sh | sh');
+	expect(home).toContain('curl -fsSL https://aikilabs.dev/install.sh | sh');
 	for (const [page, path] of [[home, '/'], [privacy, '/privacy/']]) {
 		expect(page).toContain(`<link rel="canonical" href="https://kemiri.dev${path}">`);
 		expect(page).toContain('mailto:support@kemiri.dev');
@@ -83,9 +83,9 @@ exec "$AIKI_TEST_CURL" -fsSL "$AIKI_TEST_ORIGIN/\${url#${releasePrefix}}" -o "$o
 test('bootstrap dry run verifies a pinned default and forwards arguments without word splitting', async () => {
 	const run = await rehearseBootstrap(['--no-service', '--dir', '/tmp/example install']);
 	expect(run.exitCode).toBe(0);
-	expect(run.stdout).toContain('verified GitHub release installer v0.1.0-pilot.3');
-	expect(run.forwarded).toEqual(['--version', 'v0.1.0-pilot.3', '--no-service', '--dir', '/tmp/example install']);
-	expect(run.requests).toEqual(['/v0.1.0-pilot.3/install.sh', '/v0.1.0-pilot.3/install.sh.sha256']);
+	expect(run.stdout).toContain('verified GitHub release installer v0.1.0-pilot.4');
+	expect(run.forwarded).toEqual(['--version', 'v0.1.0-pilot.4', '--no-service', '--dir', '/tmp/example install']);
+	expect(run.requests).toEqual(['/v0.1.0-pilot.4/install.sh', '/v0.1.0-pilot.4/install.sh.sha256']);
 	expect(run.leftovers).toEqual([]);
 });
 

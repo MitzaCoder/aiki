@@ -1,7 +1,7 @@
 {
 	"name": "@kemiri/web",
 	"private": true,
-	"version": "0.1.0-pilot.3",
+	"version": "0.1.0-pilot.4",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",

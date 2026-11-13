@@ -2,7 +2,7 @@
 
 Follow these steps in order. Report each check without copying credentials or pairing
 links into chat. Linux is tested; macOS and Windows inside WSL are experimental.
-Use the published **`v0.1.0-pilot.3` prerelease**. Step 3 also provides a
+Use the published **`v0.1.0-pilot.4` prerelease**. Step 3 also provides a
 source-checkout fallback. Do not use `/latest`: GitHub excludes prereleases from it.
 
 `kemiri` and `KEMIRI_*` are canonical; `aiki` and `AIKI_*` remain supported until
@@ -68,7 +68,7 @@ launcher is still `$HOME/.local/bin/kemiri`. No shell profile is edited.
 Download into the empty scratch directory. Use bounded downloads:
 
 ```sh
-KEMIRI_RELEASE_URL=https://github.com/MitzaCoder/kemiri/releases/download/v0.1.0-pilot.3
+KEMIRI_RELEASE_URL=https://github.com/MitzaCoder/kemiri/releases/download/v0.1.0-pilot.4
 curl --connect-timeout 15 --max-time 300 --retry 2 -fL "$KEMIRI_RELEASE_URL/install.sh" -o install.sh
 curl --connect-timeout 15 --max-time 300 --retry 2 -fL "$KEMIRI_RELEASE_URL/install.sh.sha256" -o install.sh.sha256
 sha256sum -c install.sh.sha256
@@ -79,13 +79,13 @@ Require an `install.sh: OK` result. Read the downloaded `install.sh` before runn
 it. Checksums fetched over HTTPS detect corruption, not a compromised publisher.
 Pilot.2 prefers a standalone executable on Linux x64/arm64 and macOS arm64. The installer
 requires its sidecar digest **and** matching
-`SHA256SUMS` entry before running it. The Bun fallback fetches `aiki-v0.1.0-pilot.3.tar.gz`
+`SHA256SUMS` entry before running it. The Bun fallback fetches `aiki-v0.1.0-pilot.4.tar.gz`
 and its sibling `.sha256`, verifies them before extraction, and checks pinned Bun/zellij hashes.
 A missing binary can select Bun; a download/checksum failure cannot.
 Never skip a mismatch. Install with the explicit version:
 
 ```sh
-sh install.sh --version v0.1.0-pilot.3 --dir "$KEMIRI_ROOT" --no-service
+sh install.sh --version v0.1.0-pilot.4 --dir "$KEMIRI_ROOT" --no-service
 ```
 
 #### Domain alternative
@@ -94,9 +94,9 @@ The direct GitHub download above is preferred for an agent because you can inspe
 installer before running it. The domain also serves a small bootstrap:
 
 ```sh
-curl --connect-timeout 15 --max-time 300 --retry 2 -fL https://kemiri.dev/install.sh -o install-bootstrap.sh
+curl --connect-timeout 15 --max-time 300 --retry 2 -fL https://aikilabs.dev/install.sh -o install-bootstrap.sh
 # Read install-bootstrap.sh before running it.
-sh install-bootstrap.sh --version v0.1.0-pilot.3 --dir "$KEMIRI_ROOT" --no-service
+sh install-bootstrap.sh --version v0.1.0-pilot.4 --dir "$KEMIRI_ROOT" --no-service
 ```
 
 Choose this **instead of** the direct installation, not in addition. It fetches the exact version's installer
@@ -105,7 +105,7 @@ Its default is the pinned pilot, and `--version latest` is refused. You review t
 the checksum-verified release installer without a second review pause. If the human wants that pause,
 use the direct GitHub path. Checksum failure is fatal; never retry through another path to evade it.
 For later removal keep the reviewed bootstrap and substitute `install-bootstrap.sh` for `install.sh` below,
-with the same explicit `--version v0.1.0-pilot.3`. See [SITE.md](SITE.md) for the trust model.
+with the same explicit `--version v0.1.0-pilot.4`. See [SITE.md](SITE.md) for the trust model.
 
 If downloads return 404, stop this path and check the version and asset names.
 Use the following fallback if needed, not an unversioned installer or `/latest`.

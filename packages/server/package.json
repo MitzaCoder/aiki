@@ -1,6 +1,6 @@
 {
 	"name": "@kemiri/server",
-	"version": "0.1.0-pilot.3",
+	"version": "0.1.0-pilot.4",
 	"private": true,
 	"type": "module",
 	"description": "Bun server: one WebSocket protocol for projects, models, credentials and the coordinator conversation.",

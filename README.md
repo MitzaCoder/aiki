@@ -26,24 +26,23 @@ settings; `aiki` still works for now and `AIKI_*` settings are still read.
 Compatibility stays until a later release. Existing installation folders stay
 where they are: the app keeps your data, credentials, pairings and settings.
 Do not rename or delete old folders to upgrade. Fresh installations use Kemiri
-folders. The pinned pilot.3 downloads below predate the rename and only provide
-`aiki`; the new command becomes available with the bridge release.
+folders. Pilot.4 is the first Kemiri release; both commands work.
 
 ## Try Kemiri
 
-[Current pilot: `v0.1.0-pilot.3`](https://github.com/MitzaCoder/kemiri/releases/tag/v0.1.0-pilot.3). Linux tested; macOS/WSL experimental; no phone push.
+[Current pilot: `v0.1.0-pilot.4`](https://github.com/MitzaCoder/kemiri/releases/tag/v0.1.0-pilot.4). Linux tested; macOS/WSL experimental; no phone push.
 
 ```sh
-curl -fL https://github.com/MitzaCoder/kemiri/releases/download/v0.1.0-pilot.3/install.sh -o install.sh
+curl -fL https://github.com/MitzaCoder/kemiri/releases/download/v0.1.0-pilot.4/install.sh -o install.sh
 # Review install.sh before running it.
-sh install.sh --version v0.1.0-pilot.3 --no-service
+sh install.sh --version v0.1.0-pilot.4 --no-service
 kemiri start
 ```
 
-Alternative download: `curl -fL https://kemiri.dev/install.sh -o install.sh`, then the same review/run steps. This small [bootstrap](site/install.sh) verifies the versioned GitHub release installer before running it. Keep `--version`: GitHub's latest release excludes prereleases. Verify direct downloads with the release checksums. You need git; install jj for isolated workers. The installer prefers a standalone executable on Linux x64/arm64 and macOS arm64; private Bun remains a fallback. It also supplies zellij.
+Alternative download: `curl -fL https://aikilabs.dev/install.sh -o install.sh`, then the same review/run steps. This small [bootstrap](site/install.sh) verifies the versioned GitHub release installer before running it. Keep `--version`: GitHub's latest release excludes prereleases. Verify direct downloads with the release checksums. You need git; install jj for isolated workers. The installer prefers a standalone executable on Linux x64/arm64 and macOS arm64; private Bun remains a fallback. It also supplies zellij.
 
-Short version: `curl -fsSL https://kemiri.dev/install.sh | sh`.
-From pilot.2, stop Kemiri, run `kemiri update`, then start it; the saved pilot channel needs no `--version`. From pilot.1, use `kemiri update --version v0.1.0-pilot.3` once instead. Install the new Android APK over the old one (same signing key).
+Short version: `curl -fsSL https://aikilabs.dev/install.sh | sh`.
+From pilot.3 or earlier, stop it, run `aiki update --version v0.1.0-pilot.4`, then `kemiri start` (or `aiki start`). Keep existing folders; the old command still works. For a user service, use `aiki service remove` before updating and `kemiri service install` afterwards. Install the new Android APK over the old one (same signing key).
 
 In another terminal:
 
@@ -54,7 +53,7 @@ kemiri pair
 
 Open the private pairing URL in the same browser. Then connect a provider, choose a project folder and pick a coordinator model.
 
-[Download the signed Android APK](https://github.com/MitzaCoder/kemiri/releases/download/v0.1.0-pilot.3/aiki-v0.1.0-pilot.3-android-universal.apk) (Android 12+). Your phone needs your backend reachable over HTTPS; the APK is not a tunnel.
+[Download the signed Android APK](https://github.com/MitzaCoder/kemiri/releases/download/v0.1.0-pilot.4/kemiri-v0.1.0-pilot.4-android-universal.apk) (Android 12+). Your phone needs your backend reachable over HTTPS; the APK is not a tunnel.
 
 ### Install with your coding agent
 
@@ -73,4 +72,4 @@ Kemiri runs commands with **your permissions** and provider spending authority. 
 
 Built on [pi durable](https://github.com/earendil-works/pi/tree/main/packages/durable). Original code: [MIT](LICENSE); dependencies keep their own licences.
 
-[Install guide](docs/INSTALL.md) · [Pilot notes](docs/releases/v0.1.0-pilot.3.md) · [Design](docs/DESIGN.md) · [Operations](docs/OPERATIONS.md) · [Issues](https://github.com/MitzaCoder/kemiri/issues)
+[Install guide](docs/INSTALL.md) · [Pilot notes](docs/releases/v0.1.0-pilot.4.md) · [Design](docs/DESIGN.md) · [Operations](docs/OPERATIONS.md) · [Issues](https://github.com/MitzaCoder/kemiri/issues)
