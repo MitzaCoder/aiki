@@ -119,14 +119,14 @@ describe('an HTML artifact opens in a sandboxed tab', () => {
 		expect(isHtmlArtifact({ name: 'report.md', mimeType: 'text/markdown' })).toBe(false);
 		expect(isHtmlArtifact({ name: 'report.txt', mimeType: 'text/plain' })).toBe(false);
 	});
-	test('the frame has no sandbox tokens at all: an opaque origin without scripts', () => {
-		expect(ARTIFACT_FRAME_SANDBOX).toBe('');
+	test('the frame runs scripts in an opaque origin: no `allow-same-origin`', () => {
+		expect(ARTIFACT_FRAME_SANDBOX).toBe('allow-scripts allow-popups allow-popups-to-escape-sandbox');
+		expect(ARTIFACT_FRAME_SANDBOX).not.toContain('allow-same-origin');
+		expect(ARTIFACT_FRAME_SANDBOX).not.toContain('allow-forms');
 		const document = sandboxedArtifactDocument('blob:http://localhost:5186/synthetic', 'report.html');
-		expect(document).toContain('<iframe title="report.html" sandbox=""');
+		expect(document).toContain(`<iframe title="report.html" sandbox="${ARTIFACT_FRAME_SANDBOX}"`);
 		expect(document).toContain('src="blob:http://localhost:5186/synthetic"');
 		expect(document).not.toContain('allow-same-origin');
-		expect(document).not.toContain('allow-scripts');
-		expect(document).not.toContain('allow-popups');
 		// The app's own origin appears nowhere as a document of the artifact.
 		expect(document).toContain('cannot read the app');
 	});
@@ -182,5 +182,41 @@ describe('the viewers wire the new sizing and button up', () => {
 		expect(text).toContain('title="Open in a new tab"');
 		expect(text).toContain('data-artifact-new-tab');
 		expect(text).toContain('{#if html && content !== undefined}');
+	});
+});
+
+describe('an HTML artifact is shown as a page', () => {
+	const text = source('../src/lib/components/artifacts/ArtifactText.svelte');
+	test('the dialog renders it by default, in a frame carrying the shared sandbox', () => {
+		// The document travels as `srcdoc`, so no URL of the artifact is ever loaded on the app's origin.
+		expect(text).toContain('srcdoc={content}');
+		expect(text).toContain('sandbox={ARTIFACT_FRAME_SANDBOX}');
+		expect(text).toContain('referrerpolicy="no-referrer"');
+		expect(text).toContain("import { ARTIFACT_FRAME_SANDBOX, isHtmlArtifact, openArtifactPreview } from '#lib/artifact-preview.js'");
+		// Page is the default: only a reader's choice or a cut-short page leaves it.
+		expect(text).toMatch(/const htmlSource = \$derived\(view !== undefined \? view === 'source' : truncated\)/);
+		expect(text).toMatch(/const page = \$derived\(html && !htmlSource\)/);
+		// The page comes before the source branches, and no `sandbox` string is written by hand here.
+		expect(text).toContain('{#if page}');
+		expect(text.indexOf('{#if page}')).toBeLessThan(text.indexOf('{:else if rendered}'));
+		expect(text).not.toMatch(/sandbox="[^"]*allow-same-origin/);
+	});
+	test('Page and Source switch what is shown, and the choice is kept for the session', () => {
+		expect(text).toContain("data-artifact-view={option.key}");
+		expect(text).toContain('aria-pressed={(option.key === \'page\') === page}');
+		expect(text).toMatch(/function setView\(next: 'page' \| 'source'\): void \{[^}]*view = next;[^}]*htmlView = next;/);
+		// A module-scoped variable survives the dialog closing and opening again.
+		expect(text).toMatch(/<script module lang="ts">[\s\S]*?let htmlView: 'page' \| 'source' \| undefined;[\s\S]*?<\/script>/);
+		expect(text).toContain("let view = $state<'page' | 'source' | undefined>(htmlView)");
+		// Copy always copies the source, never a rendered view.
+		expect(text).toContain('<CopyButton text={content} label="Copy the text" />');
+	});
+	test('the page fills the roomy dialog, and a cut-short page opens as source', () => {
+		expect(text).toMatch(/\.page-frame\.roomy \{[^}]*calc\(90dvh - 14rem\)/);
+		expect(text).toMatch(/\.page-frame \{[^}]*min\(60dvh, 36rem\)/);
+		// Over the preview limit the note says the page is partial, whichever view the reader is in.
+		expect(text).toContain('data-artifact-truncated');
+		expect(text).toContain('download it for the rest');
+		expect(text).toMatch(/\{#if html\}\{page \? 'the page is drawn from that part only'/);
 	});
 });

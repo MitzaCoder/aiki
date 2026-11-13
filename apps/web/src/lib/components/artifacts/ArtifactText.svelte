@@ -1,3 +1,8 @@
+<script module lang="ts">
+	/** The reader's last Page/Source choice for an HTML artifact, kept while the page lives. */
+	let htmlView: 'page' | 'source' | undefined;
+</script>
+
 <script lang="ts">
 	import { overlayScroll } from '#lib/scrollbars.js';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
@@ -9,16 +14,18 @@
 	import CopyButton from '#lib/components/CopyButton.svelte';
 	import Markdown from '#lib/components/markdown/Markdown.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
-	import { isHtmlArtifact, openArtifactPreview } from '#lib/artifact-preview.js';
+	import { ARTIFACT_FRAME_SANDBOX, isHtmlArtifact, openArtifactPreview } from '#lib/artifact-preview.js';
 	import { formatBytes, isMarkdownArtifact, MEDIA_RETRY_LIMIT, TEXT_PREVIEW_BYTES } from '#lib/artifacts.js';
 	import { useArtifactSource } from '#lib/artifacts.svelte.js';
 	import { ArtifactReadError, artifactReadProblem, readArtifactText } from '#lib/artifact-text.js';
 
 	/**
 	 * A text artifact (a log, a report) read in place: its first `TEXT_PREVIEW_BYTES`, monospace, wrapped or not. A
-	 * Markdown one is rendered, with its source a toggle away. A token the backend refuses is renewed and read again.
-	 * `roomy` is the full viewer's, where the dialog scrolls the page itself: the text then grows to its own length
-	 * instead of scrolling inside the dialog. An HTML artifact offers a new tab with the page sandboxed.
+	 * Markdown one is rendered, with its source a toggle away. An HTML one is the page itself, in a sandboxed frame (see
+	 * `lib/artifact-preview.ts`), with its source a toggle away and Copy always copying the source. A token the backend
+	 * refuses is renewed and read again. `roomy` is the full viewer's, where the dialog scrolls the page itself: the text
+	 * then grows to its own length and the page fills the room the dialog has. An HTML artifact also offers a new tab
+	 * with the same sandboxed page.
 	 */
 	let {
 		artifact,
@@ -32,9 +39,21 @@
 	let truncated = $state(false);
 	let wrap = $state(true);
 	let showSource = $state(false);
+	let view = $state<'page' | 'source' | undefined>(htmlView);
 	const markdown = $derived(isMarkdownArtifact(artifact));
 	const html = $derived(isHtmlArtifact(artifact));
 	const rendered = $derived(markdown && !showSource);
+	/**
+	 * Whether an HTML artifact shows its source. The reader's own choice wins; otherwise a page cut short by the preview
+	 * limit opens as source, because half a document renders as something the worker never wrote.
+	 */
+	const htmlSource = $derived(view !== undefined ? view === 'source' : truncated);
+	const page = $derived(html && !htmlSource);
+	/** The two ways an HTML artifact is read, in the header's segmented control. */
+	const VIEWS = [
+		{ key: 'page', label: 'Page' },
+		{ key: 'source', label: 'Source' }
+	] as const;
 	let failures = 0;
 	let attempt = $state(0);
 	let tabProblem = $state('');
@@ -82,6 +101,11 @@
 		attempt += 1;
 	}
 
+	function setView(next: 'page' | 'source'): void {
+		view = next;
+		htmlView = next;
+	}
+
 	/** The HTML page in a tab of its own, sandboxed away from this app's origin (see `lib/artifact-preview.ts`). */
 	function openTab(): void {
 		if (content === undefined) return;
@@ -104,7 +128,21 @@
 				{#if showSource}<BookOpenTextIcon class="size-3.5" />{:else}<CodeXmlIcon class="size-3.5" />{/if}
 			</button>
 		{/if}
-		{#if !rendered}
+		{#if html}
+			<div class="flex shrink-0 items-center rounded-md bg-(--chat-surface-2)/70 p-0.5" role="group" aria-label="Show the page or its source" data-artifact-html-view>
+				{#each VIEWS as option (option.key)}
+					<button
+						type="button"
+						class="rounded px-1.5 py-0.5 font-medium aria-pressed:bg-(--chat-bg) aria-pressed:text-(--accent-2) hover:text-(--chat-fg)"
+						aria-pressed={(option.key === 'page') === page}
+						onclick={() => setView(option.key)}
+						title={option.key === 'page' ? 'Show the page as it renders' : 'Show the HTML source'}
+						data-artifact-view={option.key}
+					>{option.label}</button>
+				{/each}
+			</div>
+		{/if}
+		{#if !rendered && !page}
 			<button
 				type="button"
 				class="grid size-7 place-items-center rounded-md hover:bg-(--chat-surface-2) aria-pressed:text-(--accent-2)"
@@ -127,7 +165,20 @@
 	</div>
 	{#if tabProblem}<p class="border-b border-(--chat-border) px-3 py-1.5 text-xs text-(--chat-danger)" role="alert">{tabProblem}</p>{/if}
 	{#if content !== undefined}
-		{#if rendered}
+		{#if page}
+			<div class="relative">
+				<iframe
+					title={artifact.name}
+					sandbox={ARTIFACT_FRAME_SANDBOX}
+					referrerpolicy="no-referrer"
+					srcdoc={content}
+					class="page-frame block w-full border-0 bg-white"
+					class:compact
+					class:roomy
+					data-artifact-page
+				></iframe>
+			</div>
+		{:else if rendered}
 			<div class="relative">
 			<div use:overlayScroll={'parent'} class="text-body rendered overflow-auto px-4 py-3" class:compact class:roomy data-artifact-markdown>
 				<Markdown source={content} />
@@ -139,8 +190,9 @@
 			</div>
 		{/if}
 		{#if truncated}
-			<p class="border-t border-(--chat-border) px-3 py-1.5 text-xs text-(--chat-fg-subtle)">
-				The first {formatBytes(TEXT_PREVIEW_BYTES)}{artifact.size > 0 ? ` of ${formatBytes(artifact.size)}` : ''}; download it for the rest.
+			<p class="border-t border-(--chat-border) px-3 py-1.5 text-xs text-(--chat-fg-subtle)" data-artifact-truncated>
+				The first {formatBytes(TEXT_PREVIEW_BYTES)}{artifact.size > 0 ? ` of ${formatBytes(artifact.size)}` : ''};
+				{#if html}{page ? 'the page is drawn from that part only' : 'a page cannot be shown whole, so this is its source'}; {/if}download it for the rest.
 			</p>
 		{/if}
 	{:else if problem || source.current?.error}
@@ -176,5 +228,19 @@
 	.text-body.wrap {
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
+	}
+	/*
+	 * The rendered page. It is its own document, so no `roomy` height rule of the text body applies: the frame takes the
+	 * room the dialog has above its title and note (the roomy HTML dialog is at most `min(90dvh, 64rem)` tall), and in
+	 * the chat or a list it keeps the text body's frame.
+	 */
+	.page-frame {
+		height: min(60dvh, 36rem);
+	}
+	.page-frame.compact {
+		height: 16rem;
+	}
+	.page-frame.roomy {
+		height: clamp(16rem, calc(90dvh - 14rem), 46rem);
 	}
 </style>

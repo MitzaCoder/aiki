@@ -1,20 +1,24 @@
 /**
- * An HTML artifact opened in its own browser tab.
+ * An HTML artifact shown as a page, in the viewer's dialog or in a tab of its own.
  *
- * The artifact bytes already travel over a signed, short-lived URL, but the browser must not render them on the app's
- * origin: a `blob:` URL made by the page inherits that origin, so an artifact HTML document opened directly from one
- * could read the app's storage or call its backend. Instead the tab shows a small page this app writes, holding the
- * artifact in an `<iframe sandbox>`: an empty `sandbox` attribute gives it an opaque origin, no scripts, no forms and no
- * popups, which is the same restriction the backend puts on these artifacts over HTTP (`Content-Security-Policy:
- * sandbox`). Nothing of the artifact is ever parsed into the app's own document.
+ * An HTML artifact is a report a worker wrote, so it is meant to be seen rendered, and those reports use scripts for
+ * charts and counters. The artifact must still not run on the app's origin: a `blob:` URL or `srcdoc` made by the page
+ * inherits that origin, so a document rendered there could read the app's storage or call its backend with its
+ * credentials. Every frame therefore gets `ARTIFACT_FRAME_SANDBOX`: scripts and pop-ups are allowed, `allow-same-origin`
+ * never is, which leaves the document in an opaque origin — its own storage is empty and thrown away with it, its
+ * requests are cross-origin without cookies, and it cannot reach this page's DOM. No CSP is added on top: a
+ * `connect-src`/`default-src` list would break the external scripts, fonts and images a report may legitimately load,
+ * while the opaque origin already denies it the backend's answers and the app's session. Nothing of the artifact is
+ * ever parsed into the app's own document.
  */
 import type { Artifact } from "@aiki/protocol";
 
 /**
- * The frame's sandbox tokens: none. An empty attribute is already an opaque origin with scripts, forms, popups and
- * top-level navigation off; adding `allow-same-origin` or `allow-scripts` would hand the artifact the app's origin.
+ * The sandbox both frames carry — the dialog's page and the new tab's. The same tokens in both places, so neither can
+ * drift into being more permissive than the other. `allow-same-origin` must never be added: with it the artifact would
+ * share the app's origin, and `allow-scripts` would let it read the app's storage and call the backend as the reader.
  */
-export const ARTIFACT_FRAME_SANDBOX = "";
+export const ARTIFACT_FRAME_SANDBOX = "allow-scripts allow-popups allow-popups-to-escape-sandbox";
 
 /** Whether a text artifact is an HTML page, by its type or its name. */
 export function isHtmlArtifact(artifact: Pick<Artifact, "name" | "mimeType">): boolean {
@@ -53,7 +57,7 @@ export function sandboxedArtifactDocument(frameUrl: string, name: string): strin
 </style>
 </head>
 <body>
-<header><strong>${title}</strong><span>Sandboxed artifact: scripts, forms and pop-ups are off, and this page cannot read the app's storage.</span></header>
+<header><strong>${title}</strong><span>Sandboxed artifact: it runs in its own origin, so it cannot read the app's storage or act as you.</span></header>
 <main><iframe title="${title}" sandbox="${ARTIFACT_FRAME_SANDBOX}" referrerpolicy="no-referrer" src="${escapeHtml(frameUrl)}"></iframe></main>
 </body>
 </html>`;

@@ -1622,15 +1622,28 @@ later from this section.
   The text body of a roomy viewer no longer caps itself at 60dvh with its own scrollbar
   (`ArtifactText`'s `roomy`): the dialog's one scroll region scrolls the document, so a long report reads as one page.
   Chat cards and lists keep their compact caps.
-- **An HTML artifact opens in a sandboxed new tab (T161).** The viewer shows HTML as escaped source; an icon button
-  (external-link, `aria-label` and tooltip "Open in a new tab") opens the page itself. The bytes come from the same
-  signed, short-lived artifact URL the viewer already reads (no cookie, no new endpoint), and the tab shows a wrapper
-  page this app writes (`lib/artifact-preview.ts`) with the artifact in `<iframe sandbox="">`: an empty attribute gives
-  it an opaque origin with scripts, forms and pop-ups off, the same restriction the backend's `Content-Security-Policy:
-  sandbox` applies over HTTP. A `blob:` URL made by the page inherits the app's origin, so opening the artifact's own
-  blob directly would hand it the app's storage and backend; it never is. The wrapper clears `opener` and sends no
-  referrer. A blocked pop-up is reported in the viewer instead of failing silently; Markdown and other kinds keep the
-  source view they had.
+- **An HTML artifact is shown as a page (T161, owner feedback F52).** An HTML report is a page a worker wrote to be
+  seen, so the viewer defaults to rendering it, not quoting it. `ArtifactText` puts its bytes in an `<iframe>` that fills
+  the roomy dialog's body (a viewport-based height, `clamp(16rem, calc(90dvh - 14rem), 46rem)`), and a small segmented
+  control in the bar switches **Page** / **Source**; the choice is kept for the session (a module-scoped variable, like
+  the video details panel), and Copy always copies the source. Chat cards and lists render the page in the smaller
+  compact frame. The external-link button still opens the same page in a tab of its own.
+- **The sandbox is the same in both places.** `ARTIFACT_FRAME_SANDBOX` (`lib/artifact-preview.ts`) is
+  `allow-scripts allow-popups allow-popups-to-escape-sandbox` and both frames carry it. Scripts and charts work, and the
+  document is still in an **opaque origin**: without `allow-same-origin` its `localStorage` throws, its cookies are its
+  own and gone with it, and it cannot read this page's DOM or the app's storage. Its requests to the backend are
+  cross-origin, without credentials, and answered only with CORS for the app's own origin, so it cannot act as the
+  reader. The dialog's frame carries the document as `srcdoc`, never as a `blob:` URL made by the page (which inherits
+  the app's origin), and both frames send no referrer. The new tab's wrapper page is written by the app
+  (`sandboxedArtifactDocument`), names the artifact with escaped text and clears `opener`. No CSP is added inside the
+  frame: `default-src`/`connect-src` lists would break the external scripts, fonts and images a report may load, while
+  the opaque origin already denies it the backend's answers and the app's session. The backend's own `attachment` +
+  `Content-Security-Policy: sandbox` for HTML/SVG over HTTP stays as it is.
+- **A page over the preview limit opens as source.** `TEXT_PREVIEW_BYTES` (256 KiB) cuts a long artifact, and half a
+  document does not render as the worker wrote it. The viewer then starts in Source with the usual note
+  ("the first 256 KiB of 3 MB … a page cannot be shown whole, so this is its source; download it for the rest"), and
+  Page still draws what loaded, with the note saying the page is partial. Markdown and other kinds keep the source view
+  they had.
 - **Filter chips** above the carousel: `All` and one chip per tag with its count, most used first, then alphabetical;
   untagged media is only in All. A chip filters the carousel (and the viewer); a tag whose last item went away falls back to
   All. Shown only when some media has a tag.

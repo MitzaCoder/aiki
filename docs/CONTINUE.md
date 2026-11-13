@@ -1,5 +1,43 @@
 # Continue
 
+## T161: HTML artifacts render as pages
+
+Owner feedback F52 on T161: "The HTML artifact should be rendered as HTML." The viewer now shows an HTML artifact
+as the page it is. `ArtifactText` puts its bytes in an `<iframe srcdoc>` that fills the roomy dialog's body
+(`clamp(16rem, calc(90dvh - 14rem), 46rem)`; a smaller compact frame in chat cards and lists), and a small Page/Source
+segmented control in the bar switches to the source it used to show. The choice is kept for the session (module-scoped,
+like the video details panel); Copy still copies the source, and the external-link button still opens the page in its
+own tab.
+
+The sandbox is one constant, `ARTIFACT_FRAME_SANDBOX` in `lib/artifact-preview.ts`:
+`allow-scripts allow-popups allow-popups-to-escape-sandbox`, with no `allow-same-origin`, used by both the dialog frame
+and the new tab's wrapper. Charts and counters run in an opaque origin: `contentWindow.localStorage` throws a
+`SecurityError`, `contentDocument` is null, cookies are its own, and its requests to the backend are cross-origin
+without credentials. The document travels as `srcdoc`, never as a page-made `blob:` URL (which would inherit the app's
+origin), and both frames send no referrer. No CSP is added inside the frame: a `default-src`/`connect-src` list would
+break the CDN scripts, fonts and images a report may load while the opaque origin already denies it the backend's
+answers. `docs/DESIGN.md` explains the choice.
+
+A page over `TEXT_PREVIEW_BYTES` (256 KiB) opens as **source** with the usual note, because half a document renders as
+something the worker never wrote; Page still draws the part that loaded and the note then says the page is partial.
+Markdown and other text kinds are unchanged.
+
+Android was left alone, as the brief allowed: it shows an HTML artifact's source through `ArtifactTextPreview`, and a
+WebView with the same toggle was more than the thirty minutes that brief budgeted. It remains a follow-up.
+
+Web-only; no server, protocol or Android change. `apps/web/test/modal-layout.test.ts` gained a describe block for the
+default render, the Page/Source control and the frame's height, and its tab-wrapper test now pins the shared sandbox
+tokens (no `allow-same-origin`). Synthetic proof: a temporary Bun fixture (`createSetup` with one styled HTML artifact
+whose own scripts draw bars and count clicks, plus a Markdown one), Vite at :5186 for this change and a `git worktree`
+of `f87da45a` with Vite at :5187 for the before state, headless Chromium over CDP :9386. Both origins are allowed by
+the fixture, and the before/after shots come from the same backend and data. Before (source) and after (page) at
+desktop and phone width in light and dark, the Source control in each of those, a shot of the counter at 3 after three
+real clicks dispatched into the frame, and a 5.5 s recording of opening the page, clicking and toggling. In the browser
+check the frame's `sandbox` attribute is the shared string, `referrerpolicy` is `no-referrer`, `srcdoc` starts with
+`<!doctype html>`, `frame.contentWindow.localStorage` throws `SecurityError` and `contentDocument` is null. Fixture and
+driver scripts live in `/tmp/t161` (not committed); the fixture, both Vite processes and Chromium were killed by PID and
+their temporary directories removed.
+
 ## T161: roomier MCP and artifact dialogs, quieter update buttons
 
 Two things were wrong in the MCP add/edit dialog. Its preset catalogue was a second
