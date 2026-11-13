@@ -20,6 +20,14 @@ binaries must print exactly `Aiki TAG` for the old updater's version probe;
 canonical binaries print `Kemiri TAG`. Do not merely rename the canonical binary.
 Keep old source archive names/layout for pilot.3 as well as canonical `kemiri-*`
 assets; test the actual pilot.3 updater against the published filenames and hashes.
+
+Android signing produces `kemiri-TAG-android-universal.apk` and a byte-identical
+`aiki-TAG-android-universal.apk`; the notices bundler produces
+`kemiri-TAG-android-notices-and-source.tar.gz` and its byte-identical `aiki-*`
+alias. Publish both pairs, each with its own `.sha256` sidecar, and include all
+four Android asset names in `SHA256SUMS`. The historical pilot.3 commands below
+list only old filenames: add the canonical Kemiri filenames when uploading the
+bridge. The single release manifest APK digest applies to both identical APKs.
 Rehearse upgrade and rollback without moving existing folders or namespaces.
 
 Only after publication and verification, bump the default tag in `site/install.sh`

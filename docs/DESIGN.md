@@ -8,6 +8,26 @@ values ahead of web.env. Browser keys, cache/IDB names, discovery URLs, client
 names and task trailer writers keep their installed identity. Workspace packages
 use @kemiri/* atomically; this changes source imports, not the wire protocol.
 
+## Android Kemiri source identity and in-place upgrades (T167)
+
+The Kotlin namespace is `io.github.mitzacoder.kemiri`; it is not the installed
+application ID. The public application ID remains `io.github.mitzacoder.aiki`,
+and private builds retain their configured ID. Preferences and notification
+intent prefixes still come from their existing explicit build settings/fallbacks,
+never from the namespace. Signing aliases, encrypted-store names, key aliases,
+DataStore files, channel IDs and wire strings do not change. Explicit legacy
+`@SerialName` values keep saved navigation/highlight and pending-link discriminators
+byte-compatible despite the source package move.
+
+The old fully qualified MainActivity is a launcher activity-alias targeting the
+new class, preserving existing home-screen components without a duplicate icon.
+The configurable pre-T70 alias is retained too. Custom connect links accept
+`kemiri://`, `aiki://` and `harness://`; HTTPS origins remain configured per install.
+Android MCP environment imports reject both private prefixes. Public release
+scripts sign one canonical `kemiri-TAG-android-universal.apk`, then copy its exact
+bytes to the legacy `aiki-*` name. Notices/source archives follow the same rule;
+each filename has its own checksum sidecar. Source archive layout is unchanged.
+
 ## Public site and documentation identity (T167)
 
 Kemiri is the public product name; canonical marketing and support addresses are

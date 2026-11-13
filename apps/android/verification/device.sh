@@ -15,7 +15,7 @@ if [[ -z $PACKAGE && -f $PROPERTIES ]]; then
 fi
 PACKAGE=${PACKAGE:-io.github.mitzacoder.aiki}
 [[ $PACKAGE =~ ^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$ ]] || { echo 'Invalid Android application ID' >&2; exit 2; }
-ACTIVITY=$PACKAGE/io.github.mitzacoder.aiki.MainActivity
+ACTIVITY=$PACKAGE/io.github.mitzacoder.kemiri.MainActivity
 TRACK=${HARNESS_ANDROID_DEVICE:-}
 case "$TRACK" in
     "") EMULATOR_PORT=5580; BACKEND_PORT=4790; DEFAULT_ROOT=$OWNER_HOME/scratch/android-cache/device ;;

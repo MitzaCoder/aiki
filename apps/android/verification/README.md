@@ -35,7 +35,7 @@ was used. Do not substitute a real Firebase endpoint to diagnose that failure.
   No fixture writes Firestore documents or chooses collection names. The operator tool scrubs its child environment;
   the demo stack seeds the required control document because a missing document now means paused.
 - `launch-real.ts --fresh` accepts `ANDROID_VERIFY_AUTH_MODE=optional` and `ANDROID_VERIFY_RELAY_ENDPOINT` for one
-  isolated real Aiki backend. Its child receives only the explicit scratch environment and prints effective paths
+  isolated real Kemiri backend. Its child receives only the explicit scratch environment and prints effective paths
   before startup. Pair/approve only that backend's device; use its owner socket/CLI, never live backend data.
 - `DEBUG_RELAY` accepts either captured `aiki` or legacy plaintext `payload`, sharing the real FCM receive boundary.
   The existing `DEBUG_PUSH --es token demo-direct-token` can explicitly enable direct notifications while the relay

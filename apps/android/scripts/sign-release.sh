@@ -39,8 +39,12 @@ env -i PATH="$PATH" HOME="$HOME" LANG=C.UTF-8 TMPDIR="$work" \
   -Pharness.relayEmailLinkDomain= -Pharness.relayPrivacyContact= \
   :app:checkReleaseVersion :app:checkReleaseRelayAuth :app:checkNeutralRelease
 unsigned="$root/apps/android/app/build/outputs/apk/release/app-release-unsigned.apk"
-name="aiki-$version-android-universal.apk"
-[[ ! -e $out/$name ]] || { echo 'Output APK exists; refusing to overwrite' >&2; exit 1; }
+name="kemiri-$version-android-universal.apk"
+for brand in kemiri aiki; do
+  for suffix in "" .sha256; do
+    [[ ! -e $out/$brand-$version-android-universal.apk$suffix ]] || { echo 'Output APK exists; refusing to overwrite' >&2; exit 1; }
+  done
+done
 "$tools/zipalign" -P 16 -f 4 "$unsigned" "$work/aligned.apk"
 # env -i also prevents inherited JAVA_TOOL_OPTIONS from reaching apksigner.
 env -i PATH="$PATH" JAVA_HOME="${JAVA_HOME:-}" HOME="$HOME" \
@@ -49,7 +53,7 @@ env -i PATH="$PATH" JAVA_HOME="${JAVA_HOME:-}" HOME="$HOME" \
 env -i PATH="$PATH" JAVA_HOME="${JAVA_HOME:-}" HOME="$HOME" \
   "$tools/apksigner" verify --verbose --print-certs "$out/$name" | tee "$out/$name.signature.txt"
 "$tools/zipalign" -c -P 16 4 "$out/$name"
-(cd "$out" && sha256sum "$name" > "$name.sha256")
+bash "$root/apps/android/scripts/release-asset-alias.sh" "$out/$name"
 metadata="$root/apps/android/app/build/outputs/apk/release/output-metadata.json"
 code=$(bun -e 'console.log((await Bun.file(process.argv[1]).json()).elements[0].versionCode)' "$metadata")
 fingerprint=$(sed -n 's/.*certificate SHA-256 digest: //p' "$out/$name.signature.txt")

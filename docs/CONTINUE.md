@@ -32,6 +32,43 @@ are saved on T167. The before web sources were identical to main. Headless proof
 records document.title rather than browser chrome. Focused changed-copy tests and
 web builds pass; full integration gates follow the package-scope change.
 
+## T167: Android Kemiri namespace and in-place upgrade
+
+Android Kotlin sources/tests/debug/release packages and generated models now use
+`io.github.mitzacoder.kemiri`. The public application ID, configurable private ID,
+signing identity and preference/notification prefix logic are unchanged. The old
+fully qualified MainActivity remains the sole launcher component via an alias;
+the configurable pre-T70 alias remains. Persisted route/highlight/pending-link
+serial names explicitly retain their old package spelling. Storage filenames,
+keystore aliases, notification IDs, wire literals, debug broadcast actions and
+`Aiki-Task:` help stay unchanged.
+
+Display copy and About/updates/notifications/sign-in now say Kemiri. Connect
+previews accept kemiri/aiki/harness schemes; configured HTTPS origins stay put.
+MCP imports reject both private environment prefixes. Release scripts sign or
+compress once, then copy canonical `kemiri-*` Android assets to byte-identical
+`aiki-*` aliases, each with a correctly named checksum. Three Bun tests cover
+bytes, checksums and overwrite refusal. No external workflow change is needed:
+Android assets are still attached manually; RELEASE.md names both families.
+
+Public-track emulator proof upgrades main's pilot.3-shaped debug APK to a
+pilot.4-coded debug APK with the same certificate and `install -r`, never clearing
+data. Neutral palette and 09:30 workday settings remain byte-identical before,
+after installation and after launch. The existing pinned icon updates to Kemiri
+and opens; old explicit component plus all three connect schemes resolve. No
+physical device, backend pairing, provider account or production signing was used.
+Sixteen light/dark shots of the launcher, home, About and settings are on T167;
+the interaction recording is `mwey0tr8-45f8f2f7ba`. The owned emulator is stopped.
+
+Android gates pass: 944 JVM tests (two opt-in skips), assembleDebug and lintDebug
+(zero errors, 52 warnings); protocol generator --check (388 DTOs / 106 overloads),
+root typecheck, release helper tests and shell syntax pass. All 2,629 root tests /
+93,274 assertions pass under isolated HOME/XDG. Private-denylist, generic public
+checks and Gitleaks pass. Gradle is stopped.
+Root test retries need synthetic HOME/XDG as well as scrubbed environment prefixes:
+existing config directories and global Git settings affect config/watch fixtures.
+No bookmarks, pushes or deployment operations.
+
 ## T167: Kemiri public site and current guides
 
 The static site, CNAME, bootstrap repository URL, README, AGENTS product heading

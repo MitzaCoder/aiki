@@ -25,8 +25,12 @@ fetch https://repo.maven.apache.org/maven2/io/github/rosemoe/language-textmate/0
 git -C "$root" archive --format=tar --prefix=aiki-source/ "$commit" | tar -xf - -C "$stage"
 printf '%s\n' "$commit" > "$stage/AIKI-SOURCE-COMMIT.txt"
 (cd "$stage/upstream" && sha256sum ./* > ../UPSTREAM-SHA256SUMS)
-name="aiki-$version-android-notices-and-source.tar.gz"
-[[ ! -e $out/$name ]] || { echo 'Notices archive exists; refusing to overwrite' >&2; exit 1; }
+name="kemiri-$version-android-notices-and-source.tar.gz"
+for brand in kemiri aiki; do
+  for suffix in "" .sha256; do
+    [[ ! -e $out/$brand-$version-android-notices-and-source.tar.gz$suffix ]] || { echo 'Notices archive exists; refusing to overwrite' >&2; exit 1; }
+  done
+done
 tar -czf "$out/$name" -C "$work" android-notices-and-source
-(cd "$out" && sha256sum "$name" > "$name.sha256")
+bash "$root/apps/android/scripts/release-asset-alias.sh" "$out/$name"
 printf 'Notices/source asset: %s\n' "$out/$name"

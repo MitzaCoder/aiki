@@ -1,6 +1,6 @@
 # Harness for Android
 
-Native Jetpack Compose client, package `io.github.mitzacoder.aiki`, Android 12+
+Native Jetpack Compose client, Kotlin namespace `io.github.mitzacoder.kemiri` (public application ID `io.github.mitzacoder.aiki`), Android 12+
 (API31). Streaming Markdown/tool transcripts, questions, image attachments,
 main/background/worker navigation, signed artifact previews and SAF downloads,
 Board/Memory/Workers/Schedules panels, provider/model settings and subscription
@@ -33,14 +33,14 @@ Google's OSS licenses plugin 0.13.0 generates the dependency catalogue from the
 release dependency list, shown by its bundled licence viewer. Debug builds deliberately
 show that plugin's placeholder catalogue; verify the real catalogue on a release build.
 `bundle-release-notices.sh` includes that generated catalogue, exact upstream Sora
-source (hash-checked) and matching Aiki source for relinking. Publisher review is still
+source (hash-checked) and matching Kemiri source for relinking. Publisher review is still
 required; see `licenses/RELINKING.md`, not a blanket compliance claim.
 
 ## Install and run
 
 ```sh
 adb install -r ~/scratch/android-screens/harness-debug.apk
-adb shell am start -n io.github.mitzacoder.aiki/.MainActivity
+adb shell am start -n io.github.mitzacoder.aiki/io.github.mitzacoder.kemiri.MainActivity
 ```
 
 On this host use the isolated emulator wrapper, never default adb:
@@ -95,6 +95,18 @@ opt-ins), 0 failures; assemble; lint **18 warnings / 0 errors**. Verification Bu
 Generation: **239 DTOs / 60 request overloads**. Root `bun test` and `bun run typecheck` pass. A full
 `--rerun-tasks` gate takes 70–110 s on this host with warm caches. The round-two figures below are history.
 
+## Kemiri identity and compatible upgrades
+
+The Kotlin namespace and source paths use `io.github.mitzacoder.kemiri`. The
+public application ID stays `io.github.mitzacoder.aiki`; private builds retain
+`harness.applicationId`. Signing, preferences/notification prefixes, DataStore
+files and keystore aliases are installation identity, not display names. The old
+MainActivity launcher alias and configurable pre-T70 alias remain reachable.
+Connect previews accept `kemiri://connect`, `aiki://connect` and
+`harness://connect`; configured HTTPS app/pairing/OAuth origins do not move.
+Release scripts publish canonical `kemiri-*` APK/notices assets plus identical
+`aiki-*` copies, each with a separately named checksum sidecar.
+
 ## Remote MCP settings
 
 Backends advertising `mcp-servers` expose Settings → Backends → MCP servers.
@@ -136,7 +148,7 @@ registers the FCM token with every backend that has `fcm-push`, shows each backe
 
 Web project links (`https://harness.example.test/b/<backend>/projects/<id>`, with `/threads/<t>`,
 `/workers/<w>`, `/settings`, `?task=`, `#thread-<id>`, `#entry-<n>`) open in the app once the user lets it open that
-domain (system settings → Harness → Open by default → Add link; on the emulator `adb shell pm
+domain (system settings → Kemiri → Open by default → Add link; on the emulator `adb shell pm
 set-app-links-user-selection --user 0 --package io.github.mitzacoder.aiki true harness.example.test`). The
 `<backend>` is the web's ID, the slug of the name the backend was added with (`harness-pc`, `harness-vm` for the
 published list); the app matches it by the slug of each backend's name, then by its host's first label, so a rename on
@@ -278,7 +290,7 @@ release step after green checks.
 
 ## Architecture and stable interfaces
 
-Kotlin: `app/src/main/kotlin/io/github/mitzacoder/aiki/`:
+Kotlin: `app/src/main/kotlin/io/github/mitzacoder/kemiri/`:
 
 - `core/`, `data/`, `protocol/`: tolerant serialization, Chord, one WebSocket per
   backend, generated RPC/events, lifecycle watches and DataStore.

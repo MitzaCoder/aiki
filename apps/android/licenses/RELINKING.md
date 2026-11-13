@@ -1,6 +1,6 @@
 # Rebuilding with replacement Sora libraries
 
-Use the exact Aiki tag/commit recorded in the release manifest, not a newer main.
+Use the exact Kemiri tag/commit recorded in the release manifest, not a newer main.
 The notices-and-source release bundle includes that source tree (without local
 config or credentials), the complete Sora 0.24.6 upstream source and its two
 published module source archives. Sora's upstream build files and source retain
@@ -13,7 +13,7 @@ its own notices. `Sora-NOTICE.txt` pins the upstream commit and download locatio
    `editor` and `language-textmate` AARs using that upstream tree's Gradle files
    and documented toolchain. The published `*-sources.jar` files are additional
    module-level reference source, not substitutes for the complete build tree.
-3. In Aiki's `apps/android/app/build.gradle.kts`, replace the two matching
+3. In Kemiri's `apps/android/app/build.gradle.kts`, replace the two matching
    `implementation("io.github.rosemoe:...:0.24.6")` declarations with
    `implementation(files("/path/to/replacement/editor.aar"))` and
    `implementation(files("/path/to/replacement/language-textmate.aar"))`.
@@ -37,4 +37,4 @@ LGPL section 6 compliance for the combined APK before distribution. The generate
 Google OSS catalogue reflects dependency metadata and may not identify every
 non-code asset; the explicit Sora, font and Termux notices supplement it. Review
 Google SDK terms and dependency notices, and get legal advice if needed. No claim
-is made here about relicensing all of Aiki or certifying compliance.
+is made here about relicensing all of Kemiri or certifying compliance.

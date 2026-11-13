@@ -14,7 +14,7 @@ import android.view.View;
 
 import com.termux.terminal.TerminalBuffer;
 import com.termux.terminal.WcWidth;
-import io.github.mitzacoder.aiki.R;
+import io.github.mitzacoder.kemiri.R;
 import com.termux.view.TerminalView;
 
 public class TextSelectionCursorController implements CursorController {

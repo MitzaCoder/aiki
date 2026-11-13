@@ -92,7 +92,7 @@ tasks.register("checkReleaseVersion") {
 }
 
 android {
-    namespace = "io.github.mitzacoder.aiki"
+    namespace = "io.github.mitzacoder.kemiri"
     compileSdk = 37
     buildToolsVersion = "37.0.0"
     defaultConfig {
@@ -182,7 +182,7 @@ tasks.register("checkReleaseRelayAuth") {
 /** Only the public signing script invokes this; private operator builds may intentionally differ. */
 tasks.register("checkNeutralRelease") {
     dependsOn("generateReleaseBuildConfig", "assembleRelease")
-    val config = layout.buildDirectory.file("generated/source/buildConfig/release/io/github/mitzacoder/aiki/BuildConfig.java")
+    val config = layout.buildDirectory.file("generated/source/buildConfig/release/io/github/mitzacoder/kemiri/BuildConfig.java")
     val apkFile = layout.buildDirectory.file("outputs/apk/release/app-release-unsigned.apk")
     doLast {
         val text = config.get().asFile.readText()
