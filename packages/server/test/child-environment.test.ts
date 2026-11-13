@@ -124,12 +124,12 @@ test("entry point captures file and real settings privately; commands and nested
 	const xdg = join(s.root, "xdg-config");
 	await mkdir(join(xdg, "aiki"), { recursive: true });
 	const file = join(xdg, "aiki/server.env");
-	await writeFile(file, `AIKI_DATA_DIR=${s.dataDir}\nAIKI_CONFIG_DIR=${s.configDir}\nAIKI_PORT=8123\nAIKI_STATE_NAMESPACE=synthetic\nAIKI_CONTEXT_EXTENSION=synthetic-context\nAIKI_FUTURE_SETTING=private\n`);
+	await writeFile(file, `KEMIRI_DATA_DIR=${s.dataDir}\nKEMIRI_CONFIG_DIR=${s.configDir}\nKEMIRI_PORT=8123\nKEMIRI_STATE_NAMESPACE=synthetic\nKEMIRI_CONTEXT_EXTENSION=synthetic-context\nKEMIRI_FUTURE_SETTING=private\n`);
 	const env: Record<string, string> = {
 		...childEnvironment(), HOME: s.root, XDG_CONFIG_HOME: xdg, XDG_DATA_HOME: join(s.root, "xdg-data"),
-		AIKI_AGENT_DIR: s.agentDir, AIKI_CLAUDE_DIR: s.claudeDir, AIKI_PORT: "9234", AIKI_ENV_FILE: file,
+		KEMIRI_AGENT_DIR: s.agentDir, KEMIRI_CLAUDE_DIR: s.claudeDir, KEMIRI_PORT: "9234", KEMIRI_ENV_FILE: file,
 	};
-	delete env.AIKI_CHILD_PROCESS; // A service, not an agent's command.
+	delete env.KEMIRI_CHILD_PROCESS; // A service, not an agent's command.
 	const script = `
 		import { loadServerEnv, resolvedServerConfig } from ${source("server-env")};
 		import { configureServerSettings } from ${source("server-settings")};
@@ -137,7 +137,7 @@ test("entry point captures file and real settings privately; commands and nested
 		import { AgentExecutionEnv } from ${source("agent-execution-env")};
 		import { BACKGROUND_CONTEXT } from ${JSON.stringify(import.meta.resolve("@earendil-works/chord/context"))};
 		const loaded = loadServerEnv();
-		const fileLeaked = process.env.AIKI_FUTURE_SETTING !== undefined;
+		const fileLeaked = process.env.KEMIRI_FUTURE_SETTING !== undefined;
 		configureServerSettings(loaded);
 		const { BoardDoc } = await import(${source("board")});
 		let output = "";
@@ -147,7 +147,7 @@ test("entry point captures file and real settings privately; commands and nested
 		const configs = [];
 		for (const explicit of [false, true]) {
 			const env = childEnvironment();
-			if (explicit) { env.AIKI_DATA_DIR = ${JSON.stringify(join(s.root, "explicit-data"))}; env.AIKI_CONFIG_DIR = ${JSON.stringify(join(s.root, "explicit-config"))}; }
+			if (explicit) { env.KEMIRI_DATA_DIR = ${JSON.stringify(join(s.root, "explicit-data"))}; env.KEMIRI_CONFIG_DIR = ${JSON.stringify(join(s.root, "explicit-config"))}; }
 			const nested = Bun.spawnSync([process.execPath, ${JSON.stringify(main)}, "--print-config"], { env });
 			if (nested.exitCode !== 0) throw Error(nested.stderr.toString());
 			configs.push(JSON.parse(nested.stdout.toString()));
@@ -166,7 +166,7 @@ test("entry point captures file and real settings privately; commands and nested
 	expect(result.configs[0]).toMatchObject({ dataDir: join(s.root, "xdg-data/kemiri"), configDir: join(xdg, "aiki"), port: 7317, stateNamespace: "aiki" });
 	expect(result.configs[1]).toMatchObject({ dataDir: join(s.root, "explicit-data"), configDir: join(s.root, "explicit-config"), port: 7317 });
 	// Explicit opt-in still reads an env file (needed by intentional owner CLI/deploy commands).
-	const explicit = Bun.spawnSync([process.execPath, main, "--print-config"], { env: { ...childEnvironment(env), AIKI_ENV_FILE: file } });
+	const explicit = Bun.spawnSync([process.execPath, main, "--print-config"], { env: { ...childEnvironment(env), KEMIRI_ENV_FILE: file } });
 	expect(explicit.exitCode).toBe(0);
 	expect(JSON.parse(explicit.stdout.toString())).toMatchObject({ dataDir: s.dataDir, port: 8123 });
 });

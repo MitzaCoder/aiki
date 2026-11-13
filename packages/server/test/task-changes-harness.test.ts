@@ -9,7 +9,7 @@ import { prepareReportNudges } from "../src/task-freshness.ts";
 import { TASK_CHANGES_FILE, type ChangesLanded, type TaskChangeLedger } from "../src/task-changes.ts";
 
 async function run(path: string, ...args: string[]): Promise<string> {
-	const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("AIKI_")));
+	const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("KEMIRI_")));
 	const child = Bun.spawn(args, { cwd: path, timeout: 15_000, env: { ...env, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" }, stdout: "pipe", stderr: "pipe" });
 	const [stdout, stderr, code] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited]);
 	if (code) throw new Error(stderr);

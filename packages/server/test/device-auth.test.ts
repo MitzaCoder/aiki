@@ -674,7 +674,7 @@ describe("revocation and boundary regressions", () => {
 	test("owner CLI entry point talks to running backend, not a second server", async () => {
 		const s = await setup();
 		const child = Bun.spawn(["bun", "packages/server/src/main.ts", "auth", "status"], {
-			env: { ...process.env, AIKI_DATA_DIR: s.dataDir },
+			env: { ...process.env, KEMIRI_DATA_DIR: s.dataDir },
 			stdout: "pipe",
 			stderr: "pipe",
 			timeout: 5000,

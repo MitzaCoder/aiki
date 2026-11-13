@@ -37,7 +37,7 @@ export type TerminalMultiplexer = "zellij" | "none";
 export type TerminalHostOptions = {
 	/** `zellij` (default) or `none`: a plain shell without sessions, for tests and development. */
 	multiplexer?: TerminalMultiplexer;
-	/** The zellij binary. Default: `AIKI_ZELLIJ`, else `zellij` on PATH, else `~/.local/bin/zellij`. */
+	/** The zellij binary. Default: `KEMIRI_ZELLIJ`, else `zellij` on PATH, else `~/.local/bin/zellij`. */
 	zellij?: string;
 	/**
 	 * Where a new zellij server is started. `auto` (default): outside the service's cgroup with `systemd-run --user
@@ -117,9 +117,9 @@ const SCOPE_PROBE_TTL_MS = 60_000;
 /** The variables a terminal must not inherit: this server's own settings and its service manager's. */
 const SCRUBBED_ENV = [/^ZELLIJ/, /^INVOCATION_ID$/, /^JOURNAL_STREAM$/, /^NOTIFY_SOCKET$/, /^SYSTEMD_EXEC_PID$/];
 
-/** Whether terminals are on: yes, unless `AIKI_TERMINALS` is `off` (or `0`, `false`, `no`). */
+/** Whether terminals are on: yes, unless `KEMIRI_TERMINALS` is `off` (or `0`, `false`, `no`). */
 export function terminalsEnabled(env: Readonly<Record<string, string | undefined>> = serverSettings): boolean {
-	const value = env.AIKI_TERMINALS?.trim().toLowerCase();
+	const value = env.KEMIRI_TERMINALS?.trim().toLowerCase();
 	return !(value === "off" || value === "0" || value === "false" || value === "no");
 }
 
@@ -148,7 +148,7 @@ export class TerminalHost {
 
 	constructor(options: TerminalHostOptions = {}) {
 		this.#multiplexer = options.multiplexer ?? "zellij";
-		this.#zellijOption = options.zellij ?? (options.env ?? serverSettings).AIKI_ZELLIJ;
+		this.#zellijOption = options.zellij ?? (options.env ?? serverSettings).KEMIRI_ZELLIJ;
 		this.#survive = options.survive ?? "auto";
 		this.#command = options.command;
 		this.#configFile = options.configFile;
@@ -281,7 +281,7 @@ export class TerminalHost {
 				available: false,
 				multiplexer: "zellij",
 				reason:
-					"zellij is not installed on this backend (it is not on the server's PATH or in ~/.local/bin). Install zellij there, or set AIKI_ZELLIJ to its path.",
+					"zellij is not installed on this backend (it is not on the server's PATH or in ~/.local/bin). Install zellij there, or set KEMIRI_ZELLIJ to its path.",
 				survivesRestart: false,
 			};
 		}

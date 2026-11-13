@@ -20,7 +20,7 @@ test("explicit version wins without network; channel override validates and old 
 
 test("real installed update follows fake release server, persists switches, explicit versions win and rollback still swaps", async () => {
 	const home = await mkdtemp(join(tmpdir(), "aiki-channel-")); roots.push(home);
-	const root = join(home, "install"), config = join(root, "config"), launcher = join(home, ".local/bin/aiki");
+	const root = join(home, "install"), config = join(root, "config"), launcher = join(home, ".local/bin/kemiri");
 	await mkdir(join(root, "runtime/bun-1.4.4/bin"), { recursive: true });
 	await symlink(process.execPath, join(root, "runtime/bun-1.4.4/bin/bun"));
 	await writeFile(join(root, ".aiki-managed"), "aiki-installer-v1\n");
@@ -30,12 +30,12 @@ test("real installed update follows fake release server, persists switches, expl
 	const serverFile = join(home, "feed.ts"), ready = join(home, "feed.json");
 	await writeFile(serverFile, `const server=Bun.serve({hostname:'127.0.0.1',port:0,fetch:()=>Response.json(${JSON.stringify(feed)})});await Bun.write(${JSON.stringify(ready)},JSON.stringify({port:server.port}));console.log('ready');setTimeout(()=>{server.stop(true);process.exit()},30000);`);
 	// The fake feed has no ambient backend configuration, and only serves synthetic releases.
-	const server = Bun.spawn(["env", "-i", `HOME=${home}`, "USER=test", `PATH=${process.env.PATH}`, `AIKI_DATA_DIR=${join(home, "data")}`, `AIKI_CONFIG_DIR=${config}`, process.execPath, serverFile], { stdout: "pipe", stderr: "pipe" });
+	const server = Bun.spawn(["env", "-i", `HOME=${home}`, "USER=test", `PATH=${process.env.PATH}`, `KEMIRI_DATA_DIR=${join(home, "data")}`, `KEMIRI_CONFIG_DIR=${config}`, process.execPath, serverFile], { stdout: "pipe", stderr: "pipe" });
 	await server.stdout.getReader().read();
 	console.log(`Fake release server: ${home}; data: ${join(home, "data")}; config: ${config}`);
 	const preload = join(home, "redirect.ts");
 	await writeFile(preload, `const original=globalThis.fetch;globalThis.fetch=async(url,init)=>{if(String(url).startsWith('https://api.github.com/repos/MitzaCoder/kemiri/releases')){const {port}=await Bun.file(${JSON.stringify(ready)}).json();return original('http://127.0.0.1:'+port,init)}throw Error('Unexpected network request: '+url)};`);
-	const env = { HOME: home, USER: "test", PATH: process.env.PATH, AIKI_INSTALL_DIR: root };
+	const env = { HOME: home, USER: "test", PATH: process.env.PATH, KEMIRI_INSTALL_DIR: root };
 	async function run(...args: string[]) {
 		const child = Bun.spawn([process.execPath, "--preload", preload, cli, ...args], { env, stdout: "pipe", stderr: "pipe" });
 		const [code, out, err] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);

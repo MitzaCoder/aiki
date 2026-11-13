@@ -9,7 +9,7 @@ const hasGit = Boolean(Bun.which("git"));
 const hasJj = hasGit && Boolean(Bun.which("jj"));
 const roots: string[] = [];
 afterEach(async () => { for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true }); });
-const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("AIKI_")));
+const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("KEMIRI_")));
 async function run(path: string, binary: string, ...args: string[]): Promise<string> {
 	const process = Bun.spawn([binary, ...args], { timeout: 15_000, cwd: path, env: { ...environment, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" }, stdout: "pipe", stderr: "pipe" });
 	const [stdout, stderr, code] = await Promise.all([new Response(process.stdout).text(), new Response(process.stderr).text(), process.exited]);

@@ -30,7 +30,7 @@ test("a configured durable namespace retains board and worker defaults through r
 		} finally { client.close(); await setup.cleanup(); }
 	`;
 	const child = Bun.spawn([process.execPath, "-e", script], {
-		env: { ...process.env, AIKI_STATE_NAMESPACE: "previous", AIKI_CONTEXT_EXTENSION: "previous-context", AIKI_PROJECT_CONTEXT_DIR: ".previous" },
+		env: { ...process.env, KEMIRI_STATE_NAMESPACE: "previous", KEMIRI_CONTEXT_EXTENSION: "previous-context", KEMIRI_PROJECT_CONTEXT_DIR: ".previous" },
 		stdout: "pipe", stderr: "pipe",
 	});
 	const [code, stdout, stderr] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);

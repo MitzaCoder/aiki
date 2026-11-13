@@ -85,7 +85,7 @@ export async function ownerCommand(
 			const backend = local ? options.loopbackOrigin : flag("--backend");
 			if (!backend || (!local && !auth.hosts.includes(validateBackendOrigin(backend))))
 				throw new DeviceAuthError("backend_origin_required", 400);
-			const webApp = flag("--web-app") ?? serverSettings.AIKI_WEB_APP ?? options.allowedOrigins[0];
+			const webApp = flag("--web-app") ?? serverSettings.KEMIRI_WEB_APP ?? options.allowedOrigins[0];
 			if (!local && !webApp) throw new DeviceAuthError("web_app_required", 400);
 			if (webApp) validateBackendOrigin(webApp);
 			const grant = auth.bootstrap(local);
@@ -98,8 +98,8 @@ export async function ownerCommand(
 }
 export async function runAuthCli(args: string[]): Promise<void> {
 	// Even default same-user data paths may be the live installation: agent commands require deliberate targeting.
-	if (serverSettings.AIKI_CHILD_PROCESS === "1" && !serverSettings.AIKI_ENV_FILE?.trim() && !serverSettings.AIKI_DATA_DIR?.trim()) {
-		console.error("Owner CLI from an agent requires explicit AIKI_ENV_FILE or AIKI_DATA_DIR");
+	if (serverSettings.KEMIRI_CHILD_PROCESS === "1" && !serverSettings.KEMIRI_ENV_FILE?.trim() && !serverSettings.KEMIRI_DATA_DIR?.trim()) {
+		console.error("Owner CLI from an agent requires explicit KEMIRI_ENV_FILE or KEMIRI_DATA_DIR");
 		process.exitCode = 1;
 		return;
 	}

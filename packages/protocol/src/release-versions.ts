@@ -50,7 +50,7 @@ export function selectChannelRelease(raw: unknown, channel: UpdateChannel): Publ
 
 export async function fetchChannelRelease(channel: UpdateChannel, transport: typeof fetch = fetch): Promise<PublishedRelease> {
 	const response = await transport(RELEASES_API, {
-		headers: { Accept: "application/vnd.github+json", "User-Agent": "Aiki-release-check", "X-GitHub-Api-Version": "2022-11-28" },
+		headers: { Accept: "application/vnd.github+json", "User-Agent": "Kemiri-release-check", "X-GitHub-Api-Version": "2022-11-28" },
 		signal: AbortSignal.timeout(15_000),
 	});
 	if (!response.ok) throw new Error(`Release lookup failed (${response.status}); retry later or use --version TAG.`);

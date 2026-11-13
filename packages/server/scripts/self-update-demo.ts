@@ -24,7 +24,7 @@ const root = join(home, 'install');
 const launcher = join(home, '.local/bin/aiki');
 const baseline = 'v0.1.0-pilot.2-test', target = 'v0.1.0-pilot.3-test', broken = 'v0.1.0-pilot.4-broken';
 const url = 'http://127.0.0.1:18439';
-const env = { HOME: home, USER: 'synthetic', PATH: process.env.PATH!, AIKI_PORT: '18439' };
+const env = { HOME: home, USER: 'synthetic', PATH: process.env.PATH!, KEMIRI_PORT: '18439' };
 const digest = (body: Uint8Array | string) => new Bun.CryptoHasher('sha256').update(body).digest('hex');
 const bad = `#!/bin/sh\nif [ "$1" = --version ]; then echo 'Aiki ${broken}'; exit 0; fi\necho 'Synthetic startup failure' >&2\nexit 42\n`;
 let supervisor: ReturnType<typeof Bun.spawn> | undefined;
@@ -112,7 +112,7 @@ try {
  }
  await mkdir(join(root, 'data'), {recursive:true});
  await mkdir(join(home, 'agent'), { recursive: true }); await mkdir(join(home, 'claude'), { recursive: true });
- writeFileSync(join(root, 'config/server.env'), `AIKI_UPDATE_WAIT_TIMEOUT_MS=5000\nAIKI_PORT=18439\nAIKI_TIMEZONE=UTC\nAIKI_AGENT_DIR=${join(home, 'agent')}\nAIKI_CLAUDE_DIR=${join(home, 'claude')}\nAIKI_ALLOWED_ORIGINS=${url},http://localhost:18439\nAIKI_RELEASE_BASE_URL=http://127.0.0.1:18440/releases\n`, { mode: 0o600 });
+ writeFileSync(join(root, 'config/server.env'), `KEMIRI_UPDATE_WAIT_TIMEOUT_MS=5000\nKEMIRI_PORT=18439\nKEMIRI_TIMEZONE=UTC\nKEMIRI_AGENT_DIR=${join(home, 'agent')}\nKEMIRI_CLAUDE_DIR=${join(home, 'claude')}\nKEMIRI_ALLOWED_ORIGINS=${url},http://localhost:18439\nKEMIRI_RELEASE_BASE_URL=http://127.0.0.1:18440/releases\n`, { mode: 0o600 });
  seed(target); await rm(join(home, 'release-agents'), { force: true }); await start();
  const grant = await owner(['pair', '--local']) as { code: string; url: string };
  const code = new URL(grant.url).hash.slice('#bootstrap='.length);

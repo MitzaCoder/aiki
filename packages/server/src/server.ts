@@ -88,12 +88,12 @@ export type StartServerOptions = {
 	auth?: AuthOptions;
 	/** Public SPA files only; API and artifact authentication remain independent. */
 	webDir?: string;
-	/** Default: `AIKI_PORT`, else 7317. `0` picks a free port (the handle reports it). */
+	/** Default: `KEMIRI_PORT`, else 7317. `0` picks a free port (the handle reports it). */
 	port?: number;
-	/** Default: `AIKI_HOST`, else 127.0.0.1. `0.0.0.0` listens on every interface. */
+	/** Default: `KEMIRI_HOST`, else 127.0.0.1. `0.0.0.0` listens on every interface. */
 	hostname?: string;
 	/**
-	 * Browser origins allowed to open `/ws`. Default: `AIKI_ALLOWED_ORIGINS`, else none. Requests without an
+	 * Browser origins allowed to open `/ws`. Default: `KEMIRI_ALLOWED_ORIGINS`, else none. Requests without an
 	 * Origin header still need token authentication when auth is required.
 	 */
 	allowedOrigins?: readonly string[];
@@ -104,18 +104,18 @@ export type StartServerOptions = {
 	/** Where the request log lives (`request-log.sqlite` in the data directory by default); `false` keeps none. */
 	requestLog?: { file?: string } | false;
 	/**
-	 * The directory whose AGENTS.md and skills every conversation is given. Default: `AIKI_AGENT_DIR`, else
+	 * The directory whose AGENTS.md and skills every conversation is given. Default: `KEMIRI_AGENT_DIR`, else
 	 * `~/.pi/agent` of the user this process runs as.
 	 */
 	agentDir?: string;
 	/**
 	 * The harness's own config directory, whose SYSTEM.md and APPEND_SYSTEM.md apply to every conversation. Default:
-	 * `AIKI_CONFIG_DIR`, else `${XDG_CONFIG_HOME:-~/.config}/aiki`.
+	 * `KEMIRI_CONFIG_DIR`, else `${XDG_CONFIG_HOME:-~/.config}/aiki`.
 	 */
 	configDir?: string;
 	/**
 	 * Claude Code's home, whose skills, enabled plugins' skills and `.claude/skills` every conversation is also given.
-	 * Default: `AIKI_CLAUDE_DIR`, else `~/.claude` of the user this process runs as.
+	 * Default: `KEMIRI_CLAUDE_DIR`, else `~/.claude` of the user this process runs as.
 	 */
 	claudeDir?: string;
 	/** Must match the store the models were created with. Default: `credentials.json` in the data directory. */
@@ -129,13 +129,13 @@ export type StartServerOptions = {
 	/** How long the user's board edits wait before they reach the coordinator as one input. Default 3 s. */
 	boardEditDebounceMs?: number;
 	/**
-	 * The timezone schedules run in. Default: `AIKI_TIMEZONE` when it names a zone, else the host's clock, else
+	 * The timezone schedules run in. Default: `KEMIRI_TIMEZONE` when it names a zone, else the host's clock, else
 	 * UTC; `schedules.list` reports what is in effect.
 	 */
 	timezone?: string;
 	/**
 	 * How long the coordinator's own `bash`/`powershell` calls may run before they are stopped with a message to
-	 * delegate the work. Default: `AIKI_TOOL_CALL_CAP_MINUTES`, else two minutes. Workers are unaffected.
+	 * delegate the work. Default: `KEMIRI_TOOL_CALL_CAP_MINUTES`, else two minutes. Workers are unaffected.
 	 */
 	toolCallCapMs?: number;
 	/**
@@ -162,13 +162,13 @@ export type StartServerOptions = {
 		"fetch" | "anthropicBaseUrl" | "chatgptBaseUrl" | "pollIntervalMs" | "afterTurnQuietMs" | "minReadGapMs"
 	>;
 	/**
-	 * Artifacts. Defaults: `AIKI_ARTIFACT_MAX_BYTES` (else 2 GiB) per file, URLs valid 10 minutes, durations from
+	 * Artifacts. Defaults: `KEMIRI_ARTIFACT_MAX_BYTES` (else 2 GiB) per file, URLs valid 10 minutes, durations from
 	 * `ffprobe` when it is on PATH.
 	 */
 	artifacts?: Pick<ArtifactStoreOptions, "maxFileBytes" | "probeDuration"> & { urlTtlMs?: number };
 	/**
 	 * Terminals (feature `terminal`): a PTY per attached session, each a zellij session. Default: on, unless
-	 * `AIKI_TERMINALS` is `off`; `false` turns it off (it is then not advertised and its requests are refused).
+	 * `KEMIRI_TERMINALS` is `off`; `false` turns it off (it is then not advertised and its requests are refused).
 	 * Tests hand in a plain-shell host or their own zellij sockets.
 	 */
 	terminals?: false | TerminalHostOptions;
@@ -189,9 +189,9 @@ export type StartServerOptions = {
 	 * point the transport at a fake push service and hand in a subject.
 	 */
 	notifications?: {
-		/** The VAPID key pair file. Default: `AIKI_VAPID_KEY_FILE`, else `<data>/notifications/vapid.json`. */
+		/** The VAPID key pair file. Default: `KEMIRI_VAPID_KEY_FILE`, else `<data>/notifications/vapid.json`. */
 		vapidKeyFile?: string;
-		/** The VAPID `sub`. Default: `AIKI_VAPID_SUBJECT`, else the first HTTPS allowed origin. */
+		/** The VAPID `sub`. Default: `KEMIRI_VAPID_SUBJECT`, else the first HTTPS allowed origin. */
 		subject?: string;
 		/** How a push is posted. Default: `fetch`. */
 		send?: PushTransport;
@@ -204,7 +204,7 @@ export type StartServerOptions = {
 		/** Runs the hold timers. Default: `setTimeout`; a test passes a fake clock. */
 		schedule?: HoldScheduler;
 		/**
-		 * The FCM service-account key file for Android devices. Default: `AIKI_FCM_KEY_FILE`, else
+		 * The FCM service-account key file for Android devices. Default: `KEMIRI_FCM_KEY_FILE`, else
 		 * `<data>/notifications/fcm-service-account.json`; a missing file (or `null`) turns FCM off.
 		 */
 		fcmKeyFile?: string | null;
@@ -634,30 +634,30 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 
 	const releaseUpdates = await ReleaseUpdates.create({
 		file: join(dataDir, "release-updates.json"),
-		installedVersion: serverSettings.AIKI_INSTALLED_VERSION ?? null,
-		...(serverSettings.AIKI_UPDATE_CHANNEL === "pilot" || serverSettings.AIKI_UPDATE_CHANNEL === "stable" ? { channel: serverSettings.AIKI_UPDATE_CHANNEL } : {}),
+		installedVersion: serverSettings.KEMIRI_INSTALLED_VERSION ?? null,
+		...(serverSettings.KEMIRI_UPDATE_CHANNEL === "pilot" || serverSettings.KEMIRI_UPDATE_CHANNEL === "stable" ? { channel: serverSettings.KEMIRI_UPDATE_CHANNEL } : {}),
 		...options.updates,
 		onChange: () => { void serverStatus.changed(); },
 	});
 	let serverStatus!: ServerStatusService;
 	const possibleDeployFile = options.status?.deployStatusFile ?? resolveDeployStatusFile(options.status?.releaseRoot ?? resolveReleaseRoot());
-	const watcherManaged = Boolean(options.status?.deployStatusFile || serverSettings.AIKI_DEPLOY_STATUS_FILE ||
-		(possibleDeployFile && (!serverSettings.AIKI_INSTALL_DIR || existsSync(possibleDeployFile))));
+	const watcherManaged = Boolean(options.status?.deployStatusFile || serverSettings.KEMIRI_DEPLOY_STATUS_FILE ||
+		(possibleDeployFile && (!serverSettings.KEMIRI_INSTALL_DIR || existsSync(possibleDeployFile))));
 	let selfUpdate!: SelfUpdate;
 	selfUpdate = new SelfUpdate({
-		root: serverSettings.AIKI_INSTALL_DIR,
+		root: serverSettings.KEMIRI_INSTALL_DIR,
 		disabledReason: selfUpdateDisabledReason(serverSettings, watcherManaged),
 		updates: () => releaseUpdates.state, drain: manager.drain,
 		waitTimeoutMs: (() => {
-			const value = Number(serverSettings.AIKI_UPDATE_WAIT_TIMEOUT_MS ?? 300_000);
+			const value = Number(serverSettings.KEMIRI_UPDATE_WAIT_TIMEOUT_MS ?? 300_000);
 			return Number.isFinite(value) && value >= 0 ? value : 300_000;
 		})(),
 		stage: async (version, channel) => {
-			const root = serverSettings.AIKI_INSTALL_DIR!;
+			const root = serverSettings.KEMIRI_INSTALL_DIR!;
 			const installation = await Bun.file(join(root, ".aiki-install.json")).json();
 			const child = Bun.spawn([installation.launcher, "stage-update", "--version", version, "--channel", channel,
-				...(serverSettings.AIKI_RELEASE_BASE_URL ? ["--release-base-url", serverSettings.AIKI_RELEASE_BASE_URL] : [])],
-				{ env: { ...updateChildEnvironment(), AIKI_INSTALL_DIR: root }, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
+				...(serverSettings.KEMIRI_RELEASE_BASE_URL ? ["--release-base-url", serverSettings.KEMIRI_RELEASE_BASE_URL] : [])],
+				{ env: { ...updateChildEnvironment(), KEMIRI_INSTALL_DIR: root }, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
 			const [code, , stderr] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
 			if (code !== 0) throw new Error(stderr.trim().slice(-1000) || "Release verification/preparation failed");
 		},
@@ -767,7 +767,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			const peer = bunServer.requestIP(request)?.address ?? "unknown";
 			const trusted = (
 				options.auth?.trustedProxies ??
-				serverSettings.AIKI_TRUSTED_PROXIES?.split(",") ??
+				serverSettings.KEMIRI_TRUSTED_PROXIES?.split(",") ??
 				[]
 			).includes(peer);
 			const forwardedSource = trusted ? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() : undefined;

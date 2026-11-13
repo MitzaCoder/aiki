@@ -40,7 +40,7 @@ export async function ownerControl(setup: TestSetup, args: string[]) {
 }
 export async function ownerCli(setup: TestSetup, args: string[]) {
 	const process = Bun.spawn(["bun", "packages/server/src/main.ts", "auth", ...args], {
-		env: { ...Bun.env, AIKI_DATA_DIR: setup.dataDir },
+		env: { ...Bun.env, KEMIRI_DATA_DIR: setup.dataDir },
 		stdout: "pipe", stderr: "pipe", timeout: 5000,
 	});
 	const [output, errors, exit] = await Promise.all([

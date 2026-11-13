@@ -46,8 +46,8 @@ REPO_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 export DEPLOY_CONFIG_DIR="${DEPLOY_CONFIG_DIR:-$REPO_DIR/deploy/local}"
 if [[ -f $DEPLOY_CONFIG_DIR/config.env ]]; then source "$DEPLOY_CONFIG_DIR/config.env"; fi
 # The web build runs inside an archive; retain the deploying checkout's optional published list.
-export AIKI_WEB_ENV_FILE="${AIKI_WEB_ENV_FILE:-$DEPLOY_CONFIG_DIR/web.env}"
-export AIKI_PUBLISHED_BACKENDS_FILE="${AIKI_PUBLISHED_BACKENDS_FILE:-$DEPLOY_CONFIG_DIR/backends.json}"
+export KEMIRI_WEB_ENV_FILE="${KEMIRI_WEB_ENV_FILE:-$DEPLOY_CONFIG_DIR/web.env}"
+export KEMIRI_PUBLISHED_BACKENDS_FILE="${KEMIRI_PUBLISHED_BACKENDS_FILE:-$DEPLOY_CONFIG_DIR/backends.json}"
 PORT=${DEPLOY_PORT:-7317}
 BUN=${BUN:-bun}
 KEEP=${DEPLOY_KEEP_RELEASES:-5}
@@ -380,7 +380,7 @@ if ((PARTIAL)); then
 elif [[ ! -d $APP_ROOT ]]; then
 	log "app: $APP_ROOT does not exist yet (nix-config creates it); skipping app deploy"
 	journal_event web pending
-elif AIKI_WEB_ROOT=$APP_ROOT DEPLOY_KEEP_RELEASES=$KEEP bash "$REPO_DIR/deploy/web.sh" release "$NAME" "$STAGE/apps/web/build"; then
+elif KEMIRI_WEB_ROOT=$APP_ROOT DEPLOY_KEEP_RELEASES=$KEEP bash "$REPO_DIR/deploy/web.sh" release "$NAME" "$STAGE/apps/web/build"; then
 	log "app: deployed $NAME"
 	journal_event web ok
 else
@@ -399,7 +399,7 @@ function publish_host() {
 		failed_host "sending the tree failed"
 		return 0
 	fi
-	if AIKI_PORT=$PORT DEPLOY_KEEP_RELEASES=$KEEP \
+	if KEMIRI_PORT=$PORT DEPLOY_KEEP_RELEASES=$KEEP \
 		bash "$REPO_DIR/deploy/backend.sh" system release "$NAME" "$SHA" "$SUBJECT"; then
 		log "host backend: deployed $NAME"
 		journal_event host ok "${HOST_RUNNING:-}" "$HOST_ROOT"
@@ -422,7 +422,7 @@ else
 	if ! install_host_env; then die "cannot install host server environment"; fi
 	HOST_RUNNING=$(release_commit 2>/dev/null <"$HOST_ROOT/current/RELEASE.json") || HOST_RUNNING=""
 	if ((HOST_ENV_CHANGED == 0)) && backend_unchanged "host backend" "$HOST_RUNNING" &&
-		AIKI_PORT=$PORT bash "$REPO_DIR/deploy/backend.sh" system unchanged "$SHA" "$SUBJECT"; then
+		KEMIRI_PORT=$PORT bash "$REPO_DIR/deploy/backend.sh" system unchanged "$SHA" "$SUBJECT"; then
 		log "host backend: still runs ${HOST_RUNNING:0:12}; recorded ${SHA:0:12} as deployed without a restart"
 		journal_event host ok "$HOST_RUNNING" "$HOST_ROOT"
 	else
@@ -463,7 +463,7 @@ function publish_target() {
 		return 0
 	fi
 	log "tree and tooling on $T_SSH; publishing there"
-	if tssh "$(remote_backend_env)AIKI_PORT=$T_PORT DEPLOY_KEEP_RELEASES=$KEEP bash $REMOTE_ROOT/tools/backend.sh $T_UNIT release $NAME $SHA $(printf '%q' "$SUBJECT")"; then
+	if tssh "$(remote_backend_env)KEMIRI_PORT=$T_PORT DEPLOY_KEEP_RELEASES=$KEEP bash $REMOTE_ROOT/tools/backend.sh $T_UNIT release $NAME $SHA $(printf '%q' "$SUBJECT")"; then
 		log "$T_LABEL backend: deployed $NAME"
 		TARGET_STATE=ok
 	elif [[ -n $T_OPTIONAL ]] && ! probe_target; then
@@ -511,7 +511,7 @@ function deploy_target() {
 		log "$T_LABEL backend: its notification key or server environment changed; publishing and restarting"
 		publish_target
 	elif backend_unchanged "$T_LABEL backend" "$running" &&
-		tssh "$(remote_backend_env)AIKI_PORT=$T_PORT bash $REMOTE_ROOT/tools/backend.sh $T_UNIT unchanged $SHA $(printf '%q' "$SUBJECT")"; then
+		tssh "$(remote_backend_env)KEMIRI_PORT=$T_PORT bash $REMOTE_ROOT/tools/backend.sh $T_UNIT unchanged $SHA $(printf '%q' "$SUBJECT")"; then
 		log "$T_LABEL backend: still runs ${running:0:12}; recorded ${SHA:0:12} as deployed without a restart"
 		TARGET_STATE=ok
 	else
@@ -533,7 +533,7 @@ for index in "${ACTIVE[@]}"; do
 		if "$BUN" run "$REPO_DIR/deploy/health-check.ts" "http://$T_TAILNET:$T_PORT" --alive-only --timeout-ms=10000; then
 			log "reachable from here over the tailnet: http://$T_TAILNET:$T_PORT"
 		else
-			log "WARNING: ${SHA:0:12} is deployed but http://$T_TAILNET:$T_PORT does not answer from here; the server probably binds 127.0.0.1 (AIKI_HOST=0.0.0.0 in the unit?)"
+			log "WARNING: ${SHA:0:12} is deployed but http://$T_TAILNET:$T_PORT does not answer from here; the server probably binds 127.0.0.1 (KEMIRI_HOST=0.0.0.0 in the unit?)"
 		fi
 	fi
 done

@@ -115,7 +115,7 @@ export class McpOAuth {
   try {
    const authorization = await startMcpSignIn({
     serverUrl: pending.serverUrl, store: this.#store(serverId, pending.serverUrl, pending),
-    settings: await this.#settings(serverId), clientName: "Aiki", redirectUrl: redirectUri, signal: pending.controller.signal,
+    settings: await this.#settings(serverId), clientName: "Kemiri", redirectUrl: redirectUri, signal: pending.controller.signal,
    });
    pending.starting = false;
    if (pending.controller.signal.aborted) return fail("MCP sign-in cancelled or expired");
@@ -155,7 +155,7 @@ export class McpOAuth {
   try {
    await completeMcpSignIn({
     serverUrl: pending.serverUrl, store: this.#store(pending.flow.serverId, pending.serverUrl, pending),
-    settings: await this.#settings(pending.flow.serverId), clientName: "Aiki", redirectUrl: pending.redirectUri, authorization,
+    settings: await this.#settings(pending.flow.serverId), clientName: "Kemiri", redirectUrl: pending.redirectUri, authorization,
     response: { state, code, ...(iss ? { iss } : {}) }, signal: pending.controller.signal,
    });
    if (pending.controller.signal.aborted) return fail("MCP sign-in cancelled or expired");
@@ -185,7 +185,7 @@ export class McpOAuth {
   const settings = await this.#settings(serverId);
   const provider = createMcpAuthProvider({
    serverUrl: this.serverUrl(serverId), store: this.#store(serverId, this.serverUrl(serverId)),
-   settings: () => settings, clientName: "Aiki", onChallenge: () => {},
+   settings: () => settings, clientName: "Kemiri", onChallenge: () => {},
   });
   this.#providers.add(provider);
   return { ...provider, onUnauthorized: async (context: Parameters<NonNullable<typeof provider.onUnauthorized>>[0]) => {

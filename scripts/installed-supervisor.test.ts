@@ -21,14 +21,14 @@ async function fixture(broken: boolean) {
 		await writeFile(join(path, ".ready"), version);
 		await writeFile(join(path, "entry.ts"), broken && version === target ? "process.exit(42)" : `
 import {writeFileSync,rmSync} from 'node:fs';
-const root=process.env.AIKI_INSTALL_DIR!;
+const root=process.env.KEMIRI_INSTALL_DIR!;
 writeFileSync(root+'/server.pid',String(process.pid));
 const server=Bun.serve({unix:root+'/data/auth.sock',fetch:()=>Response.json({answer:{type:'server.status',status:{updates:{installedVersion:${JSON.stringify(version)}}}}})});
 process.on('SIGTERM',()=>{server.stop(true);rmSync(root+'/server.pid',{force:true});rmSync(root+'/data/auth.sock',{force:true});process.exit(0)});
 `);
 	}
 	const launcher = join(home, "aiki");
-	await writeFile(launcher, `#!/bin/sh\nexec '${process.execPath}' "$AIKI_INSTALL_DIR/current/entry.ts"\n`, { mode: 0o755 });
+	await writeFile(launcher, `#!/bin/sh\nexec '${process.execPath}' "$KEMIRI_INSTALL_DIR/current/entry.ts"\n`, { mode: 0o755 });
 	await symlink(`releases/${baseline}`, join(root, "current"));
 	const installation = { root, data, config: join(root, "config"), launcher, version: baseline, channel: "pilot" };
 	await writeFile(join(root, ".aiki-install.json"), JSON.stringify(installation));

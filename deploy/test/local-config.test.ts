@@ -35,8 +35,8 @@ describe("private deployment configuration", () => {
 		const list = join(local, "backends.json"); writeFileSync(list, "[]");
 		expect(findPublishedBackendsSource({}, root)).toBe(list);
 		expect(findPublishedBackendsSource({ DEPLOY_CONFIG_DIR: local }, "/nonexistent/archive")).toBe(list);
-		expect(findPublishedBackendsSource({ AIKI_PUBLISHED_BACKENDS_FILE: list }, "/nonexistent/archive")).toBe(list);
-		expect(findPublishedBackendsSource({ AIKI_PUBLISHED_BACKENDS_FILE: list + ".missing" }, root)).toBeUndefined();
+		expect(findPublishedBackendsSource({ KEMIRI_PUBLISHED_BACKENDS_FILE: list }, "/nonexistent/archive")).toBe(list);
+		expect(findPublishedBackendsSource({ KEMIRI_PUBLISHED_BACKENDS_FILE: list + ".missing" }, root)).toBeUndefined();
 	});
 	test("example targets parse without any operator configuration", () => {
 		const example = readFileSync(join(import.meta.dir, "../targets.example.json"), "utf8");
@@ -44,7 +44,7 @@ describe("private deployment configuration", () => {
 	});
 	test("deploy passes a stable published list into archive builds and prefers the private user unit", () => {
 		const source = readFileSync(join(import.meta.dir, "../deploy.sh"), "utf8");
-		expect(source.indexOf("export AIKI_PUBLISHED_BACKENDS_FILE=")).toBeLessThan(source.indexOf("git archive --format=tar"));
+		expect(source.indexOf("export KEMIRI_PUBLISHED_BACKENDS_FILE=")).toBeLessThan(source.indexOf("git archive --format=tar"));
 		expect(source).toContain('local unit_source=${DEPLOY_USER_UNIT_FILE:-$DEPLOY_CONFIG_DIR/aiki.service}');
 		expect(source).toContain('install_target_env');
 		expect(source).toContain('install_host_env');

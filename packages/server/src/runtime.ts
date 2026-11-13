@@ -193,18 +193,18 @@ export type ProjectManagerOptions = {
 	/** The Harness timer, for tests with a fake clock. Default: `setTimeout`. */
 	setTimer?: SetTimer;
 	/**
-	 * The directory whose AGENTS.md and skills every conversation is given. Default: `AIKI_AGENT_DIR`, else
+	 * The directory whose AGENTS.md and skills every conversation is given. Default: `KEMIRI_AGENT_DIR`, else
 	 * `~/.pi/agent` of the user the server runs as.
 	 */
 	agentDir?: string;
 	/**
 	 * The harness's own config directory, whose SYSTEM.md and APPEND_SYSTEM.md apply to every conversation. Default:
-	 * `AIKI_CONFIG_DIR`, else `${XDG_CONFIG_HOME:-~/.config}/aiki`.
+	 * `KEMIRI_CONFIG_DIR`, else `${XDG_CONFIG_HOME:-~/.config}/aiki`.
 	 */
 	configDir?: string;
 	/**
 	 * Claude Code's home, whose skills, enabled plugins' skills and `.claude/skills` every conversation is also given.
-	 * Default: `AIKI_CLAUDE_DIR`, else `~/.claude` of the user the server runs as.
+	 * Default: `KEMIRI_CLAUDE_DIR`, else `~/.claude` of the user the server runs as.
 	 */
 	claudeDir?: string;
 	log?: (message: string) => void;

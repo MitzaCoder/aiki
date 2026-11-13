@@ -371,7 +371,7 @@ function backendEnvironment(machine: Machine, port: number): Record<string, stri
 		HOME: machine.home,
 		PATH: `${machine.bin}:${process.env.PATH ?? ""}`,
 		BUN: join(machine.bin, "bun"),
-		AIKI_PORT: String(port),
+		KEMIRI_PORT: String(port),
 		DEPLOY_ZELLIJ_VERSION: "test",
 		DEPLOY_IDLE_POLL_SECONDS: "1",
 		DEPLOY_IDLE_TIMEOUT_SECONDS: "5",
@@ -425,7 +425,7 @@ describe("backend.sh", () => {
 		}
 		const linked = Bun.spawnSync(["ln", "-s", `releases/${current}`, join(machine.root, "current")]);
 		expect(linked.exitCode).toBe(0);
-		const env = { ...backendEnvironment(machine, port(backend)), AIKI_DATA_DIR: authMode(machine, "required") };
+		const env = { ...backendEnvironment(machine, port(backend)), KEMIRI_DATA_DIR: authMode(machine, "required") };
 		const refused = await run(["bash", BACKEND, "system", "rollback"], env);
 		expect(refused.code).toBe(1);
 		expect(refused.stdout).toContain("required device sign-in: refusing release");
@@ -454,7 +454,7 @@ describe("backend.sh", () => {
 		backend.state.release = release(OTHER_COMMIT);
 		backend.state.deployRoot = null;
 		const result = await run(["bash", BACKEND, "system", "release", next, COMMIT, "test"], {
-			...backendEnvironment(machine, port(backend)), AIKI_DATA_DIR: authMode(machine, "required"),
+			...backendEnvironment(machine, port(backend)), KEMIRI_DATA_DIR: authMode(machine, "required"),
 		});
 		expect(result.code).toBe(1);
 		expect(result.stdout).toContain(`REFUSING release ${previous}`);
@@ -846,7 +846,7 @@ describe("deploy.sh", () => {
 		const { dir, sha: running } = await makeRepository();
 		const sha = await commitChanges(dir, ["README.md"]);
 		const privateDir = join(machine.dir, "private"); mkdirSync(privateDir);
-		const source = "AIKI_HOST=0.0.0.0\nAIKI_PORT=8123\nAIKI_STATE_NAMESPACE=previous\n";
+		const source = "KEMIRI_HOST=0.0.0.0\nKEMIRI_PORT=8123\nKEMIRI_STATE_NAMESPACE=previous\n";
 		for (const name of ["host", "vm"]) writeFileSync(join(privateDir, `server-${name}.env`), source);
 		const unit = join(privateDir, "previous.service"); writeFileSync(unit, "[Service]\nExecStart=/example/server\n");
 		const remoteRoot = join(machine.dir, "vm-home", "previous-installation");
@@ -1125,7 +1125,7 @@ describe("deploy.sh", () => {
 			expect(commands.length).toBeGreaterThan(4);
 			for (const command of commands) expect(command).toStartWith("bash -c '");
 			const release = commands.find((command) => command.includes("backend.sh system release"));
-			expect(release).toContain(`BUN=${join(laptopHome(machine), "bin", "bun")} DEPLOY_SURVIVE_DISCONNECT=1 AIKI_PORT=`);
+			expect(release).toContain(`BUN=${join(laptopHome(machine), "bin", "bun")} DEPLOY_SURVIVE_DISCONNECT=1 KEMIRI_PORT=`);
 			expect(existsSync(join(root, "last-deploy.log"))).toBe(true);
 		}, 30_000);
 

@@ -71,7 +71,7 @@ test("stale target, source and watcher installs fail closed", async () => {
 	const { service } = fixture();
 	await expect(service.request({ ...start, version: "v99.0.0" }, "owner")).rejects.toThrow("changed");
 	expect(selfUpdateDisabledReason({}, false)).toContain("development");
-	expect(selfUpdateDisabledReason({ AIKI_INSTALL_DIR: "/synthetic" }, true)).toContain("deploy watcher");
+	expect(selfUpdateDisabledReason({ KEMIRI_INSTALL_DIR: "/synthetic" }, true)).toContain("deploy watcher");
 });
 for (const failure of ["none", "health", "activate"] as const) test(`supervisor transaction: ${failure}`, async () => {
 	const { service } = fixture(); const events: string[] = []; const states: SelfUpdateState[] = [];

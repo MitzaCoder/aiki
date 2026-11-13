@@ -9,7 +9,6 @@ export type PackagedResources = {
 	photonWasm?: string;
 	photonWorker?: string;
 	release?: ReleaseInfo;
-	legacyVersionProbe?: boolean;
  installer?: string;
 };
 export const packagedResources: PackagedResources = {};

@@ -35,7 +35,7 @@ type Sidecar = 'valid' | 'mismatch' | 'missing' | 'malformed' | 'other-file' | '
 async function rehearseBootstrap(args: string[], sidecar: Sidecar = 'valid', installerExit = 0) {
 	const scratch = await mkdtemp(join(tmpdir(), 'aiki-site-test-'));
 	const requests: string[] = [];
-	const installer = '#!/bin/sh\nprintf "%s\\n" "$@" > "$AIKI_TEST_ARGS"\nexit "$AIKI_TEST_EXIT"\n';
+	const installer = '#!/bin/sh\nprintf "%s\\n" "$@" > "$KEMIRI_TEST_ARGS"\nexit "$KEMIRI_TEST_EXIT"\n';
 	const digest = new Bun.CryptoHasher('sha256').update(installer).digest('hex');
 	const server = Bun.serve({
 		hostname: '127.0.0.1', port: 0,
@@ -61,12 +61,12 @@ done
 while [ "$#" -gt 0 ]; do
  case $1 in -o) output=$2; shift 2 ;; *) shift ;; esac
 done
-exec "$AIKI_TEST_CURL" -fsSL "$AIKI_TEST_ORIGIN/\${url#${releasePrefix}}" -o "$output"
+exec "$KEMIRI_TEST_CURL" -fsSL "$KEMIRI_TEST_ORIGIN/\${url#${releasePrefix}}" -o "$output"
 `, { mode: 0o700 });
 		const child = Bun.spawn(['sh', bootstrap, ...args], {
 			env: { ...process.env, PATH: `${scratch}/bin:${process.env.PATH}`, TMPDIR: join(scratch, 'tmp'),
-				AIKI_TEST_CURL: Bun.which('curl')!, AIKI_TEST_ORIGIN: server.url.origin,
-				AIKI_TEST_ARGS: join(scratch, 'args'), AIKI_TEST_EXIT: String(installerExit) },
+				KEMIRI_TEST_CURL: Bun.which('curl')!, KEMIRI_TEST_ORIGIN: server.url.origin,
+				KEMIRI_TEST_ARGS: join(scratch, 'args'), KEMIRI_TEST_EXIT: String(installerExit) },
 			stdout: 'pipe', stderr: 'pipe',
 		});
 		const [stdout, stderr, exitCode] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited]);

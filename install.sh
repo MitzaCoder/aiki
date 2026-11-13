@@ -1,5 +1,5 @@
 #!/bin/sh
-# Aiki's private runtime installer. Safe to pipe to sh; no prompts consume stdin.
+# Kemiri's private runtime installer. Safe to pipe to sh; no prompts consume stdin.
 set -eu
 umask 077
 BUN_VERSION=1.4.4
@@ -12,20 +12,14 @@ choose_default() {
  fi
  if [ -d "$legacy" ] && { [ ! -d "$canonical" ] || { [ -z "$(ls -A "$canonical")" ] && [ -n "$(ls -A "$legacy")" ]; }; }; then printf '%s\n' "$legacy"; else printf '%s\n' "$canonical"; fi
 }
-conflicts=
-for suffix in INSTALL_DIR CONFIG_DIR RELEASE_BASE_URL; do
- eval 'canonical=${KEMIRI_'"$suffix"'-}; legacy=${AIKI_'"$suffix"'-}; canonical_set=${KEMIRI_'"$suffix"'+yes}; legacy_set=${AIKI_'"$suffix"'+yes}'
- if [ "$canonical_set" = yes ] && [ "$legacy_set" = yes ] && [ "$canonical" != "$legacy" ]; then conflicts="$conflicts KEMIRI_$suffix/AIKI_$suffix"; fi
-done
-if [ -n "$conflicts" ]; then printf '%s\n' "Conflicting setting aliases (KEMIRI wins):$conflicts" >&2; fi
-root=${KEMIRI_INSTALL_DIR-${AIKI_INSTALL_DIR-}}
-config=${KEMIRI_CONFIG_DIR-${AIKI_CONFIG_DIR-}}
+root=${KEMIRI_INSTALL_DIR-}
+config=${KEMIRI_CONFIG_DIR-}
 version=latest
 channel=
 ref=
 archive=
 runtime=auto
-release_base=${KEMIRI_RELEASE_BASE_URL-${AIKI_RELEASE_BASE_URL-$REPOSITORY/releases/download}}
+release_base=${KEMIRI_RELEASE_BASE_URL-$REPOSITORY/releases/download}
 no_service=0
 stage_only=0
 uninstall=0
@@ -65,7 +59,8 @@ if [ "$custom_dir" = 1 ]; then config=$root/config; fi
 [ "$purge" = 0 ] || [ "$uninstall" = 1 ] || die '--purge requires --uninstall'
 launcher=$HOME/.local/bin/kemiri
 if [ "$uninstall" = 1 ]; then
- [ -f "$root/.aiki-managed" ] || die 'Not an Aiki-managed install directory'
+ [ -f "$root/.aiki-managed" ] || die 'Not a Kemiri-managed install directory'
+ if [ -x "$root/current/kemiri" ]; then exec "$root/current/kemiri" uninstall "$root" "$purge"; fi
  if [ -x "$root/current/aiki" ]; then exec "$root/current/aiki" uninstall "$root" "$purge"; fi
  exec "$root/runtime/bun-$BUN_VERSION/bin/bun" "$root/current/scripts/aiki.ts" uninstall "$root" "$purge"
 fi
@@ -103,9 +98,9 @@ for command in git jj tailscale; do
 done
 if [ -e "$root" ] && [ ! -f "$root/.aiki-managed" ]; then
  # Refuse an existing backend data directory: never adopt the owner's installation.
- if [ ! -d "$root" ] || [ -n "$(ls -A "$root")" ]; then die 'Directory is not an Aiki-managed installation; choose an empty --dir'; fi
+ if [ ! -d "$root" ] || [ -n "$(ls -A "$root")" ]; then die 'Directory is not a Kemiri-managed installation; choose an empty --dir'; fi
 fi
-for candidate in "$launcher" "$HOME/.local/bin/aiki"; do
+for candidate in "$launcher"; do
  if [ -e "$candidate" ] || [ -L "$candidate" ]; then
   if [ ! -f "$root/.aiki-install.json" ] || ! grep -Fq "# Aiki launcher: $root" "$candidate"; then die "Another launcher exists at $candidate; refusing to overwrite it"; fi
  fi
@@ -152,8 +147,8 @@ release_name=$version
 release=$root/releases/$release_name
 # Explicit runtime changes prepare another immutable directory, never mutate the selected executable.
 if [ -f "$release/.ready" ]; then
- if [ "$runtime" = bun ] && [ -x "$release/aiki" ]; then release_name=$version-bun; fi
- if [ "$runtime" = binary ] && [ ! -x "$release/aiki" ]; then release_name=$version-binary; fi
+ if [ "$runtime" = bun ] && [ -x "$release/kemiri" ]; then release_name=$version-bun; fi
+ if [ "$runtime" = binary ] && [ ! -x "$release/kemiri" ]; then release_name=$version-binary; fi
  release=$root/releases/$release_name
 fi
 checksum_for() {
@@ -167,19 +162,19 @@ if [ ! -f "$release/.ready" ]; then
   asset=kemiri-$version-$binary_platform
   binary_url=$release_base/$version/$asset
   say "Looking for standalone Kemiri $version ($binary_platform)"
-  code=$(curl --connect-timeout 15 --max-time 300 --retry 2 -sSL -w '%{http_code}' "$binary_url" -o "$work/aiki") || die 'Binary download failed; nothing activated'
+  code=$(curl --connect-timeout 15 --max-time 300 --retry 2 -sSL -w '%{http_code}' "$binary_url" -o "$work/kemiri") || die 'Binary download failed; nothing activated'
   case $code in
   200)
    fetch "$binary_url.sha256" "$work/binary.sha256"
    fetch "$release_base/$version/SHA256SUMS" "$work/SHA256SUMS"
    expected=$(checksum_for "$work/binary.sha256" "$asset")
    manifest=$(checksum_for "$work/SHA256SUMS" "$asset")
-   [ "$expected" = "$manifest" ] && [ "$(sha256 "$work/aiki")" = "$expected" ] || die 'Kemiri binary checksum mismatch; nothing activated'
-   chmod 755 "$work/aiki"
-   identity=$("$work/aiki" --version) || die 'Standalone binary could not execute on this platform; nothing activated'
+   [ "$expected" = "$manifest" ] && [ "$(sha256 "$work/kemiri")" = "$expected" ] || die 'Kemiri binary checksum mismatch; nothing activated'
+   chmod 755 "$work/kemiri"
+   identity=$("$work/kemiri" --version) || die 'Standalone binary could not execute on this platform; nothing activated'
    [ "$(printf '%s\n' "$identity" | head -n 1)" = "Kemiri $version" ] || die 'Standalone binary version mismatch; nothing activated'
    mkdir "$work/source"
-   mv "$work/aiki" "$work/source/aiki"
+   mv "$work/kemiri" "$work/source/kemiri"
    prepared_binary=1 ;;
   404) say 'No matching binary asset; using the pinned Bun fallback' ;;
   *) die "Binary download returned HTTP $code; nothing activated" ;;
@@ -200,9 +195,9 @@ if [ ! -f "$release/.ready" ]; then
   fi
   expected=$(awk 'NR==1 {print $1}' "$work/aiki.sha256")
   if [ "${#expected}" != 64 ] || [ "$(sha256 "$work/aiki.tar.gz")" != "$expected" ]; then die 'Kemiri archive checksum mismatch; nothing activated'; fi
-  # Our release format is a single aiki/ tree of regular files and directories.
+  # Our release format is a single kemiri/ tree of regular files and directories.
   tar -tzf "$work/aiki.tar.gz" > "$work/files"
-  awk '$0 !~ /^aiki\// || $0 ~ /(^|\/)\.\.(\/|$)/ {bad=1} END {exit bad}' "$work/files" || die 'Unsafe archive paths'
+  awk '$0 !~ /^kemiri\// || $0 ~ /(^|\/)\.\.(\/|$)/ {bad=1} END {exit bad}' "$work/files" || die 'Unsafe archive paths'
   tar -tvzf "$work/aiki.tar.gz" > "$work/types"
   awk 'substr($0,1,1) != "-" && substr($0,1,1) != "d" {bad=1} END {exit bad}' "$work/types" || die 'Links are not allowed in release archives'
   mkdir "$work/source"
@@ -213,7 +208,7 @@ if [ ! -f "$release/.ready" ]; then
  say "Preparing Kemiri $version with the frozen lockfile"
  (cd "$work/source" && "$bun" install --frozen-lockfile)
  if [ ! -f "$work/source/apps/web/build/200.html" ]; then
-  (cd "$work/source/apps/web" && KEMIRI_PUBLISHED_BACKENDS_FILE="$work/no-backends.json" AIKI_PUBLISHED_BACKENDS_FILE="$work/no-backends.json" KEMIRI_LEGACY_STORAGE_PREFIX="" AIKI_LEGACY_STORAGE_PREFIX="" "$bun" run build)
+  (cd "$work/source/apps/web" && KEMIRI_PUBLISHED_BACKENDS_FILE="$work/no-backends.json" KEMIRI_LEGACY_STORAGE_PREFIX="" "$bun" run build)
  fi
  # A generic install never retains published backend suggestions.
  rm -f "$work/source/apps/web/build/backends.json"
@@ -244,7 +239,7 @@ if [ "$stage_only" = 1 ]; then
 fi
 # Prefer a binary lifecycle driver even when selecting a historical Bun release: its old CLI may write a Bun-only launcher.
 driver=
-for candidate in "$release/aiki" "$root/current/aiki" "$root/previous/aiki"; do
+for candidate in "$release/kemiri" "$root/current/kemiri" "$root/previous/kemiri" "$root/current/aiki" "$root/previous/aiki"; do
  if [ -x "$candidate" ]; then driver=$candidate; break; fi
 done
 if [ -n "$driver" ]; then

@@ -222,9 +222,9 @@ test("the access renewal grace ends at sixty seconds and refresh cannot revive t
 test("owner auth CLI loads its data directory from a private server env file", async () => {
 	const s = await authSetup({ auth: { mode: "optional" } });
 	const envFile = `${s.root}/server.env`;
-	await Bun.write(envFile, `AIKI_DATA_DIR=${s.dataDir}\n`);
+	await Bun.write(envFile, `KEMIRI_DATA_DIR=${s.dataDir}\n`);
 	const child = Bun.spawn(["bun", "packages/server/src/main.ts", "auth", "status"], {
-		env: { PATH: process.env.PATH, HOME: s.root, AIKI_ENV_FILE: envFile },
+		env: { PATH: process.env.PATH, HOME: s.root, KEMIRI_ENV_FILE: envFile },
 		stdout: "pipe", stderr: "pipe", timeout: 5000,
 	});
 	const [output, error, exit] = await Promise.all([

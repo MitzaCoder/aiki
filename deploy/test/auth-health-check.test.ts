@@ -34,8 +34,8 @@ async function setup(mode: "off" | "optional" | "required") {
 	s.server.auth.setMode(mode);
 	const config = join(s.root, "config/aiki");
 	await mkdir(config, { recursive: true });
-	await writeFile(join(config, "server.env"), `AIKI_DATA_DIR=${JSON.stringify(s.dataDir)}\n`, { mode: 0o600 });
-	return { s, projectId: added.project.id, env: { HOME: s.root, AIKI_DATA_DIR: undefined, AIKI_ENV_FILE: undefined, XDG_CONFIG_HOME: join(s.root, "config") } };
+	await writeFile(join(config, "server.env"), `KEMIRI_DATA_DIR=${JSON.stringify(s.dataDir)}\n`, { mode: 0o600 });
+	return { s, projectId: added.project.id, env: { HOME: s.root, KEMIRI_DATA_DIR: undefined, KEMIRI_ENV_FILE: undefined, XDG_CONFIG_HOME: join(s.root, "config") } };
 }
 
 for (const mode of ["off", "optional", "required"] as const) test(`real standalone checker: ${mode}, release, saved projects, deep and drain`, async () => {
@@ -67,10 +67,10 @@ for (const mode of ["off", "optional", "required"] as const) test(`real standalo
 		expect(hello).toMatchObject({ type: "error", error: { code: "auth_required" } });
 		anonymous.close();
 		// Warning-only remote discovery never tries the (deliberately wrong) local socket.
-		const alive = await run([s.server.url, "--alive-only", "--timeout-ms=0"], { ...env, AIKI_DATA_DIR: join(s.root, "absent") });
+		const alive = await run([s.server.url, "--alive-only", "--timeout-ms=0"], { ...env, KEMIRI_DATA_DIR: join(s.root, "absent") });
 		expect(alive.code).toBe(0);
 		expect(alive.stdout).toContain("discovery alive");
-		const wrongSocket = await run([s.server.url, "--deep", "--timeout-ms=0"], { ...env, AIKI_DATA_DIR: join(s.root, "absent") });
+		const wrongSocket = await run([s.server.url, "--deep", "--timeout-ms=0"], { ...env, KEMIRI_DATA_DIR: join(s.root, "absent") });
 		expect(wrongSocket.code).toBe(1);
 	}
 }, 15000);
@@ -119,16 +119,10 @@ test("rollback guard reads persisted required mode even when backend is stopped;
 });
 
 
-test("standalone checker resolves canonical aliases before legacy names in each source", async () => {
+test("standalone checker ignores legacy process settings", async () => {
  const { s, env } = await setup("required");
  const file = join(s.root, "canonical.env");
- await writeFile(file, `KEMIRI_DATA_DIR=${s.dataDir}\nAIKI_DATA_DIR=/tmp/synthetic-unselected\n`);
- const result = await run([s.server.url, "--deep", "--timeout-ms=0"], { ...env, KEMIRI_ENV_FILE: file, AIKI_ENV_FILE: join(s.root, "missing.env") });
- expect(result.code).toBe(0);
- expect(result.stderr).toContain("KEMIRI_ENV_FILE/AIKI_ENV_FILE");
- expect(result.stderr).toContain("KEMIRI_DATA_DIR/AIKI_DATA_DIR");
- expect(result.stderr).not.toContain(s.dataDir);
- expect(result.stderr.trim().split("\n")).toHaveLength(1);
- const processWins = await run([s.server.url, "--deep", "--timeout-ms=0"], { ...env, KEMIRI_ENV_FILE: file, AIKI_DATA_DIR: s.dataDir });
- expect(processWins.code).toBe(0);
+ await writeFile(file, `KEMIRI_DATA_DIR=${s.dataDir}\n`);
+ const result = await run([s.server.url, "--deep", "--timeout-ms=0"], { ...env, KEMIRI_ENV_FILE: file, AIKI_ENV_FILE: join(s.root, "missing.env"), AIKI_DATA_DIR: "/tmp/unselected" });
+ expect(result.code).toBe(0); expect(result.stderr).toBe("");
 });

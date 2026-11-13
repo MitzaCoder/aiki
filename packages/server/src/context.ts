@@ -59,7 +59,7 @@ export const SKILLS_DIR_NAME = "skills";
 /** A project's skills live next to its pi configuration, as pi's do. */
 export const PROJECT_CONFIG_DIR = ".pi";
 /** A project's own SYSTEM.md and APPEND_SYSTEM.md live here, apart from its pi configuration and from pi's files. */
-export const PROJECT_HARNESS_DIR = serverSettings.AIKI_PROJECT_CONTEXT_DIR || ".aiki";
+export const PROJECT_HARNESS_DIR = serverSettings.KEMIRI_PROJECT_CONTEXT_DIR || ".aiki";
 /** Claude Code's per-project configuration directory; its `.claude/skills` are offered too. */
 export const PROJECT_CLAUDE_DIR = ".claude";
 /** Claude Code's plugins home, below its home, and the file that records what is installed there. */
@@ -90,7 +90,7 @@ export const PREAMBLE_SECTION = "preamble";
 export const ADDENDUM_SECTION = "addendum";
 export const MODEL_NOTES_SECTION = "model_notes";
 /** The extension that provides those sections, installed for every conversation of a project. */
-export const AGENT_CONTEXT_EXTENSION = serverSettings.AIKI_CONTEXT_EXTENSION || "aiki-agent-context";
+export const AGENT_CONTEXT_EXTENSION = serverSettings.KEMIRI_CONTEXT_EXTENSION || "aiki-agent-context";
 
 /**
  * A skill as the harness knows it: where it came from, and whether this conversation has read it — the latter is per

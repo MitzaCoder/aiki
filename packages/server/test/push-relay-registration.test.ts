@@ -11,9 +11,9 @@ const event = { kind: "reply" as const, title: "Private subject", body: "Private
 
 test("private relay setting accepts HTTPS and loopback only; no credentials, query or fragments", () => {
 	expect(resolvePushRelayEndpoint({})).toBeUndefined();
-	expect(resolvePushRelayEndpoint({ AIKI_PUSH_RELAY_ENDPOINT: "https://relay.example.com/v1" })).toBe("https://relay.example.com/v1/");
+	expect(resolvePushRelayEndpoint({ KEMIRI_PUSH_RELAY_ENDPOINT: "https://relay.example.com/v1" })).toBe("https://relay.example.com/v1/");
 	for (const url of ["http://relay.example.com/v1", "ftp://relay.example.com", "https://secret@relay.example.com", "https://relay.example.com/?secret=x", "https://relay.example.com/#secret"])
-		expect(() => resolvePushRelayEndpoint({ AIKI_PUSH_RELAY_ENDPOINT: url })).toThrow();
+		expect(() => resolvePushRelayEndpoint({ KEMIRI_PUSH_RELAY_ENDPOINT: url })).toThrow();
 });
 
 test("no relay setting: hello/config/direct FCM/Web Push remain unchanged and no relay files are created", async () => {

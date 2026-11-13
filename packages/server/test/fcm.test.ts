@@ -191,7 +191,7 @@ async function googleWithKey(): Promise<{ google: FakeGoogle; keyFile: string; a
 describe("the service-account key", () => {
 	it("is read from the data directory unless the environment names another file", () => {
 		expect(resolveFcmKeyFile("/data", {})).toBe("/data/notifications/fcm-service-account.json");
-		expect(resolveFcmKeyFile("/data", { AIKI_FCM_KEY_FILE: "/keys/fcm.json" })).toBe("/keys/fcm.json");
+		expect(resolveFcmKeyFile("/data", { KEMIRI_FCM_KEY_FILE: "/keys/fcm.json" })).toBe("/keys/fcm.json");
 	});
 
 	it("turns FCM off when absent or unusable, and never logs the key", async () => {

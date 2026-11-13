@@ -100,7 +100,7 @@ export class ReleaseUpdates {
 		this.#abort = new AbortController();
 		try {
 			const response = await (this.#options.transport ?? fetch)(RELEASES_API, {
-				headers: { Accept: "application/vnd.github+json", "User-Agent": "Aiki-release-check", "X-GitHub-Api-Version": "2022-11-28", ...(this.#saved.etag ? { "If-None-Match": this.#saved.etag } : {}) },
+				headers: { Accept: "application/vnd.github+json", "User-Agent": "Kemiri-release-check", "X-GitHub-Api-Version": "2022-11-28", ...(this.#saved.etag ? { "If-None-Match": this.#saved.etag } : {}) },
 				signal: AbortSignal.any([this.#abort.signal, AbortSignal.timeout(15_000)]),
 			});
 			if (response.status === 403 || response.status === 429) {

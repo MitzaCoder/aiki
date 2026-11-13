@@ -35,12 +35,12 @@ test("missing option arguments and destructive path choices fail before writing"
 });
 test("an existing unmanaged data directory is never adopted", async () => {
  const fixture = await setup(); await mkdir(fixture.root); await writeFile(join(fixture.root, "keep"), "synthetic data");
- expect((await fixture.run([])).message).toContain("not an Aiki-managed installation");
+ expect((await fixture.run([])).message).toContain("not a Kemiri-managed installation");
  expect(await readFile(join(fixture.root, "keep"), "utf8")).toBe("synthetic data");
 });
 test("a foreign launcher is never replaced", async () => {
  const fixture = await setup(); await mkdir(join(fixture.home, ".local/bin"), { recursive: true });
- const launcher = join(fixture.home, ".local/bin/aiki"); await writeFile(launcher, "unrelated command");
+ const launcher = join(fixture.home, ".local/bin/kemiri"); await writeFile(launcher, "unrelated command");
  expect((await fixture.run([])).message).toContain("refusing to overwrite");
  expect(await readFile(launcher, "utf8")).toBe("unrelated command");
 });

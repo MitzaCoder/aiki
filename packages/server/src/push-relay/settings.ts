@@ -2,7 +2,7 @@ import type { Environment } from "../data-dir.ts";
 import { serverSettings } from "../server-settings.ts";
 
 /** Private, operator-approved v1 base URL. No account or administrative credential is used. */
-export const PUSH_RELAY_ENDPOINT_SETTING = "AIKI_PUSH_RELAY_ENDPOINT";
+export const PUSH_RELAY_ENDPOINT_SETTING = "KEMIRI_PUSH_RELAY_ENDPOINT";
 
 /** Resolve only the private settings snapshot; reject insecure endpoints and credential-bearing URLs. */
 export function resolvePushRelayEndpoint(env: Environment = serverSettings): string | undefined {

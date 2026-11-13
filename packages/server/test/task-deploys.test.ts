@@ -8,7 +8,7 @@ import { TaskDeployObserver, parseDeployFeed, DEPLOY_FEED_MAX_BYTES, deploySumma
 const roots: string[] = [];
 afterEach(async () => { for (const path of roots.splice(0)) await rm(path, { recursive: true, force: true }); });
 async function git(path: string, ...args: string[]): Promise<string> {
- const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("AIKI_")));
+ const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("KEMIRI_")));
  const child = Bun.spawn(["git", ...args], { cwd: path, timeout: 10_000, env: { ...env, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" }, stdout: "pipe", stderr: "pipe" });
  const [stdout, stderr, code] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited]);
  if (code) throw new Error(stderr);

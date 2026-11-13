@@ -350,9 +350,9 @@ describe("terminals switched off or without zellij", () => {
 	test("the environment switch", async () => {
 		const { terminalsEnabled } = await import("../src/terminals.ts");
 		expect(terminalsEnabled({})).toBe(true);
-		expect(terminalsEnabled({ AIKI_TERMINALS: "off" })).toBe(false);
-		expect(terminalsEnabled({ AIKI_TERMINALS: "OFF" })).toBe(false);
-		expect(terminalsEnabled({ AIKI_TERMINALS: "on" })).toBe(true);
+		expect(terminalsEnabled({ KEMIRI_TERMINALS: "off" })).toBe(false);
+		expect(terminalsEnabled({ KEMIRI_TERMINALS: "OFF" })).toBe(false);
+		expect(terminalsEnabled({ KEMIRI_TERMINALS: "on" })).toBe(true);
 	});
 });
 

@@ -179,7 +179,7 @@ describe("disks", () => {
 		expect(isDiskLow(9 * GiB, 1000 * GiB, threshold)).toBe(true);
 		expect(isDiskLow(5 * GiB, 20 * GiB, threshold)).toBe(false);
 		expect(isDiskLow(2 * GiB, 20 * GiB, threshold)).toBe(true);
-		expect(resolveDiskThreshold({ AIKI_DISK_LOW_PERCENT: "5", AIKI_DISK_LOW_BYTES: "1000" })).toEqual({
+		expect(resolveDiskThreshold({ KEMIRI_DISK_LOW_PERCENT: "5", KEMIRI_DISK_LOW_BYTES: "1000" })).toEqual({
 			percent: 5,
 			bytes: 1000,
 		});

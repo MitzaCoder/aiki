@@ -3,12 +3,12 @@
  *
  * There is no login: a browser page that can open `/ws` can drive the harness. The server therefore upgrades a socket
  * only when the request has no `Origin` header (native clients, tests, health checks) or when its origin is listed in
- * `AIKI_ALLOWED_ORIGINS`. With the variable unset, no browser origin is allowed and non-browser clients keep
+ * `KEMIRI_ALLOWED_ORIGINS`. With the variable unset, no browser origin is allowed and non-browser clients keep
  * working.
  */
 import { serverSettings } from "./server-settings.ts";
 
-export const ALLOWED_ORIGINS_ENV = "AIKI_ALLOWED_ORIGINS";
+export const ALLOWED_ORIGINS_ENV = "KEMIRI_ALLOWED_ORIGINS";
 
 export type Environment = Readonly<Record<string, string | undefined>>;
 

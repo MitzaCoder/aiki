@@ -14,13 +14,13 @@ export async function runBinaryEntry(args = process.argv.slice(2)): Promise<void
 	if (args[0] === "--kemiri-version") { console.log(`Kemiri ${packagedResources.release?.name ?? "development"}\nBun ${Bun.version}`); return; }
 	if (installedCliRequested(args)) return runInstalledCli(args);
 	const loaded = loadServerEnv();
-	const settings = { ...loaded, KEMIRI_WEB_DIR: loaded.AIKI_WEB_DIR || "embedded", AIKI_WEB_DIR: loaded.AIKI_WEB_DIR || "embedded" };
+	const settings = { ...loaded, KEMIRI_WEB_DIR: loaded.KEMIRI_WEB_DIR || "embedded" };
 	const [command = "start", ...rest] = args;
 	if (command === "version" || command === "--version") {
-		console.log(`${packagedResources.legacyVersionProbe ? "Aiki" : "Kemiri"} ${packagedResources.release?.name ?? "development"}\nBun ${Bun.version}`);
+		console.log(`Kemiri ${packagedResources.release?.name ?? "development"}\nBun ${Bun.version}`);
 	} else if (command === "status" || command === "health-check") {
-		if (loaded.AIKI_CHILD_PROCESS === "1" && !loaded.AIKI_ENV_FILE?.trim() && !loaded.AIKI_DATA_DIR?.trim()) {
-			throw new Error("Owner CLI from an agent requires explicit AIKI_ENV_FILE or AIKI_DATA_DIR");
+		if (loaded.KEMIRI_CHILD_PROCESS === "1" && !loaded.KEMIRI_ENV_FILE?.trim() && !loaded.KEMIRI_DATA_DIR?.trim()) {
+			throw new Error("Owner CLI from an agent requires explicit KEMIRI_ENV_FILE or KEMIRI_DATA_DIR");
 		}
 		const config = resolvedServerConfig(settings);
 		for (const type of ["hello", "server.status"]) {

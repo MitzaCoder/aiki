@@ -23,7 +23,7 @@ export async function runServerEntry(
 			dataDir: resolveDataDir(),
 			hostname: resolveHostname(),
 			port: resolvePort(),
-			...(serverSettings.AIKI_WEB_DIR ? { webDir: serverSettings.AIKI_WEB_DIR } : {}),
+			...(serverSettings.KEMIRI_WEB_DIR ? { webDir: serverSettings.KEMIRI_WEB_DIR } : {}),
 		});
 
 		const origins =

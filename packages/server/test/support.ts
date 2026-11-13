@@ -51,7 +51,7 @@ export async function createSetup(options?: {
 	setTimer?: StartServerOptions["setTimer"];
 	/** How long the user's board edits wait before they reach the coordinator as one input. */
 	boardEditDebounceMs?: StartServerOptions["boardEditDebounceMs"];
-	/** The timezone schedules run in; defaults to the host's, or `AIKI_TIMEZONE`. */
+	/** The timezone schedules run in; defaults to the host's, or `KEMIRI_TIMEZONE`. */
 	timezone?: StartServerOptions["timezone"];
 	/** Where the release and the deploy status are read from; defaults to what the running code discovers. */
 	status?: StartServerOptions["status"];

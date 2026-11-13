@@ -148,12 +148,12 @@ export class DeviceAuth {
 					hosts: [],
 					observedHosts: [],
 				};
-		const override = options.mode ?? serverSettings.AIKI_AUTH_MODE;
+		const override = options.mode ?? serverSettings.KEMIRI_AUTH_MODE;
 		if (override !== undefined) this.#state.mode = mode(override);
 		const origins =
 			options.backendOrigins ??
-			serverSettings.AIKI_BACKEND_ORIGINS?.split(",").filter(Boolean) ??
-			(serverSettings.AIKI_PUBLIC_URL ? [new URL(serverSettings.AIKI_PUBLIC_URL).origin] : undefined);
+			serverSettings.KEMIRI_BACKEND_ORIGINS?.split(",").filter(Boolean) ??
+			(serverSettings.KEMIRI_PUBLIC_URL ? [new URL(serverSettings.KEMIRI_PUBLIC_URL).origin] : undefined);
 		if (origins) this.#state.hosts = [...new Set(origins.map(validateBackendOrigin))];
 		const keyFile = join(dir, "auth.delivery-key");
 		if (!existsSync(keyFile)) writeFileSync(keyFile, randomBytes(32), { mode: 0o600, flag: "wx" });

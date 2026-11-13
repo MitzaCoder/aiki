@@ -74,7 +74,7 @@ export async function superviseInstallation(installation: Installation, env: Rea
 	const recoveryPath = join(root, "self-update-recovery.json");
 	let child: ReturnType<typeof Bun.spawn> | undefined;
 	let stopping = false;
-	const childEnv = { ...childEnvironment(), AIKI_INSTALL_DIR: root, KEMIRI_INSTALL_DIR: root, AIKI_UPDATE_CHILD: "1", KEMIRI_UPDATE_CHILD: "1", ...(env.AIKI_PORT ? { AIKI_PORT: env.AIKI_PORT } : {}) };
+	const childEnv = { ...childEnvironment(), KEMIRI_INSTALL_DIR: root, KEMIRI_UPDATE_CHILD: "1", ...(env.KEMIRI_PORT ? { KEMIRI_PORT: env.KEMIRI_PORT } : {}) };
 	const start = () => {
 		// Only our stopped child can leave this file; never remove a live process's lock.
 		if (existsSync(join(root, "server.pid"))) {

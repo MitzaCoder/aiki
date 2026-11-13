@@ -20,17 +20,17 @@ for (const originSource of ["backend origins", "public URL fallback"] as const) 
 		const file = join(s.root, "isolated-server.env");
 		const backend = originSource === "backend origins" ? "https://backend.example.test" : "https://fallback.example.test";
 		await writeFile(file, [
-			`AIKI_DATA_DIR=${JSON.stringify(join(s.root, "isolated-data"))}`,
-			`AIKI_CONFIG_DIR=${JSON.stringify(s.configDir)}`,
-			`AIKI_AGENT_DIR=${JSON.stringify(s.agentDir)}`,
-			`AIKI_CLAUDE_DIR=${JSON.stringify(s.claudeDir)}`,
-			"AIKI_HOST=127.0.0.1", "AIKI_PORT=0", "AIKI_AUTH_MODE=required", "AIKI_TERMINALS=off",
-			"AIKI_ALLOWED_ORIGINS=https://browser.example.test", "AIKI_TRUSTED_PROXIES=127.0.0.1",
-			"AIKI_WEB_APP=https://web.example.test", "AIKI_PUBLIC_URL=https://fallback.example.test/legacy-path",
-			...(originSource === "backend origins" ? ["AIKI_BACKEND_ORIGINS=https://backend.example.test"] : []),
+			`KEMIRI_DATA_DIR=${JSON.stringify(join(s.root, "isolated-data"))}`,
+			`KEMIRI_CONFIG_DIR=${JSON.stringify(s.configDir)}`,
+			`KEMIRI_AGENT_DIR=${JSON.stringify(s.agentDir)}`,
+			`KEMIRI_CLAUDE_DIR=${JSON.stringify(s.claudeDir)}`,
+			"KEMIRI_HOST=127.0.0.1", "KEMIRI_PORT=0", "KEMIRI_AUTH_MODE=required", "KEMIRI_TERMINALS=off",
+			"KEMIRI_ALLOWED_ORIGINS=https://browser.example.test", "KEMIRI_TRUSTED_PROXIES=127.0.0.1",
+			"KEMIRI_WEB_APP=https://web.example.test", "KEMIRI_PUBLIC_URL=https://fallback.example.test/legacy-path",
+			...(originSource === "backend origins" ? ["KEMIRI_BACKEND_ORIGINS=https://backend.example.test"] : []),
 		].join("\n"), { mode: 0o600 });
 		// Explicit minimal environment and temp paths: never reuse the harness's real installation settings.
-		const env = { PATH: process.env.PATH, HOME: s.root, AIKI_ENV_FILE: file };
+		const env = { PATH: process.env.PATH, HOME: s.root, KEMIRI_ENV_FILE: file };
 		const child = Bun.spawn([process.execPath, main], { env, stdout: "pipe", stderr: "pipe" });
 		const ready = Promise.withResolvers<string>();
 		let logs = "";
@@ -56,7 +56,7 @@ for (const originSource of ["backend origins", "public URL fallback"] as const) 
 		const url = await ready.promise;
 		clearTimeout(timeout);
 		const run = async (args: string[]) => {
-			const cli = Bun.spawn([process.execPath, main, "auth", ...args], { env: { ...env, AIKI_CHILD_PROCESS: "1" }, stdout: "pipe", stderr: "pipe", timeout: 5000 });
+			const cli = Bun.spawn([process.execPath, main, "auth", ...args], { env: { ...env, KEMIRI_CHILD_PROCESS: "1" }, stdout: "pipe", stderr: "pipe", timeout: 5000 });
 			const [code, stdout, stderr] = await Promise.all([cli.exited, new Response(cli.stdout).text(), new Response(cli.stderr).text()]);
 			expect({ code, stderr }).toEqual({ code: 0, stderr: "" });
 			return JSON.parse(stdout);

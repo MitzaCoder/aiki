@@ -157,7 +157,7 @@ describe("release and deploy files", () => {
 		expect(resolveDeployStatusFile(join(root, "release"), {})).toBeNull();
 	});
 
-	it("lets AIKI_DEPLOY_STATUS_FILE name the file, expanding ~", () => {
+	it("lets KEMIRI_DEPLOY_STATUS_FILE name the file, expanding ~", () => {
 		const root = "/home/someone/.local/share/aiki-deploy/releases/20261030T113815Z-be84355";
 		expect(resolveDeployStatusFile(root, { [DEPLOY_STATUS_FILE_ENV]: "/run/status.json" })).toBe("/run/status.json");
 		expect(resolveDeployStatusFile(root, { [DEPLOY_STATUS_FILE_ENV]: "~/deploy-status.json" })).toBe(

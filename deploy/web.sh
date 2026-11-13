@@ -10,7 +10,7 @@
 # it does not exist yet.
 set -euo pipefail
 
-ROOT=${AIKI_WEB_ROOT:-/var/lib/aiki-web}
+ROOT=${KEMIRI_WEB_ROOT:-/var/lib/aiki-web}
 RELEASES=$ROOT/releases
 CURRENT=$ROOT/current
 KEEP=${DEPLOY_KEEP_RELEASES:-5}

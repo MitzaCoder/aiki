@@ -22,7 +22,7 @@ async function fixture() {
 	const config = join(s.root, ".config");
 	await mkdir(join(config, "aiki"), { recursive: true });
 	const file = join(config, "aiki/server.env");
-	await writeFile(file, `AIKI_DATA_DIR=${JSON.stringify(s.dataDir)}\n`, { mode: 0o600 });
+	await writeFile(file, `KEMIRI_DATA_DIR=${JSON.stringify(s.dataDir)}\n`, { mode: 0o600 });
 	const env = { PATH: process.env.PATH, HOME: s.root, XDG_CONFIG_HOME: config, XDG_DATA_HOME: join(s.root, "xdg-data") };
 	return { s, file, env };
 }
@@ -43,9 +43,9 @@ for (const session of ["normal shell", "SSH shell", "explicit agent env file", "
 			delete childEnv.XDG_CONFIG_HOME; // Exercise HOME-based discovery too.
 		}
 		if (session.startsWith("explicit agent")) {
-			childEnv.AIKI_CHILD_PROCESS = "1";
-			if (session === "explicit agent env file") childEnv.AIKI_ENV_FILE = file;
-			else childEnv.AIKI_DATA_DIR = s.dataDir;
+			childEnv.KEMIRI_CHILD_PROCESS = "1";
+			if (session === "explicit agent env file") childEnv.KEMIRI_ENV_FILE = file;
+			else childEnv.KEMIRI_DATA_DIR = s.dataDir;
 		}
 		expect(await cli(childEnv, ["--print-config"])).toMatchObject({ dataDir: s.dataDir });
 		const run = (args: string[]) => cli(childEnv, ["auth", ...args]);
@@ -73,7 +73,7 @@ test("real bash tool: marker-only owner CLI refuses even a live default data pat
 	await mkdir(env.XDG_DATA_HOME, { recursive: true });
 	await symlink(s.dataDir, join(env.XDG_DATA_HOME, "aiki"));
 	const common = `HOME=${quote(s.root)} XDG_CONFIG_HOME=${quote(env.XDG_CONFIG_HOME)} XDG_DATA_HOME=${quote(env.XDG_DATA_HOME)}`;
-	const routes = { marker: "", file: `AIKI_ENV_FILE=${quote(file)}`, directory: `AIKI_DATA_DIR=${quote(s.dataDir)}` };
+	const routes = { marker: "", file: `KEMIRI_ENV_FILE=${quote(file)}`, directory: `KEMIRI_DATA_DIR=${quote(s.dataDir)}` };
 	const command = Object.entries(routes).map(([name, explicit]) => {
 		const base = join(s.root, name);
 		return `${common} ${explicit} ${quote(process.execPath)} ${quote(main)} auth status >${quote(base + ".json")} 2>${quote(base + ".err")}; code=$?; printf '%s' "$code" >${quote(base + ".exit")}`;
@@ -94,7 +94,7 @@ test("real bash tool: marker-only owner CLI refuses even a live default data pat
 	await client.request({ type: "conversation.submit", projectId, requestId: "owner-cli-routes", content: "Check deliberate owner CLI targeting." });
 	await view.waitForView(value => value.entries.some(entry => entry.kind === "pi.assistant" && entryText(entry).includes("owner CLI routes checked")));
 	expect(await readFile(join(s.root, "marker.exit"), "utf8")).toBe("1");
-	expect(await readFile(join(s.root, "marker.err"), "utf8")).toContain("requires explicit AIKI_ENV_FILE or AIKI_DATA_DIR");
+	expect(await readFile(join(s.root, "marker.err"), "utf8")).toContain("requires explicit KEMIRI_ENV_FILE or KEMIRI_DATA_DIR");
 	expect(await readFile(join(s.root, "marker.json"), "utf8")).toBe("");
 	for (const name of ["file", "directory"]) {
 		expect(await readFile(join(s.root, name + ".exit"), "utf8")).toBe("0");

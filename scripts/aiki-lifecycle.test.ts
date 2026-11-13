@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -11,13 +11,13 @@ async function setup() {
 	const home = await mkdtemp(join(tmpdir(), "aiki-cli-")); roots.push(home);
 	const root = join(home, "Aiki's files");
 	const config = join(root, "config");
-	const launcher = join(home, ".local/bin/aiki");
+	const launcher = join(home, ".local/bin/kemiri");
 	await mkdir(root, { recursive: true });
 	await mkdir(join(home, "bin"));
 	await writeFile(join(root, ".aiki-managed"), "aiki-installer-v1\n");
 	async function run(...args: string[]) {
 		const child = Bun.spawn([process.execPath, cli, ...args], {
-			env: { HOME: home, PATH: `${join(home, "bin")}:${process.env.PATH}`, AIKI_INSTALL_DIR: root, AIKI_UPDATE_CHILD: "1", AIKI_NO_BROWSER: "1", AIKI_DATA_DIR: join(home, "foreign-data"), AIKI_CONFIG_DIR: join(home, "foreign-config"), AIKI_ENV_FILE: join(home, "foreign.env") },
+			env: { HOME: home, PATH: `${join(home, "bin")}:${process.env.PATH}`, KEMIRI_INSTALL_DIR: root, KEMIRI_UPDATE_CHILD: "1", KEMIRI_NO_BROWSER: "1", KEMIRI_DATA_DIR: join(home, "foreign-data"), KEMIRI_CONFIG_DIR: join(home, "foreign-config"), KEMIRI_ENV_FILE: join(home, "foreign.env") },
 			stdout: "pipe", stderr: "pipe",
 		});
 		const [code, out, err] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
@@ -27,7 +27,7 @@ async function setup() {
 		const path = join(root, "releases", version);
 		await mkdir(join(path, "packages/server/src"), { recursive: true });
 		await writeFile(join(path, ".ready"), version);
-		await writeFile(join(path, "packages/server/src/main.ts"), `export async function runServerEntry(settings) { await Bun.write(settings.AIKI_DATA_DIR + '/observed.json', JSON.stringify({data:settings.AIKI_DATA_DIR, config:settings.AIKI_CONFIG_DIR, host:settings.AIKI_HOST})); await Bun.write(settings.AIKI_DATA_DIR + '/settings-check.json', JSON.stringify({privateSetting:settings.AIKI_FUTURE_SETTING, nativeSetting:process.env.AIKI_FUTURE_SETTING ?? null})); }`);
+		await writeFile(join(path, "packages/server/src/main.ts"), `export async function runServerEntry(settings) { await Bun.write(settings.KEMIRI_DATA_DIR + '/observed.json', JSON.stringify({data:settings.KEMIRI_DATA_DIR, config:settings.KEMIRI_CONFIG_DIR, host:settings.KEMIRI_HOST})); await Bun.write(settings.KEMIRI_DATA_DIR + '/settings-check.json', JSON.stringify({privateSetting:settings.KEMIRI_FUTURE_SETTING, nativeSetting:process.env.KEMIRI_FUTURE_SETTING ?? null})); }`);
 		return run("activate", root, config, version, launcher);
 	}
 	return { root, home, config, launcher, run, release };
@@ -48,7 +48,7 @@ test("activation is idempotent; update/rollback retain one previous code release
 
 test("installed start ignores inherited backend data/config/env-file paths", async () => {
 	const fixture = await setup(); await fixture.release("v0.1.0");
-	await writeFile(join(fixture.config, "server.env"), "AIKI_FUTURE_SETTING=synthetic-private\nAIKI_PORT=18475\n");
+	await writeFile(join(fixture.config, "server.env"), "KEMIRI_FUTURE_SETTING=synthetic-private\nKEMIRI_PORT=18475\n");
 	const started = await fixture.run("start");
 	expect(started.err).toBe(""); expect(started.code).toBe(0);
 	expect(JSON.parse(await readFile(join(fixture.root, "data/observed.json"), "utf8"))).toEqual({ data: join(fixture.root, "data"), config: fixture.config, host: "127.0.0.1" });
@@ -70,7 +70,7 @@ test("an unavailable user service session leaves no unit and does not block unin
 	if (process.platform !== "linux") return;
 	const fixture = await setup(); await fixture.release("v0.1.0");
 	// A fixture command only: never contact the host's service manager.
-	await writeFile(join(fixture.home, "bin/systemctl"), "#!/bin/sh\nprintf '%s %s %s\\n' \"${AIKI_DATA_DIR-unset}\" \"${AIKI_ENV_FILE-unset}\" \"${AIKI_CHILD_PROCESS-unset}\" > \"$HOME/command-environment.txt\"\necho 'synthetic unavailable user session' >&2\nexit 1\n", { mode: 0o755 });
+	await writeFile(join(fixture.home, "bin/systemctl"), "#!/bin/sh\nprintf '%s %s %s\\n' \"${KEMIRI_DATA_DIR-unset}\" \"${KEMIRI_ENV_FILE-unset}\" \"${KEMIRI_CHILD_PROCESS-unset}\" > \"$HOME/command-environment.txt\"\necho 'synthetic unavailable user session' >&2\nexit 1\n", { mode: 0o755 });
 	expect((await fixture.run("service", "install")).code).toBe(1);
 	expect((await readFile(join(fixture.home, "command-environment.txt"), "utf8")).trim()).toBe("unset unset 1");
 	expect(existsSync(join(fixture.home, ".config/systemd/user/aiki-local.service"))).toBe(false);
@@ -96,12 +96,13 @@ test("uninstall preserves data/config, then reinstall and purge remove only inst
 });
 
 
-test("pilot activation installs both names, retains a recorded launcher and refuses collisions before swapping", async () => {
+test("activation installs only kemiri, retains a recorded launcher and refuses collisions before swapping", async () => {
 	const fixture = await setup(); expect((await fixture.release("v0.1.0")).code).toBe(0);
 	const canonical = join(fixture.home, ".local/bin/kemiri");
 	expect(await readFile(canonical, "utf8")).toContain(`# Aiki launcher: ${fixture.root}`);
 	const custom = join(fixture.home, "bin/custom-launcher");
 	await writeFile(custom, await readFile(fixture.launcher));
+	expect(existsSync(join(fixture.home, ".local/bin/aiki"))).toBe(false);
 	const metadataFile = join(fixture.root, ".aiki-install.json");
 	const recorded = JSON.parse(await readFile(metadataFile, "utf8")); recorded.launcher = custom;
 	await writeFile(metadataFile, JSON.stringify(recorded));
@@ -114,4 +115,20 @@ test("pilot activation installs both names, retains a recorded launcher and refu
 	expect((await fixture.release("v0.3.0")).err).toContain("refusing to overwrite");
 	expect(JSON.parse(await readFile(metadataFile, "utf8")).version).toBe("v0.2.0");
 	expect(await readFile(canonical, "utf8")).toBe("unrelated command");
+});
+
+test("update removes only its owned old command and rewrites recorded service launcher", async () => {
+ const f=await setup(); await f.release("v0.1.0");
+ const legacy=join(f.home,".local/bin/aiki"), metadataFile=join(f.root,".aiki-install.json");
+ await symlink(f.launcher,legacy);
+ const recorded=JSON.parse(await readFile(metadataFile,"utf8")); recorded.launcher=legacy;
+ await writeFile(metadataFile,JSON.stringify(recorded));
+ const unit=join(f.home,"owned.service"); await writeFile(unit,`ExecStart=${legacy} start\n`); await writeFile(join(f.root,".service-path"),unit);
+ expect((await f.release("v0.2.0")).code).toBe(0);
+ expect(existsSync(legacy)).toBe(false); expect(existsSync(f.launcher)).toBe(true);
+ expect(JSON.parse(await readFile(metadataFile,"utf8")).launcher).toBe(f.launcher);
+ expect(await readFile(unit,"utf8")).toBe(`ExecStart=${f.launcher} start\n`);
+ await writeFile(legacy,"unrelated command");
+ expect((await f.release("v0.3.0")).code).toBe(0);
+ expect(await readFile(legacy,"utf8")).toBe("unrelated command");
 });

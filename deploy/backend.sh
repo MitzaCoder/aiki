@@ -51,7 +51,7 @@ BUN_VERSION=${DEPLOY_BUN_VERSION:-1.4.2}
 ZELLIJ_VERSION=${DEPLOY_ZELLIJ_VERSION:-0.45.1}
 ZELLIJ_SHA256_X86_64=d006c521dcb475a6005d741e9dd7c5758e5a23b28dd60a5c10cebfa4876319dd
 ZELLIJ_SHA256_AARCH64=2a2c0621e6f3b11ecbb05d66939a48000a2508604620aa20727a5fd61c49f451
-PORT=${AIKI_PORT:-7317}
+PORT=${KEMIRI_PORT:-7317}
 # The tooling that travels with this script into tools/ and runs next to it, so a copy from the release that is being
 # deployed never lags behind the deploy that calls it.
 SELF_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
@@ -80,7 +80,7 @@ if [[ $MODE == user ]]; then
 	UNIT=$UNIT_DIR/${SERVICE%.service}.service
 	UNIT_SOURCE=$TOOLS/aiki.service
 else
-	SERVICE=${DEPLOY_BACKEND_SERVICE:-${DEPLOY_HOST_SERVICE:-${AIKI_SERVICE:-aiki.service}}}
+	SERVICE=${DEPLOY_BACKEND_SERVICE:-${DEPLOY_HOST_SERVICE:-${KEMIRI_SERVICE:-aiki.service}}}
 	BUN=${BUN:-bun}
 fi
 
@@ -105,7 +105,7 @@ function health() {
 		user=${user:-root}
 	fi
 	local command=("$BUN" run "$HEALTH")
-	if [[ -n ${DEPLOY_HEALTH_ENV_FILE:-} ]]; then command=(env "AIKI_ENV_FILE=$DEPLOY_HEALTH_ENV_FILE" "${command[@]}"); fi
+	if [[ -n ${DEPLOY_HEALTH_ENV_FILE:-} ]]; then command=(env "KEMIRI_ENV_FILE=$DEPLOY_HEALTH_ENV_FILE" "${command[@]}"); fi
 	if [[ -n $user && $user != "$current_user" ]]; then
 		sudo -n -H -u "$user" -- "${command[@]}" "$@"
 	else

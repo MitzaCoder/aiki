@@ -25,14 +25,14 @@ export function writeSelfUpdate(root: string, state: SelfUpdateState): void {
 }
 
 export function selfUpdateDisabledReason(env: Readonly<Record<string, string | undefined>>, deployed: boolean): string | null {
-	if (deployed || env.AIKI_DEPLOY_STATUS_FILE) return "This backend is managed by the deploy watcher.";
-	const root = env.AIKI_INSTALL_DIR;
-	if (!root || !env.AIKI_INSTALLED_VERSION || env.AIKI_INSTALLED_VERSION.startsWith("ref-")) return "Self-update is only available for installed releases, not development checkouts.";
+	if (deployed || env.KEMIRI_DEPLOY_STATUS_FILE) return "This backend is managed by the deploy watcher.";
+	const root = env.KEMIRI_INSTALL_DIR;
+	if (!root || !env.KEMIRI_INSTALLED_VERSION || env.KEMIRI_INSTALLED_VERSION.startsWith("ref-")) return "Self-update is only available for installed releases, not development checkouts.";
 	try {
 		const installed = JSON.parse(readFileSync(join(root, ".aiki-install.json"), "utf8"));
-		if (installed.root !== root || installed.version !== env.AIKI_INSTALLED_VERSION || readFileSync(join(root, ".aiki-managed"), "utf8").trim() !== "aiki-installer-v1") return "Installation identity could not be verified.";
+		if (installed.root !== root || installed.version !== env.KEMIRI_INSTALLED_VERSION || readFileSync(join(root, ".aiki-managed"), "utf8").trim() !== "aiki-installer-v1") return "Installation identity could not be verified.";
 	} catch { return "Installation identity could not be verified."; }
-	if (env.AIKI_UPDATE_SUPERVISED !== "1" || !existsSync(join(root, "supervisor.pid"))) return "Restart with the updated aiki start command to enable self-update.";
+	if (env.KEMIRI_UPDATE_SUPERVISED !== "1" || !existsSync(join(root, "supervisor.pid"))) return "Restart with the updated aiki start command to enable self-update.";
 	return null;
 }
 

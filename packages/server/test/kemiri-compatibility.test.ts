@@ -10,32 +10,22 @@ const roots: string[] = [];
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
 function fixture() { const root = mkdtempSync(join(tmpdir(), "kemiri-env-")); roots.push(root); return root; }
 
-test("aliases resolve by layer before spelling; empty canonical values remain explicit", () => {
-	const root = fixture(), file = join(root, "server.env");
-	writeFileSync(file, "KEMIRI_PORT=8001\nAIKI_PORT=8002\nKEMIRI_HOST=localhost\nAIKI_HOST=other\n");
-	const warning = spyOn(console, "error").mockImplementation(() => {});
-	try {
-		const settings = loadServerEnv({ KEMIRI_ENV_FILE: file, AIKI_ENV_FILE: join(root, "missing"), AIKI_PORT: "9000", KEMIRI_HOST: "" });
-		expect(warning).toHaveBeenCalledTimes(1);
-		expect(settings.AIKI_PORT).toBe("9000"); expect(settings.KEMIRI_PORT).toBe("9000");
-		expect(settings.AIKI_HOST).toBe("");
-		const explicit = loadServerEnv({ KEMIRI_ENV_FILE: file, KEMIRI_PORT: "9100", AIKI_PORT: "9200" });
-		expect(explicit.AIKI_PORT).toBe("9100");
-		expect(warning.mock.calls.flat().join(" ")).not.toContain("8001");
-		expect(warning.mock.calls.flat().join(" ")).not.toContain("9200");
-	} finally { warning.mockRestore(); }
+test("only Kemiri process settings are read; process wins over file", () => {
+ const root = fixture(), file = join(root, "server.env");
+ writeFileSync(file, "KEMIRI_PORT=8002\nKEMIRI_HOST=localhost\n");
+ const settings = loadServerEnv({ KEMIRI_ENV_FILE: file, AIKI_ENV_FILE: join(root,"missing"), AIKI_PORT: "9000", KEMIRI_HOST: "" });
+ expect(settings.KEMIRI_PORT).toBe("8002"); expect(settings.AIKI_PORT).toBeUndefined();
+ expect(settings.KEMIRI_HOST).toBe("");
+ expect(loadServerEnv({ KEMIRI_ENV_FILE: file, KEMIRI_PORT: "9100" }).KEMIRI_PORT).toBe("9100");
 });
 
-test("either child marker prevents rediscovery; explicit new env file opts back in", () => {
-	const root = fixture(); mkdirSync(join(root, "kemiri"));
-	const file = join(root, "kemiri/server.env"); writeFileSync(file, "KEMIRI_PORT=8123\n");
-	for (const marker of ["AIKI_CHILD_PROCESS", "KEMIRI_CHILD_PROCESS"]) {
-		expect(loadServerEnv({ XDG_CONFIG_HOME: root, [marker]: "1" }).AIKI_PORT).toBeUndefined();
-		expect(loadServerEnv({ XDG_CONFIG_HOME: root, [marker]: "1", KEMIRI_ENV_FILE: file }).AIKI_PORT).toBe("8123");
-	}
-	expect(loadServerEnv({ XDG_CONFIG_HOME: root, AIKI_CHILD_PROCESS: "1", KEMIRI_CHILD_PROCESS: "0" }).AIKI_PORT).toBeUndefined();
-	expect(() => loadServerEnv({ KEMIRI_ENV_FILE: join(root, "missing") })).toThrow();
-	expect(childEnvironment({ AIKI_FUTURE_SETTING: "private", KEMIRI_FUTURE_SETTING: "private", PATH: "/bin" })).toEqual({ PATH: "/bin", AIKI_CHILD_PROCESS: "1", KEMIRI_CHILD_PROCESS: "1" });
+test("Kemiri child marker prevents rediscovery; explicit env file opts back in", () => {
+ const root = fixture(); mkdirSync(join(root, "kemiri"));
+ const file = join(root, "kemiri/server.env"); writeFileSync(file, "KEMIRI_PORT=8123\n");
+ expect(loadServerEnv({ XDG_CONFIG_HOME: root, KEMIRI_CHILD_PROCESS: "1" }).KEMIRI_PORT).toBeUndefined();
+ expect(loadServerEnv({ XDG_CONFIG_HOME: root, KEMIRI_CHILD_PROCESS: "1", KEMIRI_ENV_FILE: file }).KEMIRI_PORT).toBe("8123");
+ expect(loadServerEnv({ XDG_CONFIG_HOME: root, AIKI_CHILD_PROCESS: "1" }).KEMIRI_PORT).toBe("8123");
+ expect(childEnvironment({ AIKI_FUTURE_SETTING: "private", KEMIRI_FUTURE_SETTING: "private", PATH: "/bin" })).toEqual({ PATH: "/bin", AIKI_CHILD_PROCESS: "1", KEMIRI_CHILD_PROCESS: "1" });
 });
 
 test("fresh defaults, legacy reuse, same-realpath alias, explicit paths and ambiguous stores", () => {
@@ -51,5 +41,5 @@ test("fresh defaults, legacy reuse, same-realpath alias, explicit paths and ambi
 });
 
 test("both trailer spellings are permanent readers and deduplicate task IDs", () => {
-	expect(taskTrailers("feat: example\n\nKemiri-Task: T1,T2\nAiki-Task: T2, T3\nkemiri-task: T1")).toEqual(["T1", "T2", "T3"]);
+	expect(taskTrailers("feat: example\n\nAiki-Task: T1,T2\nKemiri-Task: T2, T3\nkemiri-task: T1")).toEqual(["T1", "T2", "T3"]);
 });

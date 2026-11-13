@@ -23,7 +23,7 @@ export const RELEASE_FILE_NAME = "RELEASE.json";
 /** The deploy writes it in the deploy root, atomically, after every attempt that concerned this backend. */
 export const DEPLOY_STATUS_FILE_NAME = "deploy-status.json";
 /** Names the deploy's status file outright, for a layout this server cannot derive from the release it runs. */
-export const DEPLOY_STATUS_FILE_ENV = "AIKI_DEPLOY_STATUS_FILE";
+export const DEPLOY_STATUS_FILE_ENV = "KEMIRI_DEPLOY_STATUS_FILE";
 /** A watch sees every atomic write; this poll is only the fallback for a directory that cannot be watched. */
 export const DEPLOY_STATUS_POLL_INTERVAL_MS = 10_000;
 
@@ -58,7 +58,7 @@ export function resolveReleaseRoot(from: string = import.meta.dir): string {
 }
 
 /**
- * The deploy's status file for the release at `releaseRoot`: `${AIKI_DEPLOY_STATUS_FILE}` when set, else
+ * The deploy's status file for the release at `releaseRoot`: `${KEMIRI_DEPLOY_STATUS_FILE}` when set, else
  * `<releaseRoot>/../../deploy-status.json` when the release sits in a deploy root's `releases/` directory (the layout
  * `current -> releases/<name>` gives, so the symlink is resolved first), else `null`: nothing wrote one.
  */

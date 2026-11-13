@@ -28,7 +28,7 @@ it("asks jj background threads to use the namespaced task trailer", () => {
 			uiProof: DEFAULT_UI_PROOF, links: null,
 		},
 	});
-	expect(instructions).toContain("Add an `Aiki-Task: T…` trailer to commit descriptions.");
+	expect(instructions).toContain("Add an `Kemiri-Task: T…` trailer to commit descriptions.");
 });
 
 const cleanups: (() => Promise<void>)[] = [];

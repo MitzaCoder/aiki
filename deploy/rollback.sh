@@ -50,12 +50,12 @@ source "$REPO_DIR/deploy/targets.sh"
 case $TARGET in
 web)
 	if [[ ${ARGS[0]:-} == --list ]]; then
-		AIKI_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" list
+		KEMIRI_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" list
 	elif [[ ${ARGS[0]:-} == --status ]]; then
-		AIKI_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" status
+		KEMIRI_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" status
 	else
 		log "asking the app deployer to roll back ${ARGS[0]:-to the previous release}"
-		AIKI_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" rollback "${ARGS[0]:-}" ||
+		KEMIRI_WEB_ROOT=$APP_ROOT bash "$REPO_DIR/deploy/web.sh" rollback "${ARGS[0]:-}" ||
 			die "app rollback failed; see the log above"
 		log "rolled back the app"
 	fi

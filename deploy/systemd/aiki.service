@@ -1,7 +1,7 @@
 [Unit]
 # Runs on the VM, as the deploying user, over the release `current` points at. deploy/deploy.sh installs this file from the
 # release it is deploying and restarts the unit; `deploy/rollback.sh` installs it from the release it rolls back to.
-Description=aiki server (deployed from Aiki, see ~/.local/share/aiki-deploy/current)
+Description=Kemiri server (deployed from Kemiri, see ~/.local/share/aiki-deploy/current)
 Documentation=https://github.com/MitzaCoder/aiki
 
 [Service]
@@ -9,11 +9,11 @@ Type=simple
 WorkingDirectory=%h/.local/share/aiki-deploy/current
 ExecStart=%h/.local/bin/bun run packages/server/src/main.ts
 # All interfaces: the VM's firewall trusts tailscale0 only, so the tailnet reaches the server and nothing else does.
-Environment=AIKI_HOST=0.0.0.0
-Environment=AIKI_PORT=7317
+Environment=KEMIRI_HOST=0.0.0.0
+Environment=KEMIRI_PORT=7317
 # Only the app's origin may open the WebSocket from a browser. Caddy serves the app on the main host.
 # Set browser origins in your untracked local unit; the public template accepts none.
-Environment=AIKI_ALLOWED_ORIGINS=
+Environment=KEMIRI_ALLOWED_ORIGINS=
 Restart=always
 RestartSec=2
 # The server's tools run bash commands in their own process groups; on stop, give the server time to close cleanly

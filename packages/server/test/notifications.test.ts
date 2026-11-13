@@ -368,14 +368,14 @@ describe("backend-local VAPID persistence", () => {
 			expect(await readFile(file, "utf8")).toBe(malformed);
 		}
 	});
-	it("retains AIKI_VAPID_KEY_FILE and AIKI_VAPID_SUBJECT overrides", async () => {
+	it("retains KEMIRI_VAPID_KEY_FILE and KEMIRI_VAPID_SUBJECT overrides", async () => {
 		const root = await tempDir();
 		const file = join(root, "private-override.json");
-		expect(resolveVapidKeyFile(root, { AIKI_VAPID_KEY_FILE: file })).toBe(file);
-		expect(resolveVapidSubject([], { AIKI_VAPID_SUBJECT: "mailto:push@example.test" })).toBe(
+		expect(resolveVapidKeyFile(root, { KEMIRI_VAPID_KEY_FILE: file })).toBe(file);
+		expect(resolveVapidSubject([], { KEMIRI_VAPID_SUBJECT: "mailto:push@example.test" })).toBe(
 			"mailto:push@example.test",
 		);
-		expect(resolveVapidSubject([], { AIKI_VAPID_SUBJECT: "https://backend.example.test/contact" })).toBe(
+		expect(resolveVapidSubject([], { KEMIRI_VAPID_SUBJECT: "https://backend.example.test/contact" })).toBe(
 			"https://backend.example.test/contact",
 		);
 		const setup = await createSetup({
@@ -624,7 +624,7 @@ describe("filtering", () => {
 		expect(resolveVapidSubject([APP_ORIGIN])).toBe(APP_ORIGIN);
 		expect(resolveVapidSubject(["http://localhost:5173", APP_ORIGIN])).toBe(APP_ORIGIN);
 		expect(resolveVapidSubject(["http://localhost:5173"])).toBe("https://localhost");
-		expect(resolveVapidSubject([], { AIKI_VAPID_SUBJECT: "https://other.test" })).toBe("https://other.test");
+		expect(resolveVapidSubject([], { KEMIRI_VAPID_SUBJECT: "https://other.test" })).toBe("https://other.test");
 	});
 });
 

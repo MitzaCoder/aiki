@@ -29,7 +29,7 @@ async function fixture() {
 	} });
 	cleanup.push(async () => { await server.stop(true); await rm(home, { recursive: true, force: true }); });
 	const base = `http://127.0.0.1:${server.port}/releases`;
-	const launcher = join(home, ".local/bin/aiki");
+	const launcher = join(home, ".local/bin/kemiri");
 	async function command(argv: string[]) {
 		const child = Bun.spawn(argv, { env: { USER: "test", HOME: home, PATH: `${bin}:${process.env.PATH}` }, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
 		const timer = setTimeout(() => child.kill(), 30_000);
@@ -53,10 +53,10 @@ async function fixture() {
 		assets.set(`/releases/${version}/SHA256SUMS`, `${corrupt === "manifest" ? "0".repeat(64) : digest(bytes)}  ${name}\n${digest(notices)}  ${name}.licenses.txt\n`);
 	}
 	async function bunRelease(version: string) {
-		const tree = join(home, `source-${version}`, "aiki");
+		const tree = join(home, `source-${version}`, "kemiri");
 		await mkdir(join(tree, "scripts"), { recursive: true });
 		for (const file of ["install.sh", "scripts/aiki.ts", "scripts/installed-supervisor.ts", "packages/server/src/self-update.ts", "packages/server/src/errors.ts", "packages/protocol/src/release-versions.ts",
-			"packages/server/src/child-environment.ts", "packages/server/src/environment-aliases.ts", "packages/server/src/packaged-resources.ts", "packages/server/src/server-env.ts",
+			"packages/server/src/child-environment.ts", "packages/server/src/environment-aliases.ts", "packages/server/src/packaged-resources.ts", "packages/server/src/server-env.ts", "packages/server/src/migrate-server-env.ts",
 			"packages/server/src/server-settings.ts", "packages/server/src/data-dir.ts", "packages/server/src/origins.ts"]) {
 			await mkdir(resolve(tree, file, ".."), { recursive: true });
 			await cp(join(repository, file), join(tree, file));
@@ -70,7 +70,7 @@ async function fixture() {
 		await mkdir(join(tree, "apps/web/build"), { recursive: true });
 		await writeFile(join(tree, "apps/web/build/200.html"), "synthetic web");
 		const archive = join(home, `${version}.tar.gz`);
-		const tar = Bun.spawnSync(["tar", "-czf", archive, "aiki"], { cwd: resolve(tree, ".."), env: { PATH: process.env.PATH } });
+		const tar = Bun.spawnSync(["tar", "-czf", archive, "kemiri"], { cwd: resolve(tree, ".."), env: { PATH: process.env.PATH } });
 		if (tar.exitCode) throw new Error(tar.stderr.toString());
 		const bytes = new Uint8Array(await Bun.file(archive).arrayBuffer());
 		assets.set(`/releases/${version}/kemiri-${version}.tar.gz`, bytes);
@@ -101,7 +101,7 @@ test("fresh binary install tolerates licence assets and validates both checksums
 	const installed = await setup.install("--version", version);
 	expect(installed.code).toBe(0); expect(installed.message).toContain("activated");
 	expect(setup.assets.has(`/releases/${version}/kemiri-${version}-linux-x64.licenses.txt`)).toBe(true);
-	expect(existsSync(join(setup.root, "current/aiki"))).toBe(true);
+	expect(existsSync(join(setup.root, "current/kemiri"))).toBe(true);
 	expect(existsSync(join(setup.root, "runtime"))).toBe(false);
 	expect((await setup.cli("version")).message).toContain(version);
 	expect((await setup.metadata()).channel).toBe("pilot");
@@ -113,14 +113,14 @@ test("Bun to binary update and rollback preserve the saved pilot channel", async
 	const setup = await fixture();
 	await setup.bunRelease("v0.1.0-pilot.1"); await setup.binary("v0.2.0");
 	expect(await setup.install("--version", "v0.1.0-pilot.1", "--runtime", "bun")).toMatchObject({ code: 0 });
-	expect(existsSync(join(setup.root, "current/aiki"))).toBe(false);
+	expect(existsSync(join(setup.root, "current/kemiri"))).toBe(false);
 	const updated = await setup.cli("update", "--version", "v0.2.0", "--release-base-url", setup.base);
 	expect(updated.message).toContain("activated"); expect(updated.code).toBe(0);
-	expect(existsSync(join(setup.root, "current/aiki"))).toBe(true);
+	expect(existsSync(join(setup.root, "current/kemiri"))).toBe(true);
 	expect((await setup.metadata()).channel).toBe("pilot");
 	expect((await setup.cli("rollback")).code).toBe(0);
 	expect(await readlink(join(setup.root, "current"))).toContain("v0.1.0-pilot.1");
-	expect(existsSync(join(setup.root, "current/aiki"))).toBe(false);
+	expect(existsSync(join(setup.root, "current/kemiri"))).toBe(false);
 	expect((await setup.cli("version")).message).toContain("v0.1.0-pilot.1");
 	expect((await setup.metadata()).channel).toBe("pilot");
 });
@@ -133,7 +133,7 @@ test("explicit runtime changes at the same version retain both immutable variant
 	expect(await readlink(join(setup.root, "current"))).toContain(`${version}-bun`);
 	expect((await setup.metadata()).version).toBe(version);
 	expect((await setup.cli("rollback")).code).toBe(0);
-	expect(existsSync(join(setup.root, "current/aiki"))).toBe(true);
+	expect(existsSync(join(setup.root, "current/kemiri"))).toBe(true);
 	expect((await setup.metadata()).channel).toBe("pilot");
 });
 
@@ -166,6 +166,6 @@ test("a missing binary falls back to Bun, while --runtime bun skips an available
 	for (const suffix of [".tar.gz", ".tar.gz.sha256"]) setup.assets.set(`/releases/v0.2.0/kemiri-v0.2.0${suffix}`, setup.assets.get(`/releases/v0.1.0/kemiri-v0.1.0${suffix}`)!);
 	setup.requests.length = 0;
 	expect((await setup.install("--version", "v0.2.0", "--runtime", "bun")).code).toBe(0);
-	expect(existsSync(join(setup.root, "current/aiki"))).toBe(false);
+	expect(existsSync(join(setup.root, "current/kemiri"))).toBe(false);
 	expect(setup.requests.some(path => path.endsWith("linux-x64"))).toBe(false);
 });

@@ -363,13 +363,13 @@ describe("workers", () => {
 		expect(coordinatorPrompt).toBeTypeOf("string");
 		expect(coordinatorPrompt).toContain("worker_spawn");
 		expect(coordinatorPrompt).toContain("jj rebase");
-		expect(coordinatorPrompt).toContain("Add an `Aiki-Task: T…` trailer to commit descriptions.");
+		expect(coordinatorPrompt).toContain("Add an `Kemiri-Task: T…` trailer to commit descriptions.");
 
 		const workerPrompt = prompts.find((text) => text.includes('You are the worker "reader"'));
 		expect(workerPrompt).toBeTypeOf("string");
 		expect(workerPrompt).not.toContain("You coordinate the project");
 		expect(workerPrompt).toContain("Otherwise, end your answer with this report");
-		expect(workerPrompt).toContain("Add an `Aiki-Task: T…` trailer to commit descriptions.");
+		expect(workerPrompt).toContain("Add an `Kemiri-Task: T…` trailer to commit descriptions.");
 	});
 
 	workerTest("keeps working while the coordinator is aborted, then reports", async () => {

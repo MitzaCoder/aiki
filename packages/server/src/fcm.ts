@@ -2,7 +2,7 @@
  * Firebase Cloud Messaging for the Android app: the HTTP v1 API, signed in with a service-account key of the app's
  * Firebase project.
  *
- * The key is a file the user puts in the data directory (or names with `AIKI_FCM_KEY_FILE`); without it FCM is
+ * The key is a file the user puts in the data directory (or names with `KEMIRI_FCM_KEY_FILE`); without it FCM is
  * simply off. Its private key never leaves this module: it signs the OAuth 2 JWT-bearer assertion (RFC 7523) that buys a
  * one-hour access token, and only that token goes to FCM. Messages are data-only, carrying the same JSON payload a
  * browser gets through Web Push, so the app draws the notification itself (channel, tap target, presence).
@@ -17,7 +17,7 @@ import { errorMessage } from "./errors.ts";
 import { readJsonFile } from "./fs-json.ts";
 
 /** Names the service-account key file outright; else `<data>/notifications/fcm-service-account.json`. */
-export const FCM_KEY_FILE_ENV = "AIKI_FCM_KEY_FILE";
+export const FCM_KEY_FILE_ENV = "KEMIRI_FCM_KEY_FILE";
 export const FCM_KEY_FILE_NAME = "fcm-service-account.json";
 export const FCM_ENDPOINT = "https://fcm.googleapis.com";
 export const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
@@ -31,7 +31,7 @@ function expandHome(path: string): string {
 	return path;
 }
 
-/** `${AIKI_FCM_KEY_FILE}` when set, else `<data>/notifications/fcm-service-account.json`. */
+/** `${KEMIRI_FCM_KEY_FILE}` when set, else `<data>/notifications/fcm-service-account.json`. */
 export function resolveFcmKeyFile(dataDir: string, env: Environment = serverSettings): string {
 	const override = env[FCM_KEY_FILE_ENV];
 	if (override !== undefined && override.trim().length > 0) return resolve(expandHome(override.trim()));

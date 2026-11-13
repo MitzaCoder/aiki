@@ -9,43 +9,43 @@ import { isOriginAllowed, normalizeOrigin, parseAllowedOrigins, resolveAllowedOr
 describe("data directory", () => {
 	it("defaults to XDG_DATA_HOME/kemiri and honours the override", () => {
 		expect(resolveDataDir({ XDG_DATA_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/kemiri");
-		expect(resolveDataDir({ AIKI_DATA_DIR: "/tmp/direct" })).toBe("/tmp/direct");
+		expect(resolveDataDir({ KEMIRI_DATA_DIR: "/tmp/direct" })).toBe("/tmp/direct");
 		// A host that already has the legacy ~/.local/share/aiki keeps it (no migration), so compare with the rule.
 		expect(resolveDataDir({})).toBe(defaultProductDirectory(join(homedir(), ".local", "share")));
 	});
 
 	it("keeps the harness's own config apart from pi's agent directory", () => {
 		expect(resolveConfigDir({ XDG_CONFIG_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/kemiri");
-		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "/tmp/direct" })).toBe("/tmp/direct");
-		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "~/elsewhere" })).toBe(join(homedir(), "elsewhere"));
+		expect(resolveConfigDir({ KEMIRI_CONFIG_DIR: "/tmp/direct" })).toBe("/tmp/direct");
+		expect(resolveConfigDir({ KEMIRI_CONFIG_DIR: "~/elsewhere" })).toBe(join(homedir(), "elsewhere"));
 		// A host that already has the legacy ~/.config/aiki keeps it (no migration), so compare with the rule.
-		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "  " })).toBe(defaultProductDirectory(join(homedir(), ".config")));
+		expect(resolveConfigDir({ KEMIRI_CONFIG_DIR: "  " })).toBe(defaultProductDirectory(join(homedir(), ".config")));
 		expect(resolveConfigDir({})).toBe(defaultProductDirectory(join(homedir(), ".config")));
 	});
 
 	it("binds the loopback interface unless told otherwise", () => {
 		expect(resolveHostname({})).toBe("127.0.0.1");
-		expect(resolveHostname({ AIKI_HOST: "  " })).toBe("127.0.0.1");
-		expect(resolveHostname({ AIKI_HOST: "0.0.0.0" })).toBe("0.0.0.0");
-		expect(resolveHostname({ AIKI_HOST: " vm.example.test " })).toBe("vm.example.test");
+		expect(resolveHostname({ KEMIRI_HOST: "  " })).toBe("127.0.0.1");
+		expect(resolveHostname({ KEMIRI_HOST: "0.0.0.0" })).toBe("0.0.0.0");
+		expect(resolveHostname({ KEMIRI_HOST: " vm.example.test " })).toBe("vm.example.test");
 	});
 
 	it("reads and validates the port", () => {
 		expect(resolvePort({})).toBe(7317);
-		expect(resolvePort({ AIKI_PORT: "0" })).toBe(0);
-		expect(resolvePort({ AIKI_PORT: "9000" })).toBe(9000);
-		expect(() => resolvePort({ AIKI_PORT: "nope" })).toThrow();
-		expect(() => resolvePort({ AIKI_PORT: "70000" })).toThrow();
+		expect(resolvePort({ KEMIRI_PORT: "0" })).toBe(0);
+		expect(resolvePort({ KEMIRI_PORT: "9000" })).toBe(9000);
+		expect(() => resolvePort({ KEMIRI_PORT: "nope" })).toThrow();
+		expect(() => resolvePort({ KEMIRI_PORT: "70000" })).toThrow();
 	});
 });
 
 describe("allowed origins", () => {
 	it("defaults to none and parses a comma-separated list", () => {
 		expect(resolveAllowedOrigins({})).toEqual([]);
-		expect(resolveAllowedOrigins({ AIKI_ALLOWED_ORIGINS: "  " })).toEqual([]);
+		expect(resolveAllowedOrigins({ KEMIRI_ALLOWED_ORIGINS: "  " })).toEqual([]);
 		expect(
 			resolveAllowedOrigins({
-				AIKI_ALLOWED_ORIGINS: "https://harness.example.test/, http://127.0.0.1:5173",
+				KEMIRI_ALLOWED_ORIGINS: "https://harness.example.test/, http://127.0.0.1:5173",
 			}),
 		).toEqual(["https://harness.example.test", "http://127.0.0.1:5173"]);
 		expect(parseAllowedOrigins("https://a.example,https://a.example")).toEqual(["https://a.example"]);

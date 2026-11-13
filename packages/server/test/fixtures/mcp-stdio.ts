@@ -16,7 +16,7 @@ for await (const line of createInterface({ input: process.stdin })) {
  if (request.method === 'tools/list') result = { tools };
  if (request.method === 'tools/call') {
  if (request.params.name === 'crash') process.exit(7);
- result = { content: [{ type: 'text', text: `synthetic result ${process.env.DEMO_SECRET}; cwd=${process.cwd()}; PATH=${Boolean(process.env.PATH)}; AIKI_DATA_DIR=${process.env.AIKI_DATA_DIR ?? 'absent'}` }] };
+ result = { content: [{ type: 'text', text: `synthetic result ${process.env.DEMO_SECRET}; cwd=${process.cwd()}; PATH=${Boolean(process.env.PATH)}; KEMIRI_DATA_DIR=${process.env.KEMIRI_DATA_DIR ?? 'absent'}` }] };
  }
  process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: request.id, result }) + '\n');
 }

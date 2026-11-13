@@ -219,7 +219,7 @@ test("legacy origin derivation still prioritizes explicit PUBLIC_URL over forwar
 			"x-forwarded-host": "proxy.example.net",
 		},
 	});
-	expect(requestOrigin(r, { AIKI_PUBLIC_URL: "https://configured.example.com/path" })).toBe(
+	expect(requestOrigin(r, { KEMIRI_PUBLIC_URL: "https://configured.example.com/path" })).toBe(
 		"https://configured.example.com",
 	);
 	expect(requestOrigin(r, {})).toBe("https://proxy.example.net");

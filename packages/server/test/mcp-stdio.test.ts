@@ -38,7 +38,7 @@ it('requires confirmation, starts lazily, redacts env, stops idle, restarts cras
  const call = async (tool: typeof echo) => JSON.stringify(await tool.execute({}, api, BACKGROUND_CONTEXT));
  expect(await call(echo)).toContain('synthetic result [redacted]');
  expect(await call(echo)).toContain('PATH=true');
- expect(await call(echo)).toContain('AIKI_DATA_DIR=absent');
+ expect(await call(echo)).toContain('KEMIRI_DATA_DIR=absent');
  now += 6 * 60_000; await mcp.stopIdle();
  expect((await mcp.view('stdio')).status).toBe('disconnected');
  expect(await call(echo)).toContain('synthetic result');
