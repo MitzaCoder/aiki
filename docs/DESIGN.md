@@ -1639,6 +1639,30 @@ later from this section.
   frame: `default-src`/`connect-src` lists would break the external scripts, fonts and images a report may load, while
   the opaque origin already denies it the backend's answers and the app's session. The backend's own `attachment` +
   `Content-Security-Policy: sandbox` for HTML/SVG over HTTP stays as it is.
+- **Android renders the same page (T162).** The artifact screen (`features/chat/ArtifactScreen.kt`, which is also the route
+  a chat card opens) shows an HTML artifact in a `WebView` the way the web shows it in its frame: the page by default,
+  with the same Page/Source segmented control in the preview's bar. The choice is kept while the process lives
+  (`ArtifactPageChoice`, the web's module variable) and never written to storage; Copy still copies the source, and the
+  Wrap toggle disappears while the page is drawn. The screen is the only place an HTML artifact is read on Android:
+  chat cards and lists show a file row or a thumbnail, never an inline page, so there is no compact frame. The page
+  fills the room the screen leaves: `0.9 × the available height − 224dp`, clamped to 256dp–736dp — the same shape as
+  the web frame's `clamp(16rem, calc(90dvh - 14rem), 46rem)` inside the dialog's one scroll region.
+- **The WebView's policy is the sandbox (T162).** A WebView has no `sandbox` attribute, so the missing pieces are removed
+  one by one in `features/chat/ArtifactPage.kt`: `artifactPagePolicy()` turns JavaScript **on** (charts, counters) and
+  everything else off — `domStorageEnabled`, `allowFileAccess`, `allowContentAccess`, both file-URL grants,
+  `setGeolocationEnabled`, `saveFormData`, `savePassword`, multiple windows and script-opened windows
+  (`javascriptCanOpenWindowsAutomatically`), with `MIXED_CONTENT_NEVER_ALLOW` and media only after a gesture. **No
+  JavaScript bridge is ever installed**: `addJavascriptInterface` appears nowhere in the app, so the page can compute in
+  its own document and call nothing of ours. The document is loaded with `loadDataWithBaseURL(null, html, "text/html",
+  "utf-8", null)`: no base URL means no origin for cookies, storage or same-origin requests, the WebView counterpart of
+  an opaque origin. The app has no WebView cookies to share (`CookieManager` is never used) and the WebView's own jar is
+  never read back. A link tapped inside the page never navigates the frame: `shouldOverrideUrlLoading` takes `http` and
+  `https` only (`isExternalBrowserLink`) and hands those to the external browser with an `ACTION_VIEW` intent, while
+  every other scheme — `intent:`, `content:`, `file:`, `javascript:`, `data:`, an app deep link — is dropped.
+- **A page over the preview limit opens as source on Android too.** `ARTIFACT_HTML_PAGE_LIMIT` (256 KiB, the web's
+  `TEXT_PREVIEW_BYTES`) caps what an HTML preview keeps, so a longer page starts in Source with the web's note ("The
+  first 256 KB of 3 MB; a page cannot be shown whole, so this is its source; download it for the rest"); Page still
+  draws the part that loaded and the note says the page is partial. Other text kinds keep Android's 1 MiB preview.
 - **A page over the preview limit opens as source.** `TEXT_PREVIEW_BYTES` (256 KiB) cuts a long artifact, and half a
   document does not render as the worker wrote it. The viewer then starts in Source with the usual note
   ("the first 256 KiB of 3 MB … a page cannot be shown whole, so this is its source; download it for the rest"), and

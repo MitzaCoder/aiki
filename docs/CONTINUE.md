@@ -1,5 +1,30 @@
 # Continue
 
+## T162: Android renders HTML artifacts as pages
+
+Android's artifact viewer (`features/chat/ArtifactScreen.kt`, the screen a chat card or the Artifacts panel opens) now
+shows an HTML artifact the way the web does: the page itself in a `WebView`, with the same Page/Source segmented
+control, Copy still copying the source and the Wrap toggle only while the source is shown. The choice is kept for the
+process (`ArtifactPageChoice`, never stored) and a preview over `ARTIFACT_HTML_PAGE_LIMIT` (256 KiB, the web's
+`TEXT_PREVIEW_BYTES`) opens as source with the web's note. Chat cards and lists never show an inline page on Android, so
+no compact frame was added; the page fills `0.9 × available height − 224dp`, clamped to 256–736dp.
+
+Security is the sandbox, spelled out for a WebView in `features/chat/ArtifactPage.kt`: `artifactPagePolicy()` keeps
+JavaScript on and turns `domStorage`, `allowFileAccess`, `allowContentAccess`, both file-URL grants, geolocation, saved
+form data and passwords, multiple and script-opened windows off, with mixed content blocked and media only after a
+gesture. No JavaScript bridge exists anywhere in the app (`addJavascriptInterface` is never called). The document loads
+with `loadDataWithBaseURL(null, html, "text/html", "utf-8", null)`, so it has no origin for cookies or storage; the app
+uses no WebView cookies (`CookieManager` is untouched). `shouldOverrideUrlLoading` sends only `http`/`https` to an
+`ACTION_VIEW` intent and drops every other scheme. `docs/DESIGN.md` has the reasoning.
+
+`apps/android/app/src/test/.../ArtifactPageTest.kt` (7 tests) pins the policy fields, the Page/Source choice and its
+session memory, the 256 KiB preview rule and the link scheme filter. Proof on an isolated emulator track
+(`emulator-5602`, adb server 5038, never the physical phone) against a temporary `createSetup` backend: before (main
+`79568f35`, source only) and after (page, script-drawn bars, counter at 1 and 3, Source in both) in light and dark, plus
+a 24 s recording of tapping the counter and toggling. Artifacts on T162: `mweskem2-04f3def9f8`, `mwesken4-ad5926367c`
+(before), `mweskeo3-e6446fa4bf`, `mweskepj-8a550aa2b4`, `mweskes4-81c733d6e4` (after), `mweskeqs-9ac38c335e`,
+`mwesketn-d4586101f9` (Source), `mweskeuk-5b7e20d82c` (recording).
+
 ## T163: scrollback paging restored
 
 The owner's "lazy loading scroll back doesn't work anymore" was a server defect, not a scroller one. pi-durable 1.5.1

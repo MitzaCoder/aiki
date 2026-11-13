@@ -33,6 +33,7 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
     var signed by remember(context.route,artifactId) { mutableStateOf<ArtifactsUrlResponse?>(null) }
     var error by remember(context.route,artifactId) { mutableStateOf<String?>(null) }
     var text by remember(context.route,artifactId) { mutableStateOf<String?>(null) }
+    var textTruncated by remember(context.route,artifactId) { mutableStateOf(false) }
     var refresh by remember(context.route,artifactId) { mutableIntStateOf(0) }
     var imageRevision by remember(context.route,artifactId) { mutableIntStateOf(0) }
     var imageAttempts by remember(context.route,artifactId) { mutableIntStateOf(0) }
@@ -99,18 +100,21 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
     }
     LaunchedEffect(signed?.url,artifact?.kind) {
         text = null
+        textTruncated = false
         val url = signed?.url ?: return@LaunchedEffect
         if(artifact?.kind == "text") {
+            // An HTML page keeps only what a page may show whole; other text keeps the larger limit.
+            val html = artifact?.let { isHtmlArtifact(it.name, it.mimeType) } == true
             try {
-                val loaded = withContext(Dispatchers.IO) {
+                val preview = withContext(Dispatchers.IO) {
                     artifactHttp.newCall(Request.Builder().url(url).build()).execute().use { response ->
                         check(response.isSuccessful)
-                        artifactPreviewText(response.body.byteStream().readAtMost(ARTIFACT_TEXT_LIMIT + 1))
+                        artifactPreview(response.body.byteStream().readAtMost(ARTIFACT_TEXT_LIMIT + 1), html, artifact?.size ?: -1)
                     }
                 }
-                if (!deleted) text = loaded
-            } catch(e: CancellationException) { throw e }
-            catch(_: Exception) { error = "Text preview unavailable (limit 1 MiB)." }
+                if (!deleted) { text = preview.text; textTruncated = preview.truncated }
+            } catch(e: CancellationException) { textTruncated = false; throw e }
+            catch(_: Exception) { textTruncated = false; error = "Text preview unavailable (limit 1 MiB)." }
         }
     }
     if (deletion == ArtifactDeleteState.Confirming || deletion == ArtifactDeleteState.Sending) {
@@ -137,63 +141,71 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
             }) { Text(if(deletion == ArtifactDeleteState.Sending) "Deleting…" else "Delete", color = MaterialTheme.colorScheme.error) } })
     }
     // Web `ArtifactDialog`: the media on top, then the title, facts, note and source, with Delete and the download in a
-    // footer that stays on screen.
-    Column(modifier.fillMaxSize()) {
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (deleted) {
-                Text("Artifact unavailable", style = MaterialTheme.typography.titleLarge)
-                Text("This artifact was deleted or is no longer available. Saved copies are unchanged.")
-                return@Column
-            }
-            if (connection.status != ConnectionStatus.Ready) Text("Offline · reconnect to refresh or delete this artifact.", style = MaterialTheme.typography.bodySmall)
-            error?.let { Text(it,color = MaterialTheme.colorScheme.error); TextButton(onClick = { imageAttempts = 0; imageError = null; refresh++ }) { Text("Retry") } }
-            imageError?.let {
-                Text(it,color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = { imageAttempts = 0; imageError = null; refresh++ }) { Text("Retry image") }
-            }
-            val url = signed?.url
-            if(url != null) when(artifact?.kind) {
-                "image" -> {
-                    val android = LocalContext.current
-                    val request = remember(url,imageRevision) { coil3.request.ImageRequest.Builder(android).data(url).diskCachePolicy(coil3.request.CachePolicy.DISABLED).memoryCachePolicy(coil3.request.CachePolicy.DISABLED).build() }
-                    if (viewing) ImageViewer(request, artifact?.let(::artifactTitle) ?: "Image") { viewing = false }
-                    AsyncImage(model = request,contentDescription = "${artifact?.name}, opens full screen",modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp, max = 480.dp)
-                            .clip(RoundedCornerShape(16.dp)).clickable(onClickLabel = "Open full screen") { viewing = true },
-                        onSuccess = { imageError = null; imageAttempts = 0 },
-                        onError = {
-                            imageError = "Image preview could not load."
-                            if(imageCanRenew(imageAttempts)) { imageAttempts++; refresh++ }
-                        })
+    // footer that stays on screen. An HTML page fills the room this leaves, as the web's frame does (DESIGN, T162).
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val pageHeight = (maxHeight * 0.9f - 224.dp).coerceIn(256.dp, 736.dp)
+        Column(modifier.fillMaxSize()) {
+            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (deleted) {
+                    Text("Artifact unavailable", style = MaterialTheme.typography.titleLarge)
+                    Text("This artifact was deleted or is no longer available. Saved copies are unchanged.")
+                    return@Column
                 }
-                "video" -> key(artifactId) {
-                    val memoryKey = videoKey(context.route.projectId, artifactId)
-                    val playsOn = remember { InlineVideos.playsOn(memoryKey) }
-                    ArtifactMedia(url, { refresh++ }, memoryKey = memoryKey, seeks = seeks, onDuration = { videoDuration = it }, autoplay = playsOn)
+                if (connection.status != ConnectionStatus.Ready) Text("Offline · reconnect to refresh or delete this artifact.", style = MaterialTheme.typography.bodySmall)
+                error?.let { Text(it,color = MaterialTheme.colorScheme.error); TextButton(onClick = { imageAttempts = 0; imageError = null; refresh++ }) { Text("Retry") } }
+                imageError?.let {
+                    Text(it,color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = { imageAttempts = 0; imageError = null; refresh++ }) { Text("Retry image") }
                 }
-                "audio" -> key(artifactId) { ArtifactMedia(url, { refresh++ }) }
-                "text" -> text?.let { loaded -> ArtifactTextPreview(artifact?.name ?: "Text", loaded, markdown = artifact?.let { item -> isMarkdownArtifact(item.name, item.mimeType) } == true, copy = { copy(loaded) }) } ?: Text("Loading text…")
-                else -> artifact?.let { ArtifactFileRow(it) }
-            } else if(error == null) CircularProgressIndicator()
-            if(artifact?.size == -1L) Text("Metadata is outside the recent list. You can still save this artifact by its ID.",style = MaterialTheme.typography.bodySmall)
-            artifact?.let { item ->
-                // A video's note links its times ("at 1:05") to the player.
-                val linkers = LocalTextLinkers.current
-                val noteStyles = noteTimeLinkStyles()
-                val noteLinker = remember(videoDuration, noteStyles) { NoteTimeLinker(videoDuration, noteStyles) { seeks.tryEmit(it) } }
-                if (item.kind == "video") CompositionLocalProvider(LocalTextLinkers provides listOf(noteLinker) + linkers) { ArtifactDetails(item, ::copy) }
-                else ArtifactDetails(item, ::copy)
+                val url = signed?.url
+                if(url != null) when(artifact?.kind) {
+                    "image" -> {
+                        val android = LocalContext.current
+                        val request = remember(url,imageRevision) { coil3.request.ImageRequest.Builder(android).data(url).diskCachePolicy(coil3.request.CachePolicy.DISABLED).memoryCachePolicy(coil3.request.CachePolicy.DISABLED).build() }
+                        if (viewing) ImageViewer(request, artifact?.let(::artifactTitle) ?: "Image") { viewing = false }
+                        AsyncImage(model = request,contentDescription = "${artifact?.name}, opens full screen",modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp, max = 480.dp)
+                                .clip(RoundedCornerShape(16.dp)).clickable(onClickLabel = "Open full screen") { viewing = true },
+                            onSuccess = { imageError = null; imageAttempts = 0 },
+                            onError = {
+                                imageError = "Image preview could not load."
+                                if(imageCanRenew(imageAttempts)) { imageAttempts++; refresh++ }
+                            })
+                    }
+                    "video" -> key(artifactId) {
+                        val memoryKey = videoKey(context.route.projectId, artifactId)
+                        val playsOn = remember { InlineVideos.playsOn(memoryKey) }
+                        ArtifactMedia(url, { refresh++ }, memoryKey = memoryKey, seeks = seeks, onDuration = { videoDuration = it }, autoplay = playsOn)
+                    }
+                    "audio" -> key(artifactId) { ArtifactMedia(url, { refresh++ }) }
+                    "text" -> text?.let { loaded ->
+                        val markdown = artifact?.let { item -> isMarkdownArtifact(item.name, item.mimeType) } == true
+                        val html = artifact?.let { item -> isHtmlArtifact(item.name, item.mimeType) } == true
+                        ArtifactTextPreview(artifact?.name ?: "Text", loaded, markdown = markdown, html = html, truncated = textTruncated,
+                            size = artifact?.size ?: -1, pageHeight = pageHeight, copy = { copy(loaded) })
+                    } ?: Text("Loading text…")
+                    else -> artifact?.let { ArtifactFileRow(it) }
+                } else if(error == null) CircularProgressIndicator()
+                if(artifact?.size == -1L) Text("Metadata is outside the recent list. You can still save this artifact by its ID.",style = MaterialTheme.typography.bodySmall)
+                artifact?.let { item ->
+                    // A video's note links its times ("at 1:05") to the player.
+                    val linkers = LocalTextLinkers.current
+                    val noteStyles = noteTimeLinkStyles()
+                    val noteLinker = remember(videoDuration, noteStyles) { NoteTimeLinker(videoDuration, noteStyles) { seeks.tryEmit(it) } }
+                    if (item.kind == "video") CompositionLocalProvider(LocalTextLinkers provides listOf(noteLinker) + linkers) { ArtifactDetails(item, ::copy) }
+                    else ArtifactDetails(item, ::copy)
+                }
+                actionStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             }
-            actionStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        }
-        if (!deleted) {
-            HorizontalDivider(color = Jarvis.colors.border)
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { deletion = ArtifactDeleteState.Confirming }, enabled = artifact != null && deletion != ArtifactDeleteState.Sending,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error), modifier = Modifier.semantics { contentDescription = "Delete artifact" }) {
-                    LucideGlyph(ArtifactGlyphs.Trash, size = 16.dp); Spacer(Modifier.width(6.dp)); Text("Delete")
+            if (!deleted) {
+                HorizontalDivider(color = Jarvis.colors.border)
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { deletion = ArtifactDeleteState.Confirming }, enabled = artifact != null && deletion != ArtifactDeleteState.Sending,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error), modifier = Modifier.semantics { contentDescription = "Delete artifact" }) {
+                        LucideGlyph(ArtifactGlyphs.Trash, size = 16.dp); Spacer(Modifier.width(6.dp)); Text("Delete")
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Column(horizontalAlignment = Alignment.End) { ArtifactDownloadAction(context, artifact, artifactId, canSave = deletion != ArtifactDeleteState.Sending) }
                 }
-                Spacer(Modifier.weight(1f))
-                Column(horizontalAlignment = Alignment.End) { ArtifactDownloadAction(context, artifact, artifactId, canSave = deletion != ArtifactDeleteState.Sending) }
             }
         }
     }

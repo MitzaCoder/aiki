@@ -54,3 +54,10 @@ fun isMarkdownArtifact(name: String, mimeType: String): Boolean {
     if (type == "text/markdown" || type == "text/x-markdown") return true
     return Regex("\\.(md|markdown|mdx)$", RegexOption.IGNORE_CASE).containsMatchIn(name)
 }
+
+/** Whether a text artifact is an HTML page, by its type or its name (web `isHtmlArtifact`). */
+fun isHtmlArtifact(name: String, mimeType: String): Boolean {
+    val type = mimeType.split(';').firstOrNull()?.trim()?.lowercase().orEmpty()
+    if (type == "text/html" || type == "application/xhtml+xml") return true
+    return Regex("\\.(html|htm|xhtml)$", RegexOption.IGNORE_CASE).containsMatchIn(name)
+}
