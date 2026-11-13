@@ -1,5 +1,53 @@
 # Continue
 
+## T174: pilot.5 published and verified
+
+Published [v0.1.0-pilot.5](https://github.com/MitzaCoder/kemiri/releases/tag/v0.1.0-pilot.5)
+at 2026-11-13T19:42:06Z, with owner approval. Prep change zuupqpzz points to
+c4602ec0def630d2d95d4540155512af175be788. Only its annotated release tag was pushed;
+main remains ff345de680b27d543a98702e95356627a1b51ab8. The coordinator moves main,
+including this publication-docs follow-up. No deploy scripts, services or phone used.
+
+[Run 43492709833](https://github.com/MitzaCoder/kemiri/actions/runs/43492709833)
+passed checks, all three native executable/smoke jobs and draft staging. Exactly
+20 canonical assets are public (14 workflow + six owner attachments). Fresh final
+downloads verify 12 payload hashes, seven sidecars, GitHub digests/sizes, canonical
+source layout/commit, all 1,600 notices source files and 287 dependency notices.
+APK signature, 16 KiB alignment and unchanged package io.github.mitzacoder.aiki
+pass; versionName 0.1.0-pilot.5 / code 1000005. Gradle is stopped.
+
+- APK SHA-256: a6e8234bca599e5fa607a4cb58dbee8ddbfb943c5a91cd4b00c794c38260c4f8
+- Certificate SHA-256: a97bdfae948d34c2589afb4bc78acce22f079d51e6aaa2e4025f7d7d38e611e2
+
+Real published pilot.2/3/4 installers/binaries and actual pilot.5 workflow assets
+pass stopped updates in env -i temp HOMEs, USER set, unique ports, setsid and owned
+PID stops. Pilot.2 -> 4 -> 5 and pilot.3 -> 4 -> 5 retain a synthetic project,
+paired-device token, backend ID and bytes; direct 2/3 -> 5 refuse absent aiki assets
+without switching. Both pilot.4 command spellings update binary installs; activation
+removes the owned aiki launcher. server.env gets KEMIRI keys and exact original .bak.
+Every path rolls back to pilot.4 and restarts with retained state.
+
+Pilot.4 forced Bun fallback fails safely on kemiri/ archives. The downloaded
+pilot.5 installer with the same recorded root genuinely installs source/private Bun
+and retains state. This is required on Intel Macs, Linux musl x64/ARM64 and forced
+Bun installs. Its pilot.4 lifecycle driver can leave an old aiki launcher, but the
+link selects pilot.5 and is harmless; use kemiri. Published notes explain this.
+Native macOS service updates, real-network Android pairing and on-device APK
+upgrade acceptance remain separate limits, not certified by these rehearsals.
+
+Pre-tag root tests pass 2,650 / 94,071 assertions; typecheck, zero-diagnostic web
+check, 1,116 web tests / 80,022 assertions and build pass. Android checkReleaseVersion,
+944 JVM tests (two skipped), assembleDebug and protocol 388 DTOs / 106 overloads
+pass. Exact-tree external denylist/generic/Gitleaks and public-CI checks pass.
+Credential-free kemiri.dev bootstrap verifies pilot.5's public installer and runs
+--help without installing. Main/site deployment remains the coordinator's step.
+
+T174 friends' HTML note is mwfdxosc-cc74990d09; chat text is mwfdxotd-2fd0e5cdd1.
+Light/dark desktop/360px screenshots, Print proof and navigation videos cover the
+note and site bump. Actual-workflow rehearsal transcript: mwfdxp39-d442a7b459.
+Signed manual assets and verification evidence are retained outside the checkout;
+disposable installs/downloads are removed. No .preview files entered the prep tag.
+
 ## T174: pilot.5 release preparation
 
 Prepared v0.1.0-pilot.5 from the deployed T172 main tip. Package/protocol versions,

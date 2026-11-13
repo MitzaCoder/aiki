@@ -19,8 +19,10 @@ binary update works. Intel Macs and Linux musl x64/ARM64 have no standalone
 asset; they always use the fallback. For these platforms or `--runtime bun`, download,
 review and run the **new release's installer** with the same `--dir`, rather than
 using pilot.4's embedded installer. Never weaken archive-path or checksum checks.
+The retained pilot.4 binary may drive source activation and leave its old `aiki`
+launcher; rehearsal confirms it selects pilot.5 harmlessly. Use `kemiri` thereafter.
 
-Only `kemiri` launchers remain. Activation removes an old `aiki` launcher only
+Canonical activation writes only `kemiri` launchers. It removes an old `aiki` launcher only
 when it belongs to that installation, and updates its recorded service launcher.
 Server startup rewrites its own server.env keys to KEMIRI_* atomically, keeps the
 original in .bak and logs key names only. Process/build/signing settings must be

@@ -182,7 +182,7 @@ for that version, not the About row. Source/deploy checkouts do not check unless
 and `kemiri service install` afterwards. Keep existing folders and data.
 **Pilot.3 and older releases lack the self-update API/supervisor.** This stopped manual
 upgrade acquires it before you can use the button.
-Later binary updates use plain `kemiri update`. For pilot.4 source/Bun fallback upgrades to pilot.5, download and review that release’s installer and run it with the same `--dir`: pilot.4’s embedded installer only accepts the old archive layout. Self-update changes the backend, never Android's APK.
+Later binary updates use plain `kemiri update`. For pilot.4 source/Bun fallback upgrades to pilot.5, download and review that release’s installer and run it with the same `--dir`: pilot.4’s embedded installer only accepts the old archive layout. Source activation can retain a harmless pilot.4-written `aiki` launcher pointing at pilot.5; use `kemiri` from now on. Self-update changes the backend, never Android's APK.
 Install the Android APK over the old app; the release uses the same owner signing key,
 versionName `0.1.0-pilot.5`, code 1000005.
 An older installer without channel support needs that first exact-version update to acquire this behavior.

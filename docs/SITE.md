@@ -27,9 +27,9 @@ only the deployment job can write Pages and request the deployment OIDC token.
 There is no repository-content write permission, automatic commit or release sync.
 The uploaded artifact is exactly `site/`, not the checkout or its local configuration.
 
-## Pilot.4 publication and live domain
+## Pilot.5 publication and live domain
 
-The bootstrap and download links remain pinned to the pilot.5 release (deploy only after publication).
+The bootstrap and download links are pinned to the published pilot.5 release.
 The current install command is `curl -fsSL https://kemiri.dev/install.sh | sh`.
 Prefer downloading and reviewing it before execution. For a new release, change
 the pinned version and links only after its public assets and checksums verify.
