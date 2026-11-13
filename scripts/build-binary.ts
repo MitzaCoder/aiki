@@ -6,6 +6,12 @@ import { basename, dirname, join, resolve } from "node:path";
 import { BUN_VERSION } from "./aiki.ts";
 
 const args = process.argv.slice(2);
+const valueOptions = new Set(["--version", "--target", "--out", "--archive"]);
+for (let index = 0; index < args.length; index++) {
+	const argument = args[index]!;
+	if (valueOptions.has(argument)) index++;
+	else if (argument !== "--smoke") throw new Error(`Unknown build option: ${argument}`);
+}
 function option(name: string): string | undefined {
 	const index = args.indexOf(name);
 	if (index < 0) return undefined;
@@ -13,7 +19,6 @@ function option(name: string): string | undefined {
 	return args[index + 1];
 }
 const version = option("--version");
-const legacyVersionProbe = args.includes("--legacy-version-probe");
 if (!version || !/^v[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?$/.test(version)) throw new Error("Usage: bun scripts/build-binary.ts --version v0.1.0 [--target bun-linux-x64-baseline] [--out DIR] [--archive PATH] [--smoke]");
 if (Bun.version !== BUN_VERSION) throw new Error(`Use pinned Bun ${BUN_VERSION}`);
 const targets = ["bun-linux-x64-baseline", "bun-linux-arm64", "bun-darwin-arm64"] as const;
@@ -31,11 +36,11 @@ try {
 	let archive = option("--archive");
 	if (!archive) {
 		await run([process.execPath, join(import.meta.dir, "build-release.ts"), "--version", version, "--out", output], resolve(import.meta.dir, ".."));
-		archive = join(output, `aiki-${version}.tar.gz`);
+		archive = join(output, `kemiri-${version}.tar.gz`);
 	}
 	// --archive is a trusted, locally built source/web input, not an unverified download interface.
 	await run(["tar", "-xzf", resolve(archive), "-C", staging], staging);
-	const tree = join(staging, "aiki");
+	const tree = join(staging, "kemiri");
 	await run([process.execPath, "install", "--frozen-lockfile"], tree);
 	const server = join(tree, "packages/server");
 	const resources: string[] = [];
@@ -71,10 +76,10 @@ try {
 	if (!web.some(line => line.startsWith('"/200.html":'))) throw new Error("Missing built web UI fallback");
 	const release = JSON.parse(await readFile(join(tree, "RELEASE.json"), "utf8"));
 	if (release.name !== version) throw new Error("Archive version does not match binary version");
-	resources.push(`export const packagedResources = { legacyVersionProbe: ${legacyVersionProbe}, installer, quickjsWasm: ${quickjs}, photonWasm: ${photon}, codemodeWorker, photonWorker, web: {${web.join(",")}}, skills: {${skills.join(",")}}, release: ${JSON.stringify(release)} };`);
+	resources.push(`export const packagedResources = { installer, quickjsWasm: ${quickjs}, photonWasm: ${photon}, codemodeWorker, photonWorker, web: {${web.join(",")}}, skills: {${skills.join(",")}}, release: ${JSON.stringify(release)} };`);
 	await mkdir(output, { recursive: true });
 	const smoke = args.includes("--smoke");
-	const name = `${legacyVersionProbe ? "aiki" : "kemiri"}-${version}-${target.replace("bun-", "").replace("-baseline", "")}${smoke ? "-smoke" : ""}`;
+	const name = `kemiri-${version}-${target.replace("bun-", "").replace("-baseline", "")}${smoke ? "-smoke" : ""}`;
 	const file = join(output, name);
 	const build = await Bun.build({
 		entrypoints: [join(server, smoke ? "scripts/binary-smoke-entry.ts" : "src/binary-main.ts")],

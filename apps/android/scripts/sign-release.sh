@@ -8,8 +8,8 @@ out=${2:?Output directory required}
 commit=$(git -C "$root" rev-parse --verify "${3:?Exact source commit required}^{commit}")
 git -C "$root" diff --quiet "$commit" -- apps/android || { echo 'Android source differs from the selected commit; commit/review it first' >&2; exit 1; }
 [[ $version =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-pilot\.[1-9][0-9]*)?$ ]] || { echo 'Invalid release version' >&2; exit 2; }
-key=$(realpath "${AIKI_RELEASE_KEYSTORE:?Set AIKI_RELEASE_KEYSTORE to the external keystore}")
-password=$(realpath "${AIKI_RELEASE_PASSWORD_FILE:?Set AIKI_RELEASE_PASSWORD_FILE to its external password file}")
+key=$(realpath "${KEMIRI_RELEASE_KEYSTORE:?Set KEMIRI_RELEASE_KEYSTORE to the external keystore}")
+password=$(realpath "${KEMIRI_RELEASE_PASSWORD_FILE:?Set KEMIRI_RELEASE_PASSWORD_FILE to its external password file}")
 for file in "$key" "$password"; do
   [[ -f $file ]] || { echo 'Signing input missing' >&2; exit 1; }
   case "$file" in "$root/"*) echo 'Signing inputs must be outside the repository' >&2; exit 1 ;; esac
@@ -31,7 +31,7 @@ env -i PATH="$PATH" HOME="$HOME" LANG=C.UTF-8 TMPDIR="$work" \
   JAVA_HOME="${JAVA_HOME:-}" ANDROID_HOME="$sdk" \
   HARNESS_ANDROID_PROPERTIES="$work/empty.properties" \
   bash "$root/apps/android/scripts/build.sh" \
-  "-Paiki.version=$version" \
+  "-Pkemiri.version=$version" \
   -Pharness.applicationId=io.github.mitzacoder.aiki -Pharness.preferencesPrefix=aiki \
   -Pharness.notificationIntentPrefix=io.github.mitzacoder.aiki \
   -Pharness.appOrigin=https://app.example.invalid -Pharness.publishedBackendsUrl= \
@@ -48,12 +48,12 @@ done
 "$tools/zipalign" -P 16 -f 4 "$unsigned" "$work/aligned.apk"
 # env -i also prevents inherited JAVA_TOOL_OPTIONS from reaching apksigner.
 env -i PATH="$PATH" JAVA_HOME="${JAVA_HOME:-}" HOME="$HOME" \
-  "$tools/apksigner" sign --ks "$key" --ks-key-alias "${AIKI_RELEASE_KEY_ALIAS:-aiki-pilot}" \
+  "$tools/apksigner" sign --ks "$key" --ks-key-alias "${KEMIRI_RELEASE_KEY_ALIAS:-aiki-pilot}" \
   --ks-pass "file:$password" --out "$out/$name" "$work/aligned.apk"
 env -i PATH="$PATH" JAVA_HOME="${JAVA_HOME:-}" HOME="$HOME" \
   "$tools/apksigner" verify --verbose --print-certs "$out/$name" | tee "$out/$name.signature.txt"
 "$tools/zipalign" -c -P 16 4 "$out/$name"
-bash "$root/apps/android/scripts/release-asset-alias.sh" "$out/$name"
+bash "$root/apps/android/scripts/release-asset-checksum.sh" "$out/$name"
 metadata="$root/apps/android/app/build/outputs/apk/release/output-metadata.json"
 code=$(bun -e 'console.log((await Bun.file(process.argv[1]).json()).elements[0].versionCode)' "$metadata")
 fingerprint=$(sed -n 's/.*certificate SHA-256 digest: //p' "$out/$name.signature.txt")

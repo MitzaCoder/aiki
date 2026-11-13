@@ -48,16 +48,16 @@ for name, source in [("aiki", args.binary), ("aiki-smoke", args.smoke)]:
     (root / name).chmod(0o755)
 env_command = shutil.which("env")
 assert env_command
-(root / ".env").write_text("AIKI_STATE_NAMESPACE=binary-dotenv-must-not-load\n")
+(root / ".env").write_text("KEMIRI_STATE_NAMESPACE=binary-dotenv-must-not-load\n")
 
 
 def environment(name):
     base = root / name
     base.mkdir()
     env = {"USER": "smoke", "HOME": str(base / "home"), "PATH": str(path), "TZ": "UTC",
-           "AIKI_DATA_DIR": str(base / "data"), "AIKI_CONFIG_DIR": str(base / "config"),
-           "AIKI_AGENT_DIR": str(base / "agent"), "AIKI_CLAUDE_DIR": str(base / "claude"), "AIKI_PORT": "0"}
-    for key in ["HOME", "AIKI_CONFIG_DIR", "AIKI_AGENT_DIR", "AIKI_CLAUDE_DIR"]:
+           "KEMIRI_DATA_DIR": str(base / "data"), "KEMIRI_CONFIG_DIR": str(base / "config"),
+           "KEMIRI_AGENT_DIR": str(base / "agent"), "KEMIRI_CLAUDE_DIR": str(base / "claude"), "KEMIRI_PORT": "0"}
+    for key in ["HOME", "KEMIRI_CONFIG_DIR", "KEMIRI_AGENT_DIR", "KEMIRI_CLAUDE_DIR"]:
         Path(env[key]).mkdir()
     print(f"Isolated paths: {json.dumps(env, sort_keys=True)}", flush=True)
     return env
@@ -180,15 +180,15 @@ try:
             with socket.socket() as reservation:
                 reservation.bind(("127.0.0.1", 0))
                 port = reservation.getsockname()[1]
-            env["AIKI_PORT"] = str(port)
-            env["AIKI_INSTALL_DIR"] = str(base)
+            env["KEMIRI_PORT"] = str(port)
+            env["KEMIRI_INSTALL_DIR"] = str(base)
             (base / "current").symlink_to(tree, target_is_directory=True)
             (base / ".aiki-managed").write_text("aiki-installer-v1\n")
             (base / ".aiki-install.json").write_text(json.dumps({
-                "root": str(base), "config": env["AIKI_CONFIG_DIR"], "data": env["AIKI_DATA_DIR"],
+                "root": str(base), "config": env["KEMIRI_CONFIG_DIR"], "data": env["KEMIRI_DATA_DIR"],
                 "launcher": str(base / "aiki"), "version": "benchmark"}))
-            (Path(env["AIKI_CONFIG_DIR"]) / "server.env").write_text(
-                f'AIKI_AGENT_DIR={env["AIKI_AGENT_DIR"]}\nAIKI_CLAUDE_DIR={env["AIKI_CLAUDE_DIR"]}\n')
+            (Path(env["KEMIRI_CONFIG_DIR"]) / "server.env").write_text(
+                f'KEMIRI_AGENT_DIR={env["KEMIRI_AGENT_DIR"]}\nKEMIRI_CLAUDE_DIR={env["KEMIRI_CLAUDE_DIR"]}\n')
             baseline.append(production([str(Path(args.bun).resolve()), str(tree / "scripts/aiki.ts"), "start"], env, False))
         print(f"Bun install startup ms: {json.dumps(baseline)}; median {statistics.median(baseline):.1f}", flush=True)
     env = environment("faux")

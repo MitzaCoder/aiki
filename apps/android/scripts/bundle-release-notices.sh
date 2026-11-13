@@ -32,5 +32,5 @@ for brand in kemiri aiki; do
   done
 done
 tar -czf "$out/$name" -C "$work" android-notices-and-source
-bash "$root/apps/android/scripts/release-asset-alias.sh" "$out/$name"
+bash "$root/apps/android/scripts/release-asset-checksum.sh" "$out/$name"
 printf 'Notices/source asset: %s\n' "$out/$name"

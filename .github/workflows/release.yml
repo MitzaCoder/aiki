@@ -113,8 +113,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           bun scripts/build-binary.ts --version "$VERSION" --target "$TARGET" --out .preview/binaries
-          bun scripts/build-binary.ts --version "$VERSION" --target "$TARGET" --out .preview/binaries --archive ".preview/binaries/aiki-$VERSION.tar.gz" --legacy-version-probe
-          bun scripts/build-binary.ts --version "$VERSION" --target "$TARGET" --out .preview/binaries --archive ".preview/binaries/aiki-$VERSION.tar.gz" --smoke
+          bun scripts/build-binary.ts --version "$VERSION" --target "$TARGET" --out .preview/binaries --archive ".preview/binaries/kemiri-$VERSION.tar.gz" --smoke
       - name: Verify Linux interpreter is portable
         if: runner.os == 'Linux'
         env:
@@ -136,11 +135,8 @@ jobs:
       - name: Keep production executable, checksum and PDF dependency notices
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: aiki-binary-${{ matrix.platform }}
+          name: kemiri-binary-${{ matrix.platform }}
           path: |
-            .preview/binaries/aiki-${{ steps.identity.outputs.version }}-${{ matrix.platform }}
-            .preview/binaries/aiki-${{ steps.identity.outputs.version }}-${{ matrix.platform }}.sha256
-            .preview/binaries/aiki-${{ steps.identity.outputs.version }}-${{ matrix.platform }}.licenses.txt
             .preview/binaries/kemiri-${{ steps.identity.outputs.version }}-${{ matrix.platform }}
             .preview/binaries/kemiri-${{ steps.identity.outputs.version }}-${{ matrix.platform }}.sha256
             .preview/binaries/kemiri-${{ steps.identity.outputs.version }}-${{ matrix.platform }}.licenses.txt
@@ -151,7 +147,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: aiki-smoke-${{ matrix.platform }}
+          name: kemiri-smoke-${{ matrix.platform }}
           path: .preview/binaries/smoke.log
           if-no-files-found: ignore
           retention-days: 7
@@ -173,17 +169,15 @@ jobs:
       - name: Download checked native executables
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          pattern: aiki-binary-*
+          pattern: kemiri-binary-*
           merge-multiple: true
           path: .preview/downloaded-binaries
       - name: Verify and collect binary checksums
         run: |
           for platform in linux-x64 linux-arm64 darwin-arm64; do
-           for brand in kemiri aiki; do
-            file="$brand-$GITHUB_REF_NAME-$platform"
+            file="kemiri-$GITHUB_REF_NAME-$platform"
             (cd .preview/downloaded-binaries && sha256sum --check "$file.sha256")
             mv ".preview/downloaded-binaries/$file" ".preview/downloaded-binaries/$file.sha256" ".preview/downloaded-binaries/$file.licenses.txt" .preview/releases/
-           done
           done
       - name: Hash installer
         run: sha256sum install.sh > .preview/releases/install.sh.sha256

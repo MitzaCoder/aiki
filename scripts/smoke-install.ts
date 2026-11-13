@@ -21,23 +21,16 @@ for (const tool of ["sh", "env", "setsid", "curl", "tar", "gzip", "unzip", "awk"
 	if (!executable) throw new Error(`Smoke requires ${tool}`);
 	await symlink(executable, join(path, tool));
 }
-const assetName = `aiki-${binaryVersion}-linux-x64`;
+const assetName = `kemiri-${binaryVersion}-linux-x64`;
 const binaryBytes = new Uint8Array(await Bun.file(binaryPath).arrayBuffer());
 const binaryHash = new Bun.CryptoHasher("sha256").update(binaryBytes).digest("hex");
 const routes = new Map<string, string | Uint8Array>([
 	[`/${binaryVersion}/${assetName}`, binaryBytes],
 	[`/${binaryVersion}/${assetName}.sha256`, `${binaryHash}  ${assetName}\n`],
 	[`/${binaryVersion}/SHA256SUMS`, `${binaryHash}  ${assetName}\n`],
-	[`/${bunVersion}/aiki-${bunVersion}.tar.gz`, new Uint8Array(await Bun.file(archivePath).arrayBuffer())],
-	[`/${bunVersion}/aiki-${bunVersion}.tar.gz.sha256`, await Bun.file(archivePath + ".sha256").text()],
+	[`/${bunVersion}/kemiri-${bunVersion}.tar.gz`, new Uint8Array(await Bun.file(archivePath).arrayBuffer())],
+	[`/${bunVersion}/kemiri-${bunVersion}.tar.gz.sha256`, await Bun.file(archivePath + ".sha256").text()],
 ]);
-const modernArchive = routes.get(`/${bunVersion}/aiki-${bunVersion}.tar.gz`)!;
-const modernChecksum = routes.get(`/${bunVersion}/aiki-${bunVersion}.tar.gz.sha256`)!;
-if (args.includes("--legacy-archive")) {
-	const legacy = resolve(option("--legacy-archive"));
-	routes.set(`/${bunVersion}/aiki-${bunVersion}.tar.gz`, new Uint8Array(await Bun.file(legacy).arrayBuffer()));
-	routes.set(`/${bunVersion}/aiki-${bunVersion}.tar.gz.sha256`, await Bun.file(legacy + ".sha256").text());
-}
 const requests: string[] = [];
 const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(request) {
 	const name = new URL(request.url).pathname;
@@ -66,8 +59,8 @@ async function instance(name: string): Promise<Instance> {
 	await mkdir(join(installation, "tools/bin"), { recursive: true });
 	await writeFile(join(installation, ".aiki-managed"), "aiki-installer-v1\n");
 	await writeFile(join(installation, "tools/bin/zellij"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
-	const env = { USER: "smoke", HOME: home, PATH: path, TZ: "UTC", AIKI_NO_BROWSER: "1" };
-	const launcher = join(home, ".local/bin/aiki");
+	const env = { USER: "smoke", HOME: home, PATH: path, TZ: "UTC", KEMIRI_NO_BROWSER: "1" };
+	const launcher = join(home, ".local/bin/kemiri");
 	console.log(`Installation paths: ${JSON.stringify({ home, installation, config: join(installation, "config"), data: join(installation, "data"), path })}`);
 	return { home, root: installation, launcher, env, cli: (...args) => command([launcher, ...args], env) };
 }
@@ -80,11 +73,11 @@ async function install(installation: Instance, version: string): Promise<void> {
 	console.log(await command([join(path, "sh"), join(repository, "install.sh"), "--dir", installation.root,
 		"--no-service", "--version", version, "--release-base-url", base], installation.env));
 }
-async function checkBackend(installation: Instance, version: string, legacyCli = false): Promise<void> {
+async function checkBackend(installation: Instance, version: string): Promise<void> {
 	const listener = Bun.listen({ hostname: "127.0.0.1", port: 0, socket: { data() {} } });
 	const port = listener.port!; listener.stop();
 	for (const name of ["agent", "claude"]) await mkdir(join(installation.home, name), { recursive: true });
-	await writeFile(join(installation.root, "config/server.env"), `AIKI_PORT=${port}\nAIKI_AGENT_DIR=${installation.home}/agent\nAIKI_CLAUDE_DIR=${installation.home}/claude\n`);
+	await writeFile(join(installation.root, "config/server.env"), `KEMIRI_PORT=${port}\nKEMIRI_AGENT_DIR=${installation.home}/agent\nKEMIRI_CLAUDE_DIR=${installation.home}/claude\n`);
 	const child = Bun.spawn([join(path, "setsid"), "-f", "-w", join(path, "env"), "-i",
 		...Object.entries(installation.env).map(([key, value]) => `${key}=${value}`), installation.launcher, "start"],
 		{ env: {}, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
@@ -97,7 +90,7 @@ async function checkBackend(installation: Instance, version: string, legacyCli =
 		for await (const chunk of child.stdout) {
 			output += new TextDecoder().decode(chunk);
 			if (!pid && existsSync(join(installation.root, "server.pid"))) pid = Number(await readFile(join(installation.root, "server.pid"), "utf8"));
-			if (/(?:Kemiri|Aiki) listening on/.test(output)) ready.resolve();
+			if (/Kemiri listening on/.test(output)) ready.resolve();
 		}
 	})();
 	void child.exited.then(code => ready.reject(new Error(`Backend exited (${code}): ${output}`)));
@@ -105,9 +98,7 @@ async function checkBackend(installation: Instance, version: string, legacyCli =
 		await ready.promise;
 		console.log(`Owned backend PID: ${pid}`);
 		assert.match(await installation.cli("status"), /Running at/);
-		const health = JSON.parse(await installation.cli(...(legacyCli
-			? ["auth", "health-check", JSON.stringify({ type: "server.status", id: "legacy-health" })]
-			: ["health-check"])));
+		const health = JSON.parse(await installation.cli("health-check"));
 		assert.equal(health.answer.type, "server.status");
 		assert.equal(health.answer.status.updates.enabled, true);
 		assert.equal(health.answer.status.updates.installedVersion, version);
@@ -137,12 +128,9 @@ try {
 	await checkBackend(binary, binaryVersion);
 	await cacheBun(binary);
 	console.log(await binary.cli("update", "--version", bunVersion, "--release-base-url", base));
-	await checkBackend(binary, bunVersion, args.includes("--legacy-archive"));
+	await checkBackend(binary, bunVersion);
 	console.log(await binary.cli("rollback"));
 	await checkBackend(binary, binaryVersion);
-	// A historical CLI can roll back via the new launcher; a modern Bun CLI handles binary-aware updates.
-	routes.set(`/${bunVersion}/aiki-${bunVersion}.tar.gz`, modernArchive);
-	routes.set(`/${bunVersion}/aiki-${bunVersion}.tar.gz.sha256`, modernChecksum);
 	const bun = await instance("bun-first");
 	await cacheBun(bun);
 	await install(bun, bunVersion);

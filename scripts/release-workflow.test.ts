@@ -99,43 +99,22 @@ test('current pilot identities and reviewed notes agree', async () => {
 	expect(commands).toContain('test "$(head -n 1 "$notes")" = "# Kemiri $GITHUB_REF_NAME"');
 });
 
-test('Kemiri bridge uploads both binary families and documents the exact draft and final assets', async () => {
-	const version = 'v0.1.0-pilot.4';
-	const binaries = workflow.jobs.binaries!;
-	const binaryBuildCommands = binaries.steps.map(step => step.run ?? '').join('\n');
-	expect(binaryBuildCommands).toContain('--legacy-version-probe');
-	const binaryUploadStep = binaries.steps.find(step => step.name === 'Keep production executable, checksum and PDF dependency notices')!;
-	const uploadedBinaries: string[] = [];
-	for (const { platform } of binaries.strategy!.matrix.include) {
-		for (const line of binaryUploadStep.with!.path!.trim().split('\n')) {
-			uploadedBinaries.push(line.trim().replace('.preview/binaries/', '')
-				.replace('${{ steps.identity.outputs.version }}', version)
-				.replace('${{ matrix.platform }}', platform));
-		}
-	}
-	const expectedBinaries = ['kemiri', 'aiki'].flatMap(brand =>
-		['linux-x64', 'linux-arm64', 'darwin-arm64'].flatMap(platform =>
-			['', '.sha256', '.licenses.txt'].map(suffix => `${brand}-${version}-${platform}${suffix}`)));
-	expect(uploadedBinaries.sort()).toEqual(expectedBinaries.sort());
-	const releaseCommands = workflow.jobs.release!.steps.map(step => step.run ?? '').join('\n');
-	expect(releaseCommands).toContain('for brand in kemiri aiki');
-	const sourceBuilder = await Bun.file(new URL('./build-release.ts', import.meta.url)).text();
-	expect(sourceBuilder).toContain('`aiki-${version}.tar.gz`');
-	expect(sourceBuilder).toContain('`kemiri-${version}.tar.gz`');
-	expect(sourceBuilder).toContain('const tree = join(staging, "aiki")');
-	const expectedDraft = [...expectedBinaries, ...['kemiri', 'aiki'].flatMap(brand =>
-		['', '.sha256'].map(suffix => `${brand}-${version}.tar.gz${suffix}`)),
-		'install.sh', 'install.sh.sha256', 'SHA256SUMS'];
-	expect(expectedDraft).toHaveLength(25);
-	const releaseProcedure = await Bun.file(new URL('../docs/RELEASE.md', import.meta.url)).text();
-	const documentedAssets = [...releaseProcedure.matchAll(/^- `([^`]+)`$/gm)].map(match => match[1]!);
-	expect(documentedAssets.slice(0, 25).sort()).toEqual(expectedDraft.sort());
-	expect(documentedAssets).toHaveLength(35);
-	expect(new Set(documentedAssets).size).toBe(35);
-	for (const brand of ['kemiri', 'aiki']) for (const suffix of ['universal.apk', 'notices-and-source.tar.gz']) {
-		expect(documentedAssets).toContain(`${brand}-${version}-android-${suffix}`);
-		expect(documentedAssets).toContain(`${brand}-${version}-android-${suffix}.sha256`);
-	}
-	expect(documentedAssets).toContain('RELEASE-MANIFEST.json');
-	expect(documentedAssets).toContain('RELEASE-NOTES.md');
+test('releases upload only canonical assets and use kemiri source layout', async () => {
+ const binaries = workflow.jobs.binaries!;
+ const commands = binaries.steps.map(step => step.run ?? '').join('\n');
+ expect(commands).not.toContain('--legacy-version-probe');
+ const upload = binaries.steps.find(step => step.name === 'Keep production executable, checksum and PDF dependency notices')!.with!.path!;
+ expect(upload.trim().split('\n')).toHaveLength(3);
+ expect(upload).not.toContain('/aiki-');
+ expect(upload).toContain('/kemiri-');
+ const source = await Bun.file(new URL('./build-release.ts', import.meta.url)).text();
+ expect(source).not.toContain('`aiki-');
+ expect(source).toContain('const tree = join(staging, "kemiri")');
+ const builder = await Bun.file(new URL('./build-binary.ts', import.meta.url)).text();
+ expect(builder).not.toContain('legacyVersionProbe');
+ const rejected = Bun.spawn([process.execPath, new URL('./build-binary.ts', import.meta.url).pathname, '--legacy-version-probe'], { stdout: 'pipe', stderr: 'pipe' });
+ expect(await rejected.exited).not.toBe(0);
+ expect(await new Response(rejected.stderr).text()).toContain('Unknown build option');
+ const release = workflow.jobs.release!.steps.map(step => step.run ?? '').join('\n');
+ expect(release).not.toContain('for brand');
 });

@@ -19,7 +19,7 @@ if (Bun.version !== BUN_VERSION) throw new Error(`Build releases using pinned Bu
 const source = resolve(option("--source") || join(import.meta.dir, ".."));
 const output = resolve(option("--out") || ".preview/releases");
 const staging = await mkdtemp(join(tmpdir(), "aiki-release-"));
-const tree = join(staging, "aiki");
+const tree = join(staging, "kemiri");
 async function run(command: string[], cwd: string, env: Record<string, string | undefined> = process.env): Promise<void> {
 	const child = Bun.spawn(command, { cwd, env, stdout: "inherit", stderr: "inherit", stdin: "ignore" });
 	const timer = setTimeout(() => child.kill(), 300_000);
@@ -60,7 +60,7 @@ try {
 	if (existsSync(join(source, "docs/INSTALL.md"))) await copyPublic(join(source, "docs/INSTALL.md"), join(tree, "docs/INSTALL.md"));
 	await writeFile(join(staging, "backends.json"), "[]\n");
 	const clean = Object.fromEntries(Object.entries(process.env).filter(([name]) => !/^(AIKI|KEMIRI)_/.test(name)));
-	const env = { ...clean, AIKI_PUBLISHED_BACKENDS_FILE: join(staging, "backends.json"), AIKI_LEGACY_STORAGE_PREFIX: "", DEPLOY_CONFIG_DIR: join(staging, "no-local-config") };
+	const env = { ...clean, KEMIRI_PUBLISHED_BACKENDS_FILE: join(staging, "backends.json"), KEMIRI_LEGACY_STORAGE_PREFIX: "", DEPLOY_CONFIG_DIR: join(staging, "no-local-config") };
 	await run([process.execPath, "install", "--frozen-lockfile"], tree, env);
 	await run([process.execPath, "run", "build"], join(tree, "apps/web"), env);
 	await rm(join(tree, "apps/web/build/backends.json"), { force: true });
@@ -74,12 +74,9 @@ try {
 	}
 	await removeDependencies(tree);
 	await mkdir(output, { recursive: true });
-	const archive = join(output, `aiki-${version}.tar.gz`);
-	await run(["tar", "-czf", archive, "aiki"], staging);
+	const archive = join(output, `kemiri-${version}.tar.gz`);
+	await run(["tar", "-czf", archive, "kemiri"], staging);
 	const digest = new Bun.CryptoHasher("sha256").update(await Bun.file(archive).arrayBuffer()).digest("hex");
 	await writeFile(archive + ".sha256", `${digest}  ${basename(archive)}\n`);
-	const canonical = join(output, `kemiri-${version}.tar.gz`);
-	await cp(archive, canonical);
-	await writeFile(canonical + ".sha256", `${digest}  ${basename(canonical)}\n`);
 	console.log(`Release ready: ${archive}\nSHA256: ${digest}`);
 } finally { await rm(staging, { recursive: true, force: true }); }
