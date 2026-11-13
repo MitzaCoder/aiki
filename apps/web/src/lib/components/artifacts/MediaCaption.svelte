@@ -79,7 +79,8 @@
 			kindLabel(item.kind),
 			formatMediaDuration(item.durationSeconds),
 			item.size >= 0 ? formatBytes(item.size) : '',
-			savedByLabel(item)
+			savedByLabel(item),
+			(item.versionCount ?? 1) > 1 ? `${item.versionCount} versions` : ''
 		].filter((fact) => fact !== '');
 	}
 

@@ -12,6 +12,8 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import { artifactTitle, ZOOM_FIT, ZOOM_MAX, ZOOM_MIN, type Zoom } from '#lib/artifacts.js';
 	import { downloadArtifact } from '#lib/artifacts.svelte.js';
+	import { artifactVersions, selectedArtifactVersion } from '#lib/artifact-versions.js';
+	import { exactTime, relativeTime } from '#lib/relative-time.js';
 	import { flightTransform, loadsFull, MEDIA_MOTION, stepIndex, type ComparePair, type Rect } from '#lib/media-gallery.js';
 	import CompareSlider from './CompareSlider.svelte';
 	import MediaCaption from './MediaCaption.svelte';
@@ -84,10 +86,20 @@
 	// svelte-ignore state_referenced_locally
 	const startIndex = index;
 
-	const current = $derived(items[index]);
+	let selectedVersions = $state<Record<string, number | undefined>>({});
+	const viewedItems = $derived(items.map((item) => selectedArtifactVersion(item, selectedVersions[item.id])));
+	const latestCurrent = $derived(items[index]);
+	const current = $derived(viewedItems[index]);
+	const versions = $derived(latestCurrent === undefined ? [] : artifactVersions(latestCurrent));
+	const versionIndex = $derived(versions.findIndex((snapshot) => snapshot.id === current?.id));
+	const viewingLatest = $derived(current?.version === latestCurrent?.version);
+
+	function selectVersion(version: number | undefined): void {
+		if (latestCurrent !== undefined) selectedVersions[latestCurrent.id] = version;
+	}
 	const zoom = $derived(zooms[index] ?? ZOOM_FIT);
-	const pair = $derived(current === undefined ? undefined : pairs.get(current.id));
-	const inCompare = $derived(current !== undefined && pair !== undefined && comparing.has(current.id));
+	const pair = $derived(latestCurrent === undefined || !viewingLatest ? undefined : pairs.get(latestCurrent.id));
+	const inCompare = $derived(latestCurrent !== undefined && pair !== undefined && comparing.has(latestCurrent.id));
 	const zoomable = $derived(current?.kind === 'image' && !inCompare);
 
 	function rectOf(element: Element): Rect {
@@ -116,7 +128,7 @@
 		if (flownIn || current === undefined) return;
 		flownIn = true;
 		await tick();
-		const from = originRect(current.id);
+		const from = originRect(latestCurrent?.id ?? current.id);
 		const target = flightTarget();
 		if (reduced.current || from === undefined || target === undefined) {
 			revealed = true;
@@ -138,7 +150,7 @@
 		closing = true;
 		await tick();
 		const item = current;
-		const from = item === undefined ? undefined : originRect(item.id);
+		const from = item === undefined ? undefined : originRect(latestCurrent?.id ?? item.id);
 		const target = flightTarget();
 		if (reduced.current || from === undefined || target === undefined) {
 			setTimeout(onclose, reduced.current ? 0 : 160);
@@ -216,7 +228,7 @@
 						type="button"
 						class="bar-text"
 						aria-pressed={inCompare}
-						onclick={() => ontogglecompare(current.id)}
+						onclick={() => latestCurrent && ontogglecompare(latestCurrent.id)}
 						title="Compare before and after"
 						data-compare-toggle
 					>
@@ -245,19 +257,28 @@
 				</button>
 			</div>
 
+			{#if current !== undefined && versions.length > 1}
+				<div class="chrome relative flex items-center justify-center gap-2 pb-1 text-xs" data-artifact-versions>
+					<button type="button" class="bar-button w-9" aria-label="Previous version" disabled={versionIndex <= 0} onclick={() => selectVersion(versions[versionIndex - 1]?.version)}>←</button>
+					<span aria-live="polite" title={exactTime(current.createdAt)}>v{current.version ?? 1} of {latestCurrent?.versionCount ?? versions.length} · {relativeTime(current.createdAt, Date.now())}</span>
+					<button type="button" class="bar-button w-9" aria-label="Next version" disabled={versionIndex >= versions.length - 1} onclick={() => selectVersion(versions[versionIndex + 1]?.version)}>→</button>
+				</div>
+			{/if}
+
 			<div class="deck relative min-h-0 flex-1">
 				<MediaCarousel bind:this={carousel} bind:index count={items.length} {keys} {labels} label="Photos and videos, full screen" variant="viewer">
 					{#snippet slide(at, active)}
-						{@const item = items[at]}
+						{@const item = viewedItems[at]}
 						{#if item !== undefined}
 							{@const near = loadsFull(at - index)}
-							{@const slidePair = pairs.get(item.id)}
+							{@const root = items[at]!}
+							{@const slidePair = item.version === root.version ? pairs.get(root.id) : undefined}
 							<div class="vstage" data-slide-stage>
 								{#if item.kind === 'video'}
 									<div class="video-stage">
 										<MediaVideoSlide artifact={item} {client} {active} {near} autoplay={autoplay && at === startIndex} />
 									</div>
-								{:else if slidePair !== undefined && comparing.has(item.id)}
+								{:else if slidePair !== undefined && comparing.has(root.id)}
 									{#if near}<div class="compare-stage"><CompareSlider before={slidePair.before} after={slidePair.after} {client} /></div>{/if}
 								{:else if near}
 									<MediaZoomImage
@@ -280,7 +301,7 @@
 
 			<div class="chrome foot flex flex-col gap-1 px-3 pt-2 sm:px-4" style="padding-bottom: max(0.5rem, env(safe-area-inset-bottom))">
 				<div class="caption-box min-h-0 overflow-y-auto overscroll-contain">
-					<MediaCaption artifact={current} {task} {project} {canEdit} {busy} {problem} {onedit} {onstartedit} />
+					<MediaCaption artifact={current} {task} {project} canEdit={canEdit && viewingLatest} {busy} {problem} onedit={(_, tags) => latestCurrent && onedit(latestCurrent, tags)} {onstartedit} />
 				</div>
 				{#if items.length > 1}
 					<MediaStrip {items} {index} {client} paired={new Set(pairs.keys())} onselect={(at) => (index = at)} />

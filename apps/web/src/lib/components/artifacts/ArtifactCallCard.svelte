@@ -57,6 +57,9 @@
 				{#if failed}Could not save {name}{:else if status === 'preparing' || status === 'running'}Saving {name}…{:else if deleted}Deleted{:else}Saved {name}{facts ? ` · ${facts}` : ''}{/if}
 			</span>
 		</span>
+		{#if (artifact?.versionCount ?? 1) > 1}
+			<span class="shrink-0 text-[0.625rem] text-(--chat-fg-subtle)" data-version-count>{artifact?.versionCount} versions</span>
+		{/if}
 		{#if failed}
 			<button type="button" class="flex shrink-0 items-center gap-1 text-xs text-(--chat-danger)" onclick={() => (open = !open)} aria-expanded={open}>
 				<XIcon class="size-3.5" /> failed <ChevronRightIcon class="size-3.5 transition-transform {open ? 'rotate-90' : ''}" />

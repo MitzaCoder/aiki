@@ -20,7 +20,8 @@
 	import { artifactTitle, formatBytes, formatMediaDuration, isMarkdownArtifact, kindLabel, savedByLabel } from '#lib/artifacts.js';
 	import { isHtmlArtifact } from '#lib/artifact-preview.js';
 	import { artifactDialogSizing } from '#lib/dialog-layout.js';
-	import { downloadArtifact } from '#lib/artifacts.svelte.js';
+	import { downloadArtifact, useArtifactFeed } from '#lib/artifacts.svelte.js';
+	import { artifactVersions, selectedArtifactVersion } from '#lib/artifact-versions.js';
 	import { exactTime, relativeTime } from '#lib/relative-time.js';
 	import { linkNoteTimes, noteTimeFromHref, panelFitsBeside } from '#lib/video-player.js';
 	import ArtifactPlayer from './ArtifactPlayer.svelte';
@@ -34,7 +35,7 @@
 	 * player's bar. Times in a video's note seek it.
 	 */
 	let {
-		artifact,
+		artifact: suppliedArtifact,
 		client,
 		open = $bindable(false),
 		autoplay = true,
@@ -47,6 +48,14 @@
 		/** After the backend deleted it. */
 		ondeleted?: (artifactId: string) => void;
 	} = $props();
+
+	const versionFeed = useArtifactFeed(() => open && suppliedArtifact !== undefined
+		? { client, projectId: suppliedArtifact.projectId, filter: { artifactId: suppliedArtifact.id } } : undefined);
+	const latestArtifact = $derived(versionFeed.current?.artifacts.find((row) => row.id === suppliedArtifact?.id) ?? suppliedArtifact);
+	let selectedVersion = $state<number | undefined>(undefined);
+	const versions = $derived(latestArtifact === undefined ? [] : artifactVersions(latestArtifact));
+	const artifact = $derived(latestArtifact === undefined ? undefined : selectedArtifactVersion(latestArtifact, selectedVersion));
+	const versionIndex = $derived(versions.findIndex((snapshot) => snapshot.id === artifact?.id));
 
 	/** The details panel beside a video, in pixels (`w-80`). */
 	const DETAILS_WIDTH = 320;
@@ -72,6 +81,7 @@
 
 	$effect(() => {
 		if (!open) {
+			selectedVersion = undefined;
 			confirming = false;
 			problem = undefined;
 		}
@@ -127,7 +137,7 @@
 
 	async function remove(): Promise<void> {
 		if (artifact === undefined) return;
-		const id = artifact.id;
+		const id = latestArtifact!.id;
 		busy = 'delete';
 		problem = undefined;
 		try {
@@ -142,6 +152,16 @@
 		}
 	}
 </script>
+
+{#snippet versionControls()}
+	{#if versions.length > 1 && artifact !== undefined}
+		<div class="flex shrink-0 items-center gap-1 text-xs text-(--chat-fg-muted)" data-artifact-versions>
+			<Button size="xs" variant="ghost" aria-label="Previous version" title="Previous version" disabled={versionIndex <= 0} onclick={() => selectedVersion = versions[versionIndex - 1]?.version}>←</Button>
+			<span class="whitespace-nowrap" aria-live="polite" title={exactTime(artifact.createdAt)}>v{artifact.version ?? 1} of {latestArtifact?.versionCount ?? versions.length} · {relativeTime(artifact.createdAt, Date.now())}</span>
+			<Button size="xs" variant="ghost" aria-label="Next version" title="Next version" disabled={versionIndex >= versions.length - 1} onclick={() => selectedVersion = versions[versionIndex + 1]?.version}>→</Button>
+		</div>
+	{/if}
+{/snippet}
 
 {#snippet factsLine(item: Artifact)}
 	{#each facts as fact, index (index)}
@@ -227,6 +247,7 @@
 						<p class="truncate text-xs text-(--chat-danger)" role="alert" title={problem}>{problem}</p>
 					{/if}
 				</Dialog.Header>
+				{@render versionControls()}
 				<Button size="sm" variant="ghost" class={details ? "bg-(--chat-fg)/8" : ""} onclick={toggleDetails} aria-pressed={details} aria-controls="artifact-details" data-details-toggle>
 					{#if details}<PanelRightCloseIcon class="size-3.5" />{:else}<PanelRightOpenIcon class="size-3.5" />{/if}
 					Details
@@ -261,6 +282,12 @@
 	{:else}
 		<Dialog.Content class="artifact-dialog flex {sizing} flex-col gap-0 overflow-hidden p-0" data-artifact-dialog>
 			{#if artifact !== undefined}
+				{#if versions.length > 1}
+					<div class="flex flex-wrap items-center gap-x-3 border-b border-(--chat-border) py-2 pr-12 pl-4">
+						<span class="min-w-0 truncate text-sm font-medium">{artifactTitle(artifact)}</span>
+						{@render versionControls()}
+					</div>
+				{/if}
 				<div class="relative flex min-h-0 flex-1 flex-col">
 				<div bind:this={scroller} use:overlayScroll={'parent'} class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
 					<div class="p-3 pt-12 sm:p-4 sm:pt-12">

@@ -125,6 +125,7 @@ export class ArtifactSource {
 
 	readonly #client: HarnessClient;
 	readonly #unsubscribeState: () => void;
+	readonly #unsubscribeChanges: () => void;
 	readonly #onVisible: () => void;
 	#timer: ReturnType<typeof setTimeout> | undefined;
 	#inFlight: Promise<boolean> | undefined;
@@ -135,6 +136,12 @@ export class ArtifactSource {
 		this.projectId = projectId;
 		this.artifactId = artifactId;
 		this.download = download;
+		this.#unsubscribeChanges = client.onArtifactsChanged((event) => {
+			if (event.projectId !== projectId || event.artifact.id !== artifactId || event.deleted || this.#stopped) return;
+			// Bare-ID leases follow latest; immutable version addresses never match this push.
+			if (this.#inFlight !== undefined) void this.#inFlight.then(() => this.refresh());
+			else void this.refresh();
+		});
 		this.#unsubscribeState = client.subscribe((state) => {
 			if (state.status === "ready" && !this.#fresh()) void this.refresh();
 		});
@@ -188,6 +195,7 @@ export class ArtifactSource {
 		this.#stopped = true;
 		clearTimeout(this.#timer);
 		this.#unsubscribeState();
+		this.#unsubscribeChanges();
 		if (typeof document !== "undefined") document.removeEventListener("visibilitychange", this.#onVisible);
 	}
 }
@@ -235,7 +243,7 @@ const feeds = new Registry<ArtifactFeed>();
 const sources = new Registry<ArtifactSource>();
 
 export function feedKey(projectId: string, filter: ArtifactFilter, limit: number): string {
-	return JSON.stringify([projectId, filter.threadId ?? null, filter.workerId ?? null, filter.taskId ?? null, limit]);
+	return JSON.stringify([projectId, filter.threadId ?? null, filter.workerId ?? null, filter.taskId ?? null, limit, filter.artifactId ?? null]);
 }
 
 export type FeedParams = { client: HarnessClient; projectId: string; filter?: ArtifactFilter; limit?: number };
@@ -250,6 +258,7 @@ export function useArtifactFeed(params: () => FeedParams | undefined): { readonl
 			return;
 		}
 		const filter: ArtifactFilter = {
+			...(wanted.filter?.artifactId === undefined ? {} : { artifactId: wanted.filter.artifactId }),
 			...(wanted.filter?.threadId === undefined ? {} : { threadId: wanted.filter.threadId }),
 			...(wanted.filter?.workerId === undefined ? {} : { workerId: wanted.filter.workerId }),
 			...(wanted.filter?.taskId === undefined ? {} : { taskId: wanted.filter.taskId }),

@@ -96,7 +96,10 @@
 					<button type="button" class="card group flex w-full min-w-0 flex-col overflow-hidden rounded-xl text-left" onclick={() => open(artifact)} data-artifact={artifact.id}>
 						<ArtifactThumb {artifact} {client} class="aspect-video w-full" />
 						<span class="flex min-w-0 flex-col gap-0.5 px-2.5 py-2">
-							<span class="truncate text-[0.8125rem] font-medium" title={artifactTitle(artifact)}>{artifactTitle(artifact)}</span>
+							<span class="flex min-w-0 items-center gap-1">
+								<span class="min-w-0 flex-1 truncate text-[0.8125rem] font-medium" title={artifactTitle(artifact)}>{artifactTitle(artifact)}</span>
+								{#if (artifact.versionCount ?? 1) > 1}<span class="shrink-0 text-[0.625rem] text-(--chat-fg-subtle)" data-version-count>{artifact.versionCount} versions</span>{/if}
+							</span>
 							<span class="truncate text-[0.6875rem] text-(--chat-fg-subtle)">
 								{#if artifact.createdAt}<time datetime={artifact.createdAt} title={exactTime(artifact.createdAt)}>{relativeTime(artifact.createdAt, Date.now())}</time>{/if}
 								{#if artifact.size >= 0} · {formatBytes(artifact.size)}{/if}
@@ -113,7 +116,10 @@
 					<button type="button" class="row flex w-full min-w-0 items-center gap-2.5 rounded-xl p-1.5 text-left" onclick={() => open(artifact)} data-artifact={artifact.id}>
 						<ArtifactThumb {artifact} {client} class="h-10 w-14 rounded-lg" duration={false} />
 						<span class="flex min-w-0 flex-1 flex-col">
-							<span class="truncate text-[0.8125rem] font-medium" title={artifactTitle(artifact)}>{artifactTitle(artifact)}</span>
+							<span class="flex min-w-0 items-center gap-1">
+								<span class="min-w-0 flex-1 truncate text-[0.8125rem] font-medium" title={artifactTitle(artifact)}>{artifactTitle(artifact)}</span>
+								{#if (artifact.versionCount ?? 1) > 1}<span class="shrink-0 text-[0.625rem] text-(--chat-fg-subtle)" data-version-count>{artifact.versionCount} versions</span>{/if}
+							</span>
 							<span class="truncate text-[0.6875rem] text-(--chat-fg-subtle)">{meta(artifact)}</span>
 						</span>
 						{#if artifact.createdAt}
