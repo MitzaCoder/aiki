@@ -1,0 +1,17 @@
+{
+  "Chart.js/4.4.1/chart.umd.js": {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js",
+    "integrity": "sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG",
+    "crossorigin": "anonymous"
+  },
+  "mermaid/10.9.1/mermaid.min.js": {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js",
+    "integrity": "sha384-WmdflGW9aGfoBdHc4rRyWzYuAjEmDwMdGdiPNacbwfGKxBW/SO6guzuQ76qjnSlr",
+    "crossorigin": "anonymous"
+  },
+  "highlight.js/11.11.1/highlight.min.js": {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js",
+    "integrity": "sha384-RH2xi4eIQ/gjtbs9fUXM68sLSi99C7ZWBRX1vDrVv6GQXRibxXLbwO2NGZB74MbU",
+    "crossorigin": "anonymous"
+  }
+}

@@ -6,6 +6,7 @@
  * next turn without a restart. The same files, plus the rendered prompt and the offered tools, are what
  * `conversation.context` serves; see `readConversationContext`.
  */
+import { builtinSkillsDirectory } from "./builtin-skills.ts";
 import { serverSettings } from "./server-settings.ts";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { contentText, getSystemMessageText } from "@earendil-works/pi-ai";
@@ -533,7 +534,7 @@ function uniqueSkills(candidates: readonly LoadedSkill[]): LoadedSkill[] {
  * `<cwd>/.aiki/skills`), pi's (`<agentDir>/skills`, then `<cwd>/.pi/skills`), and Claude Code's
  * (`<claudeDir>/skills` with its enabled plugins' skills, then `<cwd>/.claude/skills`). Within a source the global
  * directory comes before the project's, and a name keeps its first skill: harness over pi over Claude, then global over
- * project. A skill whose `SKILL.md` real path was already loaded is dropped too, so the same skill symlinked into two
+ * project. Bundled skills are fallback harness skills after these sources, so a user's same-named skill may override one. A skill whose `SKILL.md` real path was already loaded is dropped too, so the same skill symlinked into two
  * places is offered once. Claude Code's `skills/synced/` (downloaded from claude.ai) and `.trash/` are not read.
  *
  * Read fresh on every call, and synchronously: it runs inside the request that renders the prompt, where a handful of
@@ -586,6 +587,7 @@ export function loadAgentContext(options: {
 			skip: CLAUDE_SKIPPED_SKILL_DIRS,
 		}),
 		...claudePluginSkills("project"),
+		...readSkillsDir(builtinSkillsDirectory(options.configDir), "global", "harness"),
 	]);
 	return { files, skills };
 }

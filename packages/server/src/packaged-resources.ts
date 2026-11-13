@@ -3,6 +3,7 @@ import type { ReleaseInfo } from "@aiki/protocol";
 
 export type PackagedResources = {
 	web?: Readonly<Record<string, string>>;
+	skills?: Readonly<Record<string, string>>;
 	quickjsWasm?: string;
 	codemodeWorker?: string;
 	photonWasm?: string;

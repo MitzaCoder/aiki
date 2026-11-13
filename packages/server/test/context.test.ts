@@ -207,7 +207,7 @@ describe("conversation context", () => {
 		expect(names).toContain("worker_spawn");
 		expect(context.tools.find((tool) => tool.name === "read")?.extension).toBe("coding-tools");
 		expect(context.tools.find((tool) => tool.name === "worker_spawn")?.extension).toBe("worker-tools");
-		expect(context.skills).toEqual([]);
+		expect(context.skills.map((skill) => skill.name)).toEqual(["html-artifacts"]);
 	});
 
 	it("offers global and project skills, and marks one read once this conversation has read it", async () => {
@@ -232,6 +232,7 @@ describe("conversation context", () => {
 		expect(before.skills.map((skill) => [skill.name, skill.source, skill.scope, skill.read])).toEqual([
 			["deploy", "pi", "global", false],
 			["testing", "pi", "project", false],
+			["html-artifacts", "harness", "global", false],
 		]);
 		expect(before.skills[1]?.description).toBe("How tests are written in this project.");
 		expect(before.skills[1]?.path).toBe(projectSkill);
@@ -291,6 +292,7 @@ describe("conversation context", () => {
 		expect(context.skills.map((skill) => [skill.name, skill.source, skill.scope])).toEqual([
 			["harness-skill", "harness", "global"],
 			["claude-skill", "claude", "global"],
+			["html-artifacts", "harness", "global"],
 		]);
 		expect(context.systemPrompt).toContain(`<location>${harnessSkill}</location>`);
 		expect(context.systemPrompt).toContain(`<location>${claudeSkill}</location>`);
@@ -385,7 +387,7 @@ describe("conversation context", () => {
 		expect(worker.cwd).toBe(test.projectDir);
 		expect(worker.projectPath).toBe(test.projectDir);
 		expect(worker.contextFiles.map((file) => file.path)).toContain(join(test.projectDir, "AGENTS.md"));
-		expect(worker.skills.map((skill) => [skill.name, skill.scope])).toEqual([["testing", "project"]]);
+		expect(worker.skills.map((skill) => [skill.name, skill.scope])).toEqual([["testing", "project"], ["html-artifacts", "global"]]);
 		expect(worker.systemPrompt).toContain("Use bun.");
 		expect(worker.systemPrompt).toContain('You are the worker "reader"');
 

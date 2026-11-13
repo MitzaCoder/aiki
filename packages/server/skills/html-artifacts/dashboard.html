@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Atlas pulse — operations dashboard</title>
+<style>
+@layer artifact-defaults {
+:root {
+	color-scheme: light;
+
+	--tone-radius: 0.875rem;
+
+	--tone-bg: #fbfaff;
+	--tone-surface: #f3f1fb;
+	--tone-surface-2: #eae7f6;
+	--tone-border: #e3dff0;
+	--tone-border-strong: #d2cce6;
+
+	--tone-fg: #1a1830;
+	--tone-fg-muted: #5d5a78;
+	--tone-fg-subtle: #8c89a6;
+
+	--tone-primary: #6366f1;
+	--tone-primary-fg: #ffffff;
+
+	--tone-accent-1: #22d3ee;
+	--tone-accent-2: #6366f1;
+	--tone-accent-3: #d946ef;
+	--tone-accent-4: #fb923c;
+
+	--tone-user-bubble: linear-gradient(135deg, #eef2ff, #fae8ff);
+	--tone-user-border: #ddd6fe;
+
+	--tone-danger: #e11d48;
+	--tone-success: #059669;
+	--tone-warning: #d97706;
+	--tone-ring: #8b5cf6;
+
+	--tone-shadow: 0 10px 40px -12px rgb(76 29 149 / 0.25), 0 2px 8px -2px rgb(76 29 149 / 0.08);
+--font-sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--font-mono:ui-monospace,SFMono-Regular,Menlo,monospace;--text-task:.9375rem;--text-task-sm:.8125rem;--spacing:.25rem;}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+	color-scheme: dark;
+
+	--tone-bg: #09090f;
+	--tone-surface: #15141f;
+	--tone-surface-2: #1d1b2b;
+	--tone-border: #262437;
+	--tone-border-strong: #34314b;
+
+	--tone-fg: #ecebf5;
+	--tone-fg-muted: #a3a0bd;
+	--tone-fg-subtle: #6e6b88;
+
+	--tone-primary: #818cf8;
+	--tone-primary-fg: #0b0b14;
+
+	--tone-accent-1: #22d3ee;
+	--tone-accent-2: #818cf8;
+	--tone-accent-3: #e879f9;
+	--tone-accent-4: #fb923c;
+
+	--tone-user-bubble: linear-gradient(135deg, #1e1b4b, #3b0f4a);
+	--tone-user-border: #3f3470;
+
+	--tone-danger: #fb7185;
+	--tone-success: #34d399;
+	--tone-warning: #fbbf24;
+	--tone-ring: #a78bfa;
+
+	--tone-shadow: 0 10px 40px -12px rgb(0 0 0 / 0.7), 0 2px 8px -2px rgb(0 0 0 / 0.4);
+}}
+:root[data-theme="dark"]{
+	color-scheme: dark;
+
+	--tone-bg: #09090f;
+	--tone-surface: #15141f;
+	--tone-surface-2: #1d1b2b;
+	--tone-border: #262437;
+	--tone-border-strong: #34314b;
+
+	--tone-fg: #ecebf5;
+	--tone-fg-muted: #a3a0bd;
+	--tone-fg-subtle: #6e6b88;
+
+	--tone-primary: #818cf8;
+	--tone-primary-fg: #0b0b14;
+
+	--tone-accent-1: #22d3ee;
+	--tone-accent-2: #818cf8;
+	--tone-accent-3: #e879f9;
+	--tone-accent-4: #fb923c;
+
+	--tone-user-bubble: linear-gradient(135deg, #1e1b4b, #3b0f4a);
+	--tone-user-border: #3f3470;
+
+	--tone-danger: #fb7185;
+	--tone-success: #34d399;
+	--tone-warning: #fbbf24;
+	--tone-ring: #a78bfa;
+
+	--tone-shadow: 0 10px 40px -12px rgb(0 0 0 / 0.7), 0 2px 8px -2px rgb(0 0 0 / 0.4);
+}
+}
+
+*{box-sizing:border-box}body{margin:0;background:var(--tone-bg);color:var(--tone-fg);font:16px/1.65 var(--font-sans)}
+main{max-width:72rem;margin:auto;padding:clamp(1.25rem,5vw,4rem);padding-bottom:5rem}header{padding-bottom:2rem;border-bottom:1px solid var(--tone-border)}
+.kicker{font:600 .75rem/1.5 var(--font-mono);text-transform:uppercase;letter-spacing:.12em;color:var(--tone-fg-muted)}
+h1{font-size:clamp(2rem,5vw,3.8rem);line-height:1.08;letter-spacing:-.045em;font-weight:650;margin:1rem 0;max-width:23ch}h2{font-size:1.5rem;letter-spacing:-.025em;line-height:1.25}h3{font-size:1rem;margin-top:0}
+p{max-width:70ch}.lead{font-size:1.125rem;color:var(--tone-fg-muted);max-width:56ch}.muted,figcaption{color:var(--tone-fg-muted)}section{margin-top:2.5rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr));gap:1rem}.card{padding:1.5rem;border:1px solid var(--tone-border);border-radius:var(--tone-radius);background:var(--tone-surface)}.verdict{border-left:3px solid var(--tone-primary)}
+.metric{font-size:2.75rem;font-weight:650;letter-spacing:-.05em;line-height:1.2;font-variant-numeric:tabular-nums}.tag{display:inline-block;font-size:.75rem;padding:.1rem .5rem;border:1px solid var(--tone-border-strong);border-radius:99px;color:var(--tone-fg-muted)}
+a{color:var(--tone-primary);text-underline-offset:3px}button{font:inherit;border:1px solid var(--tone-border-strong);border-radius:.5rem;background:var(--tone-surface);color:var(--tone-fg);padding:.5rem 1rem;cursor:pointer}:focus-visible{outline:3px solid var(--tone-ring);outline-offset:3px}
+.table{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.875rem}caption{text-align:left;color:var(--tone-fg-muted);padding:.5rem 0}td,th{text-align:left;padding:.85rem .5rem;border-bottom:1px solid var(--tone-border)}th{font-weight:600;color:var(--tone-fg-muted)}.ok{color:var(--tone-fg);font-weight:600}
+figure{margin:0}img,video,svg{display:block;max-width:100%;height:auto;border-radius:.5rem}figcaption{font-size:.8125rem;padding-top:.65rem}footer{margin-top:3rem;border-top:1px solid var(--tone-border);padding-top:1rem;font-size:.8125rem;color:var(--tone-fg-muted)}
+.bar{height:1rem;background:var(--tone-primary);border-radius:3px}.track{background:var(--tone-surface-2);border-radius:3px}.chart-row{display:grid;grid-template-columns:4rem 1fr 3rem;gap:.75rem;align-items:center;margin:1rem 0;font-size:.875rem}.chart-row span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}
+@media print{body{background:white;color:black;font-size:11pt}main{padding:0;max-width:none}.card{background:none;border-color:#bbb;break-inside:avoid}header{padding-bottom:1rem}h1{font-size:28pt}h2,h3{break-after:avoid}figure,tr{break-inside:avoid}.no-print,button{display:none!important}.muted,.lead,figcaption,.kicker,th,footer,.tag,.ok{color:#444}.grid{display:grid;grid-template-columns:1fr 1fr}section{margin-top:1.5rem}a{color:inherit}.table{overflow:visible}}
+
+</style></head>
+<body><main>
+<header><div class="kicker">Atlas pulse / 03 · Synthetic example</div><h1>A calm view of<br>the moving parts.</h1><p class="lead">A generated seven-day snapshot. Healthy throughput, fewer retries, one queue to watch.</p><span class="tag">Snapshot · not live</span></header>
+<section class="grid" aria-label="Key metrics"><article class="card"><div class="kicker">Completed</div><p class="metric">1,284</p><p class="muted">+12% compared with last week</p></article><article class="card"><div class="kicker">Success rate</div><p class="metric">99.2%</p><p class="muted">Target ≥ 99.0%</p></article><article class="card"><div class="kicker">Median latency</div><p class="metric">184<span style="font-size:1rem"> ms</span></p><p class="muted">−28ms compared with last week</p></article></section>
+<section class="grid"><article class="card"><div class="kicker">Throughput</div><h2>Steady gains.</h2><p class="muted">Completed jobs per day · CSS, no network</p><div role="img" aria-label="Monday 142, Tuesday 180, Wednesday 196, Thursday 208, Friday 224 jobs"><div class="chart-row"><span>Mon</span><div class="track"><div class="bar" style="width:63%"></div></div><span>142</span></div><div class="chart-row"><span>Tue</span><div class="track"><div class="bar" style="width:80%"></div></div><span>180</span></div><div class="chart-row"><span>Wed</span><div class="track"><div class="bar" style="width:87%"></div></div><span>196</span></div><div class="chart-row"><span>Thu</span><div class="track"><div class="bar" style="width:93%"></div></div><span>208</span></div><div class="chart-row"><span>Fri</span><div class="track"><div class="bar" style="width:100%"></div></div><span>224</span></div></div></article><article class="card verdict"><div class="kicker">Attention</div><h2>Watch the export queue.</h2><p>Its oldest job is 4 minutes old. No work is lost, but a second worker would restore the two-minute target.</p><p class="muted">Action: review capacity at the next sample.</p></article></section>
+<section class="table"><table><caption>Queue health · generated records</caption><thead><tr><th>Queue</th><th>Pending</th><th>Oldest</th><th>State</th></tr></thead><tbody><tr><td>Ingest</td><td>12</td><td>18s</td><td class="ok">Healthy</td></tr><tr><td>Index</td><td>4</td><td>6s</td><td class="ok">Healthy</td></tr><tr><td>Export</td><td>38</td><td>4m</td><td>Watch</td></tr></tbody></table></section><footer>Generated sample · no polling, credentials or browser storage · Values are illustrative.</footer></main></body>
+</html>

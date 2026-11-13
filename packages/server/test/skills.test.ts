@@ -36,7 +36,7 @@ async function writeSkill(
 }
 
 function sources(loaded: ReturnType<typeof loadAgentContext>): [string, string, string][] {
-	return loaded.skills.map((skill) => [skill.name, skill.source, skill.scope]);
+	return loaded.skills.filter((skill) => skill.name !== "html-artifacts").map((skill) => [skill.name, skill.source, skill.scope]);
 }
 
 describe("skill sources", () => {
@@ -97,7 +97,7 @@ describe("skill sources", () => {
 			["review", "pi", "project"],
 			["docs", "claude", "global"],
 		]);
-		expect(loaded.skills.map((skill) => skill.description)).toEqual([
+		expect(loaded.skills.filter((skill) => skill.name !== "html-artifacts").map((skill) => skill.description)).toEqual([
 			"Harness deploy.",
 			"Harness project ship.",
 			"pi review.",

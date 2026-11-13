@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Field notes — release readiness</title>
+<style>
+@layer artifact-defaults {
+:root {
+	color-scheme: light;
+
+	--tone-radius: 0.875rem;
+
+	--tone-bg: #fbfaff;
+	--tone-surface: #f3f1fb;
+	--tone-surface-2: #eae7f6;
+	--tone-border: #e3dff0;
+	--tone-border-strong: #d2cce6;
+
+	--tone-fg: #1a1830;
+	--tone-fg-muted: #5d5a78;
+	--tone-fg-subtle: #8c89a6;
+
+	--tone-primary: #6366f1;
+	--tone-primary-fg: #ffffff;
+
+	--tone-accent-1: #22d3ee;
+	--tone-accent-2: #6366f1;
+	--tone-accent-3: #d946ef;
+	--tone-accent-4: #fb923c;
+
+	--tone-user-bubble: linear-gradient(135deg, #eef2ff, #fae8ff);
+	--tone-user-border: #ddd6fe;
+
+	--tone-danger: #e11d48;
+	--tone-success: #059669;
+	--tone-warning: #d97706;
+	--tone-ring: #8b5cf6;
+
+	--tone-shadow: 0 10px 40px -12px rgb(76 29 149 / 0.25), 0 2px 8px -2px rgb(76 29 149 / 0.08);
+--font-sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--font-mono:ui-monospace,SFMono-Regular,Menlo,monospace;--text-task:.9375rem;--text-task-sm:.8125rem;--spacing:.25rem;}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+	color-scheme: dark;
+
+	--tone-bg: #09090f;
+	--tone-surface: #15141f;
+	--tone-surface-2: #1d1b2b;
+	--tone-border: #262437;
+	--tone-border-strong: #34314b;
+
+	--tone-fg: #ecebf5;
+	--tone-fg-muted: #a3a0bd;
+	--tone-fg-subtle: #6e6b88;
+
+	--tone-primary: #818cf8;
+	--tone-primary-fg: #0b0b14;
+
+	--tone-accent-1: #22d3ee;
+	--tone-accent-2: #818cf8;
+	--tone-accent-3: #e879f9;
+	--tone-accent-4: #fb923c;
+
+	--tone-user-bubble: linear-gradient(135deg, #1e1b4b, #3b0f4a);
+	--tone-user-border: #3f3470;
+
+	--tone-danger: #fb7185;
+	--tone-success: #34d399;
+	--tone-warning: #fbbf24;
+	--tone-ring: #a78bfa;
+
+	--tone-shadow: 0 10px 40px -12px rgb(0 0 0 / 0.7), 0 2px 8px -2px rgb(0 0 0 / 0.4);
+}}
+:root[data-theme="dark"]{
+	color-scheme: dark;
+
+	--tone-bg: #09090f;
+	--tone-surface: #15141f;
+	--tone-surface-2: #1d1b2b;
+	--tone-border: #262437;
+	--tone-border-strong: #34314b;
+
+	--tone-fg: #ecebf5;
+	--tone-fg-muted: #a3a0bd;
+	--tone-fg-subtle: #6e6b88;
+
+	--tone-primary: #818cf8;
+	--tone-primary-fg: #0b0b14;
+
+	--tone-accent-1: #22d3ee;
+	--tone-accent-2: #818cf8;
+	--tone-accent-3: #e879f9;
+	--tone-accent-4: #fb923c;
+
+	--tone-user-bubble: linear-gradient(135deg, #1e1b4b, #3b0f4a);
+	--tone-user-border: #3f3470;
+
+	--tone-danger: #fb7185;
+	--tone-success: #34d399;
+	--tone-warning: #fbbf24;
+	--tone-ring: #a78bfa;
+
+	--tone-shadow: 0 10px 40px -12px rgb(0 0 0 / 0.7), 0 2px 8px -2px rgb(0 0 0 / 0.4);
+}
+}
+
+*{box-sizing:border-box}body{margin:0;background:var(--tone-bg);color:var(--tone-fg);font:16px/1.65 var(--font-sans)}
+main{max-width:72rem;margin:auto;padding:clamp(1.25rem,5vw,4rem);padding-bottom:5rem}header{padding-bottom:2rem;border-bottom:1px solid var(--tone-border)}
+.kicker{font:600 .75rem/1.5 var(--font-mono);text-transform:uppercase;letter-spacing:.12em;color:var(--tone-fg-muted)}
+h1{font-size:clamp(2rem,5vw,3.8rem);line-height:1.08;letter-spacing:-.045em;font-weight:650;margin:1rem 0;max-width:23ch}h2{font-size:1.5rem;letter-spacing:-.025em;line-height:1.25}h3{font-size:1rem;margin-top:0}
+p{max-width:70ch}.lead{font-size:1.125rem;color:var(--tone-fg-muted);max-width:56ch}.muted,figcaption{color:var(--tone-fg-muted)}section{margin-top:2.5rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr));gap:1rem}.card{padding:1.5rem;border:1px solid var(--tone-border);border-radius:var(--tone-radius);background:var(--tone-surface)}.verdict{border-left:3px solid var(--tone-primary)}
+.metric{font-size:2.75rem;font-weight:650;letter-spacing:-.05em;line-height:1.2;font-variant-numeric:tabular-nums}.tag{display:inline-block;font-size:.75rem;padding:.1rem .5rem;border:1px solid var(--tone-border-strong);border-radius:99px;color:var(--tone-fg-muted)}
+a{color:var(--tone-primary);text-underline-offset:3px}button{font:inherit;border:1px solid var(--tone-border-strong);border-radius:.5rem;background:var(--tone-surface);color:var(--tone-fg);padding:.5rem 1rem;cursor:pointer}:focus-visible{outline:3px solid var(--tone-ring);outline-offset:3px}
+.table{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.875rem}caption{text-align:left;color:var(--tone-fg-muted);padding:.5rem 0}td,th{text-align:left;padding:.85rem .5rem;border-bottom:1px solid var(--tone-border)}th{font-weight:600;color:var(--tone-fg-muted)}.ok{color:var(--tone-fg);font-weight:600}
+figure{margin:0}img,video,svg{display:block;max-width:100%;height:auto;border-radius:.5rem}figcaption{font-size:.8125rem;padding-top:.65rem}footer{margin-top:3rem;border-top:1px solid var(--tone-border);padding-top:1rem;font-size:.8125rem;color:var(--tone-fg-muted)}
+.bar{height:1rem;background:var(--tone-primary);border-radius:3px}.track{background:var(--tone-surface-2);border-radius:3px}.chart-row{display:grid;grid-template-columns:4rem 1fr 3rem;gap:.75rem;align-items:center;margin:1rem 0;font-size:.875rem}.chart-row span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}
+@media print{body{background:white;color:black;font-size:11pt}main{padding:0;max-width:none}.card{background:none;border-color:#bbb;break-inside:avoid}header{padding-bottom:1rem}h1{font-size:28pt}h2,h3{break-after:avoid}figure,tr{break-inside:avoid}.no-print,button{display:none!important}.muted,.lead,figcaption,.kicker,th,footer,.tag,.ok{color:#444}.grid{display:grid;grid-template-columns:1fr 1fr}section{margin-top:1.5rem}a{color:inherit}.table{overflow:visible}}
+
+</style></head>
+<body><main>
+<header><div class="kicker">Field notes / 01 · Synthetic example</div><h1>A smaller release.<br>A stronger foundation.</h1><p class="lead">The Atlas sample release is ready for a measured rollout. Here is the evidence, the trade-off and the next step.</p><span class="tag">Engineering report</span> <span class="tag">13 November 2026</span></header>
+<section class="card verdict"><div class="kicker">Recommendation</div><h2>Ship the core. Hold the experiment.</h2><p>The critical paths pass. Keep the optional importer behind its flag until the remaining keyboard checks are complete.</p></section>
+<section class="grid" aria-label="Readiness metrics"><article class="card"><div class="kicker">Checks passed</div><p class="metric">48 / 50</p><p class="muted">Two non-blocking follow-ups</p></article><article class="card"><div class="kicker">Response time</div><p class="metric">−24%</p><p class="muted">Median in the synthetic workload</p></article><article class="card"><div class="kicker">Scope</div><p class="metric">3 paths</p><p class="muted">Create, edit and export verified</p></article></section>
+<section><h2>What changed</h2><div class="grid"><article><h3>01 / Fewer moving parts</h3><p>One shared validation path replaces three copies. Error messages now name the field and the action needed.</p></article><article><h3>02 / Evidence over confidence</h3><p>Every claim links to a repeatable check. The fixture contains generated records, never customer content.</p></article></div></section>
+<section class="table"><table><caption>Release gates · generated example results</caption><thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead><tbody><tr><td>Core workflows</td><td class="ok">Pass</td><td>36 assertions</td></tr><tr><td>Responsive layout</td><td class="ok">Pass</td><td>360–1440px</td></tr><tr><td>Optional importer</td><td>Follow-up</td><td>Keyboard review</td></tr></tbody></table></section><footer>Atlas laboratory · synthetic data only · Next: review the optional importer.</footer></main></body>
+</html>

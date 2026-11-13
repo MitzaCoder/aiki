@@ -1,5 +1,52 @@
 # Design
 
+## HTML artifact design and privacy (T165 / D74)
+
+Every project is offered the bundled `html-artifacts` skill through the ordinary lazy skill catalogue. Only its name,
+short description and read path enter the prompt; the body and four self-contained templates are read on demand.
+User/project design instructions outrank the defaults. Source and binary releases both ship the skill and templates.
+
+HTML previews on web (dialog and new tab) and Android prepend theme defaults with zero-specificity selectors, matching
+`--tone-*` colours, type, spacing and radius tokens. The document's `data-theme` follows the app's light/dark choice;
+changes reload an open preview (interactive page state resets). Author styles still win. A floating Print control and
+print CSS are supplied without changing the sandbox: web never grants `allow-same-origin`, Android never adds a bridge.
+Android maps `window.print()` to a gesture-checked internal navigation handled by native PrintManager. Chromium blocks
+`window.print()` in the unchanged web sandbox (it lacks `allow-modals`); the web button is present but that browser
+cannot open the print dialog. Adding that permission needs an explicit sandbox decision.
+
+The per-project **Block artifact pages from sending data** switch defaults off. On, a first-in-head meta CSP allows
+inline scripts/styles and cdnjs, HTTPS/data/blob images and media, cdnjs/data fonts, but denies fetch/XHR/WebSocket and
+form submission. This reduces outgoing channels, not all exfiltration: allowed image/media/CDN requests and explicit
+external navigation can still send data. It is not a promise of an offline page. Google Fonts only work with the switch
+off; self-contained files need no network. A later page policy cannot loosen the injected policy. Opaque-origin
+isolation remains the primary boundary, whether CSP is on or off. The pinned library list lives with the skill.
+
+## Artifact versions (T166 / D74)
+
+Identity is project + scope + sanitized file basename (case-sensitive). A task ID is the scope when supplied,
+otherwise the conversation (thread ID + worker ID). Workers on one task can update the same artifact. Titles and
+source directories are not identity. Omitting/changing taskId changes scope. Re-saving appends a snapshot of bytes and all metadata,
+including saver thread/worker and saved time (`createdAt`), and replaces the card under its stable artifact ID.
+`artifacts.list` includes retained version metadata; optional `artifactId` finds one outside the recent-list window.
+`artifactId~version` addresses a snapshot with the existing signed URL API. A bare ID follows latest, including board references. URL minting pins even latest to a version so an already
+issued capability cannot change content. HMAC binds the full version address; all existing auth and sandbox rules stay.
+
+Legacy index rows read as version 1 without writes or byte moves. Only the next save extends their metadata. Existing
+same-name cards are not merged retroactively (no lost IDs or history). Version 1 retains its original file location;
+new snapshots use `<artifactId>.versions/<number>/<name>` (a sibling cannot collide with any legacy filename).
+A project write queue serializes copy/index publication; replay receipts keep a durable tool rerun from creating
+another version. Keep the most recent 20 snapshots
+(`ARTIFACT_VERSION_LIMIT`), with monotonic numbers even after pruning. Publish the index before pruning old bytes;
+a crash can leave extra bytes but never references missing bytes. Deleting the artifact deletes all versions.
+Web and Android artifact dialogs and full-screen media viewers select retained metadata and fetch its version address;
+cards show the total saves. Old servers still show a single snapshot without controls. Editing tags targets latest,
+not an older snapshot. Bare-ID web preview leases refresh on the version push; Android poster and image-cache keys
+include the version so a new card thumbnail cannot reuse old pixels. Source diff is deferred.
+
+The tool API is unchanged. Re-saving answers `Saved version 3 of report.html`; the description's added sentence is
+66 UTF-8 bytes, +13 cl100k_base / +14 o200k_base tokens (measured with js-tiktoken; descriptions 194 → 207 / 208).
+No tokenizer is added to the app or tool.
+
 ## MCP preset catalogue and registered OAuth apps (T157 / D73)
 
 Add server offers a searchable catalogue grouped by issue tracking, code, docs,
@@ -1563,41 +1610,15 @@ Backend (`packages/server/src/threads.ts`, `coordinators.ts`), as built on 2026-
 
 ## Artifacts
 
-### Artifact versions (T166 / D74)
-
-Identity is project + scope + sanitized file basename (case-sensitive). A task ID is the scope when supplied,
-otherwise the conversation (thread ID + worker ID). Workers on one task can update the same artifact. Titles and
-source directories are not identity. Omitting/changing taskId changes scope. Re-saving appends a snapshot of bytes and all metadata,
-including saver thread/worker and saved time (`createdAt`), and replaces the card under its stable artifact ID.
-`artifacts.list` includes retained version metadata; optional `artifactId` finds one outside the recent-list window.
-`artifactId~version` addresses a snapshot with the existing signed URL API. A bare ID follows latest, including board references. URL minting pins even latest to a version so an already
-issued capability cannot change content. HMAC binds the full version address; all existing auth and sandbox rules stay.
-
-Legacy index rows read as version 1 without writes or byte moves. Only the next save extends their metadata. Existing
-same-name cards are not merged retroactively (no lost IDs or history). Version 1 retains its original file location;
-new snapshots use `<artifactId>.versions/<number>/<name>` (a sibling cannot collide with any legacy filename).
-A project write queue serializes copy/index publication; replay receipts keep a durable tool rerun from creating
-another version. Keep the most recent 20 snapshots
-(`ARTIFACT_VERSION_LIMIT`), with monotonic numbers even after pruning. Publish the index before pruning old bytes;
-a crash can leave extra bytes but never references missing bytes. Deleting the artifact deletes all versions.
-Web and Android artifact dialogs and full-screen media viewers select retained metadata and fetch its version address;
-cards show the total saves. Old servers still show a single snapshot without controls. Editing tags targets latest,
-not an older snapshot. Bare-ID web preview leases refresh on the version push; Android poster and image-cache keys
-include the version so a new card thumbnail cannot reuse old pixels. Source diff is deferred.
-
-The tool API is unchanged. Re-saving answers `Saved version 3 of report.html`; the description's added sentence is
-66 UTF-8 bytes, +13 cl100k_base / +14 o200k_base tokens (measured with js-tiktoken; descriptions 194 → 207 / 208).
-No tokenizer is added to the app or tool.
-
 Files a thread or worker keeps for the user (demo videos, screenshots, logs, reports): `artifact_save` copies a file
 from its working directory into the project's artifact store on that backend (`<data>/projects/<id>/artifacts/`).
 The app lists them per thread, worker and task, and plays videos, shows images and reads text inline, from a signed
 URL with byte ranges. They stay on the backend; publishing them elsewhere is up to the user's instructions.
 
-Backend: `packages/server/src/artifacts.ts`, `artifact-tools.ts`; web and Android viewers share the protocol.
+Status: backend done (`packages/server/src/artifacts.ts`, `artifact-tools.ts`); the app is not built yet.
 
-- Store: version 1 at `<data>/projects/<id>/artifacts/<artifactId>/<name>`, later snapshots as above, plus `index.json`
-  (the `Artifact` rows, newest last). A save copies into `<artifactId>.partial/` and renames it into place before the index names it. MIME from the
+- Store: `<data>/projects/<id>/artifacts/<artifactId>/<name>` plus `index.json` (the `Artifact` rows, newest last). A
+  save copies into `<artifactId>.partial/` and renames it into place before the index names it. MIME from the
   extension and the first bytes (the bytes win, except a media extension on a container that holds video or audio:
   `.mkv`, `.weba`, `.ogv`); kind from the MIME; `durationSeconds` from `ffprobe` when it is on PATH. One file may
   have `AIKI_ARTIFACT_MAX_BYTES` (default 2 GiB); a project's total is unbounded.

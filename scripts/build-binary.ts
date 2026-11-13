@@ -53,6 +53,10 @@ try {
 		await writeFile(file, await worker.outputs[0]!.arrayBuffer().then(buffer => new Uint8Array(buffer)));
 		asset(`${kind}Worker`, file);
 	}
+	const skills: string[] = [];
+	for (const name of (await readdir(join(server, "skills/html-artifacts"))).sort()) {
+		skills.push(`${JSON.stringify(name)}: ${asset(`skill${skills.length}`, join(server, "skills/html-artifacts", name))}`);
+	}
 	const web: string[] = [];
 	async function embedWeb(directory: string, prefix = ""): Promise<void> {
 		for (const entry of (await readdir(directory, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
@@ -66,7 +70,7 @@ try {
 	if (!web.some(line => line.startsWith('"/200.html":'))) throw new Error("Missing built web UI fallback");
 	const release = JSON.parse(await readFile(join(tree, "RELEASE.json"), "utf8"));
 	if (release.name !== version) throw new Error("Archive version does not match binary version");
-	resources.push(`export const packagedResources = { installer, quickjsWasm: ${quickjs}, photonWasm: ${photon}, codemodeWorker, photonWorker, web: {${web.join(",")}}, release: ${JSON.stringify(release)} };`);
+	resources.push(`export const packagedResources = { installer, quickjsWasm: ${quickjs}, photonWasm: ${photon}, codemodeWorker, photonWorker, web: {${web.join(",")}}, skills: {${skills.join(",")}}, release: ${JSON.stringify(release)} };`);
 	await mkdir(output, { recursive: true });
 	const smoke = args.includes("--smoke");
 	const name = `aiki-${version}-${target.replace("bun-", "").replace("-baseline", "")}${smoke ? "-smoke" : ""}`;
