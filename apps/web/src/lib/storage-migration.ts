@@ -1,6 +1,6 @@
-declare const __AIKI_LEGACY_STORAGE_PREFIX__: string;
+declare const __KEMIRI_LEGACY_STORAGE_PREFIX__: string;
 /** Empty in public builds. A private hosted build may opt in to copying a prior installation's browser state. */
-export const LEGACY_STORAGE_PREFIX = typeof __AIKI_LEGACY_STORAGE_PREFIX__ === 'undefined' ? '' : __AIKI_LEGACY_STORAGE_PREFIX__;
+export const LEGACY_STORAGE_PREFIX = typeof __KEMIRI_LEGACY_STORAGE_PREFIX__ === 'undefined' ? '' : __KEMIRI_LEGACY_STORAGE_PREFIX__;
 
 /** Copy only missing/empty destinations. Keep the originals, including when storage is full or access is denied. */
 export function migrateLocalStorage(storage: Storage, legacy = LEGACY_STORAGE_PREFIX): void {

@@ -11,7 +11,7 @@ import { legacyStoragePrefix } from './vite-legacy-storage.ts';
 // the browser opens each backend's socket directly.
 export default defineConfig(() => {
 	return {
-		define: { __AIKI_LEGACY_STORAGE_PREFIX__: JSON.stringify(legacyStoragePrefix()) },
+		define: { __KEMIRI_LEGACY_STORAGE_PREFIX__: JSON.stringify(legacyStoragePrefix()) },
 		plugins: [
 			tailwindcss(),
 			pushWorker(),

@@ -13,8 +13,8 @@ function done(transaction: IDBTransaction): Promise<void> { return new Promise((
 
 test('public builds have no legacy prefix when no private config is present', () => {
 	expect(legacyStoragePrefix({}, '/nonexistent/example')).toBe('');
-	expect(legacyStoragePrefix({ AIKI_LEGACY_STORAGE_PREFIX: 'previous-app' })).toBe('previous-app');
-	expect(() => legacyStoragePrefix({ AIKI_LEGACY_STORAGE_PREFIX: '../invalid' })).toThrow();
+	expect(legacyStoragePrefix({ KEMIRI_LEGACY_STORAGE_PREFIX: 'previous-app' })).toBe('previous-app');
+	expect(() => legacyStoragePrefix({ KEMIRI_LEGACY_STORAGE_PREFIX: '../invalid' })).toThrow();
 });
 
 test('copies every legacy local key, keeps newer state and originals; a repeat is safe', () => {

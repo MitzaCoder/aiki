@@ -68,7 +68,7 @@
 {#if support.integration || support.deploy}
 	<SettingsGroup title="Delivery">
 		{#if support.integration}
-			<SettingsRow label="Integration branch" hint="Commits with an Aiki-Task: T12 line that land here are shown on their tasks." for="integration-branch-mode" status={integrationSave} onretry={() => void pickIntegration(integrationMode)}>
+			<SettingsRow label="Integration branch" hint="Commits with a Kemiri-Task: T12 line that land here are shown on their tasks." for="integration-branch-mode" status={integrationSave} onretry={() => void pickIntegration(integrationMode)}>
 				<Combobox id="integration-branch-mode" options={integrationOptions} value={integrationMode} onchange={(next) => void pickIntegration(next)} disabled={busy} invalid={integrationSave.status === 'failed'} />
 			</SettingsRow>
 			{#if integrationMode === 'custom'}
