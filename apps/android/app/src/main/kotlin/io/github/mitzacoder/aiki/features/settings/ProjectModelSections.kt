@@ -52,6 +52,7 @@ internal fun CoordinatorSection(context: ProjectScreenContext, project: ProjectS
     val modelSave = rememberSaveState(project.id)
     val thinkingSave = rememberSaveState(project.id)
     val uiProofSave = rememberSaveState(project.id)
+    val artifactPrivacySave = rememberSaveState(project.id)
     var pendingUiProof by remember(project.id) { mutableStateOf<String?>(null) }
     val storedUiProof = project.uiProof
     val uiProofValue = pendingUiProof ?: storedUiProof ?: "screenshots-and-videos"
@@ -127,6 +128,13 @@ internal fun CoordinatorSection(context: ProjectScreenContext, project: ProjectS
                 learn = { Text("“Model default” leaves the level to the model. A higher level reasons longer: better on hard work, slower and dearer. The composer can still change it for one conversation.") },
             ) {
                 ThinkingSelect(info?.thinkingLevels.orEmpty(), thinkingValue, ::pickThinking, enabled = info != null)
+            }
+        }
+        if (project.blockArtifactRequests != null) SettingsGroup(title = "Artifact pages") {
+            SettingsRow("Block artifact pages from sending data", hint = "Blocks connections and forms. Allowed images, media, CDN files and links can still send requests.", status = artifactPrivacySave) {
+                SettingsSwitch(project.blockArtifactRequests, { on ->
+                    artifactPrivacySave.launch { backend.configure(ProjectsConfigureRequest(projectId = project.id, blockArtifactRequests = on)) }
+                }, "Block artifact pages from sending data")
             }
         }
         // An older backend does not send the setting, so the group stays out.

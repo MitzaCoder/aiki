@@ -11,6 +11,45 @@ import org.junit.Test
  * preview limit. The WebView itself needs a device; everything decided before one exists is here.
  */
 class ArtifactPageTest {
+    @Test fun preludeFollowsThemeAndPrintsWithoutABridge() {
+        val html = artifactPageDocument("<!doctype html><html lang=\"en\" data-theme=\"light\"><head><style>body{color:red}</style></head><body>Report</body></html>", true, mapOf("tone-bg" to "#09090f", "font-sans" to "system-ui"))
+        assertTrue(html.startsWith("<!doctype html><html lang=\"en\" data-theme=\"dark\">"))
+        assertTrue(html.contains(":where(:root){--tone-bg:#09090f;"))
+        assertTrue(html.contains("<style>body{color:red}</style>"))
+        assertTrue(html.contains("window.print()"))
+        assertTrue(html.contains("aiki-artifact:print"))
+        assertTrue(html.contains("@media print"))
+        assertFalse(html.contains("Content-Security-Policy"))
+    }
+
+    @Test fun cspIsOptInAndFirstInHead() {
+        val html = artifactPageDocument("<html><head><script>fetch('https://example.com')</script></head><body>Report</body></html>", false, emptyMap(), true)
+        assertTrue(html.startsWith("<!doctype html><html data-theme=\"light\"><head><meta http-equiv=\"Content-Security-Policy\""))
+        assertTrue(html.indexOf(ARTIFACT_CSP) < html.indexOf("<script>fetch"))
+        assertTrue(ARTIFACT_CSP.contains("connect-src 'none'"))
+        assertTrue(ARTIFACT_CSP.contains("form-action 'none'"))
+        assertTrue(ARTIFACT_CSP.contains("https://cdnjs.cloudflare.com"))
+    }
+
+    @Test fun quotedAttributesCannotSwallowThePrelude() {
+        val source = """<html lang="en" data-note=" data-theme='light' >"><head data-note=">"><script>fetch('https://example.com')</script></head><body>Report</body></html>"""
+        val html = artifactPageDocument(source, true, emptyMap(), true)
+        assertTrue(html.contains("""data-note=" data-theme='light' >" data-theme="dark">"""))
+        assertTrue(html.indexOf(ARTIFACT_CSP) < html.indexOf("<script>fetch"))
+    }
+
+    @Test fun policyPrecedesScriptsBeforeAMalformedHead() {
+        val html = artifactPageDocument("<html><script>fetch('https://example.com')</script><head></head></html>", false, emptyMap(), true)
+        assertTrue(html.indexOf(ARTIFACT_CSP) < html.indexOf("<script>fetch"))
+    }
+
+    @Test fun fragmentsReceiveHeadAndTheme() {
+        val html = artifactPageDocument("<h1>Example</h1>", false, mapOf("tone-bg" to "red;</style><script>bad()</script>"), true)
+        assertTrue(html.startsWith("<!doctype html><html data-theme=\"light\"><head><meta"))
+        assertTrue(html.contains("<h1>Example</h1>"))
+        assertFalse(html.contains("<script>bad()"))
+    }
+
     @Test fun htmlIsItsOwnKindByTypeOrName() {
         assertTrue(isHtmlArtifact("report.html", "text/html"))
         assertTrue(isHtmlArtifact("page", "text/html; charset=utf-8"))

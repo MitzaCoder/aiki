@@ -2,6 +2,7 @@ package io.github.mitzacoder.aiki.features.chat
 
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
+import android.print.PrintManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -19,6 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
+import androidx.compose.ui.graphics.toArgb
+import io.github.mitzacoder.aiki.ui.theme.Jarvis
+import io.github.mitzacoder.aiki.ui.theme.JarvisColors
 
 /**
  * An HTML artifact shown as the page it is, and how that page is allowed to behave: the Android half of the web's
@@ -148,8 +152,10 @@ internal fun artifactLinkIntent(url: String, context: Context): Intent? {
  */
 @SuppressLint("ClickableViewAccessibility") // The listener never consumes events; WebView keeps native click/accessibility handling.
 @Composable
-internal fun ArtifactPage(html: String, modifier: Modifier = Modifier) {
+internal fun ArtifactPage(html: String, modifier: Modifier = Modifier, blockRequests: Boolean = false) {
     val context = LocalContext.current
+    val colors = Jarvis.colors
+    val document = artifactPageDocument(html, colors.dark, artifactThemeTokens(colors), blockRequests)
     val webView = remember(context) {
         WebView(context).also { view ->
             applyArtifactPagePolicy(view)
@@ -163,6 +169,11 @@ internal fun ArtifactPage(html: String, modifier: Modifier = Modifier) {
             }
             view.webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                    if (request.url.toString() == "aiki-artifact:print" && request.hasGesture()) {
+                        val printing = view.context.getSystemService(Context.PRINT_SERVICE) as PrintManager
+                        printing.print("Artifact", view.createPrintDocumentAdapter("Artifact"), null)
+                        return true
+                    }
                     val intent = artifactLinkIntent(request.url.toString(), view.context) ?: return true
                     try {
                         view.context.startActivity(intent)
@@ -181,9 +192,55 @@ internal fun ArtifactPage(html: String, modifier: Modifier = Modifier) {
             webView.destroy()
         }
     }
-    LaunchedEffect(webView, html) {
+    LaunchedEffect(webView, document) {
         // No base URL: the document has no origin and no cookies, as a sandboxed frame's.
-        webView.loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
+        webView.loadDataWithBaseURL(null, document, "text/html", "utf-8", null)
     }
     AndroidView(factory = { webView }, modifier = modifier.fillMaxWidth())
+}
+
+
+/** Current Compose tones, in the same CSS names as the web and bundled skill. */
+internal fun artifactThemeTokens(colors: JarvisColors): Map<String, String> {
+    fun hex(color: androidx.compose.ui.graphics.Color) = "#%06x".format(color.toArgb() and 0xffffff)
+    return mapOf(
+        "tone-bg" to hex(colors.bg), "tone-surface" to hex(colors.surface), "tone-surface-2" to hex(colors.surface2),
+        "tone-border" to hex(colors.border), "tone-border-strong" to hex(colors.borderStrong),
+        "tone-fg" to hex(colors.fg), "tone-fg-muted" to hex(colors.fgMuted), "tone-fg-subtle" to hex(colors.fgSubtle),
+        "tone-primary" to hex(if (colors.dark && !colors.neutral) androidx.compose.ui.graphics.Color(0xFF818CF8) else colors.accent2),
+        "tone-primary-fg" to if (colors.dark && !colors.neutral) "#0b0b14" else if (colors.neutral) hex(colors.bg) else "#ffffff",
+        "tone-accent-1" to hex(colors.accent1), "tone-accent-2" to hex(colors.accent2),
+        "tone-accent-3" to hex(colors.accent3), "tone-accent-4" to hex(colors.accent4),
+        "tone-danger" to hex(colors.danger), "tone-success" to hex(colors.success), "tone-warning" to hex(colors.warning), "tone-ring" to hex(colors.ring),
+        "tone-radius" to if (colors.neutral) "0.625rem" else "0.875rem",
+        "font-sans" to "system-ui,sans-serif", "font-mono" to "ui-monospace,monospace",
+        "text-task" to ".9375rem", "text-task-sm" to ".8125rem", "spacing" to ".25rem",
+    )
+}
+
+internal const val ARTIFACT_CSP = "default-src 'none'; script-src 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'unsafe-inline' https://cdnjs.cloudflare.com; img-src data: blob: https:; font-src data: https://cdnjs.cloudflare.com; media-src data: blob: https:; connect-src 'none'; form-action 'none'; base-uri 'none'"
+
+/** First-in-head CSP and defaults. No author bytes enter a native/app origin or a JavaScript bridge. */
+internal fun artifactPageDocument(html: String, dark: Boolean, tokens: Map<String, String>, blockRequests: Boolean = false): String {
+    val mode = if (dark) "dark" else "light"
+    val variables = tokens.filterKeys { it.matches(Regex("[a-z-]+")) }.entries.joinToString("") { (name, value) -> "--$name:" + value.replace(Regex("[<>{};]"), "") + ";" }
+    val policy = if (blockRequests) "<meta http-equiv=\"Content-Security-Policy\" content=\"$ARTIFACT_CSP\">" else ""
+    val prelude = """$policy
+<style data-aiki-artifact-prelude>
+:where(:root){$variables color-scheme:$mode}
+:where(body){background:var(--tone-bg);color:var(--tone-fg);font:16px/1.6 var(--font-sans,system-ui,sans-serif)}
+:where(a){color:var(--tone-primary)}
+#aiki-artifact-print{position:fixed;right:12px;bottom:12px;z-index:2147483647;border:1px solid var(--tone-border,#ccc);border-radius:999px;background:var(--tone-surface,#fff);color:var(--tone-fg,#111);padding:8px 16px;font:14px/1.4 system-ui}
+@media print{#aiki-artifact-print{display:none!important}:where(body){background:white;color:black}img,video,svg{max-width:100%}pre{white-space:pre-wrap}h1,h2,h3{break-after:avoid}figure,tr{break-inside:avoid}}
+</style>
+<script>window.print=function(){location.href='aiki-artifact:print'};(function(){function add(){var b=document.createElement('button');b.id='aiki-artifact-print';b.type='button';b.textContent='Print';b.setAttribute('aria-label','Print this artifact');b.onclick=function(){window.print()};document.body.appendChild(b)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()})();</script>"""
+    val source = html.replaceFirst(Regex("^\\s*<!doctype[^>]*>", RegexOption.IGNORE_CASE), "")
+    val opening = Regex("""^\s*<html\b((?:[^"'<>]|"[^"]*"|'[^']*')*)>""", RegexOption.IGNORE_CASE).find(source)
+    val attributes = (opening?.groupValues?.get(1) ?: "").replace(Regex("""\s+([^\s=/>]+)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?""")) {
+        if (it.groupValues[1].equals("data-theme", ignoreCase = true)) "" else it.value
+    }
+    var remainder = if (opening != null) source.substring(opening.range.last + 1) else source
+    val head = Regex("""^\s*<head\b(?:[^"'<>]|"[^"]*"|'[^']*')*>""", RegexOption.IGNORE_CASE).find(remainder)
+    remainder = if (head != null) head.value + prelude + remainder.substring(head.range.last + 1) else "<head>$prelude</head>$remainder"
+    return "<!doctype html><html$attributes data-theme=\"$mode\">$remainder" + if (opening != null) "" else "</html>"
 }

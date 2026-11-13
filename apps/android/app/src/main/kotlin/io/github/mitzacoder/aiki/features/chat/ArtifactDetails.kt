@@ -136,6 +136,7 @@ internal fun artifactDetailFacts(item: Artifact, now: Long = System.currentTimeM
     truncated: Boolean = false,
     size: Long = -1,
     fillHeight: Boolean = false,
+    blockRequests: Boolean = false,
     modifier: Modifier = Modifier,
     copy: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
@@ -160,7 +161,7 @@ internal fun artifactDetailFacts(item: Artifact, now: Long = System.currentTimeM
             HorizontalDivider()
             when {
                 page -> ArtifactPage(text, Modifier.fillMaxWidth()
-                    .then(if (fillHeight) Modifier.weight(1f) else Modifier.height(288.dp)).clipToBounds())
+                    .then(if (fillHeight) Modifier.weight(1f) else Modifier.height(288.dp)).clipToBounds(), blockRequests = blockRequests)
                 rendered -> RichMarkdown(text.ifEmpty { "(Empty file)" }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp))
                 else -> SelectionContainer(
                     if (fillHeight) Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()) else Modifier

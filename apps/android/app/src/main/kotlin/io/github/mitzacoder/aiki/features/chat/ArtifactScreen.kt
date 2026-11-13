@@ -60,6 +60,8 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
         imageError = null; error = null; actionStatus = null
     }
     val connection by context.backend.client.state.collectAsStateWithLifecycle()
+    val projects by context.backend.projects.collectAsStateWithLifecycle()
+    val blockArtifactRequests = projects.find { it.id == context.route.projectId }?.let { it.blockArtifactRequests == true } ?: true
     LaunchedEffect(context.backend.client,artifactId) {
         context.backend.client.events.collect { event ->
             if(event is ArtifactsChangedEvent && event.projectId == context.route.projectId && event.artifact.id == artifactId) {
@@ -194,7 +196,7 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
             }
             text?.let { loaded ->
                 ArtifactTextPreview(artifact?.name ?: "Text", loaded, html = true, truncated = textTruncated,
-                    size = artifact?.size ?: -1, fillHeight = true, modifier = Modifier.weight(1f),
+                    size = artifact?.size ?: -1, blockRequests = blockArtifactRequests, fillHeight = true, modifier = Modifier.weight(1f),
                     copy = { copy(loaded) },
                     actions = {
                         IconButton(onClick = { showDetails = true }) {
@@ -259,7 +261,7 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
                     val markdown = artifact?.let { item -> isMarkdownArtifact(item.name, item.mimeType) } == true
                     val html = artifact?.let { item -> isHtmlArtifact(item.name, item.mimeType) } == true
                     ArtifactTextPreview(artifact?.name ?: "Text", loaded, markdown = markdown, html = html, truncated = textTruncated,
-                        size = artifact?.size ?: -1, copy = { copy(loaded) })
+                        size = artifact?.size ?: -1, blockRequests = blockArtifactRequests, copy = { copy(loaded) })
                 } ?: Text("Loading text…")
                 else -> artifact?.let { ArtifactFileRow(it) }
             } else if(error == null) CircularProgressIndicator()
