@@ -4,6 +4,19 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ArtifactDetailsTest {
+    @Test fun htmlUsesTheWholeViewportForBothPageAndSource() {
+        // This choice belongs to the artifact, not the Page/Source tab or the preview's truncation state.
+        assertTrue(artifactUsesFullHeight("text", "report.html", "application/octet-stream"))
+        assertTrue(artifactUsesFullHeight("text", "report", "text/html; charset=utf-8"))
+        assertTrue(artifactUsesFullHeight("text", "report.XHTML", ""))
+    }
+    @Test fun otherArtifactsKeepTheirScrollingDetailsSheet() {
+        assertFalse(artifactUsesFullHeight("text", "report.md", "text/markdown"))
+        assertFalse(artifactUsesFullHeight("text", "report.txt", "text/plain"))
+        assertFalse(artifactUsesFullHeight("image", "report.html", "image/png"))
+        assertFalse(artifactUsesFullHeight("video", "report.mp4", "video/mp4"))
+        assertFalse(artifactUsesFullHeight("file", "report.html", "text/html"))
+    }
     @Test fun sizesHideUnknownAndUseReadableUnits() {
         assertEquals(null, artifactDetailSize(-1))
         assertEquals("0 B", artifactDetailSize(0))

@@ -1645,8 +1645,13 @@ later from this section.
   (`ArtifactPageChoice`, the web's module variable) and never written to storage; Copy still copies the source, and the
   Wrap toggle disappears while the page is drawn. The screen is the only place an HTML artifact is read on Android:
   chat cards and lists show a file row or a thumbnail, never an inline page, so there is no compact frame. The page
-  fills the room the screen leaves: `0.9 × the available height − 224dp`, clamped to 256dp–736dp — the same shape as
-  the web frame's `clamp(16rem, calc(90dvh - 14rem), 46rem)` inside the dialog's one scroll region.
+  fills all remaining height below a compact Page/Source bar, edge to edge horizontally, respecting the navigation
+  scaffold's system insets. HTML uses a non-scrolling column with a weighted viewport: WebView owns page scrolling,
+  while Source has its own full-height text scroller. The info button holds the title, facts, note, source path and
+  Save/Delete actions instead of taking document space. Other media keep the scrolling details sheet. WebView
+  enables pinch zoom with hidden zoom buttons and disallows ancestor touch interception so both vertical scrolling
+  and horizontal panning stay inside the page (including against the phone navigation drawer). The app bar stays
+  visible; there is no separate immersive mode.
 - **The WebView's policy is the sandbox (T162).** A WebView has no `sandbox` attribute, so the missing pieces are removed
   one by one in `features/chat/ArtifactPage.kt`: `artifactPagePolicy()` turns JavaScript **on** (charts, counters) and
   everything else off — `domStorageEnabled`, `allowFileAccess`, `allowContentAccess`, both file-URL grants,

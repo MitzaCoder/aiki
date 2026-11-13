@@ -1,5 +1,34 @@
 # Continue
 
+## T162 / F55: HTML pages own scrolling and fill the Android screen
+
+The owner's phone could not scroll inside an HTML artifact. Reproduced on an isolated emulator with eight tall
+sections and a 1100 CSS-pixel table: the Compose `verticalScroll` details column intercepted vertical gestures,
+moving the card and note instead of the document. Removing that parent alone fixed vertical scrolling, but horizontal
+pans and pinch zoom still barely moved because an ancestor (the phone drawer) intercepted touches.
+
+HTML now takes a separate non-scrolling branch in `ArtifactScreen.kt`. The Page/Source bar is compact, its document
+gets `weight(1f)`, no side padding or rounded card frame, and the passed scaffold modifier keeps system insets.
+The info button opens title/facts/note/path and Save/Delete in a scrolling details dialog, leaving no permanent file
+action footer below the document. Source gets the same height and its own text scroller. Other media retain their
+details sheet. `ArtifactPage.kt` changes only scrolling/zoom setup: built-in pinch zoom with hidden controls, horizontal
+scrollbar, and a non-consuming touch listener requesting no ancestor interception on DOWN. Security policy, link
+handling and document loading are untouched, so T165's theme prelude can merge independently. No immersive app-bar
+toggle was added.
+
+Two new `ArtifactDetailsTest` cases pin HTML-only viewport selection (by MIME/name, independent of Page/Source or
+truncation); 933 Android JVM tests, two opt-in skips, pass. One first-run unrelated `RelayClientTest` HTTP assertion
+failed; a full rerun passed. Debug assembly and lint pass (zero errors, 50 existing warnings). Public generic/private
+denylist and Gitleaks pass. Builds used JDK 21 and the pinned SDK through `scripts/build.sh`, with no persistent daemon.
+
+Synthetic `createSetup` fixture ran under an empty environment and temporary HOME/USER; owned emulator track p only,
+never a physical device. T162 proof: before light `mweu18me-51b068f21b`, dark `mweu18me-eaff259c42`, swallowed-swipe
+light `mweu18me-80507bed73`; after light `mweu18me-7be6de080e`, dark `mweu18me-c596cfeb02`; vertical scroll
+`mweu18me-377c1d9a56`, last table columns `mweu18mg-9f1bcf0896`, pinch zoom `mweu18mg-1a4ab0c63b`, Source
+`mweu18mg-dc61106f8e`, info dialog `mweu18mh-118e1fcf3e`, and a 26-second interaction recording
+`mweu18mi-97c123afeb`. Light/dark tags refer to the app; the artifact's colour-scheme response is separate T165 work.
+Fixture/emulator processes are stopped by owned PID and temporary proof files removed after saving.
+
 ## T162: Android renders HTML artifacts as pages
 
 Android's artifact viewer (`features/chat/ArtifactScreen.kt`, the screen a chat card or the Artifacts panel opens) now

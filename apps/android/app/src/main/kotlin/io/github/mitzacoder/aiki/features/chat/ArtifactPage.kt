@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.view.MotionEvent
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -145,12 +146,21 @@ internal fun artifactLinkIntent(url: String, context: Context): Intent? {
  * The artifact's document in a WebView, the size of the caller's box. The same page the web draws, with the policy
  * above: no bridge (see this file's header), an origin-less document, and links out to the browser.
  */
+@SuppressLint("ClickableViewAccessibility") // The listener never consumes events; WebView keeps native click/accessibility handling.
 @Composable
 internal fun ArtifactPage(html: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val webView = remember(context) {
         WebView(context).also { view ->
             applyArtifactPagePolicy(view)
+            // Scrolling and zoom belong to this bounded viewport, never a Compose scrolling ancestor.
+            view.settings.builtInZoomControls = true
+            view.settings.displayZoomControls = false
+            view.isHorizontalScrollBarEnabled = true
+            view.setOnTouchListener { _, event ->
+                if (event.actionMasked == MotionEvent.ACTION_DOWN) view.parent?.requestDisallowInterceptTouchEvent(true)
+                false
+            }
             view.webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                     val intent = artifactLinkIntent(request.url.toString(), view.context) ?: return true

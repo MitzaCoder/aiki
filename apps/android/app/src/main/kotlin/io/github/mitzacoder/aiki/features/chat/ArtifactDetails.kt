@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +21,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.mitzacoder.aiki.features.status.formatBytes
 import io.github.mitzacoder.aiki.features.tasks.relativeTime
@@ -125,7 +126,7 @@ internal fun artifactDetailFacts(item: Artifact, now: Long = System.currentTimeM
 /**
  * A text artifact read in place: monospace with a wrap toggle; a Markdown one rendered, its source a toggle away; an
  * HTML one the page itself (see [ArtifactPage]), its source a Page/Source toggle away and Copy always copying the
- * source. [pageHeight] is the room the viewer has for a page; none is filled in the chat or a list.
+ * source. [fillHeight] gives HTML's Page and Source the same bounded viewport, without an outer scroller.
  */
 @Composable internal fun ArtifactTextPreview(
     name: String,
@@ -134,45 +135,59 @@ internal fun artifactDetailFacts(item: Artifact, now: Long = System.currentTimeM
     html: Boolean = false,
     truncated: Boolean = false,
     size: Long = -1,
-    pageHeight: Dp? = null,
+    fillHeight: Boolean = false,
+    modifier: Modifier = Modifier,
     copy: (() -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {},
 ) {
     var wrap by remember(name) { mutableStateOf(true) }
     var showSource by remember(name) { mutableStateOf(false) }
     var view by remember(name) { mutableStateOf(artifactPageView(ArtifactPageChoice.remembered(), truncated)) }
     val rendered = markdown && !showSource
     val page = html && view == ArtifactPageView.Page
-    OutlinedCard(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(name, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelMedium)
-            if (html) ArtifactPageToggle(view) { view = it; ArtifactPageChoice.remember(it) }
-            if (markdown) TextButton(onClick = { showSource = !showSource }) { Text(if (showSource) "Show rendered" else "Show source") }
-            if (!rendered && !page) TextButton(onClick = { wrap = !wrap }) { Text(if(wrap) "Wrap: on" else "Wrap: off") }
-            copy?.let { IconButton(onClick = it) { LucideGlyph(Lucide.Copy, size = 16.dp, contentDescription = "Copy text") } }
-        }
-        HorizontalDivider()
-        when {
-            page -> ArtifactPage(text, Modifier.fillMaxWidth().height(pageHeight ?: 288.dp).clipToBounds())
-            rendered -> RichMarkdown(text.ifEmpty { "(Empty file)" }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp))
-            else -> SelectionContainer {
-                Text(text.ifEmpty { "(Empty file)" },
-                    Modifier.fillMaxWidth().then(if(wrap) Modifier else Modifier.horizontalScroll(rememberScrollState())).padding(12.dp),
-                    softWrap = wrap, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+    Surface(modifier.fillMaxWidth(),
+        shape = if (fillHeight) RectangleShape else MaterialTheme.shapes.medium,
+        border = if (fillHeight) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+        Column {
+            Row(Modifier.fillMaxWidth().padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(name, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelMedium)
+                if (html) ArtifactPageToggle(view) { view = it; ArtifactPageChoice.remember(it) }
+                if (markdown) TextButton(onClick = { showSource = !showSource }) { Text(if (showSource) "Show rendered" else "Show source") }
+                if (!rendered && !page) TextButton(onClick = { wrap = !wrap }) { Text(if(wrap) "Wrap: on" else "Wrap: off") }
+                copy?.let { IconButton(onClick = it) { LucideGlyph(Lucide.Copy, size = 16.dp, contentDescription = "Copy text") } }
+                actions()
             }
-        }
-        if (truncated) {
             HorizontalDivider()
-            Text(
-                "The first ${formatBytes((if (html) ARTIFACT_HTML_PAGE_LIMIT else ARTIFACT_TEXT_LIMIT).toLong())}${if (size > 0) " of ${formatBytes(size)}" else ""}; " +
-                    (if (html) {
-                        if (page) "the page is drawn from that part only"
-                        else "a page cannot be shown whole, so this is its source"
-                    } else "this is its source") + "; download it for the rest.",
-                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.bodySmall, color = Jarvis.colors.fgSubtle)
+            when {
+                page -> ArtifactPage(text, Modifier.fillMaxWidth()
+                    .then(if (fillHeight) Modifier.weight(1f) else Modifier.height(288.dp)).clipToBounds())
+                rendered -> RichMarkdown(text.ifEmpty { "(Empty file)" }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp))
+                else -> SelectionContainer(
+                    if (fillHeight) Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()) else Modifier
+                ) {
+                    Text(text.ifEmpty { "(Empty file)" },
+                        Modifier.fillMaxWidth().then(if(wrap) Modifier else Modifier.horizontalScroll(rememberScrollState())).padding(12.dp),
+                        softWrap = wrap, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            if (truncated) {
+                HorizontalDivider()
+                Text(
+                    "The first ${formatBytes((if (html) ARTIFACT_HTML_PAGE_LIMIT else ARTIFACT_TEXT_LIMIT).toLong())}${if (size > 0) " of ${formatBytes(size)}" else ""}; " +
+                        (if (html) {
+                            if (page) "the page is drawn from that part only"
+                            else "a page cannot be shown whole, so this is its source"
+                        } else "this is its source") + "; download it for the rest.",
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.bodySmall, color = Jarvis.colors.fgSubtle)
+            }
         }
     }
 }
+
+/** Only the dedicated HTML viewer owns a viewport; media and other text retain their details sheet. */
+internal fun artifactUsesFullHeight(kind: String, name: String, mimeType: String): Boolean =
+    kind == "text" && isHtmlArtifact(name, mimeType)
 
 /** The two ways an HTML artifact is read, as the web's Page/Source segmented control. */
 @Composable private fun ArtifactPageToggle(view: ArtifactPageView, choose: (ArtifactPageView) -> Unit) {
