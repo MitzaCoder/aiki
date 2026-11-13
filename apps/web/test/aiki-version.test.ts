@@ -18,18 +18,18 @@ test("backend identity uses installed metadata, then release tag/commit, source 
 });
 
 test("up-to-date label omits a matching web build, shows a differing build without pretending it is the backend", () => {
-	expect(aikiVersionLabel("old", installed, "0.1.0-pilot.2")).toBe("Aiki v0.1.0-pilot.2");
-	expect(aikiVersionLabel("old", installed, "0.1.0-pilot.1")).toBe("Aiki v0.1.0-pilot.2 · web v0.1.0-pilot.1");
-	expect(aikiVersionLabel(undefined, undefined, "0.1.0-pilot.2")).toBe("Aiki · web v0.1.0-pilot.2");
-	expect(aikiVersionLabel("old", source, "0.1.0-pilot.2")).toBe("Aiki dev · web v0.1.0-pilot.2");
+	expect(aikiVersionLabel("old", installed, "0.1.0-pilot.2")).toBe("Kemiri v0.1.0-pilot.2");
+	expect(aikiVersionLabel("old", installed, "0.1.0-pilot.1")).toBe("Kemiri v0.1.0-pilot.2 · web v0.1.0-pilot.1");
+	expect(aikiVersionLabel(undefined, undefined, "0.1.0-pilot.2")).toBe("Kemiri · web v0.1.0-pilot.2");
+	expect(aikiVersionLabel("old", source, "0.1.0-pilot.2")).toBe("Kemiri dev · web v0.1.0-pilot.2");
 });
 
 test("update announcement respects disabled checks, version dismissal, schema and later updates", () => {
 	const available = { version: "v0.1.0-pilot.3", notesUrl: "https://example.test/releases/v0.1.0-pilot.3" };
 	const state = { ...updates, available };
 	const label = (changes: Partial<ReleaseUpdateState> = {}) => aikiVersionLabel("old", { ...source, updates: { ...state, ...changes } }, "0.1.0-pilot.2");
-	expect(label()).toBe("Aiki v0.1.0-pilot.2 → v0.1.0-pilot.3 available");
-	for (const changes of [{ enabled: false }, { dismissedVersion: available.version }, { available: null }]) expect(label(changes)).toBe("Aiki v0.1.0-pilot.2");
+	expect(label()).toBe("Kemiri v0.1.0-pilot.2 → v0.1.0-pilot.3 available");
+	for (const changes of [{ enabled: false }, { dismissedVersion: available.version }, { available: null }]) expect(label(changes)).toBe("Kemiri v0.1.0-pilot.2");
 	expect(label({ dismissedVersion: "v0.1.0-pilot.1" })).toContain("→ v0.1.0-pilot.3 available");
 	expect(label({ schemaVersion: 2 as 1 })).not.toContain("available");
 });

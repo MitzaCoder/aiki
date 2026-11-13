@@ -18,7 +18,7 @@ setsid -f chromium --headless --no-sandbox --disable-gpu --disable-dev-shm-usage
 Use a fresh browser profile. The fixture log prints its PID and temporary root. Inspect the browser listener's PID
 with `fuser -n tcp 9298`; stop only those two processes with `kill -TERM <fixture-pid> <chromium-pid>` when finished.
 The fixture's signal handler stops every backend and removes its temporary directories. Never reuse a personal browser
-or start an Aiki backend outside `createSetup`. Every browser/CDP call has a timeout. Run each step separately:
+or start an Kemiri backend outside `createSetup`. Every browser/CDP call has a timeout. Run each step separately:
 
 ```sh
 bun apps/web/scripts/test-push-browser.ts init mixed legacy

@@ -397,7 +397,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	// Events that were in their hold when the last process ended carry on with the rest of their time.
 	notifications.restore();
 	log(
-		`aiki: notifications ${notificationStore.file} (VAPID key ${vapidKeyFile}, sub ${notifications.subject})`,
+		`kemiri: notifications ${notificationStore.file} (VAPID key ${vapidKeyFile}, sub ${notifications.subject})`,
 	);
 	const agentDir = options.agentDir ?? resolveAgentDir();
 	const configDir = options.configDir ?? resolveConfigDir();
@@ -415,14 +415,14 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 			? "no SYSTEM.md or APPEND_SYSTEM.md"
 			: globalPromptFiles.map((file) => basename(file.path)).join(" and ");
 	log(
-		`aiki: agent dir ${agentDir} (${globalFile === undefined ? "no AGENTS.md" : globalFile.path}; ${globalSkillsFrom("pi")} global skill${globalSkillsFrom("pi") === 1 ? "" : "s"})`,
+		`kemiri: agent dir ${agentDir} (${globalFile === undefined ? "no AGENTS.md" : globalFile.path}; ${globalSkillsFrom("pi")} global skill${globalSkillsFrom("pi") === 1 ? "" : "s"})`,
 	);
-	log(`aiki: config dir ${configDir} (${promptFileLabel})`);
+	log(`kemiri: config dir ${configDir} (${promptFileLabel})`);
 	log(
-		`aiki: claude dir ${claudeDir} (${globalSkillsFrom("claude")} global skill${globalSkillsFrom("claude") === 1 ? "" : "s"})`,
+		`kemiri: claude dir ${claudeDir} (${globalSkillsFrom("claude")} global skill${globalSkillsFrom("claude") === 1 ? "" : "s"})`,
 	);
 	log(
-		`aiki: global skills ${globalSkillsFrom("harness")} harness, ${globalSkillsFrom("pi")} pi, ${globalSkillsFrom("claude")} claude`,
+		`kemiri: global skills ${globalSkillsFrom("harness")} harness, ${globalSkillsFrom("pi")} pi, ${globalSkillsFrom("claude")} claude`,
 	);
 
 	// Set below, once the maintenance clock exists; a memory write is what tells it a scope may be due.
@@ -438,9 +438,9 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	// The global scope exists and is watched from the start, so an edit made by hand reaches the index and the app even
 	// before a request names it.
 	await memory.start().catch((error: unknown) => {
-		log(`aiki: memory at ${memory.globalDir} is unavailable: ${errorMessage(error)}`);
+		log(`kemiri: memory at ${memory.globalDir} is unavailable: ${errorMessage(error)}`);
 	});
-	log(`aiki: memory ${memory.globalDir} (global) and projects/<id>/memory/ per project`);
+	log(`kemiri: memory ${memory.globalDir} (global) and projects/<id>/memory/ per project`);
 	const logins = new OAuthLoginManager({
 		models,
 		log,
@@ -692,9 +692,9 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	// after a restart too, and the persisted marker keeps it to once per attempt.
 	void notifications.deployProblem(serverStatus.deploy);
 	const release = serverStatus.release;
-	log(`aiki: release ${release === null ? "none (running from a checkout)" : release.name}`);
+	log(`kemiri: release ${release === null ? "none (running from a checkout)" : release.name}`);
 	log(
-		`aiki: deploy status ${
+		`kemiri: deploy status ${
 			serverStatus.deployStatusFile === null
 				? `none (no deploy root for ${serverStatus.releaseRoot})`
 				: serverStatus.deployStatusFile
@@ -908,7 +908,7 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 					return authFailure(error);
 				}
 			}
-			return new Response("Aiki is an API-only backend; the app is deployed separately.", {
+			return new Response("Kemiri is an API-only backend; the app is deployed separately.", {
 				status: 404,
 				headers: { "content-type": "text/plain; charset=utf-8" },
 			});
@@ -1075,8 +1075,8 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 				},
 			});
 
-	log(`aiki: schedules run in ${schedules.timezone}`);
-	log(`aiki: memory maintenance settings ${maintenanceStore.file}`);
+	log(`kemiri: schedules run in ${schedules.timezone}`);
+	log(`kemiri: memory maintenance settings ${maintenanceStore.file}`);
 	// Catch up on runs missed while the process was off, then arm the timer for the next one.
 	await scheduleScheduler.start();
 	// Event schedules listen from here: GitHub is read at once if one is enabled, and every two minutes while one is.
@@ -1176,11 +1176,11 @@ function openRequestLog(
 	const file = config?.file ?? join(dataDir, REQUEST_LOG_FILE);
 	try {
 		const store = RequestLogStore.open(file, options.now === undefined ? {} : { now: options.now() });
-		options.log(`aiki: request log ${file}`);
+		options.log(`kemiri: request log ${file}`);
 		return new RequestLog({ store, ...options });
 	} catch (error) {
 		// Model requests go on without it.
-		options.log(`aiki: request log ${file} is unavailable: ${errorMessage(error)}`);
+		options.log(`kemiri: request log ${file} is unavailable: ${errorMessage(error)}`);
 		return undefined;
 	}
 }

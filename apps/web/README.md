@@ -23,7 +23,7 @@ Add a backend in the app (for local work, `http://127.0.0.1:7317`) and start
 the backend with the dev origin allowed:
 
 ```sh
-AIKI_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 bun run start
+KEMIRI_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 bun run start
 ```
 
 Backends are stored per browser as name + HTTPS origin (plain HTTP only for

@@ -20,12 +20,12 @@
 	}
 </script>
 
-<svelte:head><title>Welcome · Aiki</title></svelte:head>
+<svelte:head><title>Welcome · Kemiri</title></svelte:head>
 
 <section class="flex flex-col gap-5 py-5 sm:py-10" aria-labelledby="welcome-title">
 	<header class="flex flex-col gap-2">
 		<p class="text-sm font-medium text-primary">Your computer. Your projects.</p>
-		<h1 id="welcome-title" class="text-3xl font-bold tracking-tight">Welcome to Aiki</h1>
+		<h1 id="welcome-title" class="text-3xl font-bold tracking-tight">Welcome to Kemiri</h1>
 		<p class="max-w-lg text-muted-foreground">{needsDeviceSignIn ? "Sign in to this computer first, then connect a provider and choose a project." : "Connect a provider, then choose a project folder. Everything runs on this computer."}</p>
 	</header>
 
@@ -33,11 +33,11 @@
 		<Card.Root>
 			<Card.Header>
 				<Card.Title>Sign in to this computer</Card.Title>
-				<Card.Description>Keep Aiki running. In another terminal on this computer, run:</Card.Description>
+				<Card.Description>Keep Kemiri running. In another terminal on this computer, run:</Card.Description>
 			</Card.Header>
 			<Card.Content class="flex flex-col gap-3">
-				<code class="rounded-lg bg-muted p-3 font-mono text-sm">aiki pair</code>
-				<p class="text-sm text-muted-foreground">Open the printed URL in this browser. It includes a one-time code and expires in ten minutes. Confirm pairing, then choose Open Aiki.</p>
+				<code class="rounded-lg bg-muted p-3 font-mono text-sm">kemiri pair</code>
+				<p class="text-sm text-muted-foreground">Open the printed URL in this browser. It includes a one-time code and expires in ten minutes. Confirm pairing, then choose Open Kemiri.</p>
 				<p class="text-sm text-muted-foreground">Pairing gives this browser full access to files, terminals and provider accounts. Do not share the URL or code.</p>
 			</Card.Content>
 		</Card.Root>

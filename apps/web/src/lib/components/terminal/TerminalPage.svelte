@@ -359,7 +359,7 @@
 			<div class="flex max-w-sm flex-col gap-2">
 				<p class="font-medium">This backend has no terminals</p>
 				<p class="text-sm text-muted-foreground">
-					It is either older than the feature or has it turned off (<code>AIKI_TERMINALS=off</code>).
+					It is either older than the feature or has it turned off (<code>KEMIRI_TERMINALS=off</code>).
 				</p>
 			</div>
 		</div>

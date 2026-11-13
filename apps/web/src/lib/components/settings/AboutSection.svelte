@@ -28,22 +28,22 @@
 	}
 </script>
 
-<SettingsSection title="About" description="Aiki and updates for each backend, across all projects." icon="settings">
+<SettingsSection title="About" description="Kemiri and updates for each backend, across all projects." icon="settings">
 	{#each harness.backends as backend (backend.id)}
 		{@const updates = backend.supports('release-updates') ? backend.status?.updates : undefined}
 		<SettingsGroup title={backend.name}>
 			<div class="flex flex-col gap-3 px-4 py-4 text-sm sm:px-5" data-release-update-about>
-				<p>Aiki {backendVersion(backend.connection.server?.version, backend.status) ?? '—'}</p>
+				<p>Kemiri {backendVersion(backend.connection.server?.version, backend.status) ?? '—'}</p>
 				{#if updates?.schemaVersion === 1}
 					<p>{updates.installedVersion ? `Installed ${updates.installedVersion} · ${updates.channel} channel` : 'Source checkout · checks off by default'}</p>
 					<label class="flex min-h-11 items-center gap-3">
 						<input type="checkbox" checked={updates.enabled} disabled={saving} onchange={(event) => setEnabled(backend, event.currentTarget.checked)} />
-						Check for Aiki updates
+						Check for Kemiri updates
 					</label>
 					<p class="text-(--chat-fg-muted)">Checks public GitHub releases about once a day. Does not install or restart anything.</p>
 					{#if updates.enabled && updates.available}
-						<p>Aiki <strong>{updates.available.version}</strong> is available. <a class="underline" href={updates.available.notesUrl} target="_blank" rel="noopener noreferrer">Release notes</a></p>
-						{#if !backend.status?.selfUpdate?.enabled}<p>Stop Aiki, then <code>aiki update</code>, then start it.</p>{/if}
+						<p>Kemiri <strong>{updates.available.version}</strong> is available. <a class="underline" href={updates.available.notesUrl} target="_blank" rel="noopener noreferrer">Release notes</a></p>
+						{#if !backend.status?.selfUpdate?.enabled}<p>Stop Kemiri, then <code>kemiri update</code>, then start it.</p>{/if}
 						{#if updates.dismissedVersion !== updates.available.version}
 							<Button variant="ghost" size="xs" class="self-start text-(--chat-fg-muted)" disabled={saving} onclick={() => dismiss(backend, updates.available!.version)} title="Hide the update notice until a newer release appears" aria-label="Dismiss the update notice" data-update-dismiss>
 								<XIcon data-icon="inline-start" />

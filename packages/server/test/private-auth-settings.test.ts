@@ -38,7 +38,7 @@ for (const originSource of ["backend origins", "public URL fallback"] as const) 
 		const output = (async () => {
 			for await (const bytes of child.stdout) {
 				logs += new TextDecoder().decode(bytes);
-				const match = /Aiki listening on (http:\/\/[^\s]+)/.exec(logs);
+				const match = /Kemiri listening on (http:\/\/[^\s]+)/.exec(logs);
 				if (match) ready.resolve(match[1]!);
 			}
 		})();

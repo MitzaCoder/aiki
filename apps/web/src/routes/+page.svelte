@@ -54,7 +54,7 @@
 </script>
 
 <svelte:head>
-	<title>Projects · Aiki</title>
+	<title>Projects · Kemiri</title>
 </svelte:head>
 
 <div class="relative mx-auto h-full w-full max-w-3xl">

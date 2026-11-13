@@ -1,6 +1,6 @@
 ---
 name: html-artifacts
-description: Create polished HTML reports, proof indexes, dashboards and slide decks using Aiki templates, theme tokens and safe publishing rules.
+description: Create polished HTML reports, proof indexes, dashboards and slide decks using Kemiri templates, theme tokens and safe publishing rules.
 ---
 # HTML artifacts
 

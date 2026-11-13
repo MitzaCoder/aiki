@@ -35,7 +35,7 @@ export const GENERAL_SECTIONS = [
 	{ id: "appearance", label: "Appearance", hint: "Theme and colours", icon: "palette" },
 	{ id: "backends", label: "Backends", hint: "Servers, accounts and API keys", icon: "server" },
 	{ id: "notifications", label: "Notifications", hint: "Push, quiet hours, muted projects", icon: "bell" },
-	{ id: "about", label: "About", hint: "Aiki versions and updates", icon: "settings" },
+	{ id: "about", label: "About", hint: "Kemiri versions and updates", icon: "settings" },
 	{ id: "archived", label: "Archived projects", hint: "Bring a project back", icon: "archive" },
 ] as const satisfies readonly SettingsSectionInfo[];
 

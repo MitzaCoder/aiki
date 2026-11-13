@@ -8,7 +8,7 @@ const page = await connectChromiumPage(process.argv[4] ?? 'http://127.0.0.1:9399
 await page.call('Page.enable'); await page.call('Runtime.enable');
 await page.call('Browser.grantPermissions', { origin: fixture.origin, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
 await page.call('Page.bringToFront');
-async function navigate(path: string) { await page.call('Page.navigate', { url: fixture.origin + path }); await Bun.sleep(1200); await waitText('Aiki'); }
+async function navigate(path: string) { await page.call('Page.navigate', { url: fixture.origin + path }); await Bun.sleep(1200); await waitText('Kemiri'); }
 async function waitText(text: string) {
  await page.run((text: string) => new Promise<void>((resolve, reject) => {
   const found = () => document.body?.innerText.includes(text);
@@ -76,7 +76,7 @@ for (const state of ['error', 'paste']) {
   for (const color of ['light', 'dark']) {
    if (state === 'error') await page.evaluate(`localStorage.setItem('aiki.mcpOAuth.synthetic-missing-flow','synthetic')`);
    await navigate(`/mcp/oauth/callback?state=${state === 'error' ? 'synthetic-missing-flow' : 'synthetic-native-flow'}&code=synthetic-one-use-code`);
-   await waitText(state === 'error' ? 'Could not sign in' : 'Return to Aiki');
+   await waitText(state === 'error' ? 'Could not sign in' : 'Return to Kemiri');
    await mode(color); await capture(state, size, color);
    if (state === 'paste') { await page.evaluate(`document.querySelector('main button').click()`); await waitText('Copied'); }
   }

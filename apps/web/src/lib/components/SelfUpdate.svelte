@@ -58,13 +58,13 @@
 <Dialog.Root open={confirm !== null} onOpenChange={(open) => { if (!open) confirm = null; }}>
 	<Dialog.Content class="sm:max-w-lg">
 		<Dialog.Header>
-			<Dialog.Title>{confirm === 'force' ? 'Interrupt running commands?' : 'Update Aiki?'}</Dialog.Title>
+			<Dialog.Title>{confirm === 'force' ? 'Interrupt running commands?' : 'Update Kemiri?'}</Dialog.Title>
 			<Dialog.Description>
 				{backend.name}: {confirmedFromVersion} → {confirmedVersion}
 			</Dialog.Description>
 		</Dialog.Header>
-		<p class="text-sm">{confirm === 'force' ? 'Running commands will be interrupted and may not be safe to retry. Restart anyway?' : 'The release will be verified, then Aiki holds new tool calls and waits only for running commands before restarting. Your clients reconnect automatically.'}</p>
-		<p class="text-sm">If the new release is not healthy within 30 seconds, Aiki restores the old code. This does not undo data migrations. Back up important data first.</p>
+		<p class="text-sm">{confirm === 'force' ? 'Running commands will be interrupted and may not be safe to retry. Restart anyway?' : 'The release will be verified, then Kemiri holds new tool calls and waits only for running commands before restarting. Your clients reconnect automatically.'}</p>
+		<p class="text-sm">If the new release is not healthy within 30 seconds, Kemiri restores the old code. This does not undo data migrations. Back up important data first.</p>
 		<Button variant="ghost" size="sm" class="self-start" href={confirmedNotesUrl} target="_blank" rel="noopener noreferrer">
 			<ExternalLinkIcon data-icon="inline-start" />
 			Release notes

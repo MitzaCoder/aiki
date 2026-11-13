@@ -322,7 +322,7 @@ export class ClientConnection {
 		}
 
 		try {
-			if (this.#updateHolding?.() && !request.type.startsWith("auth.") && request.type !== "server.status" && request.type !== "server.drain" && !/\.(list|get|watch|page)$/.test(request.type)) throw new Error("Aiki is restarting for an update. Try again after reconnecting.");
+			if (this.#updateHolding?.() && !request.type.startsWith("auth.") && request.type !== "server.status" && request.type !== "server.drain" && !/\.(list|get|watch|page)$/.test(request.type)) throw new Error("Kemiri is restarting for an update. Try again after reconnecting.");
 			if (
 				request.type.startsWith("notifications.") &&
 				"deviceId" in request &&
@@ -968,7 +968,7 @@ export class ClientConnection {
 					// The user typed into a finished or stopped background thread: it works again.
 					await this.#manager.reviveThread(request.projectId, request.threadId);
 					if (!this.#authorized(0, request.id)) return;
-					if (this.#updateHolding?.()) throw new Error("Aiki is restarting for an update. Try again after reconnecting.");
+					if (this.#updateHolding?.()) throw new Error("Kemiri is restarting for an update. Try again after reconnecting.");
 					const submission = await conversation.submit(
 						{
 							type: "input",

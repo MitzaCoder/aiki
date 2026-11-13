@@ -182,7 +182,7 @@
 </script>
 
 <svelte:head
-	><title>Pair a device · Aiki</title><meta name="referrer" content="no-referrer" /><meta
+	><title>Pair a device · Kemiri</title><meta name="referrer" content="no-referrer" /><meta
 		name="robots"
 		content="noindex,nofollow"
 	/></svelte:head
@@ -193,7 +193,7 @@
 	<section class="w-full max-w-lg space-y-6 rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
 		<div>
 			<p class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-				Aiki · Device sign-in
+				Kemiri · Device sign-in
 			</p>
 			<h1 class="mt-2 text-2xl font-semibold">
 				{pairState === 'connected' ? 'Device paired' : 'Pair this device'}
@@ -279,7 +279,7 @@
 				href="/"
 				data-sveltekit-reload
 				class="inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-				>Open Aiki</a
+				>Open Kemiri</a
 			>{/if}
 		<a href="/" data-sveltekit-reload class="block text-sm text-muted-foreground underline"
 			>{pairState === 'connected' ? 'Home' : 'Cancel and go home'}</a

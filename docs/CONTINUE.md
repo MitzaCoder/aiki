@@ -1,5 +1,20 @@
 # Continue
 
+## T167: Kemiri web display name
+
+Web titles, manifests, Welcome/pairing, About/update instructions, MCP return text,
+notification fallback and terminal hint now say Kemiri/kemiri/KEMIRI. Build readers
+accept both prefixes with process-before-file and Kemiri-before-Aiki precedence.
+Bundled HTML skill text and backend user-facing log/restart messages also use Kemiri.
+Storage/cache/IDB/auth/discovery IDs, network client names and Aiki-Task writers stay.
+
+Synthetic createSetup proof covers Welcome and About at desktop/phone light/dark,
+including an available update in the desktop footer and About. Sixteen screenshots,
+document-title/text snapshots and a five-second Welcome → Settings → About recording
+are saved on T167. The before web sources were identical to main. Headless proof
+records document.title rather than browser chrome. Focused changed-copy tests and
+web builds pass; full integration gates follow the package-scope change.
+
 ## T167: Kemiri public site and current guides
 
 The static site, CNAME, bootstrap repository URL, README, AGENTS product heading

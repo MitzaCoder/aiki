@@ -51,7 +51,7 @@
 </script>
 
 <svelte:head>
-	<title>Settings · Aiki</title>
+	<title>Settings · Kemiri</title>
 </svelte:head>
 
 <SettingsShell

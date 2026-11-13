@@ -13,7 +13,7 @@ export function installPushEvents(worker: ServiceWorkerGlobalScope): void {
 			(async () => {
 				const payload = readPushPayload(event.data);
 				const url = payload === null ? "/" : notificationUrl(payload);
-				const title = payload?.title ?? "Aiki";
+				const title = payload?.title ?? "Kemiri";
 				const options: NotificationOptions & { renotify?: boolean; timestamp?: number } = {
 					body:
 						payload?.kind === "board_question"

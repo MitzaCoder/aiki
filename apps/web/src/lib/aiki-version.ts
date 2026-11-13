@@ -18,7 +18,7 @@ export function backendVersion(helloVersion?: string, status?: ServerStatus): st
 export function aikiVersionLabel(helloVersion: string | undefined, status: ServerStatus | undefined, webVersion: string): string {
 	const backend = backendVersion(helloVersion, status);
 	const update = visibleReleaseUpdate(status?.updates) ? status?.updates?.available : null;
-	const identity = backend ? `Aiki ${backend}` : "Aiki";
+	const identity = backend ? `Kemiri ${backend}` : "Kemiri";
 	const available = update ? ` → ${versionLabel(update.version)} available` : "";
 	const web = versionLabel(webVersion);
 	return `${identity}${available}${backend === web ? "" : ` · web ${web}`}`;

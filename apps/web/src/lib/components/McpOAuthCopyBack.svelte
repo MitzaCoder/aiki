@@ -9,7 +9,7 @@
  }
 </script>
 <h1 class="mb-3 text-2xl font-semibold">Sign-in almost done</h1>
-<p class="mb-4">Copy this link and paste it in Aiki where you started.</p>
+<p class="mb-4">Copy this link and paste it in Kemiri where you started.</p>
 <label class="mb-2 block text-sm font-medium" for="callback-url">One-use callback URL</label>
 <textarea id="callback-url" readonly value={redirectUrl} rows="5" class="mb-3 w-full resize-none rounded-md border bg-background p-3 text-sm" aria-describedby="callback-warning"></textarea>
 <p id="callback-warning" class="mb-4 text-sm text-muted-foreground">This URL contains a short-lived sign-in code. Do not share it.</p>

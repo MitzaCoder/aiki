@@ -10,5 +10,5 @@ test("only an enabled, known, newer, undismissed release shows a banner", () => 
 	expect(visibleReleaseUpdate({ ...updates, dismissedVersion: updates.available!.version })).toBe(false);
 	expect(visibleReleaseUpdate({ ...updates, dismissedVersion: "v0.1.0-pilot.1" })).toBe(true);
 	expect(visibleReleaseUpdate(updates)).toBe(true);
-	expect(UPDATE_INSTRUCTIONS).toBe("Stop Aiki, then aiki update, then start it.");
+	expect(UPDATE_INSTRUCTIONS).toBe("Stop Kemiri, then kemiri update, then start it.");
 });

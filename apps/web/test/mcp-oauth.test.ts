@@ -53,7 +53,7 @@ it('the no-session callback screen offers full URL copy-back, not an error or ne
   const { default: CopyBack } = await vite.ssrLoadModule('/src/lib/components/McpOAuthCopyBack.svelte');
   const { render } = await vite.ssrLoadModule('svelte/server');
   const html = render(CopyBack, { props: { redirectUrl: 'https://app.example.test/mcp/oauth/callback?state=s&code=synthetic' } }).body;
-  expect(html).toContain('Sign-in almost done'); expect(html).toContain('Copy this link and paste it in Aiki where you started.');
+  expect(html).toContain('Sign-in almost done'); expect(html).toContain('Copy this link and paste it in Kemiri where you started.');
   expect(html).toContain('Copy URL'); expect(html).toContain('code=synthetic'); expect(html).not.toContain('Could not sign in');
   expect(html).not.toContain('<form');
  } finally { await vite.close(); }

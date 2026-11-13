@@ -1,6 +1,6 @@
 import type { ReleaseUpdateState } from "@aiki/protocol";
 
-export const UPDATE_INSTRUCTIONS = "Stop Aiki, then aiki update, then start it.";
+export const UPDATE_INSTRUCTIONS = "Stop Kemiri, then kemiri update, then start it.";
 
 /** Dismissal hides the navigation announcement, never the About row. */
 export function visibleReleaseUpdate(updates: ReleaseUpdateState | undefined): boolean {

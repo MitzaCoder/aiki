@@ -52,8 +52,8 @@ describe("web manifests", () => {
 	for (const entry of manifests) {
 		test(`${entry.path} installs as a standalone app`, () => {
 			const value = manifest(entry.path);
-			expect(value.name).toBe("Aiki");
-			expect(value.short_name).toBe("Aiki");
+			expect(value.name).toBe("Kemiri");
+			expect(value.short_name).toBe("Kemiri");
 			expect(value.start_url).toBe("/");
 			expect(value.scope).toBe("/");
 			expect(value.display).toBe("standalone");

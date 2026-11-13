@@ -1,5 +1,13 @@
 # Design
 
+## Web branding and source packages (T167)
+
+Web display text and manifests say Kemiri; commands shown to users use `kemiri`.
+Build inputs accept KEMIRI_* before AIKI_* within each source, with process
+values ahead of web.env. Browser keys, cache/IDB names, discovery URLs, client
+names and task trailer writers keep their installed identity. Workspace packages
+use @kemiri/* atomically; this changes source imports, not the wire protocol.
+
 ## Public site and documentation identity (T167)
 
 Kemiri is the public product name; canonical marketing and support addresses are

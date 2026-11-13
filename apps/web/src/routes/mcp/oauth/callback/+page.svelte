@@ -50,10 +50,10 @@
  });
 </script>
 
-<svelte:head><title>MCP sign-in · Aiki</title><meta name="referrer" content="no-referrer" /></svelte:head>
+<svelte:head><title>MCP sign-in · Kemiri</title><meta name="referrer" content="no-referrer" /></svelte:head>
 <main class="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-background p-6 text-foreground">
  <section class="w-full max-w-lg rounded-xl border bg-card p-6 shadow-sm" aria-live="polite">
-  <p class="mb-3 text-sm text-muted-foreground">Aiki · MCP servers</p>
+  <p class="mb-3 text-sm text-muted-foreground">Kemiri · MCP servers</p>
   {#if status === 'paste'}
    <McpOAuthCopyBack {redirectUrl} />
   {:else}

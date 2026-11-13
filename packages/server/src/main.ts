@@ -30,18 +30,18 @@ export async function runServerEntry(
 			server.allowedOrigins.length === 0
 				? `none from a browser (${ALLOWED_ORIGINS_ENV} unset); native clients still need device auth when required`
 				: server.allowedOrigins.join(", ");
-		console.log(`Aiki listening on ${server.url} (data: ${server.dataDir}; browser origins: ${origins})`);
+		console.log(`Kemiri listening on ${server.url} (data: ${server.dataDir}; browser origins: ${origins})`);
 
 		let stopping = false;
 		async function stop(signal: string): Promise<void> {
 			if (stopping) return;
 			stopping = true;
-			console.log(`Aiki: ${signal}, closing`);
+			console.log(`Kemiri: ${signal}, closing`);
 			try {
 				await server.stop();
 				process.exit(0);
 			} catch (error) {
-				console.error("Aiki: shutdown failed", error);
+				console.error("Kemiri: shutdown failed", error);
 				process.exit(1);
 			}
 		}
