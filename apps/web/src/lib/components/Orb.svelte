@@ -1,5 +1,5 @@
 <script lang="ts">
-	/** The mark: a softly spinning gradient orb that speeds up while working. */
+	/** Assistant activity: a softly spinning gradient orb that speeds up while working, not the product logo. */
 	let { size = 28, active = false }: { size?: number; active?: boolean } = $props();
 </script>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import BrandMark from '#lib/components/BrandMark.svelte';
 	import { onMount } from 'svelte';
 	import { deviceComparisonCode } from '@kemiri/protocol';
 	import {
@@ -192,7 +193,8 @@
 >
 	<section class="w-full max-w-lg space-y-6 rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
 		<div>
-			<p class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+			<BrandMark />
+			<p class="mt-3 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
 				Kemiri · Device sign-in
 			</p>
 			<h1 class="mt-2 text-2xl font-semibold">

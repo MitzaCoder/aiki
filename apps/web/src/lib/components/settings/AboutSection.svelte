@@ -1,4 +1,5 @@
 <script lang="ts">
+	import BrandMark from '#lib/components/BrandMark.svelte';
 	import { harness, type BackendConnection } from '#lib/harness.svelte.js';
 	import { backendVersion } from '#lib/aiki-version.js';
 	import XIcon from '@lucide/svelte/icons/x';
@@ -29,6 +30,7 @@
 </script>
 
 <SettingsSection title="About" description="Kemiri and updates for each backend, across all projects." icon="settings">
+	<div class="flex items-center gap-3"><BrandMark /><span class="text-lg font-semibold">Kemiri</span></div>
 	{#each harness.backends as backend (backend.id)}
 		{@const updates = backend.supports('release-updates') ? backend.status?.updates : undefined}
 		<SettingsGroup title={backend.name}>

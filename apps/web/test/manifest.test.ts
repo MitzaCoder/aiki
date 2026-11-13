@@ -102,6 +102,24 @@ describe("web manifests", () => {
 	});
 });
 
+describe("candlenut branding", () => {
+	test("browser and Apple icons have explicit formats and dimensions", () => {
+		const html = read("/src/app.html");
+		for (const size of [16, 32]) {
+			expect(html).toContain(`href="/favicon-${size}.png"`);
+			expect(pngSize(`/static/favicon-${size}.png`)).toEqual({ width: size, height: size });
+		}
+		expect(html).toContain('href="/favicon.svg" type="image/svg+xml"');
+		expect(html).toContain('rel="apple-touch-icon"');
+		expect(pngSize("/static/apple-touch-icon.png")).toEqual({ width: 180, height: 180 });
+	});
+	test("product identity is separate from assistant activity", () => {
+		for (const path of ["/src/lib/components/Welcome.svelte", "/src/lib/components/settings/AboutSection.svelte", "/src/routes/pair/+page.svelte"]) expect(read(path)).toContain("<BrandMark");
+		expect(read("/src/lib/components/BrandMark.svelte")).toContain('src="/logo.svg"');
+		expect(read("/src/lib/components/chat/AssistantTurn.svelte")).toContain("Orb");
+	});
+});
+
 describe("the service worker", () => {
 	test("handles push, a notification click and a replaced subscription", () => {
 		const source = read("/src/service-worker/index.ts") + read("/src/service-worker/push-events.ts");

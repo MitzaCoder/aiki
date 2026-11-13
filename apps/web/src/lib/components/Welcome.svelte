@@ -1,4 +1,5 @@
 <script lang="ts">
+	import BrandMark from '#lib/components/BrandMark.svelte';
 	import { goto } from '$app/navigation';
 	import FolderPicker from '#lib/components/FolderPicker.svelte';
 	import AccountsSection from '#lib/components/settings/AccountsSection.svelte';
@@ -24,6 +25,7 @@
 
 <section class="flex flex-col gap-5 py-5 sm:py-10" aria-labelledby="welcome-title">
 	<header class="flex flex-col gap-2">
+		<BrandMark size={64} />
 		<p class="text-sm font-medium text-primary">Your computer. Your projects.</p>
 		<h1 id="welcome-title" class="text-3xl font-bold tracking-tight">Welcome to Kemiri</h1>
 		<p class="max-w-lg text-muted-foreground">{needsDeviceSignIn ? "Sign in to this computer first, then connect a provider and choose a project." : "Connect a provider, then choose a project folder. Everything runs on this computer."}</p>

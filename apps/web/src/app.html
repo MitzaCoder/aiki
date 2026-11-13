@@ -7,14 +7,17 @@
 		<!--
 			Installable app: one manifest per colour scheme, because a manifest carries only one theme/background pair,
 			and the status bar colour follows the scheme too. Both manifests carry the same name, start URL and icons.
-			The icons are drawn by scripts/generate-icons.ts from the orb's gradient (bun run icons).
+			The icons share assets/brand's candlenut vector master (bun run icons).
 		-->
 		<link rel="manifest" href="/manifest-light.webmanifest" media="(prefers-color-scheme: light)" />
 		<link rel="manifest" href="/manifest.webmanifest" media="(prefers-color-scheme: dark)" />
 		<meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbfaff" />
 		<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#09090f" />
 		<meta name="mobile-web-app-capable" content="yes" />
-		<link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
+		<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+		<link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
 		<script>
 			// Before the first paint: the stored theme (see src/lib/themes) and, from
 			// the system setting, the `dark` class that picks each theme's dark tones.
