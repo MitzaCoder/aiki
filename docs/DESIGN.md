@@ -1,5 +1,27 @@
 # Design
 
+## Candlenut identity (T173 / Q196)
+
+`assets/brand/logo.svg` is the hand-drawn, transparent master: a blue–violet–pink
+candlenut with a pointed base, navy face and two-tone orange leaf/stem. It uses
+only paths and linear gradients; no generated raster or automatic tracing is
+embedded. `logo-mark-mono.svg` is a single-colour seed/leaf silhouette with the
+face cut out, for notifications and themed icons. Preserve these proportions.
+
+`bun scripts/generate-brand.ts` renders derived web/site PNGs with headless
+Chromium and writes Android VectorDrawables from the same paths. Normal icons
+use a soft background; maskable icons use #6366f1 with the whole mark inside the
+central safe circle. Adaptive launcher foregrounds fit the 66 dp safe zone in a
+108 dp viewport; their monochrome layer has the same geometry. Notification
+marks are white on transparent, with generous padding. Application IDs, signing,
+notification channels and stored identities do not change.
+
+The mascot identifies the product in Welcome/pairing, About, install icons and
+the public site header. The animated assistant orb remains an activity indicator,
+not the product logo: replacing it would conflate identity with running state.
+The colourful outline and pointed base remain visible on #09090f. Site social
+cards use the logo, Kemiri wordmark and “Your personal AI workbench” tagline.
+
 ## Video artifact failures and installed shell caching (T172)
 
 The installed web service worker must leave signed `/artifacts/` requests and
