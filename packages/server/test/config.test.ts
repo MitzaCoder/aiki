@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { InMemoryCredentialStore } from "@earendil-works/pi-ai";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { ensureDataDir, resolveConfigDir, resolveDataDir, resolveHostname, resolvePort } from "../src/data-dir.ts";
+import { defaultProductDirectory, ensureDataDir, resolveConfigDir, resolveDataDir, resolveHostname, resolvePort } from "../src/data-dir.ts";
 import { HARNESS_PROVIDERS, createHarnessModels, describeModels } from "../src/models.ts";
 import { isOriginAllowed, normalizeOrigin, parseAllowedOrigins, resolveAllowedOrigins } from "../src/origins.ts";
 
@@ -10,15 +10,17 @@ describe("data directory", () => {
 	it("defaults to XDG_DATA_HOME/kemiri and honours the override", () => {
 		expect(resolveDataDir({ XDG_DATA_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/kemiri");
 		expect(resolveDataDir({ AIKI_DATA_DIR: "/tmp/direct" })).toBe("/tmp/direct");
-		expect(resolveDataDir({})).toBe(join(homedir(), ".local", "share", "kemiri"));
+		// A host that already has the legacy ~/.local/share/aiki keeps it (no migration), so compare with the rule.
+		expect(resolveDataDir({})).toBe(defaultProductDirectory(join(homedir(), ".local", "share")));
 	});
 
 	it("keeps the harness's own config apart from pi's agent directory", () => {
 		expect(resolveConfigDir({ XDG_CONFIG_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/kemiri");
 		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "/tmp/direct" })).toBe("/tmp/direct");
 		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "~/elsewhere" })).toBe(join(homedir(), "elsewhere"));
-		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "  " })).toBe(join(homedir(), ".config", "kemiri"));
-		expect(resolveConfigDir({})).toBe(join(homedir(), ".config", "kemiri"));
+		// A host that already has the legacy ~/.config/aiki keeps it (no migration), so compare with the rule.
+		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "  " })).toBe(defaultProductDirectory(join(homedir(), ".config")));
+		expect(resolveConfigDir({})).toBe(defaultProductDirectory(join(homedir(), ".config")));
 	});
 
 	it("binds the loopback interface unless told otherwise", () => {
