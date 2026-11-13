@@ -1,5 +1,43 @@
 # Continue
 
+## T169 / Q192: pilot.4 published and verified
+
+Owner approval Q192 authorized publication of the prepared commit. Published
+[the first Kemiri prerelease](https://github.com/MitzaCoder/kemiri/releases/tag/v0.1.0-pilot.4)
+at 2026-11-13T14:02:46Z. Tag `v0.1.0-pilot.4` points to
+`4e3f658c2b3dd4d832b451d7f96381540849a9ab` (vprsoozn). Only that annotated tag was
+pushed, after the exact-tree external private-denylist/generic and Gitleaks checks.
+No main push/movement, deployment scripts or service operations. Main and
+origin/main remained `eaa241b397aea1671b1210044f1b715e87cb59ad`; the coordinator
+handles the later main/site update.
+
+[Release run 43437153195](https://github.com/MitzaCoder/kemiri/actions/runs/43437153195)
+passed checks, all three native executable/smoke jobs (Linux x64/ARM64 and macOS
+ARM64), and draft staging. Locally signed neutral Android code 1000004 uses the
+unchanged public application ID and permanent release certificate. Gradle stopped.
+
+- APK SHA-256: `1d1a9d04c18cc55ee5b2587543d0a56cd47a59c0ad22770b51ba5390d80c91fc`
+- Certificate SHA-256: `a97bdfae948d34c2589afb4bc78acce22f079d51e6aaa2e4025f7d7d38e611e2`
+
+The published prerelease has exactly 35 attachments: 25 workflow assets plus ten
+manual APK/notices/manifest/notes files. Both naming families are present. Downloaded
+all attachments into a fresh directory before publishing: all 21 payload hashes,
+13 checksum sidecars, GitHub-provided digests/sizes, source/Android byte-identical
+aliases, both APK signatures/16 KiB alignment/package/version, and both Linux x64
+version probes pass. Legacy prints `Aiki v0.1.0-pilot.4`; canonical prints Kemiri.
+Both source archives retain `aiki/` and the exact release commit. The notices bundle
+matches all 1,594 files of the approved source snapshot, upstream checksums and
+287 generated dependency notices. Only SHA256SUMS was replaced with the combined
+manifest; no tag/release was deleted or retargeted.
+
+After publication, the anonymous public API reported prerelease=true, draft=false
+and 35 assets. A credential-free HTTPS bootstrap verified the public installer
+checksum and ran --help without installing. Signed manual files, notes, manifest
+and verification evidence are retained outside the checkout; temporary downloads
+are removed after saving T169 artifacts. No phone, emulator or provider account
+was used. Existing real-network Android pairing and native macOS service limits
+still apply to invitations; publication does not certify them.
+
 ## T169: pilot.4 prepared, not published
 
 Prepared `v0.1.0-pilot.4` from the checked Kemiri main tip. Workspace package and
