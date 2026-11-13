@@ -20,7 +20,7 @@ test('site uses canonical Kemiri links and preserves privacy promises', async ()
 	const root = resolve(import.meta.dir, '../site');
 	const home = await Bun.file(join(root, 'index.html')).text();
 	const privacy = await Bun.file(join(root, 'privacy/index.html')).text();
-	expect(home).toContain('curl -fsSL https://aikilabs.dev/install.sh | sh');
+	expect(home).toContain('curl -fsSL https://kemiri.dev/install.sh | sh');
 	for (const [page, path] of [[home, '/'], [privacy, '/privacy/']]) {
 		expect(page).toContain(`<link rel="canonical" href="https://kemiri.dev${path}">`);
 		expect(page).toContain('mailto:support@kemiri.dev');
@@ -29,6 +29,28 @@ test('site uses canonical Kemiri links and preserves privacy promises', async ()
 	expect(privacy).toContain('no analytics, tracking cookies, forms or external fonts');
 	expect(privacy).toContain('There is no Kemiri-hosted account or central service receiving your conversations in this pilot.');
 	expect(privacy).toContain('A future push relay is not active in this pilot.');
+});
+
+test('current install guides use the live domain; app help has no retired-domain links', async () => {
+	for (const path of ['README.md', 'docs/INSTALL.md', 'docs/AGENT-INSTALL.md', 'docs/SITE.md']) {
+		const text = await Bun.file(resolve(import.meta.dir, '../', path)).text();
+		expect(text).toContain('https://kemiri.dev/install.sh');
+		expect(text).not.toContain('https://aikilabs.dev');
+	}
+	for (const directory of ['apps/web/src', 'apps/android/app/src/main']) {
+		for (const path of new Bun.Glob('**/*.{svelte,ts,kt,xml}').scanSync(resolve(import.meta.dir, '../', directory))) {
+			const text = await Bun.file(resolve(import.meta.dir, '../', directory, path)).text();
+			expect(text).not.toContain('aikilabs.dev');
+		}
+	}
+});
+
+test('site checker rejects the retired bootstrap host with no exception', async () => {
+	const scratch = await mkdtemp(join(tmpdir(), 'kemiri-retired-site-'));
+	try {
+		await writeFile(join(scratch, 'index.html'), '<!doctype html><html lang="en"><title>Kemiri</title><a href="https://kemiri.dev/">Kemiri</a><code>curl https://aikilabs.dev/install.sh</code></html>');
+		await expect(checkSite(scratch)).rejects.toThrow('Stale public identity');
+	} finally { await rm(scratch, { recursive: true, force: true }); }
 });
 
 type Sidecar = 'valid' | 'mismatch' | 'missing' | 'malformed' | 'other-file' | 'multiple';

@@ -1,5 +1,14 @@
 # Continue
 
+## T171: live Kemiri site cutover
+
+Owner confirms Pages/HTTPS at kemiri.dev is live; independently verified its
+install.sh returns 200 and the former endpoint returns 404. All current install
+commands now use kemiri.dev, and the checker no longer exempts the dead endpoint.
+Support/privacy were already canonical; app About/help sources had no old-domain
+links. Historical releases, continuation entries and decisions are unchanged.
+The site cutover is a separate commit from the compatibility removal.
+
 ## T171 / D80: light compatibility removal
 
 The next release uses only kemiri commands, KEMIRI_* settings, canonical assets,

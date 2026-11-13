@@ -34,11 +34,11 @@ curl -fL https://github.com/MitzaCoder/kemiri/releases/download/v0.1.0-pilot.4/i
 sh install.sh --version v0.1.0-pilot.4
 ```
 
-The short command is `curl -fsSL https://aikilabs.dev/install.sh | sh`.
+The short command is `curl -fsSL https://kemiri.dev/install.sh | sh`.
 For a review before execution, download the domain bootstrap instead:
 
 ```sh
-curl -fL https://aikilabs.dev/install.sh -o install.sh
+curl -fL https://kemiri.dev/install.sh -o install.sh
 # Read install.sh before running it.
 sh install.sh --version v0.1.0-pilot.4
 ```

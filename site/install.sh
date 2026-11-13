@@ -1,5 +1,5 @@
 #!/bin/sh
-# Kemiri's static-site bootstrap. Review before running; no curl | sh needed.
+# https://kemiri.dev/install.sh — Kemiri's static-site bootstrap. Review before running; no curl | sh needed.
 # Fetch only an exact GitHub release installer, verify it, then forward arguments.
 set -eu
 umask 077

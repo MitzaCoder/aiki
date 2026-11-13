@@ -41,9 +41,9 @@ sh install.sh --version v0.1.0-pilot.4 --no-service
 kemiri start
 ```
 
-Alternative download: `curl -fL https://aikilabs.dev/install.sh -o install.sh`, then the same review/run steps. This small [bootstrap](site/install.sh) verifies the versioned GitHub release installer before running it. Keep `--version`: GitHub's latest release excludes prereleases. Verify direct downloads with the release checksums. You need git; install jj for isolated workers. The installer prefers a standalone executable on Linux x64/arm64 and macOS arm64; private Bun remains a fallback. It also supplies zellij.
+Alternative download: `curl -fL https://kemiri.dev/install.sh -o install.sh`, then the same review/run steps. This small [bootstrap](site/install.sh) verifies the versioned GitHub release installer before running it. Keep `--version`: GitHub's latest release excludes prereleases. Verify direct downloads with the release checksums. You need git; install jj for isolated workers. The installer prefers a standalone executable on Linux x64/arm64 and macOS arm64; private Bun remains a fallback. It also supplies zellij.
 
-Short version: `curl -fsSL https://aikilabs.dev/install.sh | sh`.
+Short version: `curl -fsSL https://kemiri.dev/install.sh | sh`.
 From pilot.3 or earlier, stop it, run `aiki update --version v0.1.0-pilot.4`, then `kemiri start`. Keep existing folders. For a user service, use `aiki service remove` before updating and `kemiri service install` afterwards. Install the new Android APK over the old one (same signing key).
 
 In another terminal:

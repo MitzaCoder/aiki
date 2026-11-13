@@ -94,7 +94,7 @@ The direct GitHub download above is preferred for an agent because you can inspe
 installer before running it. The domain also serves a small bootstrap:
 
 ```sh
-curl --connect-timeout 15 --max-time 300 --retry 2 -fL https://aikilabs.dev/install.sh -o install-bootstrap.sh
+curl --connect-timeout 15 --max-time 300 --retry 2 -fL https://kemiri.dev/install.sh -o install-bootstrap.sh
 # Read install-bootstrap.sh before running it.
 sh install-bootstrap.sh --version v0.1.0-pilot.4 --dir "$KEMIRI_ROOT" --no-service
 ```

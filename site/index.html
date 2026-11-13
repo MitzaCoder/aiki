@@ -39,12 +39,12 @@
       <div class="section-heading"><p class="eyebrow">Start on your own machine</p><h2 id="install-title">Make room for a little help.</h2><p>Current pilot: <strong>v0.1.0-pilot.4</strong> · Linux tested · macOS/WSL experimental · no phone push.</p></div>
       <h3>Install, then start</h3>
       <p>Download and read the small bootstrap before running it. It fetches the versioned GitHub release installer and verifies its SHA-256 checksum.</p>
-      <pre aria-label="Install commands"><code>curl -fL https://aikilabs.dev/install.sh -o install.sh
+      <pre aria-label="Install commands"><code>curl -fL https://kemiri.dev/install.sh -o install.sh
 # Read install.sh before running it.
 sh install.sh --version v0.1.0-pilot.4 --no-service
 kemiri start</code></pre>
       <p class="small">You need git; install jj for isolated workers. Linux x64/arm64 and macOS arm64 use a standalone executable, with private Bun as a fallback. The installer also supplies zellij. Checksums detect corruption, not a compromised publisher. <a href="https://github.com/MitzaCoder/kemiri/blob/main/docs/INSTALL.md">Full guide &amp; direct GitHub downloads</a>.</p>
-      <p class="small">Short install: <code>curl -fsSL https://aikilabs.dev/install.sh | sh</code>. Previously called Aiki; the <code>aiki</code> command still works.</p>
+      <p class="small">Short install: <code>curl -fsSL https://kemiri.dev/install.sh | sh</code>. Use <code>kemiri</code> after installation. Existing folders and data stay put.</p>
       <h3>Open your workbench</h3>
       <p>In another terminal:</p>
       <pre aria-label="Open and pair commands"><code>kemiri open

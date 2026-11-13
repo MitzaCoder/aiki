@@ -9,9 +9,7 @@ export async function checkSite(root = resolve(import.meta.dir, '../site')): Pro
 		const html = await Bun.file(resolve(root, page)).text();
 		if (!/^<!doctype html>/i.test(html) || !/<html lang="en">/.test(html) || !/<title>[^<]+<\/title>/.test(html)) throw new Error(`Missing document metadata: ${page}`);
 		if (!html.includes('Kemiri') || !html.includes('https://kemiri.dev/')) throw new Error(`Missing Kemiri identity: ${page}`);
-		// Temporary live bootstrap endpoint until Kemiri HTTPS/DNS cutover; no other old identity is allowed.
-		const identityHtml = html.replaceAll('https://aikilabs.dev/install.sh', '');
-		if (/aikilabs\.dev|github\.com\/MitzaCoder\/aiki(?:[\/"#]|$)|support@aikilabs/.test(identityHtml)) throw new Error(`Stale public identity: ${page}`);
+		if (/aikilabs\.dev|github\.com\/MitzaCoder\/aiki(?:[\/"#]|$)|support@aikilabs/.test(html)) throw new Error(`Stale public identity: ${page}`);
 		for (const [, reference] of html.matchAll(/(?:href|src|srcset)="([^"]+)"/g)) {
 			if (!reference) continue;
 			checked++;

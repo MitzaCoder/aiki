@@ -6,42 +6,21 @@ fonts or CDN is needed. The hero images are exact copies of the synthetic README
 images in `docs/assets/readme/`; update both together. System light/dark preference
 selects the image and palette. The app/backend deployment is unrelated.
 
-## Owner setup (not done by this change)
+## Live site and owner operations
 
-After this change is merged/pushed to main:
+The owner completed GitHub Pages and the domain cutover: **https://kemiri.dev**
+is live, HTTPS is enforced, and **https://kemiri.dev/install.sh** returns 200.
+The former install host returns 404; never send users there. The public contact
+is **support@kemiri.dev**. This changes marketing/install URLs only, not app/API
+origins, paired backends, OAuth callbacks, checkout paths or deployment units.
 
-1. In the public repository's **Settings → Pages → Build and deployment**, select
-   **GitHub Actions** as the source. Do not select a branch/Jekyll build.
-2. In **Settings → Environments → github-pages**, restrict deployment branches to
-   `main` (and set any desired approval rule). The workflow also refuses to deploy
-   from a manually selected non-main ref.
-3. Run **Actions → Website → Run workflow** on `main` for the first deployment.
-   Later changes under `site/` or to the workflow/checks trigger it automatically.
-4. Add `kemiri.dev` to Cloudflare and set its assigned nameservers at the
-   registrar. Wait for delegation; keep the old `aikilabs.dev` registration/zone.
-5. Verify the new domain with GitHub's requested Pages ownership TXT record; keep
-   that record. In **Settings → Pages**, set custom domain **kemiri.dev**, matching
-   `site/CNAME`. A custom Actions workflow does not set the account's domain.
-   Configure apex/www DNS using GitHub's current
-   [Pages instructions](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site).
-   Start DNS-only while Pages validates and provisions its certificate, then enable
-   **Enforce HTTPS**. Check `/`, `/privacy/` and `/install.sh` on the new domain.
-6. Enable Cloudflare Email Routing on the new zone, verify the destination mailbox,
-   and create `support@kemiri.dev`. Add its required MX/TXT/SPF records. Preserve
-   `support@aikilabs.dev` forwarding to the same verified mailbox; test both.
-   Routing is inbound forwarding, not outbound sending. The site does not read mail.
-7. Once the new HTTPS site works, put only the old apex and `www.aikilabs.dev`
-   HTTP DNS records behind Cloudflare's **proxied** redirect-only setup. Ensure
-   edge HTTPS certificates are active. Create a **Single Redirect** matching
-   `http.host in {"aikilabs.dev" "www.aikilabs.dev"}` for both HTTP and HTTPS.
-   Dynamic target: `concat("https://kemiri.dev", http.request.uri.path)`;
-   enable **Preserve query string**. Rehearse with 302, then use **301** after
-   testing `/privacy/`, `/install.sh` and a path with a query. Do not match arbitrary
-   subdomains, redirect back to the old host, or remove old mail MX/TXT records.
-8. After the GitHub repository rename to `MitzaCoder/kemiri`, review Pages and
-   integration settings and canonical remotes. Keep checkout locations unchanged;
-   never reuse the old repository name. Test old release API and asset redirects.
-   This cutover does not move app/API origins, paired backends or OAuth callbacks.
+Pages uses GitHub Actions, not a branch/Jekyll build. Keep its deployment
+environment restricted to main, the Pages ownership TXT record, custom domain
+matching site/CNAME and Enforce HTTPS enabled. Review the current
+[Pages DNS instructions](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site)
+before changing records. After any site deployment, check /, /privacy/ and
+/install.sh over HTTPS. Mail routing is owner-managed inbound forwarding; the
+site does not read mail or send messages. Test support delivery separately.
 
 The workflow uses immutable action SHAs. The upload job only reads contents;
 only the deployment job can write Pages and request the deployment OIDC token.
@@ -50,12 +29,10 @@ The uploaded artifact is exactly `site/`, not the checkout or its local configur
 
 ## Pilot.4 publication and live domain
 
-The pilot.4 preparation updates the pinned default and release/APK links together.
-Deploy that site commit only after the release assets are public and verified.
-The current install command uses `https://aikilabs.dev/install.sh`: that endpoint
-returns the bootstrap over HTTPS. The `kemiri.dev/install.sh` check timed out during
-preparation. Keep the live domain for installs until the owner completes and verifies
-the HTTPS/DNS cutover above; the product name and canonical metadata remain Kemiri.
+The bootstrap and download links remain pinned to the published pilot.4 release.
+The current install command is `curl -fsSL https://kemiri.dev/install.sh | sh`.
+Prefer downloading and reviewing it before execution. For a new release, change
+the pinned version and links only after its public assets and checksums verify.
 
 ## Installer trust model
 
