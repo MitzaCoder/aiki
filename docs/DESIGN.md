@@ -3625,7 +3625,11 @@ one quiet line; a failed one keeps the existing notice. The Info tab's usage blo
   archive its reason; errors stay collapsed and red. Memory tools are not coding
   tools, so they break a coding group.
 - **Older chat history (T38).** Main, background threads and worker transcripts all prefetch older pages (50 entries)
-  instead of requiring a Load earlier click. Web starts within 1.5 viewport heights of the loaded boundary, rechecking
+  instead of requiring a Load earlier click. The view window itself is pi-durable's
+  (`conversation.watch(context, { from, min, max })`): the newest `min` entries, then appends, one drop to `min` past
+  `max`, and a `before` naming the entry just outside it. The server forwards that window as the protocol's
+  `ConversationView` instead of re-slicing it in `window.ts`: slicing an already windowed view cannot see the history
+  outside it, so it computed an empty prefix and reported the transcript as complete (T163). Web starts within 1.5 viewport heights of the loaded boundary, rechecking
   after scroll, resize and each page so short content fills automatically. A local synchronous guard supplements the
   watch's single-flight guard. Paging failures latch a small inline “Couldn't load earlier messages · Retry”; live-watch
   errors are separate, and neither a scroll nor a live update retries a failed page. A small spinner replaces the

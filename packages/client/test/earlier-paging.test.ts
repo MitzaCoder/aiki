@@ -30,3 +30,21 @@ test('older pages are single-flight and their error survives independently of th
 	expect(watch.entries.map(entry => entry.id)).toEqual([1, 10]);
 	watch.stop();
 });
+
+test('the server window decides paging: a `before` opens it, its absence means the transcript starts here', async () => {
+	let asked = 0;
+	const host: WatchHost = {
+		projectId: 'p', state: () => ({ status: 'ready', attempt: 0 }), subscribe: () => () => {},
+		startWatch: async () => ({ type: 'conversation.watch', id: 'attach', watchId: 'w', conversationId: 1, view: {
+			conversation: { id: 1 }, entries: [{ id: 10, conversationId: 1, kind: 'pi.user' }], docs: {},
+		} }),
+		pageEarlier: async () => { asked++; return { type: 'conversation.page', id: 'page', entries: [] }; },
+		unwatch: () => {}, remove: () => {},
+	};
+	const watch = new ConversationWatch(host);
+	await Bun.sleep(0);
+	expect(watch.canLoadEarlier).toBe(false);
+	expect(await watch.loadEarlier()).toBe(false);
+	expect(asked).toBe(0);
+	watch.stop();
+});

@@ -1,5 +1,30 @@
 # Continue
 
+## T163: scrollback paging restored
+
+The owner's "lazy loading scroll back doesn't work anymore" was a server defect, not a scroller one. pi-durable 1.5.1
+(installed by `f155981f3f98`, chore(deps): bump pi packages from 1.4.0 to 1.5.1) windows a conversation view itself:
+newest `min`, appends, one drop to `min` past `max`, and `before` naming the entry just outside. `window.ts` still
+re-windowed that view the way 1.4.0 needed, so with `entries.length === min` its own slicing found an empty prefix and
+dropped `before`. Neither client then knew older history existed (`hasMore = before != null` on web and Android), so
+scrolling a long chat to the top stopped at the window's first entry. `conversation.page`/`before` was never broken:
+the trigger simply never fired.
+
+The fix hands the client's bounds and `from` to `conversation.watch(context, { from, min, max })` and forwards that
+window; `WatchWindow` in `packages/server/src/window.ts` is now only the wire conversion plus the Chord diff between
+successive values (`resolveWindowBounds` still validates). `packages/server/test/scrollback-paging.test.ts` seeds 120
+passive entries and asserts `before`, the older page and the shorter-than-a-window case; `window.test.ts` now pins the
+forwarded `before` (it drops it before the fix); `packages/client/test/earlier-paging.test.ts` pins that no `before`
+means no paging. Android needed no code change: it reads the same `response.view.before` in
+`data/ConversationWatch.kt`. No emulator run was made for T163; the defect and its fix are in the shared wire contract,
+proven on web.
+
+Proof (synthetic, `createSetup` fixture with 150 passive entries, Vite :5186, headless Chromium CDP :9386, both killed by
+PID, temp dirs removed; scripts in `/tmp/t163`, not committed): before/after desktop light recordings, after desktop dark,
+before/after top screenshots and phone-width light/dark shots. Measured: before 50 rows at `scrollTop 0`, after 150 rows;
+the visible row's offset held at 24px across a prepend that grew 50 → 100 rows. Root 2,593 tests / 92,942 assertions,
+typecheck, web check zero diagnostics, 1,094 tests / 79,933 assertions, build, private-denylist/generic and Gitleaks pass.
+
 ## T161: HTML artifacts render as pages
 
 Owner feedback F52 on T161: "The HTML artifact should be rendered as HTML." The viewer now shows an HTML artifact

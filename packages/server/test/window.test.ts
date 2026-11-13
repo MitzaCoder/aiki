@@ -5,7 +5,8 @@ import type { ConversationView as DurableView } from "@earendil-works/pi-durable
 import type { ConversationView } from "@aiki/protocol";
 import { WatchWindow, resolveWindowBounds } from "../src/window.ts";
 
-function raw(ids: readonly number[], docs: Record<string, unknown> = {}): DurableView {
+/** A durable view as pi-durable 1.5.1 hands one out: already windowed, with `before` naming the entry outside it. */
+function raw(ids: readonly number[], options: { before?: number; docs?: Record<string, unknown> } = {}): DurableView {
 	return {
 		conversation: { id: 1 },
 		entries: ids.map((id) => ({
@@ -14,7 +15,8 @@ function raw(ids: readonly number[], docs: Record<string, unknown> = {}): Durabl
 			kind: "pi.user",
 			model: [{ role: "user", content: String(id), timestamp: 0 }],
 		})),
-		docs,
+		...(options.before === undefined ? {} : { before: options.before }),
+		docs: options.docs ?? {},
 	} as unknown as DurableView;
 }
 
@@ -27,73 +29,51 @@ function apply(current: ConversationView, ops: readonly unknown[]): Conversation
 }
 
 describe("WatchWindow", () => {
-	it("starts with the newest min entries, with `before` pointing at the entry just outside", () => {
-		const window = new WatchWindow(resolveWindowBounds(50, 100));
-		const value = window.initial(raw(Array.from({ length: 120 }, (_, index) => index + 1)));
-		expect(ids(value)).toHaveLength(50);
-		expect(ids(value)[0]).toBe(71);
-		expect(ids(value).at(-1)).toBe(120);
+	// The regression behind T163: pi-durable's window is forwarded, `before` included. Recomputing `before` from the
+	// entries of an already windowed view found an empty prefix and reported no older history, so nothing ever paged.
+	it("keeps the dependency's `before` so the client knows older history exists", () => {
+		const window = new WatchWindow();
+		const value = window.initial(raw([71, 72, 73], { before: 70 }));
+		expect(ids(value)).toEqual([71, 72, 73]);
 		expect(value.before).toBe(70);
 	});
 
-	it("`from` starts at that entry when the window can hold what follows", () => {
-		const window = new WatchWindow(resolveWindowBounds(50, 100));
-		const value = window.initial(raw(Array.from({ length: 120 }, (_, index) => index + 1)), 100);
-		expect(ids(value)[0]).toBe(100);
-		expect(value.before).toBe(99);
+	it("sends no `before` when the window starts the transcript", () => {
+		const window = new WatchWindow();
+		expect(window.initial(raw([1, 2])).before).toBeUndefined();
 	});
 
-	it("`from` falls back to the newest min when too much follows", () => {
-		const window = new WatchWindow(resolveWindowBounds(5, 10));
-		const value = window.initial(raw(Array.from({ length: 20 }, (_, index) => index + 1)), 2);
-		expect(ids(value)).toEqual([16, 17, 18, 19, 20]);
-		expect(value.before).toBe(15);
+	it("forwards the dependency's window instead of slicing it again", () => {
+		const window = new WatchWindow();
+		const value = window.initial(raw([51, 52], { before: 50 }));
+		expect(ids(value)).toEqual([51, 52]);
+		expect(value.before).toBe(50);
 	});
 
-	it("a `from` past the newest entry starts empty with `before` at the newest", () => {
-		const window = new WatchWindow(resolveWindowBounds(5, 10));
-		const value = window.initial(raw([1, 2, 3]), 99);
-		expect(ids(value)).toEqual([]);
-		expect(value.before).toBe(3);
-	});
-
-	it("appends new entries and drops to min in one step past max", () => {
-		const bounds = resolveWindowBounds(5, 10);
-		const window = new WatchWindow(bounds);
-		let value = window.initial(raw([1, 2, 3]));
-		expect(ids(value)).toEqual([1, 2, 3]);
-
-		const appended = window.update(raw([1, 2, 3, 4, 5]));
-		value = apply(value, appended.ops);
-		expect(ids(value)).toEqual([1, 2, 3, 4, 5]);
-		expect(appended.value).toEqual(value);
-
-		const grown = window.update(raw([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]));
-		value = apply(value, grown.ops);
-		expect(ids(value)).toEqual([7, 8, 9, 10, 11]);
-		expect(value.before).toBe(6);
-
-		const appendedAgain = window.update(raw([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]));
-		value = apply(value, appendedAgain.ops);
-		expect(ids(value)).toEqual([7, 8, 9, 10, 11, 12]);
-	});
-
-	it("keeps the client's window while still delivering changes to docs", () => {
-		const window = new WatchWindow(resolveWindowBounds(2, 4));
-		let value = window.initial(raw([1, 2], { "pi.live": {} }));
-		const changed = window.update(raw([1, 2], { "pi.live": { run: { taskId: 1, inputs: [2] } } }));
+	it("diffs successive windows so the client applies ops", () => {
+		const window = new WatchWindow();
+		let value = window.initial(raw([1, 2], { docs: { "pi.live": {} } }));
+		const changed = window.update(raw([1, 2], { docs: { "pi.live": { run: { taskId: 1, inputs: [2] } } } }));
 		value = apply(value, changed.ops);
 		expect(ids(value)).toEqual([1, 2]);
 		expect((value.docs["pi.live"] as { run?: unknown }).run).toBeDefined();
 	});
 
-	it("rebuilds when a reset or compaction replaces the active transcript", () => {
-		const window = new WatchWindow(resolveWindowBounds(2, 4));
-		let value = window.initial(raw([1, 2, 3]));
-		const replaced = window.update(raw([3, 20, 21, 22]));
-		value = apply(value, replaced.ops);
-		expect(ids(value)).toEqual([21, 22]);
-		expect(value.before).toBe(20);
+	it("reports the window moving on, `before` and all, as ops", () => {
+		const window = new WatchWindow();
+		let value = window.initial(raw([51, 52], { before: 50 }));
+		const advanced = window.update(raw([53, 54], { before: 52 }));
+		value = apply(value, advanced.ops);
+		expect(ids(value)).toEqual([53, 54]);
+		expect(value.before).toBe(52);
+		expect(advanced.value).toEqual(value);
+	});
+
+	it("an update before any initial value becomes the first value", () => {
+		const window = new WatchWindow();
+		const update = window.update(raw([7], { before: 6 }));
+		expect(update.ops).toEqual([]);
+		expect(update.value.before).toBe(6);
 	});
 
 	it("rejects bounds that cannot describe a window", () => {

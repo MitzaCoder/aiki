@@ -1332,19 +1332,25 @@ export class ClientConnection {
 				? await this.#manager.conversation(request.projectId, request.threadId)
 				: await this.#manager.workerConversation(request.projectId, request.workerId, request.threadId);
 		if (!this.#authorized()) return;
-		const handle = await conversation.watch(BACKGROUND_CONTEXT);
+		// pi-durable windows the view itself, so the client's bounds and `from` go to the dependency; a window this side
+		// could only slice a slice, and it dropped the `before` that says older history exists (T163).
+		const handle = await conversation.watch(BACKGROUND_CONTEXT, {
+			...(request.from === undefined ? {} : { from: request.from as DurableEntryId }),
+			min: bounds.min,
+			max: bounds.max,
+		});
 		if (!this.#authorized()) {
 			await handle.stop();
 			return;
 		}
-		const tracker = new WatchWindow(bounds);
+		const tracker = new WatchWindow();
 		// A worker's conversation takes no input from the app, so it has no waiting messages to show.
 		const queue = request.workerId === undefined ? new QueuedInputs(runtime.harness, conversation.id) : undefined;
 		const warm = () =>
 			request.workerId === undefined
 				? this.#requestLog?.warmStretches(request.projectId, Number(conversation.id))
 				: undefined;
-		const view = tracker.initial(handle.value, request.from, await queue?.decorate(handle.value), warm());
+		const view = tracker.initial(handle.value, await queue?.decorate(handle.value), warm());
 		const watchId = `watch-${++this.#watchSequence}`;
 		const state: WatchState = { handle, tracker, explicitStop: false };
 		this.#watches.set(watchId, state);
