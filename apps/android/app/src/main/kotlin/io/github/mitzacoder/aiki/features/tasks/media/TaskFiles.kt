@@ -67,7 +67,7 @@ private fun FileRows(files: List<Artifact>, onOpen: (Artifact) -> Unit) {
                 Column(Modifier.weight(1f)) {
                     Text(artifactTitle(file), style = TaskType.sectionTitle, color = colors.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
-                        listOf(artifactKindLabel(file.kind), artifactDetailSize(file.size).orEmpty(), file.createdAt.takeIf { it.isNotBlank() }?.let { relativeTime(it, now) }.orEmpty())
+                        listOf(artifactKindLabel(file.kind), artifactDetailSize(file.size).orEmpty(), artifactVersionCount(file), file.createdAt.takeIf { it.isNotBlank() }?.let { relativeTime(it, now) }.orEmpty())
                             .filter { it.isNotEmpty() }.joinToString(" · "),
                         style = TaskType.meta, color = colors.fgSubtle, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )

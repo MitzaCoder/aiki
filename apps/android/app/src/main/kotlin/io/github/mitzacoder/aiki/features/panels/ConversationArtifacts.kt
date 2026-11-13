@@ -68,7 +68,7 @@ internal fun ConversationArtifacts(context: ProjectScreenContext) {
                     ArtifactThumb(context, artifact, Modifier.size(width = 56.dp, height = 40.dp).clip(RoundedCornerShape(8.dp)), duration = false)
                     Column(Modifier.weight(1f)) {
                         Text(title, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(listOf(formatMediaDuration(artifact.durationSeconds), artifactDetailSize(artifact.size).orEmpty(), savedByLabel(artifact)).filter { it.isNotEmpty() }.joinToString(" · "),
+                        Text(listOf(formatMediaDuration(artifact.durationSeconds), artifactDetailSize(artifact.size).orEmpty(), artifactVersionCount(artifact), savedByLabel(artifact)).filter { it.isNotEmpty() }.joinToString(" · "),
                             style = MaterialTheme.typography.labelSmall, color = colors.fgSubtle, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     if (artifact.createdAt.isNotBlank()) Text(relativeTime(artifact.createdAt, now), style = MaterialTheme.typography.labelSmall, color = colors.fgSubtle)

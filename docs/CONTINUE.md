@@ -1,5 +1,32 @@
 # Continue
 
+## T166: versioned artifacts (D74)
+
+Re-saving the same sanitized filename in a project/task updates one stable card. Without taskId the scope is the
+conversation (thread + worker); titles and directories are not identity. Legacy rows read as v1 without disk writes or
+byte moves; existing duplicate cards are not merged. Keep the newest 20 snapshots (`ARTIFACT_VERSION_LIMIT`), with
+monotonic numbers. Version 1 stays in its original directory; later bytes live in `<id>.versions/<number>/<name>`.
+Memoized save receipts make durable retries idempotent. `artifacts.list` includes retained metadata and an optional
+exact `artifactId` filter; `id~number` addresses immutable content, and even a latest URL is signed for its version.
+Bare IDs, tool details and task references still follow latest. `DESIGN.md` has the full contract.
+
+Web and Android dialogs and full-screen media viewers have previous/next controls; cards show counts. Selection uses
+the snapshot's own note, tags, size, MIME, saver and time. Downloads follow selection; Delete removes the stable
+artifact and all versions; tag edits stay on latest. Web bare-ID preview leases refresh on pushes, Android poster/image
+cache keys include the version, and Android selection survives theme recreation. Source diff was deliberately skipped.
+The unchanged tool API adds 66 description bytes: +13 cl100k_base / +14 o200k_base tokens, measured with js-tiktoken
+outside the repo (no tokenizer dependency).
+
+Synthetic proof on T166: desktop/phone web light/dark before/after, three HTML drafts flipping (video
+`mwetxgcq-8fa4dc796f`), live saves and media history. Android light/dark (`mwevgvmr-0255c31d43`,
+`mwevgvmq-7370a88d53`), HTML flipping (`mwevgvms-a45642ac57`) and media history (`mwevgvms-85aa903af7`).
+A temporary createSetup backend supplied the bytes; the later live fourth save explains Android's “v3 of 4”. No real
+session, provider account or physical phone was used.
+
+Sequential gates pass: root 2,605 tests / 93,057 assertions and typecheck; web check zero diagnostics, 1,098 tests /
+79,950 assertions and build; Android 935 JVM tests (two opt-in skips), debug assembly and lint (zero errors).
+Private-denylist/generic and Gitleaks checks pass. Gradle is stopped.
+
 ## T162 / F55: HTML pages own scrolling and fill the Android screen
 
 The owner's phone could not scroll inside an HTML artifact. Reproduced on an isolated emulator with eight tall

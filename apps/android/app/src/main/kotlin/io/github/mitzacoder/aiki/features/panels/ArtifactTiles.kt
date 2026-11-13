@@ -38,7 +38,7 @@ import io.github.mitzacoder.aiki.ui.components.*
                     ArtifactThumb(context, artifact, Modifier.fillMaxWidth().aspectRatio(16f / 9f))
                     Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text(artifactTitle(artifact), style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Text(listOf(artifact.createdAt.takeIf { it.isNotBlank() }?.let { relativeTime(it, now) }.orEmpty(), artifactDetailSize(artifact.size).orEmpty()).filter { it.isNotEmpty() }.joinToString(" · "),
+                        Text(listOf(artifact.createdAt.takeIf { it.isNotBlank() }?.let { relativeTime(it, now) }.orEmpty(), artifactDetailSize(artifact.size).orEmpty(), artifactVersionCount(artifact)).filter { it.isNotEmpty() }.joinToString(" · "),
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(savedByLabel(artifact), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         artifact.taskId?.let { PanelMetaChip(it, Lucide.Kanban) }

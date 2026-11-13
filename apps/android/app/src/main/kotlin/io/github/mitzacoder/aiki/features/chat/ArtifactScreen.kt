@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +30,10 @@ import java.time.Instant
 /** Signed URLs exist only in this composition. No disk/image cache, logging or saved-state tokens. */
 @Composable
 fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: Modifier = Modifier) {
-    var artifact by remember(context.route,artifactId) { mutableStateOf<Artifact?>(null) }
+    var latestArtifact by remember(context.route,artifactId) { mutableStateOf<Artifact?>(null) }
+    var selectedVersion by rememberSaveable(context.route,artifactId) { mutableStateOf<Long?>(null) }
+    val artifact = latestArtifact?.let { selectedArtifactVersion(it, selectedVersion) }
+    val versions = latestArtifact?.let(::artifactVersions).orEmpty()
     var signed by remember(context.route,artifactId) { mutableStateOf<ArtifactsUrlResponse?>(null) }
     var error by remember(context.route,artifactId) { mutableStateOf<String?>(null) }
     var text by remember(context.route,artifactId) { mutableStateOf<String?>(null) }
@@ -52,31 +56,35 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
     } }
     fun discard() {
         ChatArtifactMetadata.remove(context.backend.config.key,context.route.projectId,artifactId)
-        deleted = true; deletion = ArtifactDeleteState.Gone; signed = null; artifact = null; text = null
+        deleted = true; deletion = ArtifactDeleteState.Gone; signed = null; latestArtifact = null; text = null
         imageError = null; error = null; actionStatus = null
     }
     val connection by context.backend.client.state.collectAsStateWithLifecycle()
     LaunchedEffect(context.backend.client,artifactId) {
         context.backend.client.events.collect { event ->
             if(event is ArtifactsChangedEvent && event.projectId == context.route.projectId && event.artifact.id == artifactId) {
-                if(event.deleted) { discard() } else if(!deleted) { ChatArtifactMetadata.keep(context.backend.config.key,event.artifact); artifact = event.artifact; refresh++ }
+                if(event.deleted) { discard() } else if(!deleted) { ChatArtifactMetadata.keep(context.backend.config.key,event.artifact); latestArtifact = event.artifact; refresh++ }
             }
         }
     }
-    LaunchedEffect(context.route,artifactId,connection,refresh,deleted) {
+    LaunchedEffect(context.route,artifactId,connection,refresh,deleted,selectedVersion) {
         if(deleted || connection.status != ConnectionStatus.Ready) return@LaunchedEffect
         try {
             val cached = ChatArtifactMetadata.find(context.backend.config.key,context.route.projectId,artifactId)
             val recent = try {
-                context.backend.client.request(ArtifactsListRequest(projectId = context.route.projectId,threadId = context.route.threadId,workerId = context.route.workerId,limit = 500)).artifacts
+                context.backend.client.request(ArtifactsListRequest(projectId = context.route.projectId,artifactId = artifactId)).artifacts
             } catch(e: CancellationException) { throw e }
             catch(_: Exception) { emptyList() }
             if (deleted) return@LaunchedEffect
-            artifact = recent.find { it.id == artifactId } ?: cached ?: artifactForViewing(context.route.projectId,artifactId,recent)
-            if(artifact!!.size >= 0) ChatArtifactMetadata.keep(context.backend.config.key,artifact!!)
-
+            latestArtifact = recent.find { it.id == artifactId } ?: cached ?: artifactForViewing(context.route.projectId,artifactId,recent)
+            if(latestArtifact!!.size >= 0) ChatArtifactMetadata.keep(context.backend.config.key,latestArtifact!!)
+            val viewed = selectedArtifactVersion(latestArtifact!!, selectedVersion)
+            signed = null
+            text = null
+            imageAttempts = 0
+            imageError = null
             while(isActive) {
-                val renewed = context.backend.client.request(ArtifactsUrlRequest(projectId = context.route.projectId,artifactId = artifactId))
+                val renewed = context.backend.client.request(ArtifactsUrlRequest(projectId = context.route.projectId,artifactId = viewed.id))
                 if (deleted) return@LaunchedEffect
                 signed = renewed
                 imageRevision++
@@ -153,7 +161,7 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
                     actionStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }
             },
-            confirmButton = { ArtifactDownloadAction(context, artifact, artifactId, canSave = deletion != ArtifactDeleteState.Sending) },
+            confirmButton = { ArtifactDownloadAction(context, artifact, artifact?.id ?: artifactId, canSave = deletion != ArtifactDeleteState.Sending) },
             dismissButton = {
                 Row {
                     TextButton(onClick = { showDetails = false; deletion = ArtifactDeleteState.Confirming },
@@ -163,6 +171,21 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
             },
         )
         Column(modifier.fillMaxSize()) {
+            if (!deleted && versions.size > 1 && artifact != null) {
+                val index = versions.indexOfFirst { it.id == artifact.id }
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center) {
+                    IconButton(enabled = index > 0, onClick = { selectedVersion = versions[index - 1].version; signed = null; text = null }) {
+                        Text("←", modifier = Modifier.semantics { contentDescription = "Previous version" })
+                    }
+                    Text("v${artifact.version ?: 1} of ${latestArtifact?.versionCount ?: versions.size} · ${io.github.mitzacoder.aiki.features.tasks.relativeTime(artifact.createdAt)}",
+                        style = MaterialTheme.typography.bodySmall)
+                    IconButton(enabled = index < versions.lastIndex, onClick = { selectedVersion = versions[index + 1].version; signed = null; text = null }) {
+                        Text("→", modifier = Modifier.semantics { contentDescription = "Next version" })
+                    }
+                }
+                HorizontalDivider(color = Jarvis.colors.border)
+            }
             if (connection.status != ConnectionStatus.Ready) Text("Offline · reconnect to refresh or delete this artifact.",
                 Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall)
             error?.let {
@@ -185,6 +208,21 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
     }
     // Other media keep the scrolling details sheet and its fixed download footer.
     Column(modifier.fillMaxSize()) {
+            if (!deleted && versions.size > 1 && artifact != null) {
+                val index = versions.indexOfFirst { it.id == artifact.id }
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center) {
+                    IconButton(enabled = index > 0, onClick = { selectedVersion = versions[index - 1].version; signed = null; text = null }) {
+                        Text("←", modifier = Modifier.semantics { contentDescription = "Previous version" })
+                    }
+                    Text("v${artifact.version ?: 1} of ${latestArtifact?.versionCount ?: versions.size} · ${io.github.mitzacoder.aiki.features.tasks.relativeTime(artifact.createdAt)}",
+                        style = MaterialTheme.typography.bodySmall)
+                    IconButton(enabled = index < versions.lastIndex, onClick = { selectedVersion = versions[index + 1].version; signed = null; text = null }) {
+                        Text("→", modifier = Modifier.semantics { contentDescription = "Next version" })
+                    }
+                }
+                HorizontalDivider(color = Jarvis.colors.border)
+            }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (deleted) {
                 Text("Artifact unavailable", style = MaterialTheme.typography.titleLarge)
@@ -211,12 +249,12 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
                             if(imageCanRenew(imageAttempts)) { imageAttempts++; refresh++ }
                         })
                 }
-                "video" -> key(artifactId) {
-                    val memoryKey = videoKey(context.route.projectId, artifactId)
+                "video" -> key(artifact?.id) {
+                    val memoryKey = videoKey(context.route.projectId, artifact?.id ?: artifactId)
                     val playsOn = remember { InlineVideos.playsOn(memoryKey) }
                     ArtifactMedia(url, { refresh++ }, memoryKey = memoryKey, seeks = seeks, onDuration = { videoDuration = it }, autoplay = playsOn)
                 }
-                "audio" -> key(artifactId) { ArtifactMedia(url, { refresh++ }) }
+                "audio" -> key(artifact?.id) { ArtifactMedia(url, { refresh++ }) }
                 "text" -> text?.let { loaded ->
                     val markdown = artifact?.let { item -> isMarkdownArtifact(item.name, item.mimeType) } == true
                     val html = artifact?.let { item -> isHtmlArtifact(item.name, item.mimeType) } == true
@@ -244,7 +282,7 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
                     LucideGlyph(ArtifactGlyphs.Trash, size = 16.dp); Spacer(Modifier.width(6.dp)); Text("Delete")
                 }
                 Spacer(Modifier.weight(1f))
-                Column(horizontalAlignment = Alignment.End) { ArtifactDownloadAction(context, artifact, artifactId, canSave = deletion != ArtifactDeleteState.Sending) }
+                Column(horizontalAlignment = Alignment.End) { ArtifactDownloadAction(context, artifact, artifact?.id ?: artifactId, canSave = deletion != ArtifactDeleteState.Sending) }
             }
         }
     }

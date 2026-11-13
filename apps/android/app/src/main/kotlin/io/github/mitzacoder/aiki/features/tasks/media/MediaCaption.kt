@@ -107,7 +107,7 @@ internal fun MediaCaption(
             }
             Text(
                 listOf(
-                    artifactKindLabel(artifact.kind), formatMediaDuration(artifact.durationSeconds), artifactDetailSize(artifact.size).orEmpty(), savedByLabel(artifact),
+                    artifactKindLabel(artifact.kind), formatMediaDuration(artifact.durationSeconds), artifactDetailSize(artifact.size).orEmpty(), savedByLabel(artifact), artifactVersionCount(artifact),
                     artifact.createdAt.takeIf { it.isNotBlank() }?.let { relativeTime(it, now) }.orEmpty(),
                 ).filter { it.isNotEmpty() }.joinToString(" · "),
                 style = TaskType.xs, color = colors.fgSubtle,

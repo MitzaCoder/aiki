@@ -112,22 +112,23 @@ internal fun ArtifactThumb(
 ) {
     val client = context.backend.client
     val backend = context.backend.config.key
+    val contentId = artifactVersionAddress(artifact)
     val video = artifact.kind == "video"
     val pictured = video || artifact.kind == "image"
     val connection by client.state.collectAsStateWithLifecycle()
     val online = connection.status == ConnectionStatus.Ready
-    var poster by remember(backend, artifact.projectId, artifact.id) { mutableStateOf(if (video) VideoPosters.cached(backend, artifact.projectId, artifact.id) else null) }
-    var url by remember(backend, artifact.projectId, artifact.id) { mutableStateOf<String?>(null) }
-    var failures by remember(backend, artifact.projectId, artifact.id) { mutableIntStateOf(0) }
-    var renewals by remember(backend, artifact.projectId, artifact.id) { mutableIntStateOf(0) }
-    var ready by remember(backend, artifact.projectId, artifact.id) { mutableStateOf(false) }
-    LaunchedEffect(client, artifact.projectId, artifact.id, online, renewals) {
+    var poster by remember(backend, artifact.projectId, contentId) { mutableStateOf(if (video) VideoPosters.cached(backend, artifact.projectId, contentId) else null) }
+    var url by remember(backend, artifact.projectId, contentId) { mutableStateOf<String?>(null) }
+    var failures by remember(backend, artifact.projectId, contentId) { mutableIntStateOf(0) }
+    var renewals by remember(backend, artifact.projectId, contentId) { mutableIntStateOf(0) }
+    var ready by remember(backend, artifact.projectId, contentId) { mutableStateOf(false) }
+    LaunchedEffect(client, artifact.projectId, contentId, online, renewals) {
         if (!pictured || !online || poster != null) return@LaunchedEffect
         try {
             while (isActive) {
-                val signed = client.request(ArtifactsUrlRequest(projectId = artifact.projectId, artifactId = artifact.id))
+                val signed = client.request(ArtifactsUrlRequest(projectId = artifact.projectId, artifactId = contentId))
                 if (video) {
-                    poster = VideoPosters.load(backend, artifact.projectId, artifact.id, signed.url)
+                    poster = VideoPosters.load(backend, artifact.projectId, contentId, signed.url)
                     // A frame that would not decode asks for a fresh URL a bounded number of times, then keeps the icon.
                     if (poster != null || failures >= MEDIA_RETRY_LIMIT) return@LaunchedEffect
                     failures++

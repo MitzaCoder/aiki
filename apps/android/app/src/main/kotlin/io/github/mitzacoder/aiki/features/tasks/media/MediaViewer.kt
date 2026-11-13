@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -132,7 +133,13 @@ private fun ViewerContent(
     val pager = rememberPagerState(initialPage = startIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))) { items.size }
     val index = pager.currentPage.coerceIn(0, (items.size - 1).coerceAtLeast(0))
     val current = items.getOrNull(index)
-    val pair = current?.let { pairs[it.id] }
+    var selectedVersions by rememberSaveable { mutableStateOf(hashMapOf<String, Long>()) }
+    val viewedItems = items.map { selectedArtifactVersion(it, selectedVersions[it.id]) }
+    val viewed = viewedItems.getOrNull(index)
+    val versions = current?.let(::artifactVersions).orEmpty()
+    val versionIndex = versions.indexOfFirst { it.id == viewed?.id }
+    val viewingLatest = viewed?.version == current?.version
+    val pair = current?.takeIf { viewingLatest }?.let { pairs[it.id] }
     val inCompare = current != null && pair != null && current.id in comparing
     val zooms = remember { mutableStateMapOf<Int, Zoom>() }
     val zoom = zooms[index] ?: ZOOM_FIT
@@ -220,7 +227,7 @@ private fun ViewerContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(Modifier.weight(1f).padding(horizontal = 8.dp).semantics { heading() }, verticalAlignment = Alignment.CenterVertically) {
-                    Text(current?.let(::artifactTitle) ?: "Media", Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall, color = Color.White)
+                    Text(viewed?.let(::artifactTitle) ?: "Media", Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall, color = Color.White)
                     Text("${index + 1} / ${items.size}", Modifier.padding(start = 6.dp), style = TaskType.metaMono.copy(fontFamily = FontFamily.Monospace), color = Color.White.copy(alpha = .6f))
                 }
                 if (current != null && pair != null) TextButton(
@@ -241,6 +248,18 @@ private fun ViewerContent(
                 ViewerButton(Lucide.X, "Close", !closing) { requestClose() }
             }
 
+            if (versions.size > 1 && current != null && viewed != null) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    IconButton(enabled = versionIndex > 0, onClick = { versions[versionIndex - 1].version?.let { selectedVersions = HashMap(selectedVersions).apply { put(current.id, it) } } }) {
+                        Text("←", modifier = Modifier.semantics { contentDescription = "Previous version" })
+                    }
+                    Text("v${viewed.version ?: 1} of ${current.versionCount ?: versions.size} · ${io.github.mitzacoder.aiki.features.tasks.relativeTime(viewed.createdAt)}", style = TaskType.xsMedium)
+                    IconButton(enabled = versionIndex < versions.lastIndex, onClick = { versions[versionIndex + 1].version?.let { selectedVersions = HashMap(selectedVersions).apply { put(current.id, it) } } }) {
+                        Text("→", modifier = Modifier.semantics { contentDescription = "Next version" })
+                    }
+                }
+            }
+
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 HorizontalPager(
                     state = pager,
@@ -248,9 +267,10 @@ private fun ViewerContent(
                     userScrollEnabled = !closing && (!zoomable || zoom.scale <= ZOOM_MIN + 0.01f),
                     key = { items.getOrNull(it)?.id ?: it },
                 ) { at ->
-                    val item = items[at]
+                    val root = items[at]
+                    val item = viewedItems[at]
                     val active = at == index
-                    val itemPair = pairs[item.id]
+                    val itemPair = if (item.version == root.version) pairs[root.id] else null
                     Box(Modifier.fillMaxSize().semantics { contentDescription = labels[at] }) {
                         when {
                             item.kind == "video" -> {
@@ -261,7 +281,7 @@ private fun ViewerContent(
                                     modifier = Modifier.padding(horizontal = 8.dp),
                                 )
                             }
-                            itemPair != null && item.id in comparing -> if (loadsFull(at - index)) CompareSlider(context, itemPair.before, itemPair.after, reducedMotion, full = true)
+                            itemPair != null && root.id in comparing -> if (loadsFull(at - index)) CompareSlider(context, itemPair.before, itemPair.after, reducedMotion, full = true)
                             loadsFull(at - index) -> MediaZoomImage(
                                 context, item, labels[at], active, zooms[at] ?: ZOOM_FIT, { zooms[at] = it }, pull, dismissDistance,
                                 onDismiss = { requestClose() }, page = page, flight = flight, slideRects = slideRects,
@@ -277,8 +297,8 @@ private fun ViewerContent(
             ) {
                 Box(Modifier.fillMaxWidth().heightIn(max = 240.dp).verticalScroll(rememberScrollState())) {
                     MediaCaption(
-                        artifactId = current?.id, lookup = { id -> items.firstOrNull { it.id == id } }, task = task, project = project, canEdit = canEdit,
-                        busy = busy, problem = problem, reducedMotion = reducedMotion, onEdit = onEdit, onFilter = null, onDetails = null, onStartEdit = onStartEdit,
+                        artifactId = viewed?.id, lookup = { id -> viewedItems.firstOrNull { it.id == id } }, task = task, project = project, canEdit = canEdit && viewingLatest,
+                        busy = busy, problem = problem, reducedMotion = reducedMotion, onEdit = { _, tags -> current?.let { onEdit(it, tags) } }, onFilter = null, onDetails = null, onStartEdit = onStartEdit,
                         seek = { artifact, seconds -> seeks.tryEmit(artifact.id to seconds) },
                     )
                 }

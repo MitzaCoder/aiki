@@ -38,6 +38,7 @@ internal object InlineVideos {
  */
 @Composable
 internal fun InlineArtifactVideo(context: ProjectScreenContext, artifact: Artifact, heading: String, modifier: Modifier, expand: () -> Unit) {
+    val contentId = artifactVersionAddress(artifact)
     val token = remember { Any() }
     val current by InlineVideos.playing.collectAsState()
     val playing = current === token
@@ -50,14 +51,14 @@ internal fun InlineArtifactVideo(context: ProjectScreenContext, artifact: Artifa
     }
     val client = context.backend.client
     val connection by client.state.collectAsStateWithLifecycle()
-    var url by remember(artifact.id) { mutableStateOf<String?>(null) }
-    var renewals by remember(artifact.id) { mutableIntStateOf(0) }
-    var failed by remember(artifact.id) { mutableStateOf(false) }
-    LaunchedEffect(client, artifact.id, connection.status == ConnectionStatus.Ready, renewals) {
+    var url by remember(contentId) { mutableStateOf<String?>(null) }
+    var renewals by remember(contentId) { mutableIntStateOf(0) }
+    var failed by remember(contentId) { mutableStateOf(false) }
+    LaunchedEffect(client, contentId, connection.status == ConnectionStatus.Ready, renewals) {
         if (connection.status != ConnectionStatus.Ready) return@LaunchedEffect
         try {
             while (isActive) {
-                val signed = client.request(ArtifactsUrlRequest(projectId = artifact.projectId, artifactId = artifact.id))
+                val signed = client.request(ArtifactsUrlRequest(projectId = artifact.projectId, artifactId = contentId))
                 url = signed.url; failed = false
                 delay(artifactRefreshDelay(signed.expiresAt, System.currentTimeMillis()))
             }
@@ -73,7 +74,7 @@ internal fun InlineArtifactVideo(context: ProjectScreenContext, artifact: Artifa
                 else CircularProgressIndicator(Modifier.size(28.dp), color = Color.White, strokeWidth = 2.dp)
             }
         } else Column {
-            val key = videoKey(artifact.projectId, artifact.id)
+            val key = videoKey(artifact.projectId, contentId)
             ArtifactMedia(ready, { renewals++ }, memoryKey = key, compact = true, autoplay = true,
                 onExpand = { playing -> InlineVideos.expanded(key, playing); InlineVideos.playing.compareAndSet(token, null); expand() })
         }

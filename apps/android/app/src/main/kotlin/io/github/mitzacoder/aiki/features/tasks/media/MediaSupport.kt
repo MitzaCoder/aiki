@@ -12,6 +12,7 @@ import io.github.mitzacoder.aiki.data.ConnectionStatus
 import io.github.mitzacoder.aiki.data.request
 import io.github.mitzacoder.aiki.features.chat.MEDIA_RETRY_LIMIT
 import io.github.mitzacoder.aiki.features.chat.artifactRefreshDelay
+import io.github.mitzacoder.aiki.features.chat.artifactVersionAddress
 import io.github.mitzacoder.aiki.navigation.ProjectScreenContext
 import io.github.mitzacoder.aiki.protocol.Artifact
 import io.github.mitzacoder.aiki.protocol.ArtifactsUrlRequest
@@ -46,17 +47,18 @@ internal class MediaUrl(val value: String?, private val onFailed: () -> Unit, pr
 internal fun rememberMediaUrl(context: ProjectScreenContext, artifact: Artifact, enabled: Boolean): MediaUrl {
     val client = context.backend.client
     val backend = context.backend.config.key
+    val contentId = artifactVersionAddress(artifact)
     val connection by client.state.collectAsStateWithLifecycle()
     val online = connection.status == ConnectionStatus.Ready
-    var url by remember(backend, artifact.projectId, artifact.id) { mutableStateOf<String?>(null) }
-    var renewals by remember(backend, artifact.projectId, artifact.id) { mutableIntStateOf(0) }
-    var failures by remember(backend, artifact.projectId, artifact.id) { mutableIntStateOf(0) }
-    LaunchedEffect(client, artifact.projectId, artifact.id, enabled, online, renewals) {
+    var url by remember(backend, artifact.projectId, contentId) { mutableStateOf<String?>(null) }
+    var renewals by remember(backend, artifact.projectId, contentId) { mutableIntStateOf(0) }
+    var failures by remember(backend, artifact.projectId, contentId) { mutableIntStateOf(0) }
+    LaunchedEffect(client, artifact.projectId, contentId, enabled, online, renewals) {
         if (!enabled) { url = null; return@LaunchedEffect }
         if (!online) return@LaunchedEffect
         try {
             while (isActive) {
-                val signed = client.request(ArtifactsUrlRequest(projectId = artifact.projectId, artifactId = artifact.id))
+                val signed = client.request(ArtifactsUrlRequest(projectId = artifact.projectId, artifactId = contentId))
                 url = signed.url
                 delay(artifactRefreshDelay(signed.expiresAt, System.currentTimeMillis()))
             }
@@ -67,7 +69,7 @@ internal fun rememberMediaUrl(context: ProjectScreenContext, artifact: Artifact,
 }
 
 /** The memory-cache key of an artifact's picture as the slide shows it; the viewer shows it as a placeholder. */
-internal fun slideCacheKey(artifact: Artifact) = "media-slide:${artifact.projectId}:${artifact.id}"
+internal fun slideCacheKey(artifact: Artifact) = "media-slide:${artifact.projectId}:${artifactVersionAddress(artifact)}"
 
 /**
  * A picture request for a signed URL. Never on disk (the URL is a capability); in memory under a key that does not
@@ -78,7 +80,7 @@ internal fun mediaRequest(android: Context, url: String, artifact: Artifact, ful
     ImageRequest.Builder(android).data(url)
         .diskCachePolicy(CachePolicy.DISABLED)
         .memoryCachePolicy(CachePolicy.ENABLED)
-        .memoryCacheKey(if (full) "media-full:${artifact.projectId}:${artifact.id}" else slideCacheKey(artifact))
+        .memoryCacheKey(if (full) "media-full:${artifact.projectId}:${artifactVersionAddress(artifact)}" else slideCacheKey(artifact))
         .apply { if (full) placeholderMemoryCacheKey(MemoryCache.Key(slideCacheKey(artifact))) }
         .build()
 

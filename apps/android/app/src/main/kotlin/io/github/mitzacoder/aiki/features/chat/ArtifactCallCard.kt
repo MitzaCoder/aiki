@@ -30,7 +30,7 @@ private fun openArtifact(context: ProjectScreenContext, artifact: Artifact) {
 @Composable private fun watchedPlace(artifact: Artifact): Pair<Double, Double>? {
     val memory by VideoMemoryStore.memory(LocalContext.current).collectAsState()
     return artifact.durationSeconds?.takeIf { artifact.kind == "video" && it.isFinite() && it > 0 }?.let { total ->
-        resumeTime(memory?.positions?.get(videoKey(artifact.projectId, artifact.id))?.time, total)?.let { it to total }
+        resumeTime(memory?.positions?.get(videoKey(artifact.projectId, artifactVersionAddress(artifact)))?.time, total)?.let { it to total }
     }
 }
 
@@ -76,7 +76,7 @@ private fun openArtifact(context: ProjectScreenContext, artifact: Artifact) {
     val heading = artifact?.let(::artifactTitle) ?: args?.s("title")?.takeIf(String::isNotBlank) ?: name
     val failed = part.status in setOf("error", "exited")
     val running = part.status in setOf("running", "preparing")
-    val facts = artifact?.let { listOf(formatMediaDuration(it.durationSeconds), artifactDetailSize(it.size).orEmpty()).filter(String::isNotEmpty).joinToString(" · ") }.orEmpty()
+    val facts = artifact?.let { listOf(formatMediaDuration(it.durationSeconds), artifactDetailSize(it.size).orEmpty(), artifactVersionCount(it)).filter(String::isNotEmpty).joinToString(" · ") }.orEmpty()
     val subtitle = when {
         failed -> "Could not save $name"
         running -> "Saving $name…"

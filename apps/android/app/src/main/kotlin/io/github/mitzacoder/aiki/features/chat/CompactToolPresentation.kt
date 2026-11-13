@@ -70,7 +70,8 @@ internal fun artifactFacts(artifact: Artifact): String = listOfNotNull(
     artifact.kind.replaceFirstChar(Char::uppercase),
     artifact.durationSeconds?.let { "${it.toInt() / 60}:${(it.toInt() % 60).toString().padStart(2,'0')}" },
     artifact.size.takeIf { it >= 0 }?.let { io.github.mitzacoder.aiki.features.status.formatBytes(it) },
-    artifact.taskId
+    artifact.taskId,
+    artifactVersionCount(artifact).takeIf(String::isNotEmpty)
 ).joinToString(" · ")
 
 // --- tool wording (apps/web/src/lib/chat/tools.ts, lib/transcript.ts) -----------------------------------------------

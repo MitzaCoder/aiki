@@ -31,7 +31,7 @@ internal fun MediaVideoSlide(
     if (near && url != null) key(artifact.id) {
         Column(modifier.fillMaxSize()) {
             ArtifactMedia(
-                url = url, refresh = { source.failed() }, memoryKey = videoKey(artifact.projectId, artifact.id), seeks = seeks,
+                url = url, refresh = { source.failed() }, memoryKey = videoKey(artifact.projectId, io.github.mitzacoder.aiki.features.chat.artifactVersionAddress(artifact)), seeks = seeks,
                 autoplay = autoplay, active = active, onPlayingChange = onPlayingChange,
                 frameModifier = Modifier.fillMaxWidth().weight(1f),
             )
