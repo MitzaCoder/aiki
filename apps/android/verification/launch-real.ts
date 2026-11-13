@@ -37,23 +37,23 @@ const env = {
 	XDG_CACHE_HOME: join(root, "cache"),
 	XDG_CONFIG_HOME: join(root, "config"),
 	BUN_INSTALL_CACHE_DIR: join(root, "cache", "bun"),
-	AIKI_DATA_DIR: join(root, "data"),
-	AIKI_AGENT_DIR: join(root, "agent"),
-	AIKI_CONFIG_DIR: join(root, "config"),
-	AIKI_CLAUDE_DIR: join(root, "claude"),
-	AIKI_VAPID_KEY_FILE: join(root, "data", "vapid.json"),
-	AIKI_VAPID_SUBJECT: "mailto:android-fixture@example.invalid",
-	AIKI_HOST: "127.0.0.1",
-	AIKI_PORT: process.env.PORT ?? "4789",
+	KEMIRI_DATA_DIR: join(root, "data"),
+	KEMIRI_AGENT_DIR: join(root, "agent"),
+	KEMIRI_CONFIG_DIR: join(root, "config"),
+	KEMIRI_CLAUDE_DIR: join(root, "claude"),
+	KEMIRI_VAPID_KEY_FILE: join(root, "data", "vapid.json"),
+	KEMIRI_VAPID_SUBJECT: "mailto:android-fixture@example.invalid",
+	KEMIRI_HOST: "127.0.0.1",
+	KEMIRI_PORT: process.env.PORT ?? "4789",
 	ARTIFACT_URL_TTL_MS: process.env.ARTIFACT_URL_TTL_MS ?? (process.argv.includes("--contracts") ? "2000" : "30000"),
-	AIKI_TIMEZONE: "UTC",
+	KEMIRI_TIMEZONE: "UTC",
 	ANDROID_VERIFY_ROOT: root,
 	ANDROID_VERIFY_LONG_MODEL: process.env.ANDROID_VERIFY_LONG_MODEL ?? "",
 	ANDROID_VERIFY_RELAY_ENDPOINT: process.env.ANDROID_VERIFY_RELAY_ENDPOINT ?? "",
     ANDROID_VERIFY_AUTH_MODE: process.env.ANDROID_VERIFY_AUTH_MODE ?? "off",
 };
 console.log(
-	`REAL CHECKOUT SERVER (${normal ? "normal main.ts, no injected model" : "injected faux model, no credentials"}); root ${root}; port ${env.AIKI_PORT}`,
+	`REAL CHECKOUT SERVER (${normal ? "normal main.ts, no injected model" : "injected faux model, no credentials"}); root ${root}; port ${env.KEMIRI_PORT}`,
 );
 const entry = normal
 	? "../../../packages/server/src/main.ts"

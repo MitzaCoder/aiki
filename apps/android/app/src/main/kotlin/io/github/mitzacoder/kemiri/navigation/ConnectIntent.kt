@@ -8,7 +8,7 @@ fun connectPayloadFromUri(value: String): String? = runCatching {
     require(uri.rawUserInfo == null && uri.rawQuery == null)
     when (uri.scheme?.lowercase()) {
         "https" -> require(uri.host.equals(io.github.mitzacoder.kemiri.features.notifications.APP_LINK_HOST, ignoreCase = true) && uri.rawPath == "/connect")
-        "harness", "aiki", "kemiri" -> require(uri.host == "connect" && uri.rawPath.orEmpty() in setOf("", "/"))
+        "kemiri" -> require(uri.host == "connect" && uri.rawPath.orEmpty() in setOf("", "/"))
         else -> return null
     }
     // Preserve the raw fragment: percent escapes must not turn damaged base64url into valid input.

@@ -40,7 +40,7 @@ internal fun DeliverySection(backend: BackendSession, project: ProjectSummary) {
     SettingsSectionPage("Delivery", "Where commits land and how deploy results reach tasks.", SettingsIcon.Server) {
         SettingsGroup(title = "Delivery") {
             if (connection.supports("task-changes")) {
-                SettingsRow("Integration branch", hint = "Commits with an Aiki-Task: T12 line that land here are shown on their tasks.", status = integrationSave) {
+                SettingsRow("Integration branch", hint = "Commits with a Kemiri-Task: T12 line that land here are shown on their tasks.", status = integrationSave) {
                     Combobox(listOf(ComboOption("auto", "Automatic (main or master)"), ComboOption("custom", "Custom ref"), ComboOption("off", "Off")), branchMode, { mode ->
                         branchMode = mode
                         integrationSave.reset()

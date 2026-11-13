@@ -49,7 +49,7 @@ class NavigationTest {
     }
     @Test fun onlyConnectRoutesYieldRawPreviewPayload() {
         assertEquals("v1.YQ", connectPayloadFromUri("https://${io.github.mitzacoder.kemiri.features.notifications.APP_LINK_HOST}/connect#v1.YQ"))
-        for (scheme in listOf("harness", "aiki", "kemiri")) {
+        for (scheme in listOf("kemiri")) {
             assertEquals("v1.YQ", connectPayloadFromUri("$scheme://connect#v1.YQ"))
             assertEquals("%76%31.YQ", connectPayloadFromUri("$scheme://connect/#%76%31.YQ"))
             for (bad in listOf("$scheme://other#v1.YQ", "$scheme://connect/other#v1.YQ", "$scheme://connect?secret=1#v1.YQ", "$scheme://user@connect#v1.YQ")) {
@@ -58,7 +58,7 @@ class NavigationTest {
         }
         assertEquals("", connectPayloadFromUri("https://${io.github.mitzacoder.kemiri.features.notifications.APP_LINK_HOST}/connect"))
         assertEquals("%76%31.YQ", connectPayloadFromUri("https://${io.github.mitzacoder.kemiri.features.notifications.APP_LINK_HOST}/connect#%76%31.YQ"))
-        for (bad in listOf("http://app.example/connect#v1.YQ", "https://user:password@app.example/connect#v1.YQ", "https://app.example/other#v1.YQ", "https://${io.github.mitzacoder.kemiri.features.notifications.APP_LINK_HOST}/connect?secret=1#v1.YQ", "https://other.example/connect#v1.YQ", "harness://other#v1.YQ", "not a uri")) {
+        for (bad in listOf("http://app.example/connect#v1.YQ", "https://user:password@app.example/connect#v1.YQ", "https://app.example/other#v1.YQ", "https://${io.github.mitzacoder.kemiri.features.notifications.APP_LINK_HOST}/connect?secret=1#v1.YQ", "https://other.example/connect#v1.YQ", "harness://connect#v1.YQ", "aiki://connect#v1.YQ", "harness://other#v1.YQ", "not a uri")) {
             assertNull(bad, connectPayloadFromUri(bad))
         }
     }

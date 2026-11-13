@@ -8,6 +8,10 @@
     <application android:name=".HarnessApplication" android:label="Kemiri" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:fullBackupContent="@xml/backup_rules" android:dataExtractionRules="@xml/data_extraction_rules">
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:windowSoftInputMode="adjustResize">
             <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -17,8 +21,6 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="harness" android:host="connect" />
-                <data android:scheme="aiki" android:host="connect" />
                 <data android:scheme="kemiri" android:host="connect" />
             </intent-filter>
             <!-- Unverified HTTPS handler: the user chooses the app; every payload is previewed.
@@ -75,17 +77,5 @@
         <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
         <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="kind-test" />
-        <!-- Keep the old launcher component for existing home-screen icons and explicit intents.
-             Only this alias advertises LAUNCHER, so the namespace move never adds a second icon. -->
-        <activity-alias android:name="io.github.mitzacoder.aiki.MainActivity" android:targetActivity=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-        <!-- An opt-in installation ID may preserve explicit intents from shortcuts and notifications made before a namespace move. -->
-        <activity-alias android:name="${previousActivityAlias}" android:targetActivity=".MainActivity"
-            android:enabled="${previousActivityEnabled}" android:exported="true" />
     </application>
 </manifest>

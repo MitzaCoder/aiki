@@ -39,7 +39,7 @@ const server = await startServer({
  auth: { mode: process.env.ANDROID_VERIFY_AUTH_MODE === "optional" ? "optional" : "off" },
 	dataDir: join(root, "data"),
 	hostname: "127.0.0.1",
-	port: Number(process.env.AIKI_PORT),
+	port: Number(process.env.KEMIRI_PORT),
 	models,
 	credentials,
 	images: null,

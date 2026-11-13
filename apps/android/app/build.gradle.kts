@@ -18,9 +18,9 @@ val localBuildProperties = Properties().apply {
 fun privateBuildProperty(name: String, environment: String, fallback: String = ""): String =
     providers.gradleProperty(name).orElse(providers.environmentVariable(environment)).orNull
         ?: localBuildProperties.getProperty(name, fallback)
-val installedApplicationId = privateBuildProperty("harness.applicationId", "AIKI_ANDROID_APPLICATION_ID", "io.github.mitzacoder.aiki")
-val preferencesPrefix = privateBuildProperty("harness.preferencesPrefix", "AIKI_ANDROID_PREFERENCES_PREFIX", "aiki")
-val notificationIntentPrefix = privateBuildProperty("harness.notificationIntentPrefix", "AIKI_ANDROID_NOTIFICATION_INTENT_PREFIX", installedApplicationId)
+val installedApplicationId = privateBuildProperty("harness.applicationId", "KEMIRI_ANDROID_APPLICATION_ID", "io.github.mitzacoder.aiki")
+val preferencesPrefix = privateBuildProperty("harness.preferencesPrefix", "KEMIRI_ANDROID_PREFERENCES_PREFIX", "aiki")
+val notificationIntentPrefix = privateBuildProperty("harness.notificationIntentPrefix", "KEMIRI_ANDROID_NOTIFICATION_INTENT_PREFIX", installedApplicationId)
 val appOrigin = privateBuildProperty("harness.appOrigin", "HARNESS_APP_ORIGIN", "https://app.example.invalid")
 val appUri = URI(appOrigin)
 require(appUri.scheme == "https" && appUri.host != null && appUri.rawUserInfo == null &&
@@ -74,7 +74,7 @@ fun androidReleaseVersion(tag: String): Pair<String, Int> {
         (match.groupValues[4].isEmpty() || pilot < 9999)) { "Android version slots exceeded" }
     return tag.removePrefix("v") to (major * 100_000_000 + minor * 1_000_000 + patch * 10_000 + pilot).toInt()
 }
-val releaseTag = providers.gradleProperty("aiki.version").orElse(providers.environmentVariable("AIKI_RELEASE_VERSION")).orNull
+val releaseTag = providers.gradleProperty("kemiri.version").orElse(providers.environmentVariable("KEMIRI_RELEASE_VERSION")).orNull
     ?: if (providers.environmentVariable("GITHUB_REF_TYPE").orNull == "tag") providers.environmentVariable("GITHUB_REF_NAME").orNull else null
 val releaseVersion = androidReleaseVersion(releaseTag ?: "v0.1.0-pilot.4")
 tasks.register("checkReleaseVersion") {
@@ -109,8 +109,6 @@ android {
         buildConfigField("String", "RELAY_GOOGLE_CLIENT_ID", buildString(relayGoogleClientId))
         buildConfigField("String", "RELAY_EMAIL_LINK_DOMAIN", buildString(relayEmailLinkDomain))
         buildConfigField("String", "RELAY_PRIVACY_CONTACT", buildString(relayPrivacyContact))
-        manifestPlaceholders["previousActivityAlias"] = if (installedApplicationId != "io.github.mitzacoder.aiki") "$installedApplicationId.MainActivity" else "io.github.mitzacoder.aiki.PreviousActivity"
-        manifestPlaceholders["previousActivityEnabled"] = (installedApplicationId != "io.github.mitzacoder.aiki").toString()
         buildConfigField("String", "PREFERENCES_PREFIX", buildString(preferencesPrefix))
         buildConfigField("String", "NOTIFICATION_INTENT_PREFIX", buildString(notificationIntentPrefix))
         buildConfigField("String", "APP_ORIGIN", buildString(appOrigin.trimEnd('/')))

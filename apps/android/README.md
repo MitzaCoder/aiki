@@ -18,7 +18,7 @@ See `docs/RELEASE.md` at the repository root for the owner-only release procedur
 and scrubbed environment; it never reads operator Android configuration. Signing is
 local, with an external owner-held keystore and password file, never GitHub secrets.
 
-Set `-Paiki.version=v0.1.0-pilot.4` (or `AIKI_RELEASE_VERSION`; tag workflows also
+Set `-Pkemiri.version=v0.1.0-pilot.4` (or `KEMIRI_RELEASE_VERSION`; tag workflows also
 read `GITHUB_REF_NAME` when `GITHUB_REF_TYPE=tag`). `versionName` drops `v`.
 `versionCode = major*100000000 + minor*1000000 + patch*10000 + stage`, where
 pilot N uses N (1–9998) and stable uses 9999. Major is 0–20, minor/patch 0–99.
@@ -141,7 +141,7 @@ HARNESS_GOOGLE_SERVICES_JSON=~/scratch/android-sync/firebase/google-services.jso
 
 Each backend needs the Firebase project's service-account key (Firebase console → Project settings → Service
 accounts → Generate new private key) at `<data dir>/notifications/fcm-service-account.json` (or
-`AIKI_FCM_KEY_FILE`), mode 0600, then a restart; it logs `FCM on for Firebase project …` or `FCM off`.
+`KEMIRI_FCM_KEY_FILE`), mode 0600, then a restart; it logs `FCM on for Firebase project …` or `FCM off`.
 Never commit or print it. The app's Notifications screen turns push on (asks for POST_NOTIFICATIONS on Android 13+),
 registers the FCM token with every backend that has `fcm-push`, shows each backend's registration, last push and
 "Send test", and keeps kinds, quiet hours and muted projects (the bell in a chat header mutes that project).

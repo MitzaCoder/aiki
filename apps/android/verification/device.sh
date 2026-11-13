@@ -9,7 +9,7 @@ OWNER_HOME=$HOME
 # Read only the non-secret installation ID, before redirecting HOME to emulator state.
 PROPERTIES=${HARNESS_ANDROID_PROPERTIES:-${DEPLOY_CONFIG_DIR:-$REPO/deploy/local}/android.properties}
 if [[ -z ${HARNESS_ANDROID_PROPERTIES:-} && ! -f $PROPERTIES ]]; then PROPERTIES=$REPO/apps/android/local.properties; fi
-PACKAGE=${HARNESS_ANDROID_PACKAGE:-${AIKI_ANDROID_APPLICATION_ID:-}}
+PACKAGE=${HARNESS_ANDROID_PACKAGE:-${KEMIRI_ANDROID_APPLICATION_ID:-}}
 if [[ -z $PACKAGE && -f $PROPERTIES ]]; then
     PACKAGE=$(sed -n 's/^[[:space:]]*harness\.applicationId[[:space:]]*=[[:space:]]*//p' "$PROPERTIES" | tail -n 1 | tr -d '\r')
 fi
