@@ -40,6 +40,9 @@ keep their original names. See SITE.md for the owner-operated DNS/mail cutover.
 
 ## Kemiri compatibility bridge (T167)
 
+Launcher and supervisor diagnostics use Kemiri even when rejecting legacy
+installation metadata or service paths; ownership markers remain unchanged.
+
 Kemiri is the command and fresh XDG config/data default; `aiki` remains a same-root
 launcher alias. Recorded installation paths, service paths, ownership markers and
 storage/wire identities remain authoritative. Existing default `aiki` directories

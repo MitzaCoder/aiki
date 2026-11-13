@@ -67,7 +67,7 @@ export async function superviseInstallation(installation: Installation, env: Rea
 		if (!Number.isSafeInteger(pid) || pid < 1) throw new Error("Invalid supervisor.pid; inspect the installation before removing it");
 		let alive = false;
 		try { process.kill(pid, 0); alive = true; } catch { /* Prior supervisor exited. */ }
-		if (alive) throw new Error("Aiki's supervisor is already running");
+		if (alive) throw new Error("Kemiri's supervisor is already running");
 		rmSync(lock);
 	}
 	writeFileSync(lock, String(process.pid), { flag: "wx", mode: 0o600 });

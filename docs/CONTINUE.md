@@ -1,5 +1,22 @@
 # Continue
 
+## T167: merged rename checks and diagnostic cleanup
+
+Merged stack through usrsyrpz passes dependency install, root tests (2,630 /
+93,281 assertions), typecheck, web check (zero diagnostics), web tests (1,105 /
+79,998 assertions), and production build. Android passes 944 JVM tests across
+129 suites (two skipped), assembleDebug and lintDebug (52 warnings, four hints,
+zero errors); protocol check reports 388 DTOs / 106 overloads. Gradle is stopped.
+Private-denylist/generic and Gitleaks checks pass. Root tests use scrubbed prefix
+variables and isolated HOME/XDG/cache/terminal directories; no retries needed.
+
+The leftover scan found three missed launcher/supervisor error messages, now
+Kemiri; root tests and typecheck pass again after that copy-only fix. Ownership
+markers, service paths, version probes, MCP names/User-Agents and trailer writers
+are deliberately unchanged. Two standalone smoke scripts still expect the old
+startup log and the release-workflow fixture expects an old release heading;
+these are reported for review, not silently changed in this check run.
+
 ## T167: atomic @kemiri workspace scope
 
 Root package is kemiri; protocol/client/server/web workspace packages and every

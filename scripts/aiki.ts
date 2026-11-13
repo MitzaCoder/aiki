@@ -66,7 +66,7 @@ WantedBy=default.target\n`;
 function metadata(root: string): Installation {
 	const installation = JSON.parse(readFileSync(join(root, ".aiki-install.json"), "utf8")) as Installation;
 	if (installation.root !== root || readFileSync(join(root, ".aiki-managed"), "utf8").trim() !== "aiki-installer-v1") {
-		throw new Error("Not an Aiki-managed installation");
+		throw new Error("Not a Kemiri-managed installation");
 	}
 	return installation;
 }
@@ -115,7 +115,7 @@ async function service(installation: Installation, action: string, print: boolea
 	if (print) { console.log(serviceDefinition(installation, process.platform, process.env.PATH || "/usr/bin:/bin")); return; }
 	const path = existsSync(join(installation.root, ".service-path")) ? readFileSync(join(installation.root, ".service-path"), "utf8") : servicePath();
 	const ownFile = existsSync(join(installation.root, ".service-path")) && readFileSync(join(installation.root, ".service-path"), "utf8") === path;
-	if (existsSync(path) && !ownFile) throw new Error("Another local Aiki service exists; refusing to overwrite/remove it");
+	if (existsSync(path) && !ownFile) throw new Error("Another local Kemiri service exists; refusing to overwrite/remove it");
 	if (action === "remove" && !ownFile) { console.log("No service installed by this installation."); return; }
 	if (action === "install") {
 		const manager = process.platform === "darwin" ? "launchctl" : "systemctl";
