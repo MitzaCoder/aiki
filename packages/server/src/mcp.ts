@@ -200,7 +200,7 @@ export class McpService {
  const { command, args, cwd } = input.command;
  if (!command.trim() || [command, ...args, cwd ?? ""].some(value => value.includes("\0")) || args.length > 256) return bad("Invalid MCP command");
  if (cwd && !cwd.startsWith("/")) return bad("Working directory must be absolute");
- if (Object.entries(input.env ?? {}).some(([name, value]) => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) || name.startsWith("AIKI_") || value.includes("\0"))) return bad("Invalid MCP environment");
+ if (Object.entries(input.env ?? {}).some(([name, value]) => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) || (name.startsWith("AIKI_") || name.startsWith("KEMIRI_")) || value.includes("\0"))) return bad("Invalid MCP environment");
  if (input.url || (preset && !preset.command) || input.transport) return bad("Choose command or URL, not both");
  }
  const url = input.command ? `stdio:${id}` : validateMcpUrl(input.url ?? preset?.url ?? "");

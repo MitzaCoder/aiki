@@ -117,3 +117,18 @@ test("rollback guard reads persisted required mode even when backend is stopped;
 	await writeFile(join(s.dataDir, "auth.sqlite"), "corrupt");
 	expect((await guard()).code).toBe(1);
 });
+
+
+test("standalone checker resolves canonical aliases before legacy names in each source", async () => {
+ const { s, env } = await setup("required");
+ const file = join(s.root, "canonical.env");
+ await writeFile(file, `KEMIRI_DATA_DIR=${s.dataDir}\nAIKI_DATA_DIR=/tmp/synthetic-unselected\n`);
+ const result = await run([s.server.url, "--deep", "--timeout-ms=0"], { ...env, KEMIRI_ENV_FILE: file, AIKI_ENV_FILE: join(s.root, "missing.env") });
+ expect(result.code).toBe(0);
+ expect(result.stderr).toContain("KEMIRI_ENV_FILE/AIKI_ENV_FILE");
+ expect(result.stderr).toContain("KEMIRI_DATA_DIR/AIKI_DATA_DIR");
+ expect(result.stderr).not.toContain(s.dataDir);
+ expect(result.stderr.trim().split("\n")).toHaveLength(1);
+ const processWins = await run([s.server.url, "--deep", "--timeout-ms=0"], { ...env, KEMIRI_ENV_FILE: file, AIKI_DATA_DIR: s.dataDir });
+ expect(processWins.code).toBe(0);
+});

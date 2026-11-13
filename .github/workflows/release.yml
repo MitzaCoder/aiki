@@ -113,6 +113,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           bun scripts/build-binary.ts --version "$VERSION" --target "$TARGET" --out .preview/binaries
+          bun scripts/build-binary.ts --version "$VERSION" --target "$TARGET" --out .preview/binaries --archive ".preview/binaries/aiki-$VERSION.tar.gz" --legacy-version-probe
           bun scripts/build-binary.ts --version "$VERSION" --target "$TARGET" --out .preview/binaries --archive ".preview/binaries/aiki-$VERSION.tar.gz" --smoke
       - name: Verify Linux interpreter is portable
         if: runner.os == 'Linux'
@@ -120,7 +121,7 @@ jobs:
           VERSION: ${{ steps.identity.outputs.version }}
           PLATFORM: ${{ matrix.platform }}
         run: |
-          readelf -l ".preview/binaries/aiki-$VERSION-$PLATFORM" > .preview/binaries/elf.txt
+          readelf -l ".preview/binaries/kemiri-$VERSION-$PLATFORM" > .preview/binaries/elf.txt
           case "$PLATFORM" in
             linux-x64) grep -F '/lib64/ld-linux-x86-64.so.2' .preview/binaries/elf.txt ;;
             linux-arm64) grep -F '/lib/ld-linux-aarch64.so.1' .preview/binaries/elf.txt ;;
@@ -131,7 +132,7 @@ jobs:
           VERSION: ${{ steps.identity.outputs.version }}
           PLATFORM: ${{ matrix.platform }}
         run: |
-          python3 scripts/smoke-binary.py --binary ".preview/binaries/aiki-$VERSION-$PLATFORM" --smoke ".preview/binaries/aiki-$VERSION-$PLATFORM-smoke" | tee .preview/binaries/smoke.log
+          python3 scripts/smoke-binary.py --binary ".preview/binaries/kemiri-$VERSION-$PLATFORM" --smoke ".preview/binaries/kemiri-$VERSION-$PLATFORM-smoke" | tee .preview/binaries/smoke.log
       - name: Keep production executable, checksum and PDF dependency notices
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -140,6 +141,9 @@ jobs:
             .preview/binaries/aiki-${{ steps.identity.outputs.version }}-${{ matrix.platform }}
             .preview/binaries/aiki-${{ steps.identity.outputs.version }}-${{ matrix.platform }}.sha256
             .preview/binaries/aiki-${{ steps.identity.outputs.version }}-${{ matrix.platform }}.licenses.txt
+            .preview/binaries/kemiri-${{ steps.identity.outputs.version }}-${{ matrix.platform }}
+            .preview/binaries/kemiri-${{ steps.identity.outputs.version }}-${{ matrix.platform }}.sha256
+            .preview/binaries/kemiri-${{ steps.identity.outputs.version }}-${{ matrix.platform }}.licenses.txt
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
@@ -175,9 +179,11 @@ jobs:
       - name: Verify and collect binary checksums
         run: |
           for platform in linux-x64 linux-arm64 darwin-arm64; do
-            file="aiki-$GITHUB_REF_NAME-$platform"
+           for brand in kemiri aiki; do
+            file="$brand-$GITHUB_REF_NAME-$platform"
             (cd .preview/downloaded-binaries && sha256sum --check "$file.sha256")
             mv ".preview/downloaded-binaries/$file" ".preview/downloaded-binaries/$file.sha256" ".preview/downloaded-binaries/$file.licenses.txt" .preview/releases/
+           done
           done
       - name: Hash installer
         run: sha256sum install.sh > .preview/releases/install.sh.sha256
@@ -191,7 +197,7 @@ jobs:
         run: |
           notes="docs/releases/$GITHUB_REF_NAME.md"
           test -f "$notes"
-          test "$(head -n 1 "$notes")" = "# Aiki $GITHUB_REF_NAME"
+          test "$(head -n 1 "$notes")" = "# Kemiri $GITHUB_REF_NAME"
           case "$GITHUB_REF_NAME" in
             *-*) gh release create "$GITHUB_REF_NAME" --verify-tag --draft --notes-file "$notes" --prerelease .preview/releases/* install.sh ;;
             *) gh release create "$GITHUB_REF_NAME" --verify-tag --draft --notes-file "$notes" .preview/releases/* install.sh ;;

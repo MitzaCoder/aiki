@@ -1,5 +1,30 @@
 # Continue
 
+## T167: Kemiri server/CLI compatibility bridge
+
+KEMIRI_* aliases resolve by source before spelling, without placing file values in
+process.env. Both prefixes are scrubbed from children and both child markers suppress
+automatic file discovery. Fresh config/data roots use kemiri; legacy defaults remain
+in place, with ambiguous populated defaults requiring explicit paths. Storage, crypto,
+metadata, owner socket and service identifiers remain unchanged. Both task trailer
+spellings are read, while workers still write Aiki-Task.
+
+Activation creates both ~/.local/bin/kemiri and aiki even when called by pilot.3’s
+old installer. Recorded launcher/config/data/service paths win; unrelated launchers
+are rejected before activation. scripts/aiki.ts remains the source fallback entry.
+The canonical binary says Kemiri; --legacy-version-probe builds aiki assets whose
+raw --version says Aiki. Both expose --kemiri-version; the installed launcher uses
+that route and falls back safely for pilot.3 rollback. Archives keep aiki/ layout.
+
+A real pilot.3 binary and tagged installer were rehearsed with isolated HOME/XDG,
+synthetic paired device and no service. Canonical rejected at the actual version
+check; legacy upgrade accepted; both commands worked; all closed data files and
+config were byte-identical; restarted backend ID/device list matched; rollback
+worked; fresh new install used kemiri roots. Transcript: T167 artifact
+mwex5jc9-edb83566b1. Root 2,599 tests, typecheck, web check (zero diagnostics),
+1,094 web tests, web build and public/private-denylist plus Gitleaks pass. Native launchd and non-x64 binary execution are not rehearsed.
+
+
 ## T165 / Q188: web artifacts may open print dialogs
 
 The owner approved `allow-modals` in the shared web artifact sandbox, used by the dialog and new-tab wrapper.

@@ -1,3 +1,4 @@
+import { privateSetting } from "./environment-aliases.ts";
 /**
  * Environment for every host command (agent tools, terminals and the backend's own command-line helpers).
  * No installation setting is a child setting. The sole AIKI_* allowlisted value is a marker we create, not copy:
@@ -9,8 +10,9 @@ export function childEnvironment(
 ): Record<string, string> {
 	const child: Record<string, string> = {};
 	for (const [name, value] of Object.entries(env)) {
-		if (value !== undefined && !name.startsWith("AIKI_")) child[name] = value;
+		if (value !== undefined && !privateSetting(name)) child[name] = value;
 	}
 	child.AIKI_CHILD_PROCESS = "1";
+	child.KEMIRI_CHILD_PROCESS = "1";
 	return child;
 }

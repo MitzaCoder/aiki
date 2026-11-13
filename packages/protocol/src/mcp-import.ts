@@ -33,7 +33,7 @@ export function parseMcpImport(text: string, taken: readonly string[] = []): Mcp
  const args = entry.args ?? [];
  if (!Array.isArray(args) || args.length > 256 || args.some(arg => typeof arg !== 'string' || arg.includes('\0'))) throw new Error('args must be an array of strings');
  if (entry.cwd !== undefined && (typeof entry.cwd !== 'string' || !entry.cwd.startsWith('/') || entry.cwd.includes('\0'))) throw new Error('cwd must be an absolute path');
- if (entry.env !== undefined && (!record(entry.env) || Object.entries(entry.env).some(([key, value]) => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || key.startsWith('AIKI_') || typeof value !== 'string' || value.includes('\0')))) throw new Error('env must contain valid variable names and string values (no AIKI_* settings)');
+ if (entry.env !== undefined && (!record(entry.env) || Object.entries(entry.env).some(([key, value]) => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || (key.startsWith('AIKI_') || key.startsWith('KEMIRI_')) || typeof value !== 'string' || value.includes('\0')))) throw new Error('env must contain valid variable names and string values (no KEMIRI_* or AIKI_* settings)');
  row.command = { command: entry.command, args, ...(entry.cwd ? { cwd: entry.cwd as string } : {}) };
  row.env = (entry.env ?? {}) as Record<string, string>;
  row.target = JSON.stringify([entry.command, ...args]);

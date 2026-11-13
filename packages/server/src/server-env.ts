@@ -1,31 +1,34 @@
+import { normalizeEnvironment, privateSetting, warnAliasConflicts } from "./environment-aliases.ts";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseEnv } from "node:util";
-import { resolveAgentDir, resolveClaudeDir, resolveConfigDir, resolveDataDir, resolveHostname, resolvePort, type Environment } from "./data-dir.ts";
+import { defaultProductDirectory, resolveAgentDir, resolveClaudeDir, resolveConfigDir, resolveDataDir, resolveHostname, resolvePort, type Environment } from "./data-dir.ts";
 import { resolveAllowedOrigins } from "./origins.ts";
 import { serverSettings } from "./server-settings.ts";
 
 /** Load before importing server modules: durable kinds and extensions capture their identity at import time. */
 export function loadServerEnv(env: Readonly<Record<string, string | undefined>> = process.env): Record<string, string | undefined> {
-	const settings = { ...env };
-	if (env.AIKI_CHILD_PROCESS === "1" && !env.AIKI_ENV_FILE) return settings;
-	const file = env.AIKI_ENV_FILE || join(env.XDG_CONFIG_HOME || join(homedir(), ".config"), "aiki", "server.env");
+	const settings = normalizeEnvironment(env, false);
+	const finish = (settings: Record<string, string | undefined>, file: Environment = {}) => { warnAliasConflicts(env, file); return settings; };
+	if (settings.AIKI_CHILD_PROCESS === "1" && !settings.AIKI_ENV_FILE) return finish(settings);
+	const file = settings.AIKI_ENV_FILE || join(settings.AIKI_CONFIG_DIR || defaultProductDirectory(env.XDG_CONFIG_HOME || join(homedir(), ".config")), "server.env");
 	let source: string;
 	try { source = readFileSync(file, "utf8"); }
 	catch (error) {
-		if (!env.AIKI_ENV_FILE && (error as NodeJS.ErrnoException).code === "ENOENT") return settings;
+		if (!settings.AIKI_ENV_FILE && (error as NodeJS.ErrnoException).code === "ENOENT") return finish(settings);
 		throw error;
 	}
-	for (const [name, value] of Object.entries(parseEnv(source))) {
-		if (!name.startsWith("AIKI_")) throw new Error(`Server env file may only set AIKI_ settings: ${name}`);
-		if (settings[name] === undefined) settings[name] = value;
-	}
-	return settings;
+	const parsed = parseEnv(source);
+	for (const name of Object.keys(parsed)) if (!privateSetting(name)) throw new Error(`Server env file may only set KEMIRI_ or AIKI_ settings: ${name}`);
+	const fileSettings = normalizeEnvironment(parsed, false);
+	for (const [name, value] of Object.entries(settings)) if (value !== undefined) fileSettings[name] = value;
+	return finish(fileSettings, parsed);
 }
 
 /** Read-only: no data directories, keys, sessions, sockets or model clients are opened. */
 export function resolvedServerConfig(env: Environment = serverSettings) {
+	env = normalizeEnvironment(env);
 	return {
 		dataDir: resolveDataDir(env), configDir: resolveConfigDir(env), agentDir: resolveAgentDir(env),
 		claudeDir: resolveClaudeDir(env), hostname: resolveHostname(env), port: resolvePort(env),

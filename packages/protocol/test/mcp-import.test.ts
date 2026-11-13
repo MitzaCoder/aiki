@@ -15,7 +15,7 @@ test('reviews wrapped/bare maps, commands, URL aliases and bearer headers withou
  expect(parseMcpImport(JSON.stringify(fixture))).toHaveLength(4);
 });
 test('explains invalid rows without echoing secret values and assigns safe collision IDs', () => {
- const invalid = [null, {command:'bun',args:'no'}, {command:'bun',env:{TOKEN:123}}, {command:'bun',cwd:'relative'}, {command:'bun',url:'https://example.test'}, {url:'https://example.test?token=synthetic-secret'}, {url:'https://example.test',headers:{'x-api-key':'synthetic-secret'}}, {command:'bun',env:{AIKI_DATA_DIR:'/tmp'}}];
+ const invalid = [null, {command:'bun',args:'no'}, {command:'bun',env:{TOKEN:123}}, {command:'bun',cwd:'relative'}, {command:'bun',url:'https://example.test'}, {url:'https://example.test?token=synthetic-secret'}, {url:'https://example.test',headers:{'x-api-key':'synthetic-secret'}}, {command:'bun',env:{AIKI_DATA_DIR:'/tmp'}}, {command:'bun',env:{KEMIRI_FUTURE_SETTING:'synthetic-secret'}}];
  for (const entry of invalid) {
  const row = parseMcpImport(JSON.stringify({'Bad entry':entry}))[0]!;
  expect(row.error).toBeTruthy(); expect(JSON.stringify(row)).not.toContain('synthetic-secret');

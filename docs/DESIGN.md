@@ -1,5 +1,19 @@
 # Design
 
+## Kemiri compatibility bridge (T167)
+
+Kemiri is the command and fresh XDG config/data default; `aiki` remains a same-root
+launcher alias. Recorded installation paths, service paths, ownership markers and
+storage/wire identities remain authoritative. Existing default `aiki` directories
+are reused without copying; independent populated defaults require an explicit path.
+Settings resolve process KEMIRI → process AIKI → file KEMIRI → file AIKI → default.
+Both prefixes are private and scrubbed from children, which receive both child markers.
+The bridge publishes canonical Kemiri assets and explicitly compiled legacy Aiki
+version-probe binaries for pilot.3. Installed wrappers use `--kemiri-version` for
+those binaries; source archives retain the `aiki/` layout and `scripts/aiki.ts` entry.
+Updates never rename a service or migrate data. Both task trailer spellings are read;
+agents continue writing `Aiki-Task:` until the dual reader is deployed.
+
 ## Versioned full-height HTML previews (T165 / T166 / T162)
 
 Resolve the selected retained snapshot before reading its bytes, then apply the current-theme prelude to those bytes.
@@ -107,18 +121,18 @@ confirmation warns that running commands may be interrupted and unsafe to retry.
 New admission is blocked only during the final switch.
 No URL, shell argument or service name comes from a client.
 
-`aiki start` is a persistent supervisor, both in a terminal and as the service's
+`kemiri start` is a persistent supervisor, both in a terminal and as the service's
 main process. It owns its child, stops it before activation, starts the selected
 release and probes the owner-only health socket for up to 30 seconds. Failed
 activation/startup/health restores the retained release using the same code swap
-as `aiki rollback`, then starts it again. systemd and launchd keep supervising the
+as `kemiri rollback`, then starts it again. systemd and launchd keep supervising the
 same parent: no service-manager command or detached cgroup escape is needed.
 The small supervisor remains resident until a full stop/start; later releases must
 keep its transaction/health contract backward-compatible. An interrupted switch is recovered from the persisted transaction on next start.
 Clients reconnect normally and read the persisted outcome. Code rollback cannot
 undo data migrations; release authors must retain backward-compatible storage.
 
-Pilot.3 and older releases lack this supervisor/API and require one manual `aiki update` while
+Pilot.3 and older releases lack this supervisor/API and require one manual `kemiri update` while
 stopped before one-click updates are available. Android updates the backend, not
 its APK. Native macOS service behavior requires native rehearsal.
 
@@ -127,7 +141,7 @@ its APK. Native macOS service behavior requires native rehearsal.
 The desktop projects sidebar and phone drawer reserve a quiet footer link below
 Usage and Settings for the connected backend's identity. It opens Settings →
 About, where update notices remain available with release notes, the exact
-manual `aiki update` instructions and per-version dismissal. An enabled,
+manual `kemiri update` instructions and per-version dismissal. An enabled,
 undismissed update changes the footer to `Aiki v… → v… available` plus an accent
 dot; dismissal removes that announcement, not the running version or About's
 details. Eligible installed backends also expose T139's Update now control here
@@ -142,7 +156,7 @@ Version precedence is installed release (`server.status.updates.installedVersion
 release tag or short commit (`server.status.release`), then `dev` for a known
 source checkout. Before status arrives, or on older backends without status,
 hello's server version is the fallback. Installed metadata is the identity used
-by `aiki version`; packaged `release.name` is also used by standalone
+by `kemiri version`; packaged `release.name` is also used by standalone
 `aiki --version`. Hello's package constant alone cannot identify a source deploy.
 No answer means unknown, not the client's version presented as the backend's.
 
@@ -211,7 +225,7 @@ not oversized WebSocket submissions. Only metadata enters Android saved state.
 Legacy native images retain their existing transport; small inline file text also
 travels in ordinary transcript updates.
 
-Name: Aiki (command and data directory: `aiki`).
+Name: Kemiri (command and fresh data directory: `kemiri`; legacy aliases remain supported).
 
 ## Pilot release identity and notices
 
@@ -273,6 +287,14 @@ remain off until explicitly enabled or supplied an installed-release identity.
 Native standard-runner CI builds Linux x64 baseline, Linux arm64 and macOS arm64, runs isolated
 no-Bun-on-PATH production/faux acceptance and generates checksums. The existing tag-only draft
 job rechecks/downloads these beside its source/installer assets; no auto-publication is added.
+Canonical `kemiri-TAG-PLATFORM` binaries print `Kemiri TAG`. Explicit `--legacy-version-probe` builds
+`aiki-TAG-PLATFORM` binaries printing exactly `Aiki TAG` for pilot.3’s old installer. Both expose
+`--kemiri-version`; installed wrappers use it for user version requests and fall back for old releases.
+Source assets are published under both names, with identical `aiki/` top-level layout. All assets get
+independent checksum entries. Activation creates both launchers even when invoked by the old installer,
+honors recorded launchers and refuses unrelated files before switching links. Existing `.service-path`
+selects the service; update does not rename or duplicate it.
+
 Binary releases also embed the shared installed CLI and installer script. The installed launcher selects the
 current release's executable, or its source CLI with private Bun; bare standalone runs still have no installation
 identity. Binary updates unpack only the installer script into an owned 0700 temporary directory for the host
@@ -283,7 +305,7 @@ shell, then remove it. Host tools remain external. See [build measurements and l
 
 The installed CLI passes its recorded version/channel in the private settings snapshot; `--ref` and source/deploy
 entry points do not. Installation metadata remembers pilot/stable, inferred from the first tag for old installs;
-`aiki update --channel` changes it only after successful activation. Explicit `--version` wins; rollback swaps code
+`kemiri update --channel` changes it only after successful activation. Explicit `--version` wins; rollback swaps code
 without changing channel or data. Both CLI selection and notices use SemVer ordering, including numeric prereleases.
 The CLI queries the public releases list then uses the existing checksum-verifying installer, with no auto-restart.
 
@@ -305,8 +327,9 @@ both the exact-name `.sha256` sidecar and `SHA256SUMS` entry before chmod/execut
 an unsupported binary platform, or explicit `--runtime bun` chooses the source/web archive and private,
 checksum-pinned Bun runtime; network or checksum errors fail closed. Source/ref/local-archive installs retain
 that Bun path. macOS x64 and Linux musl use pinned Bun; Windows uses WSL. Release CI includes the aggregate
-manifest alongside the existing checksums and still creates drafts only. `~/.local/bin/aiki` selects an immutable release under
-`${XDG_DATA_HOME:-~/.local/share}/aiki`, with separate `data/` and XDG config. `--dir` puts configuration there too,
+manifest alongside the existing checksums and still creates drafts only. `~/.local/bin/kemiri` and its
+`aiki` alias select the same immutable release under `${XDG_DATA_HOME:-~/.local/share}/kemiri`
+for fresh installs, with separate `data/` and XDG config. Legacy recorded/default roots are retained. `--dir` puts configuration there too,
 for isolated installs. Updating prepares dependencies before switching `current`; `previous` retains one rollback
 candidate. Manual CLI updating/rollback never restarts a running process or reverses storage migrations: stop first and
 back up before upgrades. Uninstall preserves data/config unless explicitly purged. The owner's `deploy/` remains
@@ -325,11 +348,11 @@ GET/HEAD, safe path resolution, no-store HTML/service-worker responses and immut
 loopback origins are accepted for WebSockets; no reflected Host/Origin allow-list. `/aiki-local.json` advertises
 same-origin discovery; hosted builds without this endpoint retain their existing multi-backend setup. Fresh local
 installs bind loopback only and retain required device authentication. The public shell and discovery do not grant
-API access. `aiki pair` delegates `pair --local` to the existing owner-only socket, printing its ten-minute one-time
+API access. `kemiri pair` delegates `pair --local` to the existing owner-only socket, printing its ten-minute one-time
 URL and the code already included in that URL. Existing `/pair` confirmation signs this browser in; no auth protocol,
 mode downgrade, automatic grant issuance or remote exposure is added. Pairing output is sensitive, never a server log.
 
-Before authentication, local Welcome explains `aiki pair`; provider/project data is not requested or displayed.
+Before authentication, local Welcome explains `kemiri pair`; provider/project data is not requested or displayed.
 After pairing, a fresh local backend with no provider/project shows Welcome, reusing account settings and the folder picker.
 Credentials stay on the backend and providers remain direct pi-ai integrations; paid API keys are a clear option,
 and subscription sign-in remains subject to the provider's terms. After adding a folder, existing project settings
@@ -339,34 +362,37 @@ The installed CLI builds an explicit private snapshot with T82’s `childEnviron
 owned env file/data/config plus loopback and static assets. It passes that snapshot to the same `runServerEntry`
 used by the source executable; it never populates `process.env` with server settings. File-selected port settings
 therefore work too; explicit `AIKI_PORT` remains the one supported calling-shell server override. Every CLI-spawned
-helper uses `childEnvironment`. `aiki auth ...` delegates the existing owner commands with that explicit target;
-`aiki pair` addresses its recorded owner socket and uses the actual owner-provided URL, independent of shell port
+helper uses `childEnvironment`. `kemiri auth ...` delegates the existing owner commands with that explicit target;
+`kemiri pair` addresses its recorded owner socket and uses the actual owner-provided URL, independent of shell port
 settings. Normal, SSH and `AIKI_CHILD_PROCESS=1` shells use the same target. PID bookkeeping is update safety only;
 the shared T82 socket preflight decides whether backend data already has a live owner.
 
 ## Installation identity and private compatibility
 
-Public packages use `@aiki/*`, server settings use `AIKI_*`, and new installations use XDG `aiki` data/config
-folders. Existing installations need not move data or replace their service: the entry point loads an optional
-`${XDG_CONFIG_HOME:-~/.config}/aiki/server.env` (or `AIKI_ENV_FILE`) before importing server modules. Explicit process
-settings win over file values; a missing default file is fine, but an explicit missing file is an error.
+Server settings accept canonical `KEMIRI_*` and legacy `AIKI_*` inputs. Fresh installations use XDG `kemiri`
+data/config folders; existing defaults are reused in place. Independent populated old/new defaults require an
+explicit selection. Recorded installation paths win and no service is renamed. The entry point loads one optional
+`server.env` from the selected config root (`KEMIRI_ENV_FILE` beats `AIKI_ENV_FILE`) before identity imports.
+Precedence is process KEMIRI → process AIKI → file KEMIRI → file AIKI → default. Empty values retain each
+setting’s semantics. A missing default file is fine, but an explicit missing file is an error. Conflicting aliases
+produce one stderr warning with names only, never values or machine-readable stdout.
 `--print-config` resolves paths, binding and origins without opening data or starting a listener.
 
 ### Server settings and child commands
 
 The executable reads process settings plus the private env file into an immutable internal `serverSettings` object
 before importing identity-bearing modules. File values never enter `process.env`; after capturing the real environment,
-the executable removes its `AIKI_*` settings there too. Existing resolvers read the private object, so deploy/unit
+the executable removes both `AIKI_*` and `KEMIRI_*` settings there too. Existing resolvers read the private object, so deploy/unit
 settings, precedence, owner CLI lookup and import-time storage identities remain unchanged. Programmatic server users
 retain process-environment defaults unless they explicitly configure that object.
 
 Every host process uses the shared `childEnvironment` helper: pi's execution environment (coordinator, worker,
 background thread, scheduled worker/thread, direct bash/powershell and codemode calls), terminal PTYs and zellij/scope
-commands, workspace `jj`, memory `git`, host `git`/`jj`/`gh`/`acli`, and artifact `ffprobe`. All `AIKI_*` names are
-removed, including `AIKI_ENV_FILE`, unknown future settings and per-exec overrides. No internal command needs the
-server's settings. The only allowlisted child variable is **`AIKI_CHILD_PROCESS=1`**, created by the helper rather than
-copied. It tells a nested entry point not to rediscover the parent's `server.env` through the inherited HOME/XDG config
-path. An explicitly supplied `AIKI_ENV_FILE` still opts in; explicit new data/config settings still work. Intentional
+commands, workspace `jj`, memory `git`, host `git`/`jj`/`gh`/`acli`, and artifact `ffprobe`. Both private prefixes
+are removed, including unknown future settings and per-exec overrides. No internal command needs the server's settings.
+Only **`AIKI_CHILD_PROCESS=1` and `KEMIRI_CHILD_PROCESS=1`** are generated, never copied. Either marker tells
+a nested entry point not to rediscover the parent's `server.env` through inherited HOME/XDG directories. An explicit
+`KEMIRI_ENV_FILE` (or legacy alias) still opts in; explicit new data/config settings still work. Intentional
 owner CLI invocations from an agent therefore require an explicit installation env file or data-directory setting;
 marker-only `auth` refuses before connecting, even if the user's default data directory has a live owner. For example:
 
@@ -399,7 +425,7 @@ already waits for the old process to exit before starting its replacement; the e
 20-second health budget. This is a small second defence, **not an exclusive lifetime lock**: simultaneous first
 starts and existing servers with owner control disabled are not covered. A full race-proof directory lock is follow-up.
 
-All backend `AIKI_*` inputs are listed below. Consumers use the private snapshot (explicit process settings beat env
+All backend legacy `AIKI_*` inputs are listed below; every row also accepts the same suffix with `KEMIRI_`. Consumers use the private snapshot (explicit process settings beat env
 file values; explicit programmatic options still win). Only the loader captures the raw incoming environment. An
 exact-statement regression guards the capture/child-environment boundaries against new direct `process.env` or
 `Bun.env` reads, including aliases and computed keys.
@@ -645,7 +671,7 @@ exposes this command, and anonymous network hello still fails required authentic
 backend ID and listener port to public discovery, so another local backend cannot satisfy them.
 
 Deep checks still verify the expected commit and page the projects saved before restart; wait-idle still drains/polls.
-The checker loads the same private `AIKI_ENV_FILE` or XDG `aiki/server.env` as the entry point (explicit process values
+The checker loads the same private env-file aliases or selected XDG default as the entry point (explicit process values
 win), then resolves `AIKI_DATA_DIR` or `${XDG_DATA_HOME:-~/.local/share}/aiki`, including `~` expansion. The warning-only
 remote tailnet check uses `--alive-only`: a valid required auth status counts as alive without trying a local socket.
 Discovery alone never replaces the on-target release/project checks.

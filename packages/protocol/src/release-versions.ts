@@ -1,6 +1,6 @@
 /** Shared release ordering for the installed CLI and the backend's read-only notice. */
 export type UpdateChannel = "pilot" | "stable";
-export const RELEASES_API = "https://api.github.com/repos/MitzaCoder/aiki/releases?per_page=100";
+export const RELEASES_API = "https://api.github.com/repos/MitzaCoder/kemiri/releases?per_page=100";
 export type PublishedRelease = { version: string; notesUrl: string };
 
 function parseVersion(version: string): { core: bigint[]; prerelease: string[] } | undefined {
@@ -42,7 +42,7 @@ export function selectChannelRelease(raw: unknown, channel: UpdateChannel): Publ
 		const version = release.tag_name;
 		if (!parseVersion(version) || (channel === "stable" && (release.prerelease !== false || releaseChannel(version) === "pilot"))) continue;
 		// Derive the URL rather than trusting feed-controlled markup, schemes or hosts.
-		const notesUrl = `https://github.com/MitzaCoder/aiki/releases/tag/${encodeURIComponent(version)}`;
+		const notesUrl = `https://github.com/MitzaCoder/kemiri/releases/tag/${encodeURIComponent(version)}`;
 		if (!newest || compareReleaseVersions(version, newest.version)! > 0) newest = { version, notesUrl };
 	}
 	return newest;

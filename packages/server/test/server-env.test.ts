@@ -23,7 +23,7 @@ test("missing default is optional, explicit missing file and unexpected settings
 	expect(() => loadServerEnv({ XDG_CONFIG_HOME: root })).not.toThrow();
 	expect(() => loadServerEnv({ AIKI_ENV_FILE: join(root, "missing") })).toThrow();
 	const file = join(root, "invalid.env"); writeFileSync(file, "PATH=/untrusted\n");
-	expect(() => loadServerEnv({ AIKI_ENV_FILE: file })).toThrow("only set AIKI_");
+	expect(() => loadServerEnv({ AIKI_ENV_FILE: file })).toThrow("only set KEMIRI_ or AIKI_");
 });
 
 test("print-config loads settings before persistent identities without creating the data/config directories", () => {

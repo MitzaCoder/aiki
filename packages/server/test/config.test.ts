@@ -7,18 +7,18 @@ import { HARNESS_PROVIDERS, createHarnessModels, describeModels } from "../src/m
 import { isOriginAllowed, normalizeOrigin, parseAllowedOrigins, resolveAllowedOrigins } from "../src/origins.ts";
 
 describe("data directory", () => {
-	it("defaults to XDG_DATA_HOME/aiki and honours the override", () => {
-		expect(resolveDataDir({ XDG_DATA_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/aiki");
+	it("defaults to XDG_DATA_HOME/kemiri and honours the override", () => {
+		expect(resolveDataDir({ XDG_DATA_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/kemiri");
 		expect(resolveDataDir({ AIKI_DATA_DIR: "/tmp/direct" })).toBe("/tmp/direct");
-		expect(resolveDataDir({})).toBe(join(homedir(), ".local", "share", "aiki"));
+		expect(resolveDataDir({})).toBe(join(homedir(), ".local", "share", "kemiri"));
 	});
 
 	it("keeps the harness's own config apart from pi's agent directory", () => {
-		expect(resolveConfigDir({ XDG_CONFIG_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/aiki");
+		expect(resolveConfigDir({ XDG_CONFIG_HOME: "/tmp/xdg" })).toBe("/tmp/xdg/kemiri");
 		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "/tmp/direct" })).toBe("/tmp/direct");
 		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "~/elsewhere" })).toBe(join(homedir(), "elsewhere"));
-		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "  " })).toBe(join(homedir(), ".config", "aiki"));
-		expect(resolveConfigDir({})).toBe(join(homedir(), ".config", "aiki"));
+		expect(resolveConfigDir({ AIKI_CONFIG_DIR: "  " })).toBe(join(homedir(), ".config", "kemiri"));
+		expect(resolveConfigDir({})).toBe(join(homedir(), ".config", "kemiri"));
 	});
 
 	it("binds the loopback interface unless told otherwise", () => {

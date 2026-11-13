@@ -61,7 +61,7 @@ test("installed start ignores inherited backend data/config/env-file paths", asy
 test("running process blocks activation and rollback without changing selected code", async () => {
 	const fixture = await setup(); await fixture.release("v0.1.0");
 	await writeFile(join(fixture.root, "server.pid"), String(process.pid));
-	expect((await fixture.release("v0.2.0")).err).toContain("Aiki is running");
+	expect((await fixture.release("v0.2.0")).err).toContain("Kemiri is running");
 	expect((await fixture.run("rollback")).code).toBe(1);
 	expect((await fixture.run("version")).out).toContain("v0.1.0");
 });
@@ -93,4 +93,25 @@ test("uninstall preserves data/config, then reinstall and purge remove only inst
 	expect(existsSync(join(fixture.root, "data"))).toBe(false);
 	expect(existsSync(fixture.config)).toBe(false);
 	expect(existsSync(join(fixture.home, "repository"))).toBe(true);
+});
+
+
+test("pilot activation installs both names, retains a recorded launcher and refuses collisions before swapping", async () => {
+	const fixture = await setup(); expect((await fixture.release("v0.1.0")).code).toBe(0);
+	const canonical = join(fixture.home, ".local/bin/kemiri");
+	expect(await readFile(canonical, "utf8")).toContain(`# Aiki launcher: ${fixture.root}`);
+	const custom = join(fixture.home, "bin/custom-launcher");
+	await writeFile(custom, await readFile(fixture.launcher));
+	const metadataFile = join(fixture.root, ".aiki-install.json");
+	const recorded = JSON.parse(await readFile(metadataFile, "utf8")); recorded.launcher = custom;
+	await writeFile(metadataFile, JSON.stringify(recorded));
+	const servicePath = join(fixture.home, ".config/systemd/user/aiki-local.service");
+	await writeFile(join(fixture.root, ".service-path"), servicePath);
+	expect((await fixture.release("v0.2.0")).code).toBe(0);
+	expect(JSON.parse(await readFile(metadataFile, "utf8")).launcher).toBe(custom);
+	expect(await readFile(join(fixture.root, ".service-path"), "utf8")).toBe(servicePath);
+	await writeFile(canonical, "unrelated command");
+	expect((await fixture.release("v0.3.0")).err).toContain("refusing to overwrite");
+	expect(JSON.parse(await readFile(metadataFile, "utf8")).version).toBe("v0.2.0");
+	expect(await readFile(canonical, "utf8")).toBe("unrelated command");
 });

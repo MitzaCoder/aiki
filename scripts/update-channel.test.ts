@@ -34,7 +34,7 @@ test("real installed update follows fake release server, persists switches, expl
 	await server.stdout.getReader().read();
 	console.log(`Fake release server: ${home}; data: ${join(home, "data")}; config: ${config}`);
 	const preload = join(home, "redirect.ts");
-	await writeFile(preload, `const original=globalThis.fetch;globalThis.fetch=async(url,init)=>{if(String(url).startsWith('https://api.github.com/repos/MitzaCoder/aiki/releases')){const {port}=await Bun.file(${JSON.stringify(ready)}).json();return original('http://127.0.0.1:'+port,init)}throw Error('Unexpected network request: '+url)};`);
+	await writeFile(preload, `const original=globalThis.fetch;globalThis.fetch=async(url,init)=>{if(String(url).startsWith('https://api.github.com/repos/MitzaCoder/kemiri/releases')){const {port}=await Bun.file(${JSON.stringify(ready)}).json();return original('http://127.0.0.1:'+port,init)}throw Error('Unexpected network request: '+url)};`);
 	const env = { HOME: home, USER: "test", PATH: process.env.PATH, AIKI_INSTALL_DIR: root };
 	async function run(...args: string[]) {
 		const child = Bun.spawn([process.execPath, "--preload", preload, cli, ...args], { env, stdout: "pipe", stderr: "pipe" });

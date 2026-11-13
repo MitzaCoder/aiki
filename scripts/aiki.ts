@@ -1,7 +1,9 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
+import { defaultProductDirectory } from "../packages/server/src/data-dir.ts";
+import { normalizeEnvironment } from "../packages/server/src/environment-aliases.ts";
 import { childEnvironment } from "../packages/server/src/child-environment.ts";
 import { packagedResources } from "../packages/server/src/packaged-resources.ts";
 import { mkdtempSync } from "node:fs";
@@ -47,7 +49,7 @@ export function serviceDefinition(installation: Installation, platform: string, 
 </dict></plist>\n`;
 	const quote = (text: string) => '"' + text.replaceAll("\\", "\\\\").replaceAll('"', '\\"').replaceAll("%", "%%").replaceAll("$", () => "$$") + '"';
 	return `[Unit]
-Description=Aiki local installation (loopback only)
+Description=Kemiri local installation (loopback only)
 After=network.target
 [Service]
 Type=simple
@@ -93,9 +95,9 @@ function requireStopped(root: string): void {
 		const pid = Number(readFileSync(join(root, "supervisor.pid"), "utf8"));
 		let alive = false;
 		if (Number.isSafeInteger(pid) && pid > 0) try { process.kill(pid, 0); alive = true; } catch { /* Stale supervisor. */ }
-		if (alive && !(process.env.AIKI_UPDATE_CHILD === "1" && process.ppid === pid)) throw new Error("Aiki is running. Stop its supervisor before changing releases.");
+		if (alive && !(normalizeEnvironment(process.env).AIKI_UPDATE_CHILD === "1" && process.ppid === pid)) throw new Error("Kemiri is running. Stop its supervisor before changing releases.");
 	}
-	if (running(root)) throw new Error("Aiki is running. Stop the foreground process (Ctrl-C) or your user service before changing releases.");
+	if (running(root)) throw new Error("Kemiri is running. Stop the foreground process (Ctrl-C) or your user service before changing releases.");
 }
 async function run(command: string[], options: { env?: Record<string, string | undefined> } = {}): Promise<void> {
 	const child = Bun.spawn(command, { stdin: "ignore", stdout: "inherit", stderr: "inherit", env: childEnvironment(options.env) });
@@ -109,15 +111,15 @@ function servicePath(platform = process.platform): string {
 		: join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "systemd/user/aiki-local.service");
 }
 async function service(installation: Installation, action: string, print: boolean): Promise<void> {
-	if (action !== "install" && action !== "remove") throw new Error("Usage: aiki service install|remove [--print]");
+	if (action !== "install" && action !== "remove") throw new Error("Usage: kemiri service install|remove [--print]");
 	if (print) { console.log(serviceDefinition(installation, process.platform, process.env.PATH || "/usr/bin:/bin")); return; }
-	const path = servicePath();
+	const path = existsSync(join(installation.root, ".service-path")) ? readFileSync(join(installation.root, ".service-path"), "utf8") : servicePath();
 	const ownFile = existsSync(join(installation.root, ".service-path")) && readFileSync(join(installation.root, ".service-path"), "utf8") === path;
 	if (existsSync(path) && !ownFile) throw new Error("Another local Aiki service exists; refusing to overwrite/remove it");
 	if (action === "remove" && !ownFile) { console.log("No service installed by this installation."); return; }
 	if (action === "install") {
 		const manager = process.platform === "darwin" ? "launchctl" : "systemctl";
-		if (!Bun.which(manager)) throw new Error(`No ${manager} user service manager. Continue with aiki start.`);
+		if (!Bun.which(manager)) throw new Error(`No ${manager} user service manager. Continue with kemiri start.`);
 		requireStopped(installation.root);
 		mkdirSync(dirname(path), { recursive: true });
 		writeFileSync(path, serviceDefinition(installation, process.platform, process.env.PATH || "/usr/bin:/bin"), { mode: 0o600 });
@@ -128,7 +130,7 @@ async function service(installation: Installation, action: string, print: boolea
 			await run(["launchctl", action === "install" ? "bootstrap" : "bootout", `gui/${process.getuid!()}`, path]);
 		} else {
 			if (action === "install") await run(["systemctl", "--user", "daemon-reload"]);
-			await run(["systemctl", "--user", action === "install" ? "enable" : "disable", "--now", "aiki-local.service"]);
+			await run(["systemctl", "--user", action === "install" ? "enable" : "disable", "--now", basename(path)]);
 		}
 	} catch (error) {
 		// No session bus / no GUI login is common. Do not strand a failed unit or block uninstall of a stopped app.
@@ -145,9 +147,40 @@ async function service(installation: Installation, action: string, print: boolea
 	console.log(`User service ${action === "install" ? "installed" : "removed"}.`);
 }
 
+function installationLaunchers(_root: string, recorded: string): string[] {
+	return [...new Set([recorded, join(homedir(), ".local/bin/kemiri"), join(homedir(), ".local/bin/aiki")])];
+}
+function ownsLauncher(path: string, root: string): boolean {
+	try { return readFileSync(path, "utf8").includes(`# Aiki launcher: ${root}\n`); } catch { return false; }
+}
+function requireOwnedLauncher(path: string, root: string): void {
+	try { lstatSync(path); } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return; throw error; }
+	if (!ownsLauncher(path, root)) throw new Error(`Unrelated launcher exists at ${path}; refusing to overwrite it`);
+}
+export function launcherDefinition(root: string): string {
+	return `#!/bin/sh
+# Aiki launcher: ${root}
+# Kemiri launcher: ${root}
+export AIKI_INSTALL_DIR=${shellQuote(root)}
+export KEMIRI_INSTALL_DIR=${shellQuote(root)}
+export PATH=${shellQuote(join(root, "tools/bin"))}:"$PATH"
+for binary in "$KEMIRI_INSTALL_DIR/current/kemiri" "$KEMIRI_INSTALL_DIR/current/aiki"; do
+	if [ -x "$binary" ]; then
+		if [ "\${1-}" = --version ]; then
+			if identity=$("$binary" --kemiri-version 2>/dev/null); then
+				case "$identity" in "Kemiri "*) printf '%s\n' "$identity"; exit 0 ;; esac
+			fi
+		fi
+		exec "$binary" "$@"
+	fi
+done
+exec ${shellQuote(join(root, `runtime/bun-${BUN_VERSION}/bin/bun`))} "$KEMIRI_INSTALL_DIR/current/scripts/aiki.ts" "$@"
+`;
+}
+
 /** The launcher uses the same installation metadata for both runtimes; --version always probes the executable itself. */
 export function installedCliRequested(args: string[]): boolean {
-	return args[0] !== "--version" && (Boolean(process.env.AIKI_INSTALL_DIR) || args[0] === "activate" || args[0] === "uninstall");
+	return ! ["--version", "--kemiri-version"].includes(args[0] ?? "") && (Boolean(normalizeEnvironment(process.env).AIKI_INSTALL_DIR) || args[0] === "activate" || args[0] === "uninstall");
 }
 
 async function installedServerEntry(root: string, settings: Readonly<Record<string, string | undefined>>, args: string[]): Promise<void> {
@@ -158,25 +191,30 @@ async function installedServerEntry(root: string, settings: Readonly<Record<stri
 }
 
 export async function runInstalledCli(args: string[]): Promise<void> {
-	const [command = "help", ...rest] = args;
+	const [requested = "help", ...rest] = args;
+	const command = requested === "--version" || requested === "--kemiri-version" ? "version" : requested;
 	if (command === "activate") {
 		const [root, config, version, launcher, selectedChannel, releaseName = version] = rest;
 		if (!root || !config || !version || !launcher) throw new Error("Incomplete activation");
 		if (selectedChannel && selectedChannel !== "pilot" && selectedChannel !== "stable") throw new Error("Invalid update channel");
 		if (![version, `${version}-bun`, `${version}-binary`].includes(releaseName)) throw new Error("Invalid release directory");
 		const old = existsSync(join(root, ".aiki-install.json")) ? metadata(root) : undefined;
+		const launchers = installationLaunchers(root, old?.launcher ?? launcher);
+		for (const path of launchers) requireOwnedLauncher(path, root);
 		const changed = old?.version !== version || (old.release ?? old.version) !== releaseName;
 		if (changed) requireStopped(root);
 		if (old && changed && existsSync(join(root, "current"))) atomicLink(root, "previous", `releases/${old.release ?? old.version}`);
 		atomicLink(root, "current", `releases/${releaseName}`);
-		const installation: Installation = { root, config: old?.config ?? config, data: old?.data ?? join(root, "data"), version, launcher, ...(releaseName !== version ? { release: releaseName } : {}),
+		const installation: Installation = { root, config: old?.config ?? config, data: old?.data ?? join(root, "data"), version, launcher: old?.launcher ?? launcher, ...(releaseName !== version ? { release: releaseName } : {}),
 			channel: (selectedChannel as UpdateChannel | undefined) || old?.channel || releaseChannel(version) };
 		atomicText(join(root, ".aiki-install.json"), JSON.stringify(installation, null, 2));
 		mkdirSync(installation.config, { recursive: true });
 		const configFile = join(installation.config, "server.env");
-		if (!existsSync(configFile)) writeFileSync(configFile, "# Local Aiki server settings\n", { mode: 0o600, flag: "wx" });
-		mkdirSync(dirname(launcher), { recursive: true });
-		atomicText(launcher, `#!/bin/sh\n# Aiki launcher: ${root}\nexport AIKI_INSTALL_DIR=${shellQuote(root)}\nexport PATH=${shellQuote(join(root, "tools/bin"))}:"$PATH"\nif [ -x "$AIKI_INSTALL_DIR/current/aiki" ]; then\n  exec "$AIKI_INSTALL_DIR/current/aiki" "$@"\nfi\nexec ${shellQuote(join(root, `runtime/bun-${BUN_VERSION}/bin/bun`))} "$AIKI_INSTALL_DIR/current/scripts/aiki.ts" "$@"\n`, 0o755);
+		if (!existsSync(configFile)) writeFileSync(configFile, "# Local Kemiri server settings\n", { mode: 0o600, flag: "wx" });
+		for (const path of launchers) {
+			mkdirSync(dirname(path), { recursive: true });
+			atomicText(path, launcherDefinition(root), 0o755);
+		}
 		// Retain just current and previous; do not collect data/config or unknown top-level paths.
 		const { readdirSync } = await import("node:fs");
 		const keep = new Set([realpathSync(join(root, "current")), existsSync(join(root, "previous")) ? realpathSync(join(root, "previous")) : ""]);
@@ -184,9 +222,9 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 			const path = join(root, "releases", release);
 			if (!keep.has(path)) rmSync(path, { recursive: true, force: true });
 		}
-		console.log(`Aiki ${version} activated.`); return;
+		console.log(`Kemiri ${version} activated.`); return;
 	}
-	const root = resolve(command === "uninstall" ? rest[0]! : process.env.AIKI_INSTALL_DIR || join(homedir(), ".local/share/aiki"));
+	const root = resolve(command === "uninstall" ? rest[0]! : normalizeEnvironment(process.env).AIKI_INSTALL_DIR || defaultProductDirectory(process.env.XDG_DATA_HOME || join(homedir(), ".local/share")));
 	const installation = metadata(root);
 	// Use T82's one environment boundary and private loader, not mutable process settings.
 	const { loadServerEnv, resolvedServerConfig } = await import("../packages/server/src/server-env.ts");
@@ -195,7 +233,7 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 		AIKI_ENV_FILE: join(installation.config, "server.env"),
 		AIKI_DATA_DIR: installation.data,
 		AIKI_INSTALL_DIR: root,
-		AIKI_UPDATE_SUPERVISED: process.env.AIKI_UPDATE_CHILD === "1" ? "1" : undefined,
+		AIKI_UPDATE_SUPERVISED: normalizeEnvironment(process.env).AIKI_UPDATE_CHILD === "1" ? "1" : undefined,
 		AIKI_CONFIG_DIR: installation.config,
 		AIKI_HOST: "127.0.0.1",
 		AIKI_WEB_DIR: packagedResources.web ? "embedded" : join(root, "current/apps/web/build"),
@@ -203,20 +241,20 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 			AIKI_INSTALLED_VERSION: installation.version,
 			AIKI_UPDATE_CHANNEL: installation.channel || releaseChannel(installation.version),
 		} : {}),
-		...(process.env.AIKI_PORT ? { AIKI_PORT: process.env.AIKI_PORT } : {}),
+		...(normalizeEnvironment(process.env).AIKI_PORT ? { AIKI_PORT: normalizeEnvironment(process.env).AIKI_PORT } : {}),
 	});
 	const port = settings.AIKI_PORT || "7317";
 	if (command !== "auth" && command !== "pair" && (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535)) throw new Error("AIKI_PORT must be 1–65535");
 	const url = `http://127.0.0.1:${port}`;
 	switch (command) {
 		case "start": {
-			if (process.env.AIKI_UPDATE_CHILD !== "1") { await superviseInstallation(installation, settings); break; }
+			if (normalizeEnvironment(process.env).AIKI_UPDATE_CHILD !== "1") { await superviseInstallation(installation, settings); break; }
 			requireStopped(root);
 			try { writeFileSync(join(root, "server.pid"), String(process.pid), { mode: 0o600, flag: "wx" }); }
 			catch { throw new Error("server.pid already exists. If a previous process crashed, confirm it is stopped before removing this stale file."); }
 			process.on("exit", () => { try { rmSync(join(root, "server.pid")); } catch { /* already removed */ } });
 			const effective = resolvedServerConfig(settings);
-			console.log(`Aiki data: ${effective.dataDir}\nAiki config: ${effective.configDir}`);
+			console.log(`Kemiri data: ${effective.dataDir}\nKemiri config: ${effective.configDir}`);
 			// Resolve the selected release now; a running process never changes imports underneath itself.
 			await installedServerEntry(root, settings, []); break;
 		}
@@ -228,7 +266,7 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 			await installedServerEntry(root, settings, ["auth", "health-check", JSON.stringify({ type: "server.status", id: "installed-health" })]); break;
 		case "open":
 			console.log(url);
-			if (process.env.AIKI_NO_BROWSER === "1") break;
+			if (normalizeEnvironment(process.env).AIKI_NO_BROWSER === "1") break;
 			if (process.platform === "darwin") await run(["open", url]);
 			else if (Bun.which("xdg-open")) await run(["xdg-open", url]);
 			else console.log("Open this URL in a browser on this machine.");
@@ -250,21 +288,21 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 		case "status": {
 			try {
 				const response = await fetch(`${url}/aiki-local.json`, { signal: AbortSignal.timeout(2000) });
-				if (!response.ok || (await response.json() as { local?: boolean }).local !== true) throw new Error("Not an Aiki local server");
+				if (!response.ok || (await response.json() as { local?: boolean }).local !== true) throw new Error("Not a Kemiri local server");
 				console.log(`Running at ${url}; selected release ${installation.version}`);
-			} catch { console.log(`Not responding at ${url}. Run aiki start or inspect your user service.`); process.exitCode = 1; }
+			} catch { console.log(`Not responding at ${url}. Run kemiri start or inspect your user service.`); process.exitCode = 1; }
 			break;
 		}
-		case "version": console.log(`Aiki ${installation.version}\nBun ${Bun.version} (pinned ${BUN_VERSION})`); break;
+		case "version": console.log(`Kemiri ${installation.version}\nBun ${Bun.version} (pinned ${BUN_VERSION})`); break;
 		case "doctor": {
-			console.log(`Aiki ${installation.version}; Bun ${Bun.version}; ${process.platform}/${process.arch}\nData: ${installation.data}\nConfig: ${installation.config}\nLocal URL: ${url} (loopback only; use aiki pair for device sign-in)`);
+			console.log(`Kemiri ${installation.version}; Bun ${Bun.version}; ${process.platform}/${process.arch}\nData: ${installation.data}\nConfig: ${installation.config}\nLocal URL: ${url} (loopback only; use kemiri pair for device sign-in)`);
 			for (const [tool, hint] of [["git", "repository operations"], ["jj", "isolated workers"], ["tailscale", "future phone access"], ["zellij", "persistent app terminals"], ["ffprobe", "optional video metadata"]]) {
 				console.log(`${tool}: ${Bun.which(tool!) || `missing — needed for ${hint}`}`);
 				if (Bun.which(tool!)) try { await run([tool!, tool === "tailscale" ? "version" : tool === "ffprobe" ? "-version" : "--version"]); }
 				catch { console.log(`${tool}: version check failed; setup can continue.`); }
 			}
 			try { const listener = Bun.listen({ hostname: "127.0.0.1", port: Number(port), socket: { data() {} } }); listener.stop(); console.log(`Port ${port}: free`); }
-			catch { console.log(`Port ${port}: in use; aiki status checks whether it is Aiki. Set AIKI_PORT for another port.`); }
+			catch { console.log(`Port ${port}: in use; kemiri status checks whether it is Kemiri. Set AIKI_PORT for another port.`); }
 			console.log("Tailscale alone is not authentication. Do not expose this server to the network."); break;
 		}
 		case "stage-update":
@@ -288,13 +326,15 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 			const previous = realpathSync(join(root, "previous"));
 			const current = realpathSync(join(root, "current"));
 			selectRetainedRelease(installation, previous, current);
-			console.log(`Selected ${installation.version}. Data was not rolled back. Run aiki start.`); break;
+			console.log(`Selected ${installation.version}. Data was not rolled back. Run kemiri start.`); break;
 		}
 		case "service": await service(installation, rest[0] || "", rest.includes("--print")); break;
 		case "uninstall": {
 			if (existsSync(join(root, ".service-path"))) await service(installation, "remove", false);
 			requireStopped(root);
-			if (existsSync(installation.launcher) && readFileSync(installation.launcher, "utf8").includes(`# Aiki launcher: ${root}\n`)) rmSync(installation.launcher);
+			for (const path of installationLaunchers(root, installation.launcher)) {
+				if (existsSync(path) && ownsLauncher(path, root)) rmSync(path);
+			}
 			for (const path of ["current", "previous", "releases", "runtime", "tools", "server.pid", "service.log"]) rmSync(join(root, path), { recursive: true, force: true });
 			if (rest[1] === "1") {
 				rmSync(installation.data, { recursive: true, force: true });
@@ -302,12 +342,12 @@ export async function runInstalledCli(args: string[]): Promise<void> {
 				rmSync(join(root, ".aiki-install.json"), { force: true });
 				rmSync(join(root, ".aiki-managed"), { force: true });
 			}
-			console.log(rest[1] === "1" ? "Uninstalled and purged Aiki data/config. Repositories were not touched." : "Uninstalled. Data and config kept. Re-run the installer to reinstall."); break;
+			console.log(rest[1] === "1" ? "Uninstalled and purged Kemiri data/config. Repositories were not touched." : "Uninstalled. Data and config kept. Re-run the installer to reinstall."); break;
 		}
-		default: console.log("Usage: aiki start|open|pair|auth|status|update|rollback|version|doctor|service install|remove\nSee docs/INSTALL.md. Stop Aiki before updating or rolling back.");
+		default: console.log("Usage: kemiri start|open|pair|auth|status|update|rollback|version|doctor|service install|remove\nSee docs/INSTALL.md. Stop Kemiri before updating or rolling back.");
 	}
 }
 if (import.meta.main) {
 	try { await runInstalledCli(process.argv.slice(2)); }
-	catch (error) { console.error(`aiki: ${error instanceof Error ? error.message : error}`); process.exitCode = 1; }
+	catch (error) { console.error(`kemiri: ${error instanceof Error ? error.message : error}`); process.exitCode = 1; }
 }

@@ -54,16 +54,17 @@ try {
 	trackedSourcePaths = tracked.split("\0").filter(Boolean);
 	await mkdir(tree);
 	// Explicit allow-list: Android, deployment targets, local config and conversation data are never copied.
-	for (const path of ["package.json", "bun.lock", "tsconfig.json", "LICENSE", "README.md", "install.sh", "scripts/aiki.ts", "scripts/installed-supervisor.ts", "packages/protocol", "packages/client", "packages/server", "apps/web"]) {
+	for (const path of ["package.json", "bun.lock", "tsconfig.json", "LICENSE", "README.md", "install.sh", "scripts/aiki.ts", "scripts/kemiri.ts", "scripts/installed-supervisor.ts", "packages/protocol", "packages/client", "packages/server", "apps/web"]) {
 		await copyPublic(join(source, path), join(tree, path));
 	}
 	if (existsSync(join(source, "docs/INSTALL.md"))) await copyPublic(join(source, "docs/INSTALL.md"), join(tree, "docs/INSTALL.md"));
 	await writeFile(join(staging, "backends.json"), "[]\n");
-	const env = { ...process.env, AIKI_PUBLISHED_BACKENDS_FILE: join(staging, "backends.json"), AIKI_LEGACY_STORAGE_PREFIX: "", DEPLOY_CONFIG_DIR: join(staging, "no-local-config") };
+	const clean = Object.fromEntries(Object.entries(process.env).filter(([name]) => !/^(AIKI|KEMIRI)_/.test(name)));
+	const env = { ...clean, AIKI_PUBLISHED_BACKENDS_FILE: join(staging, "backends.json"), AIKI_LEGACY_STORAGE_PREFIX: "", DEPLOY_CONFIG_DIR: join(staging, "no-local-config") };
 	await run([process.execPath, "install", "--frozen-lockfile"], tree, env);
 	await run([process.execPath, "run", "build"], join(tree, "apps/web"), env);
 	await rm(join(tree, "apps/web/build/backends.json"), { force: true });
-	await writeFile(join(tree, "RELEASE.json"), JSON.stringify({ name: version, commit: process.env.GITHUB_SHA || version, description: `Aiki ${version}`, deployedAt: new Date().toISOString(), bun: BUN_VERSION }, null, 2) + "\n");
+	await writeFile(join(tree, "RELEASE.json"), JSON.stringify({ name: version, commit: process.env.GITHUB_SHA || version, description: `Kemiri ${version}`, deployedAt: new Date().toISOString(), bun: BUN_VERSION }, null, 2) + "\n");
 	// Installed dependencies are platform-specific; the friend installs exactly bun.lock instead.
 	async function removeDependencies(path: string): Promise<void> {
 		for (const entry of await readdir(path, { withFileTypes: true })) {
@@ -77,5 +78,8 @@ try {
 	await run(["tar", "-czf", archive, "aiki"], staging);
 	const digest = new Bun.CryptoHasher("sha256").update(await Bun.file(archive).arrayBuffer()).digest("hex");
 	await writeFile(archive + ".sha256", `${digest}  ${basename(archive)}\n`);
+	const canonical = join(output, `kemiri-${version}.tar.gz`);
+	await cp(archive, canonical);
+	await writeFile(canonical + ".sha256", `${digest}  ${basename(canonical)}\n`);
 	console.log(`Release ready: ${archive}\nSHA256: ${digest}`);
 } finally { await rm(staging, { recursive: true, force: true }); }

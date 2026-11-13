@@ -3,21 +3,35 @@
 set -eu
 umask 077
 BUN_VERSION=1.4.4
-REPOSITORY=https://github.com/MitzaCoder/aiki
-root=${AIKI_INSTALL_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aiki}
-config=${XDG_CONFIG_HOME:-$HOME/.config}/aiki
+REPOSITORY=https://github.com/MitzaCoder/kemiri
+# Keep populated legacy defaults in place, never create a second backend silently.
+choose_default() {
+ canonical=$1/kemiri; legacy=$1/aiki
+ if [ -d "$canonical" ] && [ -d "$legacy" ] && [ "$(cd "$canonical" && pwd -P)" != "$(cd "$legacy" && pwd -P)" ] && [ -n "$(ls -A "$canonical")" ] && [ -n "$(ls -A "$legacy")" ]; then
+  printf '%s\n' 'Both kemiri and aiki default directories contain data; choose an explicit --dir or KEMIRI_INSTALL_DIR/KEMIRI_CONFIG_DIR.' >&2; exit 1
+ fi
+ if [ -d "$legacy" ] && { [ ! -d "$canonical" ] || { [ -z "$(ls -A "$canonical")" ] && [ -n "$(ls -A "$legacy")" ]; }; }; then printf '%s\n' "$legacy"; else printf '%s\n' "$canonical"; fi
+}
+conflicts=
+for suffix in INSTALL_DIR CONFIG_DIR RELEASE_BASE_URL; do
+ eval 'canonical=${KEMIRI_'"$suffix"'-}; legacy=${AIKI_'"$suffix"'-}; canonical_set=${KEMIRI_'"$suffix"'+yes}; legacy_set=${AIKI_'"$suffix"'+yes}'
+ if [ "$canonical_set" = yes ] && [ "$legacy_set" = yes ] && [ "$canonical" != "$legacy" ]; then conflicts="$conflicts KEMIRI_$suffix/AIKI_$suffix"; fi
+done
+if [ -n "$conflicts" ]; then printf '%s\n' "Conflicting setting aliases (KEMIRI wins):$conflicts" >&2; fi
+root=${KEMIRI_INSTALL_DIR-${AIKI_INSTALL_DIR-}}
+config=${KEMIRI_CONFIG_DIR-${AIKI_CONFIG_DIR-}}
 version=latest
 channel=
 ref=
 archive=
 runtime=auto
-release_base=$REPOSITORY/releases/download
+release_base=${KEMIRI_RELEASE_BASE_URL-${AIKI_RELEASE_BASE_URL-$REPOSITORY/releases/download}}
 no_service=0
 stage_only=0
 uninstall=0
 purge=0
 custom_dir=0
-say() { printf '%s\n' "aiki: $*"; }
+say() { printf '%s\n' "kemiri: $*"; }
 die() { say "$*" >&2; exit 1; }
 need_value() { [ "$#" -ge 2 ] || die "$1 needs a value"; [ -n "$2" ] || die "$1 needs a value"; }
 while [ "$#" -gt 0 ]; do
@@ -37,6 +51,9 @@ while [ "$#" -gt 0 ]; do
  *) die "Unknown option: $1 (see --help)" ;;
  esac
 done
+if [ -z "$root" ]; then root=$(choose_default "${XDG_DATA_HOME:-$HOME/.local/share}"); fi
+if [ "$custom_dir" = 1 ]; then config=$root/config; fi
+if [ -z "$config" ]; then config=$(choose_default "${XDG_CONFIG_HOME:-$HOME/.config}"); fi
 case $root in /*) ;; *) die '--dir must be an absolute path' ;; esac
 case $root in /|"$HOME"|*/../*|*/..|*/./*|*/.) die 'Refusing an unsafe install directory' ;; esac
 # Service formats and launcher paths must never contain control characters.
@@ -46,7 +63,7 @@ case $root in *"
 [ ! -L "$root" ] || die 'Install directory must not be a symlink'
 if [ "$custom_dir" = 1 ]; then config=$root/config; fi
 [ "$purge" = 0 ] || [ "$uninstall" = 1 ] || die '--purge requires --uninstall'
-launcher=$HOME/.local/bin/aiki
+launcher=$HOME/.local/bin/kemiri
 if [ "$uninstall" = 1 ]; then
  [ -f "$root/.aiki-managed" ] || die 'Not an Aiki-managed install directory'
  if [ -x "$root/current/aiki" ]; then exec "$root/current/aiki" uninstall "$root" "$purge"; fi
@@ -88,9 +105,11 @@ if [ -e "$root" ] && [ ! -f "$root/.aiki-managed" ]; then
  # Refuse an existing backend data directory: never adopt the owner's installation.
  if [ ! -d "$root" ] || [ -n "$(ls -A "$root")" ]; then die 'Directory is not an Aiki-managed installation; choose an empty --dir'; fi
 fi
-if [ -e "$launcher" ] || [ -L "$launcher" ]; then
- if [ ! -f "$root/.aiki-install.json" ] || ! grep -Fq "# Aiki launcher: $root" "$launcher"; then die 'Another launcher exists at ~/.local/bin/aiki; refusing to overwrite it'; fi
-fi
+for candidate in "$launcher" "$HOME/.local/bin/aiki"; do
+ if [ -e "$candidate" ] || [ -L "$candidate" ]; then
+  if [ ! -f "$root/.aiki-install.json" ] || ! grep -Fq "# Aiki launcher: $root" "$candidate"; then die "Another launcher exists at $candidate; refusing to overwrite it"; fi
+ fi
+done
 mkdir -p "$root"
 mkdir "$root/.install-lock" 2>/dev/null || die 'Another install is running (or a stale .install-lock remains)'
 printf '%s\n' aiki-installer-v1 > "$root/.aiki-managed"
@@ -123,7 +142,7 @@ if [ -n "$ref" ]; then
  git -C "$work/git" archive FETCH_HEAD | tar -xf - -C "$work/source"
 else
  if [ "$version" = latest ]; then
-  [ "$channel" != pilot ] || die 'For a first pilot install use --version TAG; afterward aiki update follows the saved channel'
+  [ "$channel" != pilot ] || die 'For a first pilot install use --version TAG; afterward kemiri update follows the saved channel'
   latest=$(curl --connect-timeout 15 --max-time 30 -fsSLI -o /dev/null -w '%{url_effective}' "$REPOSITORY/releases/latest")
   version=${latest##*/}
  fi
@@ -145,9 +164,9 @@ if [ ! -f "$release/.ready" ]; then
  binary_platform=
  case $os-$arch$libc in linux-x64) binary_platform=linux-x64 ;; linux-aarch64) binary_platform=linux-arm64 ;; darwin-aarch64) binary_platform=darwin-arm64 ;; esac
  if [ "$runtime" != bun ] && [ -z "$ref" ] && [ -z "$archive" ] && [ -n "$binary_platform" ]; then
-  asset=aiki-$version-$binary_platform
+  asset=kemiri-$version-$binary_platform
   binary_url=$release_base/$version/$asset
-  say "Looking for standalone Aiki $version ($binary_platform)"
+  say "Looking for standalone Kemiri $version ($binary_platform)"
   code=$(curl --connect-timeout 15 --max-time 300 --retry 2 -sSL -w '%{http_code}' "$binary_url" -o "$work/aiki") || die 'Binary download failed; nothing activated'
   case $code in
   200)
@@ -155,10 +174,10 @@ if [ ! -f "$release/.ready" ]; then
    fetch "$release_base/$version/SHA256SUMS" "$work/SHA256SUMS"
    expected=$(checksum_for "$work/binary.sha256" "$asset")
    manifest=$(checksum_for "$work/SHA256SUMS" "$asset")
-   [ "$expected" = "$manifest" ] && [ "$(sha256 "$work/aiki")" = "$expected" ] || die 'Aiki binary checksum mismatch; nothing activated'
+   [ "$expected" = "$manifest" ] && [ "$(sha256 "$work/aiki")" = "$expected" ] || die 'Kemiri binary checksum mismatch; nothing activated'
    chmod 755 "$work/aiki"
    identity=$("$work/aiki" --version) || die 'Standalone binary could not execute on this platform; nothing activated'
-   [ "$(printf '%s\n' "$identity" | head -n 1)" = "Aiki $version" ] || die 'Standalone binary version mismatch; nothing activated'
+   [ "$(printf '%s\n' "$identity" | head -n 1)" = "Kemiri $version" ] || die 'Standalone binary version mismatch; nothing activated'
    mkdir "$work/source"
    mv "$work/aiki" "$work/source/aiki"
    prepared_binary=1 ;;
@@ -175,12 +194,12 @@ if [ ! -f "$release/.ready" ]; then
    [ -f "$archive.sha256" ] || die 'Local archive needs a sibling .sha256 file'
    cp "$archive.sha256" "$work/aiki.sha256"
   else
-   url=$release_base/$version/aiki-$version.tar.gz
+   url=$release_base/$version/kemiri-$version.tar.gz
    fetch "$url" "$work/aiki.tar.gz"
    fetch "$url.sha256" "$work/aiki.sha256"
   fi
   expected=$(awk 'NR==1 {print $1}' "$work/aiki.sha256")
-  if [ "${#expected}" != 64 ] || [ "$(sha256 "$work/aiki.tar.gz")" != "$expected" ]; then die 'Aiki archive checksum mismatch; nothing activated'; fi
+  if [ "${#expected}" != 64 ] || [ "$(sha256 "$work/aiki.tar.gz")" != "$expected" ]; then die 'Kemiri archive checksum mismatch; nothing activated'; fi
   # Our release format is a single aiki/ tree of regular files and directories.
   tar -tzf "$work/aiki.tar.gz" > "$work/files"
   awk '$0 !~ /^aiki\// || $0 ~ /(^|\/)\.\.(\/|$)/ {bad=1} END {exit bad}' "$work/files" || die 'Unsafe archive paths'
@@ -189,12 +208,12 @@ if [ ! -f "$release/.ready" ]; then
   mkdir "$work/source"
   tar -xzf "$work/aiki.tar.gz" -C "$work/source" --strip-components=1
  fi
- if [ ! -f "$work/source/bun.lock" ] || [ ! -f "$work/source/scripts/aiki.ts" ]; then die 'Not an Aiki release'; fi
+ if [ ! -f "$work/source/bun.lock" ] || [ ! -f "$work/source/scripts/aiki.ts" ]; then die 'Not a Kemiri release'; fi
  ensure_bun
- say "Preparing Aiki $version with the frozen lockfile"
+ say "Preparing Kemiri $version with the frozen lockfile"
  (cd "$work/source" && "$bun" install --frozen-lockfile)
  if [ ! -f "$work/source/apps/web/build/200.html" ]; then
-  (cd "$work/source/apps/web" && AIKI_PUBLISHED_BACKENDS_FILE="$work/no-backends.json" AIKI_LEGACY_STORAGE_PREFIX="" "$bun" run build)
+  (cd "$work/source/apps/web" && KEMIRI_PUBLISHED_BACKENDS_FILE="$work/no-backends.json" AIKI_PUBLISHED_BACKENDS_FILE="$work/no-backends.json" KEMIRI_LEGACY_STORAGE_PREFIX="" AIKI_LEGACY_STORAGE_PREFIX="" "$bun" run build)
  fi
  # A generic install never retains published backend suggestions.
  rm -f "$work/source/apps/web/build/backends.json"
@@ -238,8 +257,8 @@ fi
 # shellcheck disable=SC2016
 case :$PATH: in *:"$HOME/.local/bin":*) ;; *) say 'Add ~/.local/bin to PATH: export PATH="$HOME/.local/bin:$PATH"' ;; esac
 say "Ready. Run: $launcher start"
-say "Then: $launcher open (or visit http://127.0.0.1:7317). Fresh installs require device sign-in. Run aiki pair in another terminal and open its one-time URL here."
-# Enrollment is issued only by the running server\'s owner socket, through aiki pair.
+say "Then: $launcher open (or visit http://127.0.0.1:7317). Fresh installs require device sign-in. Run kemiri pair in another terminal and open its one-time URL here."
+# Enrollment is issued only by the running server\'s owner socket, through kemiri pair.
 if [ "$no_service" = 0 ]; then
- if ! "$launcher" service install; then say 'User service unavailable. Continue with aiki start; inspect aiki doctor.'; fi
+ if ! "$launcher" service install; then say 'User service unavailable. Continue with kemiri start; inspect kemiri doctor.'; fi
 fi

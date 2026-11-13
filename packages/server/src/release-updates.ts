@@ -133,7 +133,7 @@ export class ReleaseUpdates {
 function isSavedChecks(raw: unknown): raw is SavedChecks {
 	if (!raw || typeof raw !== "object") return false;
 	const value = raw as SavedChecks;
-	const candidate = (release: PublishedRelease | null) => release === null || (release && typeof release.version === "string" && compareReleaseVersions(release.version, release.version) === 0 && release.notesUrl === `https://github.com/MitzaCoder/aiki/releases/tag/${encodeURIComponent(release.version)}`);
+	const candidate = (release: PublishedRelease | null) => release === null || (release && typeof release.version === "string" && compareReleaseVersions(release.version, release.version) === 0 && ["aiki", "kemiri"].some(repo => release.notesUrl === `https://github.com/MitzaCoder/${repo}/releases/tag/${encodeURIComponent(release.version)}`));
 	return (value.enabled === null || typeof value.enabled === "boolean") && (value.dismissedVersion === null || typeof value.dismissedVersion === "string") &&
 		Number.isFinite(value.nextCheckAt) && value.nextCheckAt >= 0 && (value.etag === null || typeof value.etag === "string") && !!candidate(value.stable) && !!candidate(value.pilot);
 }

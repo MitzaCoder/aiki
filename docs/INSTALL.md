@@ -1,6 +1,14 @@
-# Install Aiki locally
+# Install Kemiri locally
 
-Aiki runs your agents and tools as **your user**, with your filesystem access and provider spending authority.
+These commands describe the Kemiri bridge release. Pilot.3 itself still uses `aiki`;
+stop it and run `aiki update --version TAG` for the published bridge tag, then use
+`kemiri`. Existing config/data and service names are retained, with no re-pairing.
+Both `AIKI_*` and `KEMIRI_*` settings work until a later release; process settings
+beat file settings, and KEMIRI wins within a source. Fresh installs use Kemiri XDG
+roots. Existing legacy defaults are reused without copying; populated independent
+old/new defaults require an explicit path. Recorded installation paths always win.
+
+Kemiri runs your agents and tools as **your user**, with your filesystem access and provider spending authority.
 Each person installs their own backend. This experimental installer is for Linux and macOS, x64/arm64; Windows
 users run it inside WSL. There is no Node fallback. Fresh data starts with device sign-in **required**. This installer
 keeps loopback binding; network/Tailscale HTTPS setup is separate. Do not forward the port or expose it casually.
@@ -10,16 +18,16 @@ keeps loopback binding; network/Tailscale HTTPS setup is separate. Do not forwar
 Install the `v0.1.0-pilot.3` prerelease after publication:
 
 ```sh
-curl -fL https://github.com/MitzaCoder/aiki/releases/download/v0.1.0-pilot.3/install.sh -o install.sh
+curl -fL https://github.com/MitzaCoder/kemiri/releases/download/v0.1.0-pilot.3/install.sh -o install.sh
 # Read install.sh before running it.
 sh install.sh --version v0.1.0-pilot.3
 ```
 
-The short command is `curl -fsSL https://aikilabs.dev/install.sh | sh`.
+The short command is `curl -fsSL https://kemiri.dev/install.sh | sh`.
 For a review before execution, download the domain bootstrap instead:
 
 ```sh
-curl -fL https://aikilabs.dev/install.sh -o install.sh
+curl -fL https://kemiri.dev/install.sh -o install.sh
 # Read install.sh before running it.
 sh install.sh --version v0.1.0-pilot.3
 ```
@@ -36,7 +44,7 @@ for the trust boundary and how the pinned pilot is maintained.
 
 Keep `--version` explicit for the first pilot install; it remembers the pilot channel for later updates. HTTPS checksums detect download
 corruption; they are not a signature or protection against a compromised publisher. Bun 1.4.4 and zellij 0.45.1
-archive hashes are pinned in the installer. They are private to Aiki and never replace your global tools.
+archive hashes are pinned in the installer. They are private to Kemiri and never replace your global tools.
 For releases with a matching executable, the current installer downloads it instead of Bun or node_modules.
 It requires both the executable's `.sha256` sidecar and its matching entry in `SHA256SUMS` before execution.
 Only an absent binary (HTTP 404), an unsupported binary platform, or `--runtime bun` selects the existing
@@ -56,16 +64,16 @@ launchd GUI session (macOS), continue in the foreground instead:
 ```sh
 sh install.sh --version v0.1.0-pilot.3 --no-service
 export PATH="$HOME/.local/bin:$PATH"   # if the installer says it is missing
-aiki start                             # keep this terminal open
+kemiri start                             # keep this terminal open
 # In another terminal:
-aiki open                              # http://127.0.0.1:7317
+kemiri open                              # http://127.0.0.1:7317
 ```
 
-Welcome discovers this computer automatically but cannot read projects/providers before device sign-in. Keep Aiki
-running and run `aiki pair` in another terminal. It asks the existing local owner socket for a ten-minute one-time
+Welcome discovers this computer automatically but cannot read projects/providers before device sign-in. Keep Kemiri
+running and run `kemiri pair` in another terminal. It asks the existing local owner socket for a ten-minute one-time
 URL and code (the code is already included in the URL). Open that URL in the same browser, confirm full access,
-and choose **Open Aiki**. Treat the URL/code as secrets; do not paste them into logs, screenshots or support reports.
-Re-running `aiki pair` cancels any unused earlier bootstrap grant. Sign in or save an API key in the existing account settings,
+and choose **Open Kemiri**. Treat the URL/code as secrets; do not paste them into logs, screenshots or support reports.
+Re-running `kemiri pair` cancels any unused earlier bootstrap grant. Sign in or save an API key in the existing account settings,
 choose a project folder, then choose its coordinator model. Providers still connect directly through pi-ai;
 Claude Code and Codex CLIs are not required. Subscription access is subject to provider policy/account eligibility;
 paid API keys are the straightforward alternative. A saved credential is not proof of successful inference.
@@ -74,7 +82,7 @@ paid API keys are the straightforward alternative. A saved credential is not pro
 
 Pilot.3 fixes “Could not start MCP sign-in” on local installs opened through either
 `localhost` or `127.0.0.1`. Both exact local callback origins are accepted at the
-actual Aiki port. If you added the pilot.2 `AIKI_ALLOWED_ORIGINS` workaround to
+actual Kemiri port. If you added the pilot.2 `AIKI_ALLOWED_ORIGINS` workaround to
 `server.env`, you can keep or remove those local entries after upgrading. Preserve
 any other explicitly trusted origins you still need; never add a wildcard.
 
@@ -84,30 +92,30 @@ before consent; no account is needed to start sign-in and open its authorize pag
 
 ## Commands and paths
 
-- `aiki start`: foreground, loopback only. Ctrl-C closes it cleanly. It never auto-opens a browser.
-- `aiki open`: open the local URL; prints it if no browser is available. `AIKI_NO_BROWSER=1` prints only.
-- `aiki pair`: print a one-time local first-device URL and code using this installation’s running owner socket.
-- `aiki auth ...`: existing owner commands, explicitly targeting this installation: `status`, `devices list`,
+- `kemiri start`: foreground, loopback only. Ctrl-C closes it cleanly. It never auto-opens a browser.
+- `kemiri open`: open the local URL; prints it if no browser is available. `AIKI_NO_BROWSER=1` prints only.
+- `kemiri pair`: print a one-time local first-device URL and code using this installation’s running owner socket.
+- `kemiri auth ...`: existing owner commands, explicitly targeting this installation: `status`, `devices list`,
   `devices revoke ID`, `mode required`, `migration list`, and the other source owner-CLI commands. These and `pair`
   work from a normal shell, SSH, or an agent child shell; they do not depend on an inherited backend or port setting.
-- `aiki status`: check the selected port for Aiki's local discovery endpoint; nonzero when unavailable.
-- `aiki health-check`: owner-socket protocol/status health, including installed version/channel for update notices.
-- `aiki version`: selected release and Bun engine version (embedded for binary installs).
-- `aiki doctor`: tool availability/versions, local paths, platform and whether the configured port is free.
-- `aiki service install|remove`: user unit `aiki-local.service`, or launch agent
+- `kemiri status`: check the selected port for Kemiri's local discovery endpoint; nonzero when unavailable.
+- `kemiri health-check`: owner-socket protocol/status health, including installed version/channel for update notices.
+- `kemiri version`: selected release and Bun engine version (embedded for binary installs).
+- `kemiri doctor`: tool availability/versions, local paths, platform and whether the configured port is free.
+- `kemiri service install|remove`: user unit `aiki-local.service`, or launch agent
   `io.github.mitzacoder.aiki.local`. `--print` generates the platform's definition without writing or running it.
-  Linux users who want startup before login may choose to enable linger themselves; Aiki never does so.
-- `aiki update`: newest release on the saved channel (pilot includes prereleases; stable excludes them).
+  Linux users who want startup before login may choose to enable linger themselves; Kemiri never does so.
+- `kemiri update`: newest release on the saved channel (pilot includes prereleases; stable excludes them).
   `--channel pilot|stable` switches channel; `--version TAG` selects an exact tag instead.
   `--runtime bun` forces the source/private-Bun fallback; `--runtime binary` requires a matching executable.
-- `aiki rollback`: select the retained previous release, swapping it with current.
+- `kemiri rollback`: select the retained previous release, swapping it with current.
 
-Default installation root: `${XDG_DATA_HOME:-~/.local/share}/aiki`; runtime under `runtime/`, immutable releases
+Default installation root: `${XDG_DATA_HOME:-~/.local/share}/kemiri`; runtime under `runtime/`, immutable releases
 under `releases/` (a binary release contains `aiki` and `.ready`), backend state under `data/`, with `current`
 and `previous` symlinks. The launcher checks the selected release, so rollback works across both runtimes.
 An explicit runtime change at the same tag prepares a separate immutable `TAG-bun` or `TAG-binary` directory;
 the recorded version/channel remain the release's original identity. Configuration defaults to
-`${XDG_CONFIG_HOME:-~/.config}/aiki`. The launcher is `~/.local/bin/aiki`. With `--dir /absolute/empty/path`, both
+`${XDG_CONFIG_HOME:-~/.config}/kemiri`. The canonical launcher is `~/.local/bin/kemiri`; `~/.local/bin/aiki` remains an alias. With `--dir /absolute/empty/path`, both
 state and config live there (`data/`, `config/`). Existing unmanaged directories or another launcher are refused.
 Re-running the same version reuses its ready release and does not reinstall dependencies. A normal uninstall
 retains the tiny ownership metadata so reinstalling into the same root reuses your data/config.
@@ -122,7 +130,7 @@ persistent storage identity settings stable; never borrow another installation's
 The source/deploy entry point retains its existing environment behavior.
 
 Change port by putting `AIKI_PORT=17317` in this installation's `server.env`, or supplying `AIKI_PORT` to both
-`aiki start` and `aiki open`. The installer prints the default URL; `aiki open` resolves your configured port.
+`kemiri start` and `kemiri open`. The installer prints the default URL; `kemiri open` resolves your configured port.
 Linux service definitions capture the installation-time PATH so git/jj installed through user toolchains are found.
 Reinstall the user service after changing tool paths. macOS logs are under the install root at `service.log`;
 Linux logs use the user journal.
@@ -132,7 +140,7 @@ Linux logs use the user journal.
 **One-click updates:** on a release with self-update support, use **Update now** beside the navigation version
 or in Settings → About. Review the exact from → to version and release notes, then confirm. Any paired owner
 device can do this; the backend logs its session ID. The backend downloads and verifies the same binary or
-source/private-Bun fallback as `aiki update`, on the saved pilot/stable channel. When ready, it holds new tool calls and waits only for commands already running,
+source/private-Bun fallback as `kemiri update`, on the saved pilot/stable channel. When ready, it holds new tool calls and waits only for commands already running,
 not agents or turns. It shows “Waiting for 1 running command (bun test, 3m)…” with Cancel.
 After five minutes, “Restart anyway” appears and requires a second confirmation:
 running commands may be killed and unsafe to retry. Set `AIKI_UPDATE_WAIT_TIMEOUT_MS`
@@ -140,16 +148,16 @@ in `server.env` to change this cap. The prompt keeps new calls held until the co
 finish or you choose. Cancel releases them without changing the running release.
 Conversations and held calls resume after restart. Cancel is unavailable during restart.
 
-`aiki start` keeps a small supervisor alive, whether started in a terminal, systemd --user or launchd. It stops
+`kemiri start` keeps a small supervisor alive, whether started in a terminal, systemd --user or launchd. It stops
 its child before switching code, restarts and checks the owner-only health socket for up to 30 seconds. Failure
 restores the retained code and restarts it automatically. Clients reconnect and show “Updated to v…” or
 “Update failed, rolled back: …”. A rollback whose old code is also unhealthy reports that separately.
 No service-manager command is needed during an update. Keep the supervisor running until the outcome appears.
-An interrupted switch is restored on the next `aiki start`. The supervisor and `server.pid` locks must not be
+An interrupted switch is restored on the next `kemiri start`. The supervisor and `server.pid` locks must not be
 removed while their processes are alive. Native macOS launchd rehearsal is still required.
 
-**Manual CLI updates/rollback:** stop Aiki first (Ctrl-C for foreground; `aiki service remove` for an installed
-user service), run `aiki update` or `aiki rollback`, then `aiki start` or `aiki service install`.
+**Manual CLI updates/rollback:** stop Kemiri first (Ctrl-C for foreground; `kemiri service remove` for an installed
+user service), run `kemiri update` or `kemiri rollback`, then `kemiri start` or `kemiri service install`.
 The CLI refuses changes while the supervisor/server runs. Download/checksum/build failures leave the selected
 release unchanged. An interrupted install can leave `.install-lock`; remove it only after confirming no installer
 is running. `install.sh --stage-only` prepares a release beside the current one without activating it.
@@ -158,13 +166,13 @@ Source/development checkouts and deploy-watcher hosts cannot self-update; About 
 Settings → About shows available versions and release notes. Installed releases check the public GitHub API
 about once a day, without credentials; turn this off there for the whole backend. Dismissal hides the bottom-left update notice
 for that version, not the About row. Source/deploy checkouts do not check unless explicitly enabled in About.
-**Pilot.2 users:** stop Aiki, run `aiki update`, then start it. Pilot.2 already follows
+**Pilot.2 users:** stop Kemiri, run `kemiri update`, then start it. Pilot.2 already follows
 its saved pilot channel, which includes later pilots and stable releases; no `--version` is needed
 unless you deliberately switched channels or want an exact tag.
-**Pilot.1 users:** stop Aiki, run `aiki update --version v0.1.0-pilot.3` once, then start it.
+**Pilot.1 users:** stop Kemiri, run `kemiri update --version v0.1.0-pilot.3` once, then start it.
 **Pilot.3 and older releases lack the self-update API/supervisor.** After a release containing it is
-published, acquire it with one manual `aiki update` while stopped before using the button.
-Later manual updates still use plain `aiki update`. Self-update changes the backend, never Android's APK.
+published, acquire it with one manual `kemiri update` while stopped before using the button.
+Later manual updates still use plain `kemiri update`. Self-update changes the backend, never Android's APK.
 Install the Android APK over the old app; the release uses the same owner signing key,
 versionName `0.1.0-pilot.3`, code 1000003.
 An older installer without channel support needs that first exact-version update to acquire this behavior.
@@ -204,8 +212,8 @@ Locally, with Bun 1.4.4, build and install archives without creating a tag or a 
 bun scripts/build-release.ts --version v0.0.1-test.1 --out .preview/releases
 sh install.sh --version v0.0.1-test.1 --archive .preview/releases/aiki-v0.0.1-test.1.tar.gz --dir "$HOME/aiki-test" --no-service
 # Build a second version, stop the test server, then:
-aiki update --version v0.0.1-test.2 --archive .preview/releases/aiki-v0.0.1-test.2.tar.gz
-aiki rollback
+kemiri update --version v0.0.1-test.2 --archive .preview/releases/aiki-v0.0.1-test.2.tar.gz
+kemiri rollback
 ```
 
 The builder uses an explicit source allow-list, a clean staging directory, frozen dependencies and a neutral web
@@ -221,7 +229,7 @@ CI also builds `aiki-VERSION-linux-x64`, `aiki-VERSION-linux-arm64` and
 `aiki-VERSION-darwin-arm64`, each with a sibling `.sha256`. They join the existing assets on a
 **draft**, never an automatically published release. Linux binaries require glibc; x64 uses Bun's
 baseline target. The release also contains `SHA256SUMS`, covering the executables, source archive and
-installer. macOS signing/notarization is separate. The installer and `aiki update` prefer matching binaries;
+installer. macOS signing/notarization is separate. The installer and `kemiri update` prefer matching binaries;
 macOS x64, Linux musl, older releases and `--runtime bun` retain the source/private-Bun path.
 
 Build and smoke locally on Linux x64, without tags, GitHub releases or service management:
@@ -277,11 +285,11 @@ normal installs/updates use the public GitHub release assets.
 - Checksum mismatch: retry on a trusted connection; do not bypass verification.
 - Bun cannot execute: verify OS/architecture and Linux libc compatibility. x64 uses the baseline build (no AVX2
   requirement); Linux musl has separate pins. Very old CPUs/libc/kernel versions may need a newer OS.
-- Welcome asks for device sign-in: this is expected for new data. Run `aiki pair` while Aiki is running, open its
-  one-time URL in that browser and confirm. An expired/used URL needs a fresh `aiki pair`; never disable auth to fix it.
-- Page opens but is disconnected: verify `aiki status`, configured port, and that the URL is loopback. Remove stale
+- Welcome asks for device sign-in: this is expected for new data. Run `kemiri pair` while Kemiri is running, open its
+  one-time URL in that browser and confirm. An expired/used URL needs a fresh `kemiri pair`; never disable auth to fix it.
+- Page opens but is disconnected: verify `kemiri status`, configured port, and that the URL is loopback. Remove stale
   saved backends only in this browser's Settings. Static hosted web deployments do not auto-discover a local server.
-- Port in use: `aiki doctor`; choose another `AIKI_PORT`. Aiki never kills a process to reclaim a port.
+- Port in use: `kemiri doctor`; choose another `AIKI_PORT`. Kemiri never kills a process to reclaim a port.
 - Provider auth fails: check account eligibility and provider policy; try an API key. Never attach credentials to
   a support report. No provider credentials are imported from the owner's or vendor CLI installations.
 - Missing jj: chat/shared checkout can work; isolated workers cannot. Install jj and restart with it on PATH.
@@ -289,7 +297,7 @@ normal installs/updates use the public GitHub release assets.
 ### Manual macOS checklist (not tested on Linux)
 
 On both Apple Silicon and Intel: verify the pinned download hashes and execution, frozen install/build from a ref,
-paths with spaces/quotes, browser opening, required-mode loopback HTTP/WebSocket, owner-socket `aiki pair`,
+paths with spaces/quotes, browser opening, required-mode loopback HTTP/WebSocket, owner-socket `kemiri pair`,
 first-device sign-in and provider/project setup. Generate and inspect the
 plist; in a disposable account test launchctl bootstrap/bootout, login restart, PATH discovery and `service.log`.
 Then test update/rollback while stopped, running-process refusal, normal uninstall/reinstall and purge. Confirm no

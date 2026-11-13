@@ -96,5 +96,5 @@ test('current pilot identities and reviewed notes agree', async () => {
 	expect(notes).toContain('1000003');
 	expect(notes).not.toMatch(/\]\((?!https:\/\/)/);
 	const commands = workflow.jobs.release!.steps.map(step => step.run ?? '').join('\n');
-	expect(commands).toContain('test "$(head -n 1 "$notes")" = "# Aiki $GITHUB_REF_NAME"');
+	expect(commands).toContain('test "$(head -n 1 "$notes")" = "# Kemiri $GITHUB_REF_NAME"');
 });

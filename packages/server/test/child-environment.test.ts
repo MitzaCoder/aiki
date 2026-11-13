@@ -39,13 +39,15 @@ const settingNames = [
 	"AIKI_WEB_DIR", "AIKI_AUTH_MODE", "AIKI_BACKEND_ORIGINS", "AIKI_PUBLIC_URL", "AIKI_TRUSTED_PROXIES", "AIKI_WEB_APP",
 	"AIKI_ARTIFACT_MAX_BYTES", "AIKI_FCM_KEY_FILE", "AIKI_VAPID_KEY_FILE", "AIKI_VAPID_SUBJECT",
 	"AIKI_DISK_LOW_PERCENT", "AIKI_DISK_LOW_BYTES", "AIKI_WORK_FINISHED_MINUTES", "AIKI_TOOL_CALL_CAP_MINUTES",
-	"AIKI_DEPLOY_STATUS_FILE", "AIKI_TERMINALS", "AIKI_ZELLIJ", "AIKI_TIMEZONE", "AIKI_FUTURE_SETTING",
+	"AIKI_DEPLOY_STATUS_FILE", "AIKI_TERMINALS", "AIKI_ZELLIJ", "AIKI_TIMEZONE", "AIKI_FUTURE_SETTING", "KEMIRI_FUTURE_SETTING", "KEMIRI_DATA_DIR",
 ];
 const printEnvironment = 'console.log(JSON.stringify(process.env))';
 
 function expectChild(env: Record<string, string | undefined>) {
 	expect(Object.keys(env).filter((name) => name.startsWith("AIKI_")).sort()).toEqual(["AIKI_CHILD_PROCESS"]);
 	expect(env.AIKI_CHILD_PROCESS).toBe("1");
+ expect(env.KEMIRI_CHILD_PROCESS).toBe("1");
+ expect(Object.keys(env).filter(name => name.startsWith("KEMIRI_"))).toEqual(["KEMIRI_CHILD_PROCESS"]);
 }
 
 test("server settings cannot bypass the private configuration through native environment reads", async () => {
@@ -63,9 +65,10 @@ test("server settings cannot bypass the private configuration through native env
 		"child-environment.ts": ['env: Readonly<Record<string, string | undefined>> = process.env,'],
 		"server-env.ts": ['export function loadServerEnv(env: Readonly<Record<string, string | undefined>> = process.env): Record<string, string | undefined> {'],
 		"server-settings.ts": [
-			'export let serverSettings: Readonly<Record<string, string | undefined>> = process.env;',
-			'for (const name of Object.keys(process.env)) if (name.startsWith("AIKI_")) delete process.env[name];',
+			'export let serverSettings: Readonly<Record<string, string | undefined>> = new Proxy(process.env, { get: (env, name) => typeof name === "string" ? environmentSetting(env, name) : Reflect.get(env, name) });',
+			'for (const name of Object.keys(process.env)) if (privateSetting(name)) delete process.env[name];',
 			'process.env.AIKI_CHILD_PROCESS = "1";',
+   'process.env.KEMIRI_CHILD_PROCESS = "1";',
 		],
 		"terminals.ts": ['this.#baseEnv = options.env ?? { ...process.env };'],
 	});
@@ -160,7 +163,7 @@ test("entry point captures file and real settings privately; commands and nested
 	expect(result.kind).toBe("synthetic.board");
 	expectChild(result.child);
 	expectChild(result.processEnvironment);
-	expect(result.configs[0]).toMatchObject({ dataDir: join(s.root, "xdg-data/aiki"), configDir: join(xdg, "aiki"), port: 7317, stateNamespace: "aiki" });
+	expect(result.configs[0]).toMatchObject({ dataDir: join(s.root, "xdg-data/kemiri"), configDir: join(xdg, "aiki"), port: 7317, stateNamespace: "aiki" });
 	expect(result.configs[1]).toMatchObject({ dataDir: join(s.root, "explicit-data"), configDir: join(s.root, "explicit-config"), port: 7317 });
 	// Explicit opt-in still reads an env file (needed by intentional owner CLI/deploy commands).
 	const explicit = Bun.spawnSync([process.execPath, main, "--print-config"], { env: { ...childEnvironment(env), AIKI_ENV_FILE: file } });

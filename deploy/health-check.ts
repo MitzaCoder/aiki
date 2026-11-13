@@ -1,44 +1,44 @@
 #!/usr/bin/env bun
 /**
- * Is a aiki backend alive, and is it safe to restart?
- *
- * Sends protocol requests over the WebSocket at `/ws`, retrying until `--timeout-ms` runs out. Exit 0 only when the
- * server answers everything asked; prints one line saying what answered. The backends are API-only, so there is no app
- * shell to fetch.
- *
- *   bun deploy/health-check.ts                                    # http://127.0.0.1:7317
- *   bun deploy/health-check.ts http://vm.example.test:7317 --timeout-ms=15000
- *   bun deploy/health-check.ts --deep --expect-commit=<sha>       # what the deploy checks after a restart
- *   bun deploy/health-check.ts --record-open-projects=<file>      # before the restart: which projects to check
- *   bun deploy/health-check.ts --wait-idle                        # before the restart: drain, wait for tool calls
- *
- * `--deep` goes past `hello`: with the `server-status` feature it asks for `server.status` and, with `--expect-commit`,
- * fails unless the server runs that commit; then it lists the projects and pages a coordinator conversation. Which ones
- * it pages matters: projects open lazily, so right after a restart `projects.list` reports none open and paging only
- * those would check nothing. `--record-open-projects=<file>` saves the IDs that are open before the restart, and
- * `--open-projects=<file>` makes the deep check page exactly those (paging opens them again) and fail if one of them
- * cannot be paged. A project that was not open before was not checked before either, so a vanished path there cannot
- * block a deploy. Without the file the deep check pages whatever is open right now. A server without the status
- * feature (an older release, a rollback target) skips the status step only, so this stays usable against every release.
- *
- * `--record-open-projects` never fails: a server that does not answer records no project, and the deep check then
- * checks none.
- *
- * `--wait-idle` waits until a restart interrupts no tool call, at most `--idle-timeout-ms` (10 minutes by default,
- * `DEPLOY_IDLE_TIMEOUT_SECONDS` in the deploy), `--idle-poll-ms` apart. A server with the `drain` feature is asked for
- * `server.drain` on every poll — new tool calls wait while it lasts, and each request extends it by the server's default
- * (2 minutes), so it lapses soon after a deploy that died — until no tool call is executing; conversations and workers
- * may still be running, and their held calls run after the restart. An older server is polled with `server.status`
- * until nothing runs at all (`busy` conversations and workers both 0). It exits 0 either way and says what happened:
- * the deploy restarts anyway, it just prefers not to interrupt work. A server that does not answer, or has neither
- * feature, is not waited for.
- *
- * The deploy runs it against each backend's loopback (that decides a rollback) and, for the VM, from this host over the
- * tailnet (warning only, `--alive-only`: hello, or required auth discovery).
- * Required local checks use the owner-only Unix socket and the same limited RPC dispatch, never a device credential.
- */
+	* Is a aiki backend alive, and is it safe to restart?
+	*
+	* Sends protocol requests over the WebSocket at `/ws`, retrying until `--timeout-ms` runs out. Exit 0 only when the
+	* server answers everything asked; prints one line saying what answered. The backends are API-only, so there is no app
+	* shell to fetch.
+	*
+	*   bun deploy/health-check.ts                                    # http://127.0.0.1:7317
+	*   bun deploy/health-check.ts http://vm.example.test:7317 --timeout-ms=15000
+	*   bun deploy/health-check.ts --deep --expect-commit=<sha>       # what the deploy checks after a restart
+	*   bun deploy/health-check.ts --record-open-projects=<file>      # before the restart: which projects to check
+	*   bun deploy/health-check.ts --wait-idle                        # before the restart: drain, wait for tool calls
+	*
+	* `--deep` goes past `hello`: with the `server-status` feature it asks for `server.status` and, with `--expect-commit`,
+	* fails unless the server runs that commit; then it lists the projects and pages a coordinator conversation. Which ones
+	* it pages matters: projects open lazily, so right after a restart `projects.list` reports none open and paging only
+	* those would check nothing. `--record-open-projects=<file>` saves the IDs that are open before the restart, and
+	* `--open-projects=<file>` makes the deep check page exactly those (paging opens them again) and fail if one of them
+	* cannot be paged. A project that was not open before was not checked before either, so a vanished path there cannot
+	* block a deploy. Without the file the deep check pages whatever is open right now. A server without the status
+	* feature (an older release, a rollback target) skips the status step only, so this stays usable against every release.
+	*
+	* `--record-open-projects` never fails: a server that does not answer records no project, and the deep check then
+	* checks none.
+	*
+	* `--wait-idle` waits until a restart interrupts no tool call, at most `--idle-timeout-ms` (10 minutes by default,
+	* `DEPLOY_IDLE_TIMEOUT_SECONDS` in the deploy), `--idle-poll-ms` apart. A server with the `drain` feature is asked for
+	* `server.drain` on every poll — new tool calls wait while it lasts, and each request extends it by the server's default
+	* (2 minutes), so it lapses soon after a deploy that died — until no tool call is executing; conversations and workers
+	* may still be running, and their held calls run after the restart. An older server is polled with `server.status`
+	* until nothing runs at all (`busy` conversations and workers both 0). It exits 0 either way and says what happened:
+	* the deploy restarts anyway, it just prefers not to interrupt work. A server that does not answer, or has neither
+	* feature, is not waited for.
+	*
+	* The deploy runs it against each backend's loopback (that decides a rollback) and, for the VM, from this host over the
+	* tailnet (warning only, `--alive-only`: hello, or required auth discovery).
+	* Required local checks use the owner-only Unix socket and the same limited RPC dispatch, never a device credential.
+	*/
 /** Copied standalone to each backend: built-in imports only, no workspace dependencies. */
-import { readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, realpathSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { parseEnv } from "node:util";
@@ -149,22 +149,76 @@ function webSocketUrl(base: string): string {
 }
 
 /** Deliberately standalone copies of server-env.ts and data-dir.ts; explicit process settings win. */
+type Environment = Readonly<Record<string, string | undefined>>;
+const warned = new Set<string>();
+
+/** Normalize one source layer; never mix file and process precedence by spelling. */
+function normalizeEnvironment(env: Environment, warn = true): Record<string, string | undefined> {
+	const result = { ...env };
+	for (const name of Object.keys(env)) {
+		if (!name.startsWith("KEMIRI_") || env[name] === undefined) continue;
+		result[name.replace(/^KEMIRI_/, "AIKI_")] = env[name];
+	}
+	for (const name of Object.keys(result)) if (name.startsWith("AIKI_")) result[name.replace(/^AIKI_/, "KEMIRI_")] = result[name];
+	if (env.AIKI_CHILD_PROCESS === "1" || env.KEMIRI_CHILD_PROCESS === "1") result.AIKI_CHILD_PROCESS = result.KEMIRI_CHILD_PROCESS = "1";
+	if (warn) warnAliasConflicts(env);
+	return result;
+}
+
+/** One names-only stderr warning, never values or machine-readable stdout. */
+function warnAliasConflicts(...layers: Environment[]): void {
+	const conflicts: string[] = [];
+	for (const env of layers) for (const name of Object.keys(env)) {
+		if (!name.startsWith("KEMIRI_") || env[name] === undefined) continue;
+		const legacy = name.replace(/^KEMIRI_/, "AIKI_");
+		if (env[legacy] !== undefined && env[legacy] !== env[name] && !warned.has(name)) {
+			warned.add(name); conflicts.push(`${name}/${legacy}`);
+		}
+	}
+	if (conflicts.length) console.error(`Conflicting setting aliases (KEMIRI wins): ${conflicts.join(", ")}`);
+}
+
+function environmentSetting(env: Environment, legacy: string): string | undefined {
+	if (legacy === "AIKI_CHILD_PROCESS" && (env.AIKI_CHILD_PROCESS === "1" || env.KEMIRI_CHILD_PROCESS === "1")) return "1";
+	return env[legacy.replace(/^AIKI_/, "KEMIRI_")] ?? env[legacy];
+}
+
+function privateSetting(name: string): boolean {
+	return name.startsWith("AIKI_") || name.startsWith("KEMIRI_");
+}
+
+function defaultProductDirectory(base: string): string {
+	const canonical = join(base, "kemiri"), legacy = join(base, "aiki");
+	const populated = (path: string) => existsSync(path) && readdirSync(path).length > 0;
+	if (populated(canonical) && populated(legacy) && realpathSync(canonical) !== realpathSync(legacy)) {
+		throw new Error("Both kemiri and aiki default directories contain data; choose an explicit KEMIRI_DATA_DIR or KEMIRI_CONFIG_DIR (or KEMIRI_ENV_FILE).");
+	}
+	if (existsSync(legacy) && (!existsSync(canonical) || (!populated(canonical) && populated(legacy)))) return legacy;
+	return canonical;
+}
+
 function dataDirectory(): string {
-	const env = { ...process.env };
-	const file = env.AIKI_ENV_FILE || join(env.XDG_CONFIG_HOME || join(homedir(), ".config"), "aiki", "server.env");
-	let source: string | undefined;
+	const env = process.env;
+	const settings = normalizeEnvironment(env, false);
+	const finish = (settings: Record<string, string | undefined>, file: Environment = {}) => { warnAliasConflicts(env, file); return resolveData(settings); };
+	if (settings.AIKI_CHILD_PROCESS === "1" && !settings.AIKI_ENV_FILE) return finish(settings);
+	const file = settings.AIKI_ENV_FILE || join(settings.AIKI_CONFIG_DIR || defaultProductDirectory(env.XDG_CONFIG_HOME || join(homedir(), ".config")), "server.env");
+	let source: string;
 	try { source = readFileSync(file, "utf8"); }
 	catch (error) {
-		if (env.AIKI_ENV_FILE || (error as NodeJS.ErrnoException).code !== "ENOENT") throw new Error("Cannot read server env file");
+		if (!settings.AIKI_ENV_FILE && (error as NodeJS.ErrnoException).code === "ENOENT") return finish(settings);
+		throw error;
 	}
-	if (source !== undefined) for (const [name, value] of Object.entries(parseEnv(source))) {
-		if (!name.startsWith("AIKI_")) throw new Error("Server env file may only set AIKI_ settings");
-		if (env[name] === undefined) env[name] = value;
-	}
+	const parsed = parseEnv(source);
+	for (const name of Object.keys(parsed)) if (!privateSetting(name)) throw new Error(`Server env file may only set KEMIRI_ or AIKI_ settings: ${name}`);
+	const fileSettings = normalizeEnvironment(parsed, false);
+	for (const [name, value] of Object.entries(settings)) if (value !== undefined) fileSettings[name] = value;
+	return finish(fileSettings, parsed);
+}
+function resolveData(env: Record<string, string | undefined>): string {
 	const expand = (path: string) => path === "~" ? homedir() : path.startsWith("~/") ? join(homedir(), path.slice(2)) : path;
-	const data = env.AIKI_DATA_DIR?.trim();
-	const xdg = env.XDG_DATA_HOME?.trim();
-	return data ? resolve(expand(data)) : join(xdg ? resolve(expand(xdg)) : join(homedir(), ".local", "share"), "aiki");
+	const data = env.AIKI_DATA_DIR?.trim(), xdg = env.XDG_DATA_HOME?.trim();
+	return data ? resolve(expand(data)) : defaultProductDirectory(xdg ? resolve(expand(xdg)) : join(homedir(), ".local/share"));
 }
 
 /** Read only: a dead backend must not make a required data directory safe to downgrade. */
@@ -346,17 +400,17 @@ function message(error: unknown): string {
 }
 
 /**
- * A server can list `server-status` in its `hello` and still not answer it: a release between the feature being named
- * and being implemented, and exactly the case that must not roll itself back. It is treated like a server without the
- * feature.
- */
+	* A server can list `server-status` in its `hello` and still not answer it: a release between the feature being named
+	* and being implemented, and exactly the case that must not roll itself back. It is treated like a server without the
+	* feature.
+	*/
 function isUnknownRequest(error: unknown): boolean {
 	return error instanceof Error && error.message.startsWith("unknown_request");
 }
 
 /**
- * `server.status`, or null when this server does not answer it. Any other error is the caller's problem.
- */
+	* `server.status`, or null when this server does not answer it. Any other error is the caller's problem.
+	*/
 async function askStatus(session: CheckSession): Promise<Message | null> {
 	try {
 		return ((await session.request("server.status")).status as Message | undefined) ?? null;
@@ -471,9 +525,9 @@ async function check(options: Options): Promise<string> {
 }
 
 /**
- * Wait until a restart interrupts no tool call (`drain`) or, on an older server, nothing runs. Never fails the deploy:
- * every answer here is advice the deploy logs before it restarts anyway.
- */
+	* Wait until a restart interrupts no tool call (`drain`) or, on an older server, nothing runs. Never fails the deploy:
+	* every answer here is advice the deploy logs before it restarts anyway.
+	*/
 async function waitForIdle(options: Options): Promise<string> {
 	const totalSeconds = Math.round(options.idleTimeoutMs / 1000);
 	if (options.idleTimeoutMs <= 0) return `${options.base}: not waiting for it to be idle (idle timeout is 0s)`;
@@ -535,9 +589,9 @@ async function waitForIdle(options: Options): Promise<string> {
 }
 
 /**
- * Save the projects that are open now, so the deep check after the restart can page exactly those. Never fails: a
- * server that does not answer records none, and the deploy goes on to restart it anyway.
- */
+	* Save the projects that are open now, so the deep check after the restart can page exactly those. Never fails: a
+	* server that does not answer records none, and the deploy goes on to restart it anyway.
+	*/
 async function recordOpenProjects(options: Options, path: string): Promise<string> {
 	let projects: string[] = [];
 	let note: string;

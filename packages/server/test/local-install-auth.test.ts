@@ -50,7 +50,7 @@ test("fresh installed SPA requires sign-in and pairs through the CLI's existing 
   expect(JSON.parse(await command(["auth", "status"], extra))).toMatchObject({ mode: "required" });
  }
  const refused = await command(["start"], { AIKI_CHILD_PROCESS: "1", AIKI_UPDATE_CHILD: "1" }, 1);
- expect(refused).toContain(`Aiki data: ${dataDir}`);
+ expect(refused).toContain(`Kemiri data: ${dataDir}`);
  expect(refused).toContain("Another live server owns data directory");
  expect((await fetch(server.url + "/auth/status")).status).toBe(200);
  const grant = JSON.parse(await command(["pair"], { AIKI_CHILD_PROCESS: "1", AIKI_PORT: "not-needed-for-owner-control" }));

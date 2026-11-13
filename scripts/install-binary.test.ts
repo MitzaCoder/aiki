@@ -43,8 +43,8 @@ async function fixture() {
 	const metadata = async () => JSON.parse(await readFile(join(root, ".aiki-install.json"), "utf8"));
 	async function binary(version: string, corrupt = "") {
 		// An executable stand-in delegates lifecycle behavior to the real CLI. Real compiled execution has its own E2E smoke.
-		const bytes = `#!/bin/sh\nif [ "$1" = --version ]; then echo 'Aiki ${version}'; exit 0; fi\nif [ "$1" = activate ]; then cp ${quote(join(repository, "install.sh"))} "$2/releases/\${7:-$4}/install.sh"; fi\nexec ${quote(process.execPath)} ${quote(join(repository, "scripts/aiki.ts"))} "$@"\n`;
-		const name = `aiki-${version}-linux-x64`;
+		const bytes = `#!/bin/sh\nif [ "$1" = --version ]; then echo 'Kemiri ${version}'; exit 0; fi\nif [ "$1" = activate ]; then cp ${quote(join(repository, "install.sh"))} "$2/releases/\${7:-$4}/install.sh"; fi\nexec ${quote(process.execPath)} ${quote(join(repository, "scripts/aiki.ts"))} "$@"\n`;
+		const name = `kemiri-${version}-linux-x64`;
 		assets.set(`/releases/${version}/${name}`, bytes);
 		assets.set(`/releases/${version}/${name}.sha256`, `${corrupt === "sidecar" ? "0".repeat(64) : digest(bytes)}  ${name}\n`);
 		const notices = "Synthetic unpdf licence notice\n";
@@ -56,7 +56,7 @@ async function fixture() {
 		const tree = join(home, `source-${version}`, "aiki");
 		await mkdir(join(tree, "scripts"), { recursive: true });
 		for (const file of ["install.sh", "scripts/aiki.ts", "scripts/installed-supervisor.ts", "packages/server/src/self-update.ts", "packages/server/src/errors.ts", "packages/protocol/src/release-versions.ts",
-			"packages/server/src/child-environment.ts", "packages/server/src/packaged-resources.ts", "packages/server/src/server-env.ts",
+			"packages/server/src/child-environment.ts", "packages/server/src/environment-aliases.ts", "packages/server/src/packaged-resources.ts", "packages/server/src/server-env.ts",
 			"packages/server/src/server-settings.ts", "packages/server/src/data-dir.ts", "packages/server/src/origins.ts"]) {
 			await mkdir(resolve(tree, file, ".."), { recursive: true });
 			await cp(join(repository, file), join(tree, file));
@@ -73,8 +73,8 @@ async function fixture() {
 		const tar = Bun.spawnSync(["tar", "-czf", archive, "aiki"], { cwd: resolve(tree, ".."), env: { PATH: process.env.PATH } });
 		if (tar.exitCode) throw new Error(tar.stderr.toString());
 		const bytes = new Uint8Array(await Bun.file(archive).arrayBuffer());
-		assets.set(`/releases/${version}/aiki-${version}.tar.gz`, bytes);
-		assets.set(`/releases/${version}/aiki-${version}.tar.gz.sha256`, `${digest(bytes)}  aiki-${version}.tar.gz\n`);
+		assets.set(`/releases/${version}/kemiri-${version}.tar.gz`, bytes);
+		assets.set(`/releases/${version}/kemiri-${version}.tar.gz.sha256`, `${digest(bytes)}  aiki-${version}.tar.gz\n`);
 		await mkdir(join(root, "runtime/bun-1.4.4/bin"), { recursive: true });
 		await symlink(process.execPath, join(root, "runtime/bun-1.4.4/bin/bun"));
 	}
@@ -100,7 +100,7 @@ test("fresh binary install tolerates licence assets and validates both checksums
 	await setup.binary(version);
 	const installed = await setup.install("--version", version);
 	expect(installed.code).toBe(0); expect(installed.message).toContain("activated");
-	expect(setup.assets.has(`/releases/${version}/aiki-${version}-linux-x64.licenses.txt`)).toBe(true);
+	expect(setup.assets.has(`/releases/${version}/kemiri-${version}-linux-x64.licenses.txt`)).toBe(true);
 	expect(existsSync(join(setup.root, "current/aiki"))).toBe(true);
 	expect(existsSync(join(setup.root, "runtime"))).toBe(false);
 	expect((await setup.cli("version")).message).toContain(version);
@@ -163,7 +163,7 @@ test("a missing binary falls back to Bun, while --runtime bun skips an available
 	expect(existsSync(join(setup.root, "current/scripts/aiki.ts"))).toBe(true);
 	await setup.binary("v0.2.0");
 	// Reuse this tiny source archive under another synthetic version.
-	for (const suffix of [".tar.gz", ".tar.gz.sha256"]) setup.assets.set(`/releases/v0.2.0/aiki-v0.2.0${suffix}`, setup.assets.get(`/releases/v0.1.0/aiki-v0.1.0${suffix}`)!);
+	for (const suffix of [".tar.gz", ".tar.gz.sha256"]) setup.assets.set(`/releases/v0.2.0/kemiri-v0.2.0${suffix}`, setup.assets.get(`/releases/v0.1.0/kemiri-v0.1.0${suffix}`)!);
 	setup.requests.length = 0;
 	expect((await setup.install("--version", "v0.2.0", "--runtime", "bun")).code).toBe(0);
 	expect(existsSync(join(setup.root, "current/aiki"))).toBe(false);
