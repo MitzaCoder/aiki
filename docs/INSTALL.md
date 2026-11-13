@@ -13,6 +13,16 @@ Each person installs their own backend. This experimental installer is for Linux
 users run it inside WSL. There is no Node fallback. Fresh data starts with device sign-in **required**. This installer
 keeps loopback binding; network/Tailscale HTTPS setup is separate. Do not forward the port or expose it casually.
 
+## Renamed from Aiki
+
+Kemiri is the new product name. Use `kemiri` for commands and `KEMIRI_*` for
+settings; `aiki` still works for now and `AIKI_*` settings are still read.
+Compatibility stays until a later release. Existing installation folders stay
+where they are: the app keeps your data, credentials, pairings and settings.
+Do not rename or delete old folders to upgrade. Fresh installations use Kemiri
+folders. The pinned pilot.3 downloads below predate the rename and only provide
+`aiki`; the new command becomes available with the bridge release.
+
 ## Install
 
 Install the `v0.1.0-pilot.3` prerelease after publication:
@@ -82,7 +92,7 @@ paid API keys are the straightforward alternative. A saved credential is not pro
 
 Pilot.3 fixes “Could not start MCP sign-in” on local installs opened through either
 `localhost` or `127.0.0.1`. Both exact local callback origins are accepted at the
-actual Kemiri port. If you added the pilot.2 `AIKI_ALLOWED_ORIGINS` workaround to
+actual Kemiri port. If you added the pilot.2 `KEMIRI_ALLOWED_ORIGINS` workaround to
 `server.env`, you can keep or remove those local entries after upgrading. Preserve
 any other explicitly trusted origins you still need; never add a wildcard.
 
@@ -93,7 +103,7 @@ before consent; no account is needed to start sign-in and open its authorize pag
 ## Commands and paths
 
 - `kemiri start`: foreground, loopback only. Ctrl-C closes it cleanly. It never auto-opens a browser.
-- `kemiri open`: open the local URL; prints it if no browser is available. `AIKI_NO_BROWSER=1` prints only.
+- `kemiri open`: open the local URL; prints it if no browser is available. `KEMIRI_NO_BROWSER=1` prints only.
 - `kemiri pair`: print a one-time local first-device URL and code using this installation’s running owner socket.
 - `kemiri auth ...`: existing owner commands, explicitly targeting this installation: `status`, `devices list`,
   `devices revoke ID`, `mode required`, `migration list`, and the other source owner-CLI commands. These and `pair`
@@ -121,7 +131,7 @@ Re-running the same version reuses its ready release and does not reinstall depe
 retains the tiny ownership metadata so reinstalling into the same root reuses your data/config.
 
 The installed CLI deliberately uses its recorded data/config directories, not another backend's inherited
-`AIKI_DATA_DIR`, `AIKI_CONFIG_DIR` or `AIKI_ENV_FILE`. Activation creates an empty owned `server.env` when absent;
+`KEMIRI_DATA_DIR`, `KEMIRI_CONFIG_DIR` or `KEMIRI_ENV_FILE`. Activation creates an empty owned `server.env` when absent;
 the installed CLI loads that explicit file, never a fallback HOME/XDG file. It uses T82’s shared loader and immutable
 private settings snapshot, not process-environment assignments or a second isolation layer. The source and installed
 entry points then use the same startup/auth dispatcher and live-owner socket check. Startup prints effective data/config
@@ -129,7 +139,7 @@ paths before importing the server. CLI-spawned helpers use the same shared child
 persistent storage identity settings stable; never borrow another installation's environment or credential files.
 The source/deploy entry point retains its existing environment behavior.
 
-Change port by putting `AIKI_PORT=17317` in this installation's `server.env`, or supplying `AIKI_PORT` to both
+Change port by putting `KEMIRI_PORT=17317` in this installation's `server.env`, or supplying `KEMIRI_PORT` to both
 `kemiri start` and `kemiri open`. The installer prints the default URL; `kemiri open` resolves your configured port.
 Linux service definitions capture the installation-time PATH so git/jj installed through user toolchains are found.
 Reinstall the user service after changing tool paths. macOS logs are under the install root at `service.log`;
@@ -143,7 +153,7 @@ device can do this; the backend logs its session ID. The backend downloads and v
 source/private-Bun fallback as `kemiri update`, on the saved pilot/stable channel. When ready, it holds new tool calls and waits only for commands already running,
 not agents or turns. It shows “Waiting for 1 running command (bun test, 3m)…” with Cancel.
 After five minutes, “Restart anyway” appears and requires a second confirmation:
-running commands may be killed and unsafe to retry. Set `AIKI_UPDATE_WAIT_TIMEOUT_MS`
+running commands may be killed and unsafe to retry. Set `KEMIRI_UPDATE_WAIT_TIMEOUT_MS`
 in `server.env` to change this cap. The prompt keeps new calls held until the commands
 finish or you choose. Cancel releases them without changing the running release.
 Conversations and held calls resume after restart. Cancel is unavailable during restart.
@@ -251,7 +261,7 @@ The smoke script uses temporary isolated paths, an empty environment and no Bun 
 
 The standalone binary accepts `start`, `status`, `health-check`, `version`, `--print-config`, `pair`
 and `auth`. It defaults to loopback and required device sign-in on fresh data. Use explicit temporary
-`AIKI_DATA_DIR`, `AIKI_CONFIG_DIR`, `AIKI_AGENT_DIR`, `AIKI_CLAUDE_DIR` and HOME for experiments;
+`KEMIRI_DATA_DIR`, `KEMIRI_CONFIG_DIR`, `KEMIRI_AGENT_DIR`, `KEMIRI_CLAUDE_DIR` and HOME for experiments;
 never aim a test at an existing backend. When invoked through the installed launcher, this same executable
 also runs the shared installer lifecycle/service/update/rollback CLI. It uses T137's existing installation
 metadata and private installed-version/channel settings, not a separate binary identity marker.
@@ -289,7 +299,7 @@ normal installs/updates use the public GitHub release assets.
   one-time URL in that browser and confirm. An expired/used URL needs a fresh `kemiri pair`; never disable auth to fix it.
 - Page opens but is disconnected: verify `kemiri status`, configured port, and that the URL is loopback. Remove stale
   saved backends only in this browser's Settings. Static hosted web deployments do not auto-discover a local server.
-- Port in use: `kemiri doctor`; choose another `AIKI_PORT`. Kemiri never kills a process to reclaim a port.
+- Port in use: `kemiri doctor`; choose another `KEMIRI_PORT`. Kemiri never kills a process to reclaim a port.
 - Provider auth fails: check account eligibility and provider policy; try an API key. Never attach credentials to
   a support report. No provider credentials are imported from the owner's or vendor CLI installations.
 - Missing jj: chat/shared checkout can work; isolated workers cannot. Install jj and restart with it on PATH.

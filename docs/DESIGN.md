@@ -1,5 +1,15 @@
 # Design
 
+## Public site and documentation identity (T167)
+
+Kemiri is the public product name; canonical marketing and support addresses are
+`https://kemiri.dev` and `support@kemiri.dev`. The public repository is
+`https://github.com/MitzaCoder/kemiri`. This marketing move does not move paired
+backend origins, OAuth callbacks, persisted identities or installed data. Current
+guides use `kemiri` and `KEMIRI_*`; the `aiki` command and `AIKI_*` settings remain
+compatible until a later release. Historical release notes and protocol literals
+keep their original names. See SITE.md for the owner-operated DNS/mail cutover.
+
 ## Kemiri compatibility bridge (T167)
 
 Kemiri is the command and fresh XDG config/data default; `aiki` remains a same-root
@@ -142,7 +152,7 @@ The desktop projects sidebar and phone drawer reserve a quiet footer link below
 Usage and Settings for the connected backend's identity. It opens Settings →
 About, where update notices remain available with release notes, the exact
 manual `kemiri update` instructions and per-version dismissal. An enabled,
-undismissed update changes the footer to `Aiki v… → v… available` plus an accent
+undismissed update changes the footer to `Kemiri v… → v… available` plus an accent
 dot; dismissal removes that announcement, not the running version or About's
 details. Eligible installed backends also expose T139's Update now control here
 and beside this navigation footer. The former chat update banner is removed on both clients to avoid a
@@ -181,7 +191,7 @@ safe names stay in chip metadata. Downloads
 use authenticated backend HTTP requests, force attachment disposition and disable
 sniffing. `ChatFileStore.removeConversation` removes the entire conversation folder;
 project-open reconciliation removes folders for absent durable conversations.
-Aiki currently archives conversations rather than deleting them; archives retain
+Kemiri currently archives conversations rather than deleting them; archives retain
 files because their transcripts and download links still exist.
 
 The additive `chat-files-v1` feature leaves protocol version 1 and existing image
@@ -951,7 +961,7 @@ Stage 2 adds server-owned OAuth flows through the allowlisted web origin at
 `/mcp/oauth/callback`, with a pasted redirect fallback for unpaired browsers.
 Pending flows are one-use, ten-minute, URL/device-bound state and PKCE; grants
 and dynamic registrations remain in URL-bound `mcp:<id>` credentials. pi-mcp
-owns discovery, issuer checks, PKCE and serialized refresh; Aiki owns routing,
+owns discovery, issuer checks, PKCE and serialized refresh; Kemiri owns routing,
 expiry, cancellation, status broadcasts and secret-safe errors. Invalid grants
 require sign-in, not automatic browser launches. Notion supports OAuth or an MCP
 token. Web and Android settings and Android app-link interception are described above.
@@ -1067,7 +1077,7 @@ tool definitions, with the inline catalogue included exactly once:
 
 Fixture descriptions plus schemas are 2–4 KB/tool. The inline codemode section
 is byte-identical with and without these tools: deferred tools consume none of
-its 3,000-token declaration budget. Baseline is the full Aiki prompt, not the
+its 3,000-token declaration budget. Baseline is the full Kemiri prompt, not the
 inline budget. Search cost is incurred only if the script returns/prints those
 three results; scripts may instead retain them privately and return filtered data.
 These are heuristic context costs, not provider billing/tokenizer measurements.
@@ -4290,7 +4300,7 @@ be recalled.
 
 ### Encrypted relay v1 library (T92)
 
-Relay accounts and relay push are optional (D51): Aiki works fully without either, and
+Relay accounts and relay push are optional (D51): Kemiri works fully without either, and
 nothing here is used unless the user turns relay notifications on. This is library code
 only; neither the running server nor the Android app calls it yet.
 `packages/protocol/src/push-relay.ts` and Android notifications' `relay` package freeze the
@@ -4341,7 +4351,7 @@ It implements verified-account phone enrollment/FCM possession challenges, gener
 installation inventory/removal, pending/active routes with bounded capacity and leases, independent send/delete
 capabilities and digest-reserved encrypted sends/status. The pure core injects Auth, Firestore, sender, clock,
 randomness and App Check monitoring. Production wiring uses ADC; emulator flags cannot enable a production bypass.
-A relay account and relay push are optional (D51): Aiki works fully without either.
+A relay account and relay push are optional (D51): Kemiri works fully without either.
 
 `relay/README.md` has the exact scrubbed `demo-` emulator recipe and API/storage contracts. Tests call the core
 against Auth/Firestore emulators and smoke-test the actual Functions emulator over HTTP with loopback fake FCM.

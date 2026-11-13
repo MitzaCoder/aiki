@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import { checkSite } from './check-site';
 
 const bootstrap = resolve(import.meta.dir, '../site/install.sh');
-const releasePrefix = 'https://github.com/MitzaCoder/aiki/releases/download/';
+const releasePrefix = 'https://github.com/MitzaCoder/kemiri/releases/download/';
 
 test('site links resolve and hero assets stay identical to the README images', async () => {
 	expect(await checkSite()).toBeGreaterThan(20);
@@ -14,6 +14,21 @@ test('site links resolve and hero assets stay identical to the README images', a
 			.toEqual(await Bun.file(resolve(import.meta.dir, `../docs/assets/readme/graph-${theme}.webp`)).arrayBuffer());
 	}
 	expect(Bun.spawnSync(['sh', '-n', bootstrap]).exitCode).toBe(0);
+});
+
+test('site uses canonical Kemiri links and preserves privacy promises', async () => {
+	const root = resolve(import.meta.dir, '../site');
+	const home = await Bun.file(join(root, 'index.html')).text();
+	const privacy = await Bun.file(join(root, 'privacy/index.html')).text();
+	expect(home).toContain('curl -fsSL https://kemiri.dev/install.sh | sh');
+	for (const [page, path] of [[home, '/'], [privacy, '/privacy/']]) {
+		expect(page).toContain(`<link rel="canonical" href="https://kemiri.dev${path}">`);
+		expect(page).toContain('mailto:support@kemiri.dev');
+		expect(page).not.toContain('https://github.com/MitzaCoder/aiki');
+	}
+	expect(privacy).toContain('no analytics, tracking cookies, forms or external fonts');
+	expect(privacy).toContain('There is no Kemiri-hosted account or central service receiving your conversations in this pilot.');
+	expect(privacy).toContain('A future push relay is not active in this pilot.');
 });
 
 type Sidecar = 'valid' | 'mismatch' | 'missing' | 'malformed' | 'other-file' | 'multiple';

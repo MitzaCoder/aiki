@@ -4,6 +4,10 @@ For first installation and pairing, use the [install guide](INSTALL.md).
 Commands and source paths below are relative to the repository root. For current
 authentication behavior, see [device sign-in](DESIGN.md#device-sign-in).
 
+`KEMIRI_*` names are canonical; matching `AIKI_*` names are still read until a
+later release. Existing deployment roots, units, storage keys and private paths
+below intentionally retain their old names; this rename does not move them.
+
 ## Local configuration and publication
 
 Machine-specific configuration is **not tracked**. The deploying checkout keeps it under `deploy/local/` (or an
@@ -14,27 +18,27 @@ absolute `DEPLOY_CONFIG_DIR`). Start from `deploy/targets.example.json`, `deploy
   `DEPLOY_TARGETS_FILE` takes precedence; the old `deploy/targets.json`, if present, remains a transition fallback.
   No target file means no remote targets.
 - `backends.json`: optional suggestions for web clients. The build reads
-  `AIKI_PUBLISHED_BACKENDS_FILE`, otherwise the local configuration directory. Missing means no suggestions.
+  `KEMIRI_PUBLISHED_BACKENDS_FILE`, otherwise the local configuration directory. Missing means no suggestions.
   The deploy exports the stable absolute file path before building its temporary Git archive, so the deployed app
   retains the operator's suggestions without committing them.
 - `config.env`: optional trusted shell configuration for deploy tooling, such as `DEPLOY_STATE_DIR` and
   `DEPLOY_WATCH_SERVICE`. This preserves existing state/lock/service identities during a source cleanup.
 - `aiki.service`: optional private user-mode backend unit, copied to remote tooling instead of the public
   origin-free template. `DEPLOY_USER_UNIT_FILE` may select a differently named file. Host-managed system units are unchanged.
-- `server-host.env`, `server-<target>.env`: optional per-installation `AIKI_*` settings. Deploy installs these atomically
+- `server-host.env`, `server-<target>.env`: optional per-installation `KEMIRI_*` settings. Deploy installs these atomically
   as mode 0600 at `${XDG_CONFIG_HOME:-~/.config}/aiki/server.env` on each target, outside releases. Override a source
   with `DEPLOY_HOST_ENV_FILE` / `DEPLOY_<TARGET>_ENV_FILE`, or destination with the corresponding `_ENV_DEST` variable.
   A changed file forces a backend restart even when the source commit did not change. The server loads it before
-  registering durable state; explicit `AIKI_*` process settings win. `AIKI_ENV_FILE` selects another path (an explicit
+  registering durable state; explicit `KEMIRI_*` process settings win. `KEMIRI_ENV_FILE` selects another path (an explicit
   missing file is an error). Keep destination and unit environment aligned when overriding the default path.
-- `web.env`: optional `AIKI_LEGACY_STORAGE_PREFIX`, injected as a Vite define into hosted builds. Missing/empty
+- `web.env`: optional `KEMIRI_LEGACY_STORAGE_PREFIX`, injected as a Vite define into hosted builds. Missing/empty
   `aiki.*` localStorage keys and absent/empty IndexedDB databases are copied from that namespace before stores load.
   Notification registration cache data is copied as well; original state stays intact. Public builds omit it.
-  `AIKI_WEB_ENV_FILE` selects another build-time env file.
+  `KEMIRI_WEB_ENV_FILE` selects another build-time env file.
 - `android.properties`: private `harness.appOrigin`, `harness.publishedBackendsUrl` and optional external
   `harness.googleServicesJson`. Optional `harness.applicationId` preserves the installed application identity;
   `harness.preferencesPrefix` and `harness.notificationIntentPrefix` preserve existing device state and intents.
-  Firebase client selection follows that application ID. The namespace stays `io.github.mitzacoder.aiki`, and a local
+  Firebase client selection follows that application ID. The source namespace is `io.github.mitzacoder.kemiri`; the application ID stays unchanged, and a local
   application-ID override also enables an activity alias so existing shortcuts/notification taps still resolve.
   Keep the same signing key. The Android build wrapper loads the properties file automatically. `HARNESS_ANDROID_PROPERTIES` can
   select another file; Gradle properties and corresponding environment variables override file values.
@@ -50,8 +54,8 @@ Existing installations can retain all paths and unit names in `config.env`: `DEP
 Set `DEPLOY_HOST_DATA_DIR` and `DEPLOY_VM_DATA_DIR` for VAPID sharing when existing notification keys live elsewhere.
 
 Use `bun packages/server/src/main.ts --print-config` to inspect effective paths, binding, origins and storage identity
-without opening or changing any data. For an existing store, set `AIKI_STATE_NAMESPACE` to its original document/task
-namespace, `AIKI_PROJECT_CONTEXT_DIR` to its project prompt directory, and `AIKI_CONTEXT_EXTENSION` to its context
+without opening or changing any data. For an existing store, set `KEMIRI_STATE_NAMESPACE` to its original document/task
+namespace, `KEMIRI_PROJECT_CONTEXT_DIR` to its project prompt directory, and `KEMIRI_CONTEXT_EXTENSION` to its context
 extension identity. Keep those values stable across releases and rollbacks. New installations need none of them.
 
 Before **every push to a public remote**, run `bun scripts/check-public.ts` (use `--require-scanner` when Nix/Gitleaks
@@ -72,7 +76,7 @@ need review before distributing Android binaries.
 Backends are added, renamed and removed in the app itself (name + HTTPS origin, stored in that browser). The app keeps
 one WebSocket per backend, groups projects by backend, and routes as `/b/<backend>/projects/<project>`. A backend is
 any HTTPS origin; plain HTTP is accepted only for `localhost`/`127.0.0.1` during development. Fresh installs require device sign-in. Each backend also restricts browser WebSockets to configured app origins
-(`AIKI_ALLOWED_ORIGINS`); Origin checks do not replace device authentication.
+(`KEMIRI_ALLOWED_ORIGINS`); Origin checks do not replace device authentication.
 
 Typing an address is rarely necessary:
 
@@ -101,21 +105,21 @@ bun run start                     # backend: http://127.0.0.1:7317, API only
 Add `http://127.0.0.1:7317` as a backend in the app. The local backend must allow the dev server's origin:
 
 ```sh
-AIKI_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 bun run start
+KEMIRI_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 bun run start
 ```
 
 Environment for a backend:
 
-- `AIKI_HOST`: bind interface, default `127.0.0.1`; `0.0.0.0` for a machine reached over its network.
-- `AIKI_PORT`: default 7317.
-- `AIKI_DATA_DIR`: default `${XDG_DATA_HOME:-~/.local/share}/aiki`.
-- `AIKI_ALLOWED_ORIGINS`: comma-separated browser origins allowed to open `/ws`. Unset means no browser
+- `KEMIRI_HOST`: bind interface, default `127.0.0.1`; `0.0.0.0` for a machine reached over its network.
+- `KEMIRI_PORT`: default 7317.
+- `KEMIRI_DATA_DIR`: fresh-install default `${XDG_DATA_HOME:-~/.local/share}/kemiri`; existing installs reuse their recorded paths.
+- `KEMIRI_ALLOWED_ORIGINS`: comma-separated browser origins allowed to open `/ws`. Unset means no browser
   origin is allowed; requests without an `Origin` header (native clients, tests, the health check) still work.
   Production sets `https://harness.example.test`.
-- `AIKI_VAPID_KEY_FILE`: the Web Push VAPID key pair (see [Notifications](#notifications)). Default:
+- `KEMIRI_VAPID_KEY_FILE`: the Web Push VAPID key pair (see [Notifications](#notifications)). Default:
   `<data>/notifications/vapid.json`, generated on first start with mode 0600.
-- `AIKI_VAPID_SUBJECT`: the VAPID `sub`. Default: the app's URL, the first HTTPS origin in
-  `AIKI_ALLOWED_ORIGINS`.
+- `KEMIRI_VAPID_SUBJECT`: the VAPID `sub`. Default: the app's URL, the first HTTPS origin in
+  `KEMIRI_ALLOWED_ORIGINS`.
 
 Hosted deployments build and serve the app separately. The backend serves the API, device-auth routes and artifacts;
 the local installer can also serve its bundled web app. See the install guide for first-run device sign-in.
@@ -130,8 +134,8 @@ push service cannot read them. `packages/server/src/notifications.ts` is the onl
 
 - **One key pair for every backend.** A browser holds one push subscription, so the key it subscribed with has to be
   the key every backend signs with. The host's backend keeps it in `<data>/notifications/vapid.json` (mode 0600,
-  generated on first start, never committed); `AIKI_VAPID_KEY_FILE` moves it and
-  `AIKI_VAPID_SUBJECT` overrides the `sub`, which defaults to the app's URL. The deploy copies the host's
+  generated on first start, never committed); `KEMIRI_VAPID_KEY_FILE` moves it and
+  `KEMIRI_VAPID_SUBJECT` overrides the `sub`, which defaults to the app's URL. The deploy copies the host's
   key to the VM when the VM's is missing or different (`deploy/vapid-key.sh`, before the VM restarts); it warns rather
   than failing, because the VM keeps working with the key it has.
 - **By hand**, when the deploy cannot reach the VM:
@@ -190,7 +194,7 @@ On each move:
 5. Then each remote target in turn (the VM, then the laptop), the same way: `deploy/vapid-key.sh` first shares this
    host's Web Push VAPID key pair with it when its copy is missing or different (one browser subscription has to verify
    against the key every backend signs with; it only warns when it cannot, and the target keeps whatever key it has;
-   `AIKI_VAPID_KEY_FILE` names the host key, `DEPLOY_VM_DATA_DIR` the remote data directory). Then the tree and
+   `KEMIRI_VAPID_KEY_FILE` names the host key, `DEPLOY_VM_DATA_DIR` the remote data directory). Then the tree and
    the tooling go over ssh, and `backend.sh` publishes, drains, restarts and health-checks there on its loopback. The VM
    is a `demo` user service that the deploy installs; the laptop is a system service from nix-config (restarted through
    polkit like this host's, no unit file installed). Each target is then checked over the tailnet (warning only).
@@ -299,8 +303,8 @@ The laptop is `optional`: it is often asleep or away.
 ### Adding a backend host
 
 1. **nix-config:** the `aiki` system service on the machine (runs `bun run start` in `current` of
-   `~/.local/share/aiki-deploy`, as the user that owns the data, `AIKI_ALLOWED_ORIGINS=https://harness.example.test`,
-   `AIKI_HOST=0.0.0.0` with the port open on tailscale0 only), a polkit rule so that user can restart it without a
+   `~/.local/share/aiki-deploy`, as the user that owns the data, `KEMIRI_ALLOWED_ORIGINS=https://harness.example.test`,
+   `KEMIRI_HOST=0.0.0.0` with the port open on tailscale0 only), a polkit rule so that user can restart it without a
    password, `bun` and `git` on the machine, ssh in with a deploy key (this PC's `~/.ssh/<host>`, listed in the machine's
    `authorizedKeys`), linger for a user unit.
 2. **Caddy vhost** on this host: `harness-<host>.example.test` → `<tailnet IP>:7317` (nix-config), so the app can
@@ -322,7 +326,7 @@ The message points at moving `main`, which is the supported way: the watcher is 
 
 The app root `/var/lib/aiki-web` is created and owned by `operator` in nix-config, as are Caddy, the
 `aiki` system unit and the polkit rule that lets `operator` restart it. The unit must set
-`AIKI_ALLOWED_ORIGINS=https://harness.example.test`; nix-config
+`KEMIRI_ALLOWED_ORIGINS=https://harness.example.test`; nix-config
 (`<host-config>/default.nix`) is the only definition of that unit. The VM unit
 (`deploy/systemd/aiki.service`, installed by the deploy) sets it too.
 
@@ -362,4 +366,4 @@ Overrides: `DEPLOY_SSH_TARGET`, `DEPLOY_TAILNET_HOST` (empty skips the tailnet c
 targets for the per-target names), `DEPLOY_TARGETS_FILE`, `DEPLOY_PROBE_TIMEOUT_SECONDS`, `DEPLOY_CATCHUP_SECONDS`, `DEPLOY_PORT`, `BUN`,
 `DEPLOY_POLL_SECONDS`, `DEPLOY_KEEP_RELEASES`, `DEPLOY_HEALTH_TIMEOUT_MS`, `DEPLOY_IDLE_TIMEOUT_SECONDS`,
 `DEPLOY_IDLE_POLL_SECONDS`, `DEPLOY_APP_ROOT`, `DEPLOY_HOST_ROOT`, `DEPLOY_HOST_SERVICE`, `DEPLOY_TARGET`,
-`AIKI_VAPID_KEY_FILE` and `DEPLOY_VM_DATA_DIR` (the VAPID key pair, see [Notifications](#notifications)).
+`KEMIRI_VAPID_KEY_FILE` and `DEPLOY_VM_DATA_DIR` (the VAPID key pair, see [Notifications](#notifications)).

@@ -1,4 +1,4 @@
-# Aiki
+# Kemiri
 
 Read `docs/CONTINUE.md` first; update it before finishing.
 

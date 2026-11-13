@@ -7,7 +7,7 @@ ordinary backend use never requires either, and account prompts belong only in A
 
 ## Setting and negotiation
 
-The operator sets `AIKI_PUSH_RELAY_ENDPOINT` through the existing private settings loader. It is the complete v1 base
+The operator sets `KEMIRI_PUSH_RELAY_ENDPOINT` through the existing private settings loader. It is the complete v1 base
 URL, for example `https://relay.example.com/v1/`. Only HTTPS is accepted, except HTTP on literal loopback/localhost.
 Credentials, query strings and fragments in the URL are rejected. No admin, account or Firebase credential is used.
 Requests use octet-stream JSON, no-store, a ten-second deadline and `redirect: "error"` (no bearer forwarding).

@@ -6,6 +6,29 @@ Releasing is independent of the deployment watcher; never move `main` as a relea
 step or run deployment/service commands. The earlier audit is in
 [research/pilot-release-audit.md](research/pilot-release-audit.md).
 
+## Kemiri bridge release (newer than pilot.3)
+
+The pilot.3 recipe below is retained as a historical baseline, not the next tag.
+Choose a new tag and increasing Android code; never rewrite published pilot assets.
+Use `kemiri` and `KEMIRI_*` for the bridge; `aiki` and `AIKI_*` remain supported
+until a later release. Preserve signing aliases, application IDs and stored data.
+
+Publish both `kemiri-TAG-{linux-x64,linux-arm64,darwin-arm64}` canonical binaries
+and `aiki-TAG-{linux-x64,linux-arm64,darwin-arm64}` compatibility binaries, each
+with its own `.sha256` and `.licenses.txt`, covered by `SHA256SUMS`. The compatibility
+binaries must print exactly `Aiki TAG` for the old updater's version probe;
+canonical binaries print `Kemiri TAG`. Do not merely rename the canonical binary.
+Keep old source archive names/layout for pilot.3 as well as canonical `kemiri-*`
+assets; test the actual pilot.3 updater against the published filenames and hashes.
+Rehearse upgrade and rollback without moving existing folders or namespaces.
+
+Only after publication and verification, bump the default tag in `site/install.sh`
+(currently `v0.1.0-pilot.3`). Update site/README/install-guide release and APK links,
+examples and the pinned-default assertions in `scripts/site.test.ts` together.
+Keep bootstrap checksum/HTTPS verification. Include both binary families in the
+combined checksum manifest; the pilot.3-only checksum command below is not enough
+for the bridge. Confirm repository redirects still serve old release asset URLs.
+
 ## Signing ownership and remaining review
 
 The pilot uses one permanent owner-held local PKCS12 key, outside the repository
@@ -23,10 +46,10 @@ source commit locally and attaches the result to the draft by hand.
 The owner must review the final Sora LGPL-2.1 source/relinking materials, generated
 third-party catalogue and Google SDK terms before distributing. The APK carries
 Sora, font and Termux notices; the notices/source asset also carries the complete
-pinned upstream Sora source, module sources and matching Aiki source. Generated
+pinned upstream Sora source, module sources and matching Kemiri source. Generated
 metadata can contain a licence URL instead of full text and is not legal
 certification. See `apps/android/licenses/RELINKING.md`. This preparation does not
-claim that all Aiki code must be relicensed or that every obligation is settled.
+claim that all Kemiri code must be relicensed or that every obligation is settled.
 
 One assisted phone/backend HTTPS pairing test on the invited tester's network
 remains an acceptance gate for Android invitations. Emulator installation and
@@ -63,7 +86,7 @@ trusted invitation channel too.
 
 ## Self-update release acceptance
 
-A release containing T139 adds an installed `aiki start` supervisor. Older pilots
+A release containing T139 adds an installed `kemiri start` supervisor. Older pilots
 must acquire it once with a manual stopped update; publishing new web/Android
 clients cannot add the API to an already running pilot.2 or pilot.3 backend. Clients keep
 manual instructions for those backends. The button updates backend code, not APKs.
@@ -81,7 +104,7 @@ when available; foreground rehearsal alone does not certify launchd/systemd.
 The supervisor probes owner-socket `server.status`, including the selected
 installed version, for 30 seconds; arbitrary HTTP 200 is not health. It keeps a
 recovery journal before activation, restores old code on interrupted switching,
-and uses the same link/metadata selection as manual `aiki rollback`. **Storage
+and uses the same link/metadata selection as manual `kemiri rollback`. **Storage
 migrations must remain readable by the retained release**: rollback changes code,
 not data. Add migration compatibility and native macOS service behavior to the
 publisher's review. Never publish the synthetic test builds/fake feed.
@@ -119,7 +142,7 @@ for the owner's pre-push scan. Default/local mode still fails without a nonempty
 private denylist. Do not put the denylist into the release checkout's tracked files.
 
 Before tagging, run the same non-publishing GitHub checks on the approved branch:
-`gh workflow run release.yml --repo MitzaCoder/aiki --ref APPROVED_BRANCH`.
+`gh workflow run release.yml --repo MitzaCoder/kemiri --ref APPROVED_BRANCH`.
 Confirm its exact head SHA, successful checks job and skipped release job. Manual
 runs cannot stage/publish even when the selected ref is a tag. For an unmerged
 workflow change, the temporary `ci/release-check` branch push also triggers checks.
@@ -132,9 +155,9 @@ From the isolated exact-commit checkout, use the Android Nix shell (or set JDK 2
 and Android SDK/build-tools 37.0.0). Set these external-file environment variables
 in the local shell, never their contents in commands/logs:
 
-- `AIKI_RELEASE_KEYSTORE`: path printed by the key-creation script.
-- `AIKI_RELEASE_PASSWORD_FILE`: path printed by that script.
-- `AIKI_RELEASE_KEY_ALIAS`: optional, default `aiki-pilot`.
+- `KEMIRI_RELEASE_KEYSTORE`: path printed by the key-creation script.
+- `KEMIRI_RELEASE_PASSWORD_FILE`: path printed by that script.
+- `KEMIRI_RELEASE_KEY_ALIAS`: optional, default `aiki-pilot`.
 
 ```sh
 TAG=v0.1.0-pilot.3
@@ -154,7 +177,7 @@ the increasing numeric scheme and current-pilot default. Firebase/relay/backend 
 fields are empty; example App Link hosts are intentionally inert.
 
 The notices bundler downloads three hash-pinned Sora source archives and snapshots
-only the specified Aiki commit, not ignored/untracked files or ancestors. Inspect
+only the specified Kemiri commit, not ignored/untracked files or ancestors. Inspect
 its contents and source marker. Keep generated notice JSON/offset metadata together
 with the licence bytes. No signing key is needed for library replacement/rebuilding.
 
@@ -173,11 +196,11 @@ Do not perform this section during preparation. In the reviewed checkout, after
 the exact-ref private scan and owner approval:
 
 ```sh
-git tag -a "$TAG" "$COMMIT" -m "Aiki $TAG"
+git tag -a "$TAG" "$COMMIT" -m "Kemiri $TAG"
 git push origin "refs/tags/$TAG"
-gh run list --repo MitzaCoder/aiki --workflow release.yml --commit "$COMMIT"
-gh run watch RUN_ID --repo MitzaCoder/aiki --exit-status
-gh release view "$TAG" --repo MitzaCoder/aiki --json isDraft,isPrerelease,tagName,assets
+gh run list --repo MitzaCoder/kemiri --workflow release.yml --commit "$COMMIT"
+gh run watch RUN_ID --repo MitzaCoder/kemiri --exit-status
+gh release view "$TAG" --repo MitzaCoder/kemiri --json isDraft,isPrerelease,tagName,assets
 ```
 
 The workflow frozen-installs, runs root/web gates, checks Android DTO generation,
@@ -211,28 +234,28 @@ sha256sum "aiki-$TAG.tar.gz" "aiki-$TAG-linux-x64" "aiki-$TAG-linux-arm64" \
 Attach only the manual assets, not the key, logs or entire local output directory:
 
 ```sh
-gh release upload "$TAG" --repo MitzaCoder/aiki \
+gh release upload "$TAG" --repo MitzaCoder/kemiri \
   "aiki-$TAG-android-universal.apk" "aiki-$TAG-android-universal.apk.sha256" \
   "aiki-$TAG-android-notices-and-source.tar.gz" \
   "aiki-$TAG-android-notices-and-source.tar.gz.sha256" \
   RELEASE-MANIFEST.json RELEASE-NOTES.md
 # Replace only the workflow's aggregate with the verified combined manifest.
-gh release upload "$TAG" --repo MitzaCoder/aiki SHA256SUMS --clobber
-gh release edit "$TAG" --repo MitzaCoder/aiki --notes-file RELEASE-NOTES.md
+gh release upload "$TAG" --repo MitzaCoder/kemiri SHA256SUMS --clobber
+gh release edit "$TAG" --repo MitzaCoder/kemiri --notes-file RELEASE-NOTES.md
 ```
 
-Use `gh release download "$TAG" --repo MitzaCoder/aiki --dir FRESH_VERIFY_DIR` to
+Use `gh release download "$TAG" --repo MitzaCoder/kemiri --dir FRESH_VERIFY_DIR` to
 verify the actual attachments. In that fresh directory run `sha256sum -c SHA256SUMS`,
 every individual checksum file (including all three executables), SDK `apksigner verify --verbose --print-certs`
 and `zipalign -c -P 16 4` against the downloaded APK. Compare package/version from
 `aapt2 dump badging` to the manifest, and compare the certificate fingerprint to the
 trusted local key. Unpack the notices asset and check its source marker, upstream
-hashes and Aiki source tree. Confirm the draft has exactly the listed assets and
+hashes and Kemiri source tree. Confirm the draft has exactly the listed assets and
 is marked prerelease. Confirm that no password/key/local config or private host
 entered an attachment. Keep the draft until the owner approves publication:
 
 ```sh
-gh release edit "$TAG" --repo MitzaCoder/aiki --draft=false --prerelease
+gh release edit "$TAG" --repo MitzaCoder/kemiri --draft=false --prerelease
 ```
 
 Finally inspect the public release and download checksums again without privileged

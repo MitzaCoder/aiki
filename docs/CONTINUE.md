@@ -1,5 +1,34 @@
 # Continue
 
+## T167: Kemiri public site and current guides
+
+The static site, CNAME, bootstrap repository URL, README, AGENTS product heading
+and current operator/install/release/relay guides now use Kemiri, kemiri.dev,
+support@kemiri.dev and MitzaCoder/kemiri. Privacy promises are unchanged apart
+from product/email/domain. The bootstrap remains pinned to pilot.3 and retains
+all HTTPS/checksum checks. Its pinned pilot predates the new command, called out
+on the site and in install guides; after bridge publication bump that default,
+the site/docs release/APK links and the site tests together.
+
+README and INSTALL explain command/env compatibility and retained folders/data.
+SITE documents the owner-operated Pages/DNS/email cutover and Cloudflare proxied
+Single Redirect from the old apex/www with path/query preserved, rehearsed 302
+then 301. RELEASE adds canonical/compatibility binary families and the exact
+legacy `Aiki TAG` probe. Pilot.3 asset names, quoted diagnostic output, existing
+units/paths and persistent protocol/storage literals remain intentional. Release
+history and research were not rewritten; DESIGN installer/settings sections are
+left for the installer/server integration workers.
+
+Reviewed all four README graph/board light/dark WebPs visually and with OCR:
+none contains an Aiki wordmark, so no art was regenerated. T167 has sixteen
+before/after homepage/privacy screenshots (desktop/phone, light/dark) and a
+12-second desktop-light navigation recording saved as artifacts. Synthetic local
+static server and headless Chromium were isolated and stopped by owned PID.
+
+Checks: 14 site tests / 64 assertions, root 2,594 tests / 92,952 assertions,
+typecheck, and public generic/private denylist plus Gitleaks pass. No bookmarks,
+release tags, deployments, account settings or devices were changed.
+
 ## T167: Kemiri server/CLI compatibility bridge
 
 KEMIRI_* aliases resolve by source before spelling, without placing file values in

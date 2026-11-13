@@ -1,4 +1,4 @@
-# aikilabs.dev
+# kemiri.dev
 
 `site/` is a complete static site: HTML, CSS, local images, `/privacy/` (also reachable
 as `/privacy` on Pages), and `/install.sh`. No JavaScript, build, analytics, external
@@ -17,19 +17,31 @@ After this change is merged/pushed to main:
    from a manually selected non-main ref.
 3. Run **Actions → Website → Run workflow** on `main` for the first deployment.
    Later changes under `site/` or to the workflow/checks trigger it automatically.
-4. In **Settings → Pages**, set the custom domain to **aikilabs.dev**. `site/CNAME`
-   records the intended domain, but a custom Actions workflow does not configure
-   the repository's Pages domain setting for you.
-5. The owner must configure the domain's DNS using GitHub's current
-   [apex-domain instructions](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site#configuring-an-apex-domain).
-   Verify domain ownership through the account's Pages settings as recommended by
-   [GitHub](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/verifying-your-custom-domain-for-github-pages),
-   to reduce takeover risk. No DNS or account settings are changed by this repo.
-6. Once the DNS check and certificate issuance complete, enable **Enforce HTTPS**.
-   Check `/`, `/privacy`, and `/install.sh` at the domain. The `.sh` is a download,
-   not a redirect or an executable server endpoint.
-7. Separately activate **support@aikilabs.dev** email forwarding with the chosen
-   mail/DNS provider and verify delivery. This site neither provisions nor reads mail.
+4. Add `kemiri.dev` to Cloudflare and set its assigned nameservers at the
+   registrar. Wait for delegation; keep the old `aikilabs.dev` registration/zone.
+5. Verify the new domain with GitHub's requested Pages ownership TXT record; keep
+   that record. In **Settings → Pages**, set custom domain **kemiri.dev**, matching
+   `site/CNAME`. A custom Actions workflow does not set the account's domain.
+   Configure apex/www DNS using GitHub's current
+   [Pages instructions](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site).
+   Start DNS-only while Pages validates and provisions its certificate, then enable
+   **Enforce HTTPS**. Check `/`, `/privacy/` and `/install.sh` on the new domain.
+6. Enable Cloudflare Email Routing on the new zone, verify the destination mailbox,
+   and create `support@kemiri.dev`. Add its required MX/TXT/SPF records. Preserve
+   `support@aikilabs.dev` forwarding to the same verified mailbox; test both.
+   Routing is inbound forwarding, not outbound sending. The site does not read mail.
+7. Once the new HTTPS site works, put only the old apex and `www.aikilabs.dev`
+   HTTP DNS records behind Cloudflare's **proxied** redirect-only setup. Ensure
+   edge HTTPS certificates are active. Create a **Single Redirect** matching
+   `http.host in {"aikilabs.dev" "www.aikilabs.dev"}` for both HTTP and HTTPS.
+   Dynamic target: `concat("https://kemiri.dev", http.request.uri.path)`;
+   enable **Preserve query string**. Rehearse with 302, then use **301** after
+   testing `/privacy/`, `/install.sh` and a path with a query. Do not match arbitrary
+   subdomains, redirect back to the old host, or remove old mail MX/TXT records.
+8. After the GitHub repository rename to `MitzaCoder/kemiri`, review Pages and
+   integration settings and canonical remotes. Keep checkout locations unchanged;
+   never reuse the old repository name. Test old release API and asset redirects.
+   This cutover does not move app/API origins, paired backends or OAuth callbacks.
 
 The workflow uses immutable action SHAs. The upload job only reads contents;
 only the deployment job can write Pages and request the deployment OIDC token.
@@ -46,7 +58,7 @@ drift from the release. Download/review it before running; do not use `curl | sh
   prereleases). `--version TAG` selects that exact release's installer and is passed
   unchanged to it. `--version latest`, path fragments and URLs are rejected.
 - It downloads `install.sh` and `install.sh.sha256` only from that version under
-  `https://github.com/MitzaCoder/aiki/releases/download/`, requiring HTTPS even
+  `https://github.com/MitzaCoder/kemiri/releases/download/`, requiring HTTPS even
   through redirects, bounded curl downloads, and SHA-256 before execution.
 - It accepts exactly one checksum entry for `install.sh`, not arbitrary local paths.
   Missing assets, malformed checksums and mismatches stop before running anything.

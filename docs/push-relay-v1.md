@@ -83,7 +83,7 @@ backend/session mismatch after decryption uses `identity`. No raw content goes i
 
 TypeScript exports `generateRelayKeyPair`, `exportRelayPublicKey`, `relaySharedSecret`,
 `deriveRelayKeys`, `relayTranscript`, `relayConfirmation`, `verifyRelayConfirmation`,
-`encryptRelay`, `decryptRelay`, capability functions and admission classes from `@aiki/protocol`.
+`encryptRelay`, `decryptRelay`, capability functions and admission classes from `@kemiri/protocol`.
 The direct module is usable in Bun, Node 22 and WebCrypto environments without Bun/Node imports.
 Kotlin's corresponding entry point is `RelayCrypto`, with `RelayContext` and `RelayPlaintext`;
 its receiver payload is an opaque `JsonObject`, convertible to the existing generated DTO later.

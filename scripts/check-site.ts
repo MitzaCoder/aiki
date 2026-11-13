@@ -8,6 +8,8 @@ export async function checkSite(root = resolve(import.meta.dir, '../site')): Pro
 	for (const page of pages) {
 		const html = await Bun.file(resolve(root, page)).text();
 		if (!/^<!doctype html>/i.test(html) || !/<html lang="en">/.test(html) || !/<title>[^<]+<\/title>/.test(html)) throw new Error(`Missing document metadata: ${page}`);
+		if (!html.includes('Kemiri') || !html.includes('https://kemiri.dev/')) throw new Error(`Missing Kemiri identity: ${page}`);
+		if (/aikilabs\.dev|github\.com\/MitzaCoder\/aiki(?:[\/"#]|$)|support@aikilabs/.test(html)) throw new Error(`Stale public identity: ${page}`);
 		for (const [, reference] of html.matchAll(/(?:href|src|srcset)="([^"]+)"/g)) {
 			if (!reference) continue;
 			checked++;
@@ -22,7 +24,7 @@ export async function checkSite(root = resolve(import.meta.dir, '../site')): Pro
 		}
 	}
 	if (pages.length < 2) throw new Error('Homepage and privacy page required');
-	if ((await Bun.file(resolve(root, 'CNAME')).text()).trim() !== 'aikilabs.dev') throw new Error('Wrong custom domain');
+	if ((await Bun.file(resolve(root, 'CNAME')).text()).trim() !== 'kemiri.dev') throw new Error('Wrong custom domain');
 	console.log(`Site check: ${pages.length} HTML pages, ${checked} links/assets/fragments OK.`);
 	return checked;
 }

@@ -1,11 +1,11 @@
 #!/bin/sh
-# Aiki's static-site bootstrap. Review before running; no curl | sh needed.
+# Kemiri's static-site bootstrap. Review before running; no curl | sh needed.
 # Fetch only an exact GitHub release installer, verify it, then forward arguments.
 set -eu
 umask 077
 version=v0.1.0-pilot.3
 explicit_version=false
-fail() { printf 'aiki bootstrap: %s\n' "$*" >&2; exit 1; }
+fail() { printf 'kemiri bootstrap: %s\n' "$*" >&2; exit 1; }
 select_version() {
  while [ "$#" -gt 0 ]; do
   case $1 in
@@ -31,10 +31,10 @@ elif command -v shasum >/dev/null 2>&1; then
 else
  fail 'Install sha256sum or shasum to verify downloads'
 fi
-work=$(mktemp -d "${TMPDIR:-/tmp}/aiki-bootstrap.XXXXXXXX")
+work=$(mktemp -d "${TMPDIR:-/tmp}/kemiri-bootstrap.XXXXXXXX")
 trap 'rm -rf "$work"' 0
 trap 'exit 1' HUP INT TERM
-base=https://github.com/MitzaCoder/aiki/releases/download/$version
+base=https://github.com/MitzaCoder/kemiri/releases/download/$version
 fetch() {
  curl --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 15 --max-time 300 --retry 2 -fL "$1" -o "$2"
 }
@@ -53,7 +53,7 @@ else
 fi
 actual=${actual%% *}
 [ "$actual" = "$expected" ] || fail 'Installer checksum mismatch; nothing executed'
-printf 'aiki bootstrap: verified GitHub release installer %s\n' "$version"
+printf 'kemiri bootstrap: verified GitHub release installer %s\n' "$version"
 # The pinned default must also reach the release installer, whose own default
 # might otherwise select latest (which excludes prereleases).
 if [ "$explicit_version" = false ]; then set -- --version "$version" "$@"; fi

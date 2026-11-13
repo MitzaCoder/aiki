@@ -141,7 +141,7 @@ its commands are for you after agreement, never for the agent. Do not adapt the 
   queries on the actual chosen database; keep unfinished cleanup work out of TTL. Leave relay backups/PITR off.
 - [ ] **Configure Auth providers and abuse controls.** Enable Email/Password with Email link enabled for the pilot;
   enable Google only when deliberately adding that optional method. Leave the Web client ID empty for email-only builds;
-  disable unused providers. Aiki must expose no password flow. Enable email enumeration protection and review effective
+  disable unused providers. Kemiri must expose no password flow. Enable email enumeration protection and review effective
   signup/mail quotas, generic send-link responses and provider shutdown controls. Add only needed authorized domains
   and the agreed HTTPS continuation URL. Result: verified Google/email accounts can authenticate; anonymous/unverified
   accounts cannot enroll. Verify using synthetic test accounts, including provider conflicts; never merge by email.
@@ -197,7 +197,7 @@ its commands are for you after agreement, never for the agent. Do not adapt the 
   Do not reuse the unrelated app-link origin. Without a relay endpoint the app shows no relay settings at all.
   Result: the release-signed APK uses the intended
   app/project/endpoint and relay remains off until explicit opt-in. Verify privately, without printing build config.
-- [ ] **Set `AIKI_PUSH_RELAY_ENDPOINT` on one backend only.** Put the complete HTTPS v1 base URL, including `/v1/`,
+- [ ] **Set `KEMIRI_PUSH_RELAY_ENDPOINT` on one backend only.** Put the complete HTTPS v1 base URL, including `/v1/`,
   in its ignored `deploy/local/server-<target>.env` through the private settings loader. Never put Auth/admin credentials
   there for relay. Use the normal approved application deploy process, not ad-hoc service restarts.
   Verify only that backend advertises `fcm-relay-v1` with device sign-in, and no phone changes transport merely because
@@ -304,7 +304,7 @@ sign-up until all checks pass. Record outcomes privately; never keep real links 
   revoke that key yourself and remove its private backend copies. Verify direct rollback is intentionally retired;
   the relay runtime identity still works independently. Never overwrite or revoke web VAPID keys as part of this step.
 - [ ] To turn everything off: set `enabled=false` and `enrollmentEnabled=false`, turn relay notifications off in the
-  app to stop local receive/queue cleanup, and remove `AIKI_PUSH_RELAY_ENDPOINT` through the private backend settings.
+  app to stop local receive/queue cleanup, and remove `KEMIRI_PUSH_RELAY_ENDPOINT` through the private backend settings.
   Verify no relay capability is advertised/new sends authorized; finish queued deletion through the approved cleanup
   process before removing the function/runtime access. The built Android settings have separate Turn off, this-phone
   Sign out and all-phone Delete relay account actions; verify their release-signed behavior before rollout.

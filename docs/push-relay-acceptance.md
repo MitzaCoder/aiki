@@ -11,12 +11,12 @@ linked existing coverage, not an Android/browser run performed by this worker.
 
 ## Evidence key
 
-- **E**: `relay/checks/e2e/integration.cases.ts`, real Functions HTTP + real isolated Aiki backends + TypeScript phone.
+- **E**: `relay/checks/e2e/integration.cases.ts`, real Functions HTTP + real isolated Kemiri backends + TypeScript phone.
 - **R.name**: `relay/checks/name.cases.ts`, existing relay emulator checks. Many inject the core clock/failure seam;
   R.http, R.demo-stack and E exercise the Functions HTTP adapter. Do not describe every R test as a real function crash test.
 - **S registration/transport/lifecycle/retention**: `packages/server/test/push-relay-<name>.test.ts`.
 - **P**: `packages/protocol/src/push-relay.test.ts`, frozen shared crypto/admission vectors and randomized crypto.
-- **A.Class.method**: existing `apps/android/app/src/test/kotlin/io/github/mitzacoder/aiki/notifications/Relay*Test.kt`.
+- **A.Class.method**: existing `apps/android/app/src/test/kotlin/io/github/mitzacoder/kemiri/notifications/Relay*Test.kt`.
 
 ## Section 12 checklist
 
