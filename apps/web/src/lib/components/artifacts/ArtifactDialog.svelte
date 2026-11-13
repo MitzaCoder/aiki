@@ -17,7 +17,9 @@
 	import Markdown from '#lib/components/markdown/Markdown.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
-	import { artifactTitle, formatBytes, formatMediaDuration, kindLabel, savedByLabel } from '#lib/artifacts.js';
+	import { artifactTitle, formatBytes, formatMediaDuration, isMarkdownArtifact, kindLabel, savedByLabel } from '#lib/artifacts.js';
+	import { isHtmlArtifact } from '#lib/artifact-preview.js';
+	import { artifactDialogSizing } from '#lib/dialog-layout.js';
 	import { downloadArtifact } from '#lib/artifacts.svelte.js';
 	import { exactTime, relativeTime } from '#lib/relative-time.js';
 	import { linkNoteTimes, noteTimeFromHref, panelFitsBeside } from '#lib/video-player.js';
@@ -51,6 +53,15 @@
 
 	const wide = new MediaQuery('(min-width: 48rem) and (min-height: 30rem)');
 	const theater = $derived(artifact?.kind === 'video' && wide.current);
+	/** A Markdown or HTML page gets the taller dialog, and an HTML page the wider one; other kinds keep their size. */
+	const sizing = $derived(
+		artifact === undefined
+			? artifactDialogSizing({})
+			: artifactDialogSizing({
+					markdown: artifact.kind === 'text' && isMarkdownArtifact(artifact),
+					html: artifact.kind === 'text' && isHtmlArtifact(artifact)
+				})
+	);
 
 	let confirming = $state(false);
 	let busy = $state<'delete' | 'download' | undefined>(undefined);
@@ -248,10 +259,7 @@
 			</div>
 		</Dialog.Content>
 	{:else}
-		<Dialog.Content
-			class="artifact-dialog flex max-h-[calc(100dvh-1.5rem)] w-[min(56rem,calc(100vw-1.5rem))] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
-			data-artifact-dialog
-		>
+		<Dialog.Content class="artifact-dialog flex {sizing} flex-col gap-0 overflow-hidden p-0" data-artifact-dialog>
 			{#if artifact !== undefined}
 				<div class="relative flex min-h-0 flex-1 flex-col">
 				<div bind:this={scroller} use:overlayScroll={'parent'} class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -260,7 +268,7 @@
 							{#if artifact.kind === 'video'}
 								<ArtifactVideo bind:this={video} {artifact} {client} {autoplay} ondownload={download} downloading={busy === 'download'} />
 							{:else}
-								<ArtifactPlayer {artifact} {client} {autoplay} />
+								<ArtifactPlayer {artifact} {client} {autoplay} roomy />
 							{/if}
 						{/key}
 					</div>

@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { harness, type BackendConnection } from '#lib/harness.svelte.js';
 	import { backendVersion } from '#lib/aiki-version.js';
+	import XIcon from '@lucide/svelte/icons/x';
 	import SelfUpdate from '../SelfUpdate.svelte';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import SettingsSection from './SettingsSection.svelte';
 	import SettingsGroup from './SettingsGroup.svelte';
 	let error = $state('');
@@ -43,7 +45,10 @@
 						<p>Aiki <strong>{updates.available.version}</strong> is available. <a class="underline" href={updates.available.notesUrl} target="_blank" rel="noopener noreferrer">Release notes</a></p>
 						{#if !backend.status?.selfUpdate?.enabled}<p>Stop Aiki, then <code>aiki update</code>, then start it.</p>{/if}
 						{#if updates.dismissedVersion !== updates.available.version}
-							<button type="button" class="min-h-11 self-start underline" disabled={saving} onclick={() => dismiss(backend, updates.available!.version)}>Dismiss update notice</button>
+							<Button variant="ghost" size="xs" class="self-start text-(--chat-fg-muted)" disabled={saving} onclick={() => dismiss(backend, updates.available!.version)} title="Hide the update notice until a newer release appears" aria-label="Dismiss the update notice" data-update-dismiss>
+								<XIcon data-icon="inline-start" />
+								Dismiss
+							</Button>
 						{:else}<p class="text-(--chat-fg-muted)">Update notice dismissed.</p>{/if}
 					{:else if updates.enabled}<p>No newer release found yet.</p>{/if}
 				{:else}<p>Update checks are not available on this backend.</p>{/if}

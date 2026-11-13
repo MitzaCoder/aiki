@@ -15,6 +15,7 @@
   import McpImportReview from './McpImportReview.svelte';
   import McpCliHint from './McpCliHint.svelte';
   import McpOAuthConnection from './McpOAuthConnection.svelte';
+  import { DIALOG_FOOTER_CLASS, DIALOG_HEADER_CLASS, DIALOG_SCROLL_CLASS, roomyDialogClass } from '#lib/dialog-layout.js';
 
   let { backend }: { backend: BackendConnection } = $props();
   let servers = $state<McpServer[]>([]);
@@ -239,25 +240,28 @@
 </div>
 
 <Dialog.Root bind:open={adding}>
-  <Dialog.Content class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
-    <Dialog.Header><Dialog.Title>{editing ? 'Edit command server' : 'Add MCP server'}</Dialog.Title><Dialog.Description>Runs on this backend. New servers are disabled in projects.</Dialog.Description></Dialog.Header>
-    <form class="flex flex-col gap-4" onsubmit={(event) => { event.preventDefault(); prepareAdd(); }}>
+  <Dialog.Content class={roomyDialogClass()} data-mcp-dialog="add">
+    <!-- One scroll region: the preset catalogue scrolls with the fields, never inside them. -->
+    <form class="flex min-h-0 w-full min-w-0 flex-1 flex-col" onsubmit={(event) => { event.preventDefault(); prepareAdd(); }}>
+    <Dialog.Header class={DIALOG_HEADER_CLASS}><Dialog.Title>{editing ? 'Edit command server' : 'Add MCP server'}</Dialog.Title><Dialog.Description>Runs on this backend. New servers are disabled in projects.</Dialog.Description></Dialog.Header>
+    <div class={DIALOG_SCROLL_CLASS} data-dialog-scroll>
+    <div class="flex min-w-0 flex-col gap-4">
       {#if !editing}
         <label class="flex flex-col gap-1 text-sm">Search presets<input aria-label="Search presets" class="mcp-input" bind:value={presetSearch} placeholder="Jira, browser, docs…" /></label>
         <p class="text-xs text-muted-foreground">{matchingPresets.length} presets · select one to see setup details</p>
-        <div class="max-h-64 overflow-y-auto rounded-lg border" aria-label="Preset catalogue">
+        <div class="rounded-lg border" aria-label="Preset catalogue">
           {#each MCP_PRESET_GROUPS as group}
             {@const entries = matchingPresets.filter(p => (p.group ?? 'Docs') === group)}
             {#if entries.length}<h3 class="sticky top-0 bg-background px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">{group}</h3>
-              {#each entries as preset}<button type="button" class="block w-full border-t px-3 py-2 text-left hover:bg-muted" aria-pressed={presetId === preset.id} data-mcp-preset={preset.id} onclick={() => { presetId = preset.id; choosePreset(); }}>
-                <span class="block text-sm font-semibold">{preset.name} · {preset.auth.replaceAll('_', ' ')}</span><span class="block truncate text-xs text-muted-foreground">{preset.description}</span>
+              {#each entries as preset}<button type="button" class="block w-full min-w-0 border-t px-3 py-2 text-left hover:bg-muted" aria-pressed={presetId === preset.id} data-mcp-preset={preset.id} onclick={() => { presetId = preset.id; choosePreset(); }}>
+                <span class="block text-sm font-semibold break-words">{preset.name} · {preset.auth.replaceAll('_', ' ')}</span><span class="block text-xs break-words text-muted-foreground" data-mcp-preset-description>{preset.description}</span>
               </button>{/each}
             {/if}
           {/each}
           {#if !matchingPresets.length}<p class="p-3 text-sm">No matching presets.</p>{/if}
         </div>
         {#if chosenPreset}
-          <p class="text-sm">{chosenPreset.description}</p>
+          <p class="text-sm break-words">{chosenPreset.description}</p>
           {#if chosenPreset.docsUrl}<a class="text-sm underline" href={chosenPreset.docsUrl} target="_blank" rel="noreferrer">Vendor documentation</a>{/if}
           {#if chosenPreset.tokenUrl}<a class="text-sm underline" href={chosenPreset.tokenUrl} target="_blank" rel="noreferrer">Create a token</a>{/if}
           {#if chosenPreset.cli}<McpCliHint {backend} cli={chosenPreset.cli} />{/if}
@@ -278,30 +282,41 @@
         {#if !presetId}<label class="flex flex-col gap-1 text-sm font-medium">Server URL<input class="mcp-input" type="url" bind:value={url} placeholder="https://mcp.example.test/mcp" required /></label>{:else}<p class="text-sm break-all">{presets.find(p => p.id === presetId)?.url}</p>{/if}
       {/if}
       {#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
-      <Dialog.Footer><Button variant="outline" type="button" onclick={() => { adding = false; env = '{}'; }}>Cancel</Button><Button type="submit" disabled={busy || !name.trim()}>{kind === 'command' ? 'Review command' : 'Add server'}</Button></Dialog.Footer>
+    </div>
+    </div>
+      <Dialog.Footer class={DIALOG_FOOTER_CLASS}><Button variant="ghost" type="button" onclick={() => { adding = false; env = '{}'; }}>Cancel</Button><Button size="sm" type="submit" disabled={busy || !name.trim()}>{kind === 'command' ? 'Review command' : 'Add server'}</Button></Dialog.Footer>
     </form>
   </Dialog.Content>
 </Dialog.Root>
 <Dialog.Root bind:open={importing}>
- <Dialog.Content class="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
- <Dialog.Header><Dialog.Title>Import MCP servers</Dialog.Title><Dialog.Description>Review before saving. Nothing runs or saves yet. Name clashes are renamed; uncheck to skip.</Dialog.Description></Dialog.Header>
+ <Dialog.Content class={roomyDialogClass({ wide: true })} data-mcp-dialog="import">
+ <Dialog.Header class={DIALOG_HEADER_CLASS}><Dialog.Title>Import MCP servers</Dialog.Title><Dialog.Description>Review before saving. Nothing runs or saves yet. Name clashes are renamed; uncheck to skip.</Dialog.Description></Dialog.Header>
+ <div class={DIALOG_SCROLL_CLASS} data-dialog-scroll data-mcp-import-body>
  {#if review.length}
  <McpImportReview entries={review} bind:checked />
- <Button disabled={busy || !checked.length} onclick={submitReview}>Import selected</Button>
  {:else}
  <label class="flex flex-col gap-2 text-sm">Server JSON<textarea id="mcp-import-json" class="mcp-input min-h-48 font-mono" bind:value={importText} autocomplete="off" spellcheck="false"></textarea></label>
+ {/if}
+ {#if error}<p role="alert" class="mt-3 text-sm text-destructive">{error}</p>{/if}
+ </div>
+ <Dialog.Footer class={DIALOG_FOOTER_CLASS}>
+ {#if review.length}
+ <Button disabled={busy || !checked.length} onclick={submitReview}>Import selected</Button>
+ {:else}
  <Button onclick={reviewImport} disabled={!importText.trim()}>Review import</Button>
  {/if}
- {#if error}<p role="alert" class="text-sm text-destructive">{error}</p>{/if}
- <Button variant="outline" onclick={() => { importing = false; review = []; importText = ''; }}>Cancel</Button>
+ <Button variant="ghost" onclick={() => { importing = false; review = []; importText = ''; }}>Cancel</Button>
+ </Dialog.Footer>
  </Dialog.Content>
 </Dialog.Root>
 <Dialog.Root bind:open={confirmingCommand}>
- <Dialog.Content class="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
- <Dialog.Header><Dialog.Title>Confirm backend command</Dialog.Title><Dialog.Description>This executes code as the backend user, not on this device. Only confirm commands you trust.</Dialog.Description></Dialog.Header>
+ <Dialog.Content class={roomyDialogClass({ wide: true })} data-mcp-dialog="confirm">
+ <Dialog.Header class={DIALOG_HEADER_CLASS}><Dialog.Title>Confirm backend command</Dialog.Title><Dialog.Description>This executes code as the backend user, not on this device. Only confirm commands you trust.</Dialog.Description></Dialog.Header>
+ <div class={DIALOG_SCROLL_CLASS} data-dialog-scroll>
  <McpCommandReview entries={pending} retainedEnvNames={editing && env === '{}' ? selected?.envNames : undefined} />
- {#if error}<p role="alert" class="text-sm text-destructive">{error}</p>{/if}
- <Dialog.Footer><Button variant="outline" onclick={() => confirmingCommand = false}>Back</Button><Button disabled={busy} onclick={() => void saveRows(pending)}>Confirm and save</Button></Dialog.Footer>
+ {#if error}<p role="alert" class="mt-3 text-sm text-destructive">{error}</p>{/if}
+ </div>
+ <Dialog.Footer class={DIALOG_FOOTER_CLASS}><Button variant="ghost" onclick={() => confirmingCommand = false}>Back</Button><Button size="sm" disabled={busy} onclick={() => void saveRows(pending)}>Confirm and save</Button></Dialog.Footer>
  </Dialog.Content>
 </Dialog.Root>
 <Dialog.Root bind:open={confirmingRemove}>
@@ -313,6 +328,6 @@
 </Dialog.Root>
 
 <style>
-  .mcp-input { min-height: 2.75rem; border: 1px solid var(--chat-border); background: var(--chat-surface); border-radius: .65rem; padding: .5rem .75rem; font-size: .875rem; color: var(--chat-fg); }
+  .mcp-input { display: block; width: 100%; max-width: 100%; min-width: 0; min-height: 2.75rem; border: 1px solid var(--chat-border); background: var(--chat-surface); border-radius: .65rem; padding: .5rem .75rem; font-size: .875rem; color: var(--chat-fg); }
 </style>
 

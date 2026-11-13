@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { overlayScroll } from '#lib/scrollbars.js';
+	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import WrapTextIcon from '@lucide/svelte/icons/wrap-text';
 	import CodeXmlIcon from '@lucide/svelte/icons/code-xml';
 	import BookOpenTextIcon from '@lucide/svelte/icons/book-open-text';
@@ -7,6 +8,8 @@
 	import type { Artifact } from '@aiki/protocol';
 	import CopyButton from '#lib/components/CopyButton.svelte';
 	import Markdown from '#lib/components/markdown/Markdown.svelte';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { isHtmlArtifact, openArtifactPreview } from '#lib/artifact-preview.js';
 	import { formatBytes, isMarkdownArtifact, MEDIA_RETRY_LIMIT, TEXT_PREVIEW_BYTES } from '#lib/artifacts.js';
 	import { useArtifactSource } from '#lib/artifacts.svelte.js';
 	import { ArtifactReadError, artifactReadProblem, readArtifactText } from '#lib/artifact-text.js';
@@ -14,12 +17,15 @@
 	/**
 	 * A text artifact (a log, a report) read in place: its first `TEXT_PREVIEW_BYTES`, monospace, wrapped or not. A
 	 * Markdown one is rendered, with its source a toggle away. A token the backend refuses is renewed and read again.
+	 * `roomy` is the full viewer's, where the dialog scrolls the page itself: the text then grows to its own length
+	 * instead of scrolling inside the dialog. An HTML artifact offers a new tab with the page sandboxed.
 	 */
 	let {
 		artifact,
 		client,
-		compact = false
-	}: { artifact: Artifact; client: HarnessClient; compact?: boolean } = $props();
+		compact = false,
+		roomy = false
+	}: { artifact: Artifact; client: HarnessClient; compact?: boolean; roomy?: boolean } = $props();
 
 	let content = $state<string | undefined>(undefined);
 	let problem = $state<string | undefined>(undefined);
@@ -27,9 +33,11 @@
 	let wrap = $state(true);
 	let showSource = $state(false);
 	const markdown = $derived(isMarkdownArtifact(artifact));
+	const html = $derived(isHtmlArtifact(artifact));
 	const rendered = $derived(markdown && !showSource);
 	let failures = 0;
 	let attempt = $state(0);
+	let tabProblem = $state('');
 
 	const source = useArtifactSource(() => ({ client, projectId: artifact.projectId, artifactId: artifact.id }));
 	const url = $derived(source.current?.url);
@@ -73,6 +81,12 @@
 		if (url === undefined) void source.current?.recover();
 		attempt += 1;
 	}
+
+	/** The HTML page in a tab of its own, sandboxed away from this app's origin (see `lib/artifact-preview.ts`). */
+	function openTab(): void {
+		if (content === undefined) return;
+		tabProblem = openArtifactPreview(content, artifact.name) ? '' : 'The browser blocked the new tab. Allow pop-ups for this site and try again.';
+	}
 </script>
 
 <div class="overflow-hidden rounded-2xl border border-(--chat-border) bg-(--chat-bg)/60" data-artifact-text>
@@ -102,20 +116,26 @@
 				<WrapTextIcon class="size-3.5" />
 			</button>
 		{/if}
+		{#if html && content !== undefined}
+			<Button variant="ghost" size="icon-sm" onclick={openTab} title="Open in a new tab" aria-label="Open in a new tab" data-artifact-new-tab>
+				<ExternalLinkIcon />
+			</Button>
+		{/if}
 		{#if content !== undefined}
 			<CopyButton text={content} label="Copy the text" />
 		{/if}
 	</div>
+	{#if tabProblem}<p class="border-b border-(--chat-border) px-3 py-1.5 text-xs text-(--chat-danger)" role="alert">{tabProblem}</p>{/if}
 	{#if content !== undefined}
 		{#if rendered}
 			<div class="relative">
-			<div use:overlayScroll={'parent'} class="text-body rendered overflow-auto px-4 py-3" class:compact data-artifact-markdown>
+			<div use:overlayScroll={'parent'} class="text-body rendered overflow-auto px-4 py-3" class:compact class:roomy data-artifact-markdown>
 				<Markdown source={content} />
 			</div>
 			</div>
 		{:else}
 			<div class="relative">
-			<pre use:overlayScroll={'parent'} class="text-body m-0 overflow-auto px-3 py-2.5 font-mono text-[0.78rem] leading-relaxed" class:wrap class:compact>{content}</pre>
+			<pre use:overlayScroll={'parent'} class="text-body m-0 overflow-auto px-3 py-2.5 font-mono text-[0.78rem] leading-relaxed" class:wrap class:compact class:roomy>{content}</pre>
 			</div>
 		{/if}
 		{#if truncated}
@@ -142,6 +162,12 @@
 	}
 	.text-body.compact {
 		max-height: 16rem;
+	}
+	/* The full viewer's dialog scrolls the page; the text itself must not become a second scroll area. */
+	.text-body.roomy {
+		max-height: none;
+		overflow: visible;
+		overscroll-behavior: auto;
 	}
 	.text-body.rendered {
 		white-space: normal;

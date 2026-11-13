@@ -19,13 +19,16 @@
 		artifact,
 		client,
 		autoplay = false,
-		compact = false
+		compact = false,
+		roomy = false
 	}: {
 		artifact: Artifact;
 		client: HarnessClient;
 		autoplay?: boolean;
 		/** In the chat or a list: smaller frames. */
 		compact?: boolean;
+		/** In the full viewer's dialog: its scroll region scrolls the page, so text grows to its own length. */
+		roomy?: boolean;
 	} = $props();
 
 	const title = $derived(artifactTitle(artifact));
@@ -93,7 +96,7 @@
 		{/if}
 	</div>
 {:else if artifact.kind === 'text'}
-	<ArtifactText {artifact} {client} {compact} />
+	<ArtifactText {artifact} {client} {compact} {roomy} />
 {:else}
 	<div class="flex min-w-0 items-center gap-3 rounded-2xl border border-(--chat-border) bg-(--chat-surface)/60 p-3" data-artifact-file>
 		<span class="grid size-10 shrink-0 place-items-center rounded-xl bg-(--chat-surface-2) text-(--chat-fg-muted)"><ArtifactKindIcon kind="file" class="size-5" /></span>

@@ -1,5 +1,57 @@
 # Continue
 
+## T161: roomier MCP and artifact dialogs, quieter update buttons
+
+Two things were wrong in the MCP add/edit dialog. Its preset catalogue was a second
+scroll box (1263px of content inside a 254px window) inside a dialog that only had
+`sm:max-w-md` and a 90dvh cap, so the fields and the footer buttons scrolled around a
+peephole. And the preset descriptions were `truncate` (nowrap) spans: their
+min-content width became the dialog grid column's, so on a phone the text spilled
+past the dialog's right edge ("…disabled in pro"). The owner's call: keep the modal
+narrow and let the text wrap, rather than making it 960px wide, so the width is
+unchanged (32rem; 36rem for Import JSON and Confirm command, as before). The T161
+shell (`apps/web/src/lib/dialog-layout.ts`) adds only the height and structure fix:
+`max-h-[min(90dvh,52rem)]`, a fixed header and footer around one scroll region, and
+the catalogue scrolling with the fields (sticky group headings, no `max-h-64`).
+Descriptions and preset prose wrap (`break-words`), and the scroll region, form
+column and inputs shrink below their content (`min-w-0`, `.mcp-input` `width: 100%`).
+Measured after, no horizontal overflow at any size: 512x810 at 1440x900, 512x832 at
+1920x1080, 512x648 at 1280x720, 358x760 on a phone; footer visible in every case,
+exactly one scroll container, no truncated preset description.
+
+`ArtifactDialog` leaves images, audio and other files exactly as they were, gives
+Markdown `min(60rem, 92vw)` and HTML `min(75rem, 92vw)`, both up to
+`min(90dvh, 64rem)` tall. `ArtifactText`'s new `roomy` prop drops its own `60dvh` cap and
+scrollbar, so the dialog's single scroll region scrolls the document. An HTML
+artifact gets an external-link icon button that opens it in a new tab through
+`lib/artifact-preview.ts`: the wrapper page is a blob the app writes, the artifact
+sits in `<iframe sandbox="">` (opaque origin, no scripts/forms/popups, no referrer,
+`opener` cleared). A blob of the artifact's own HTML would inherit the app's origin,
+so it is never opened directly; the backend's `attachment` + `CSP: sandbox` for
+HTML/SVG stays as it is. Proven in Chromium: the new tab's frame has `sandbox=""`,
+`frame.contentWindow.localStorage` throws `SecurityError` and `contentDocument` is
+null.
+
+Update controls use the shared `Button`: `Update now` and `Confirm update` keep the
+primary emphasis (`size="sm"`), Cancel / Restart anyway / Release notes / About's
+Dismiss are `ghost` at `xs`/`sm` with `aria-label` and title where icon-only; no
+`min-h-11` hand-made buttons remain. The waiting-phase "Restart anyway" needs a real
+update run and is covered by a source test, not by a screenshot.
+
+Web-only; no server, protocol or Android change. New `apps/web/test/modal-layout.test.ts`
+(17 tests) checks the dialog sizing tokens, the one-scroll-region structure, that a
+preset description wraps instead of truncating, the button variants and the
+sandboxed-tab wrapper (including a hostile artifact name and a blocked pop-up). Synthetic proof: a temporary Bun fixture (`createSetup` with a fake
+installed release, a fake MCP peer with 71 tools, one `.md` and one `.html` artifact),
+Vite on 5186, headless Chromium over CDP on 9386; before/after shots for the MCP add
+dialog, the server details, the update footer spot, the update confirm dialog, About
+and both artifact kinds at desktop and phone width in light and dark, plus a recording
+of the modal scrolling and of the HTML artifact opening in its sandboxed tab. The
+after-MCP shots first taken at 960px were re-taken at the unchanged 512px width and
+are the ones to keep. The
+fixture scripts live in `/tmp/t161` (not committed); the demo server and browser were
+killed by PID and their temporary directories removed.
+
 ## T139 / Q173: wait only for running commands
 
 Self-update now acquires the deploy watcher's existing `ToolCallDrain` beforeTool

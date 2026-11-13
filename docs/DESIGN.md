@@ -88,6 +88,13 @@ hello's server version is the fallback. Installed metadata is the identity used
 by `aiki version`; packaged `release.name` is also used by standalone
 `aiki --version`. Hello's package constant alone cannot identify a source deploy.
 No answer means unknown, not the client's version presented as the backend's.
+
+**Update controls stay quiet (T161).** The footer spot, About and the update dialogs use the app's shared `Button`
+variant and size tokens instead of hand-made tall buttons. Only the one action that starts an update keeps the primary
+emphasis (`Update now` in the footer spot and in About, `Confirm update` in the dialog); Cancel, Restart anyway,
+Release notes and the About Dismiss are ghost/text controls at text or icon size. Restart anyway keeps its warning
+colour and explains itself in a title; every icon-only control carries an `aria-label` and a tooltip. Nothing here is
+`min-h-11` any more: the footer spot must not look like a form submit in the sidebar.
 Web adds its bundled package version only
 when it differs; Android uses the same backend text and keeps its own build in
 About. Labels normalize a release's optional `v` prefix. About also shows the
@@ -829,6 +836,18 @@ and a write-only Paste callback URL field for completion on the initiating devic
 Project settings → MCP starts every server and role disabled; coordinator, workers
 and background threads are independent choices saved on change. Existing board
 questions carry exact-argument approvals, including long JSON on phone screens.
+
+**The MCP dialogs are one scroll region (T161).** Add/edit, Import JSON and Confirm command keep the ordinary narrow
+dialog width (32rem, 36rem for the JSON and command reviews) and may use the height the screen has: at most
+`min(90dvh, 52rem)`, with a header and footer that stay put and one scroll region between them
+(`lib/dialog-layout.ts`). The preset catalogue from T157 then scrolls with the fields and is never a box with its own
+scrollbar inside the dialog: nested scroll areas were the bug (the catalogue was a 254px window in a 512px dialog, and
+the footer buttons scrolled away from the fields). The width is deliberately unchanged: what was wrong was text that
+could not wrap. A preset's description used `truncate` (nowrap), so its min-content width became the grid column's and
+the content spilled past the dialog's edge on a phone; descriptions and preset prose now wrap (`break-words`), the
+scroll region, the form column and the inputs may shrink below their content (`min-w-0`, `width: 100%`), and no part of
+the dialog scrolls sideways. Only the shared primary submit keeps the primary emphasis; Cancel and Back are ghost
+buttons. The server details view keeps the ordinary page scroll for its tool list.
 
 Android exposes capability-gated Backend settings → MCP servers and Project
 settings → MCP. Backend screens list status/tool counts, presets or URL setup,
@@ -1597,6 +1616,21 @@ later from this section.
   **other files** (text, audio, anything else) stay the simple row list under it, opening `ArtifactDialog` as before. Media
   is ordered **oldest first** (save order), so a before/after sequence reads in order and "3 of 8" is stable while new
   ones arrive at the end.
+- **The viewer's size follows the kind (T161).** `ArtifactDialog` sizes itself with `artifactDialogSizing`
+  (`lib/dialog-layout.ts`): a Markdown page may reach `min(90dvh, 64rem)` tall and `min(60rem, 92vw)` wide, an HTML page
+  the same height and `min(75rem, 92vw)` wide, and images, audio and files keep exactly the size they had.
+  The text body of a roomy viewer no longer caps itself at 60dvh with its own scrollbar
+  (`ArtifactText`'s `roomy`): the dialog's one scroll region scrolls the document, so a long report reads as one page.
+  Chat cards and lists keep their compact caps.
+- **An HTML artifact opens in a sandboxed new tab (T161).** The viewer shows HTML as escaped source; an icon button
+  (external-link, `aria-label` and tooltip "Open in a new tab") opens the page itself. The bytes come from the same
+  signed, short-lived artifact URL the viewer already reads (no cookie, no new endpoint), and the tab shows a wrapper
+  page this app writes (`lib/artifact-preview.ts`) with the artifact in `<iframe sandbox="">`: an empty attribute gives
+  it an opaque origin with scripts, forms and pop-ups off, the same restriction the backend's `Content-Security-Policy:
+  sandbox` applies over HTTP. A `blob:` URL made by the page inherits the app's origin, so opening the artifact's own
+  blob directly would hand it the app's storage and backend; it never is. The wrapper clears `opener` and sends no
+  referrer. A blocked pop-up is reported in the viewer instead of failing silently; Markdown and other kinds keep the
+  source view they had.
 - **Filter chips** above the carousel: `All` and one chip per tag with its count, most used first, then alphabetical;
   untagged media is only in All. A chip filters the carousel (and the viewer); a tag whose last item went away falls back to
   All. Shown only when some media has a tag.

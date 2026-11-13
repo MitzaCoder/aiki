@@ -1,6 +1,14 @@
 <script lang="ts">
 	import type { BackendConnection } from '#lib/harness.svelte.js';
+	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
+
+	/**
+	 * A backend's self-update: one primary "Update now" while a release waits, quiet text buttons for anything that
+	 * only interrupts or backs out (Cancel, Restart anyway, Release notes), and a confirm dialog that states the exact
+	 * release pair. Nothing here is large: the sidebar spot and About both have little room.
+	 */
 	let { backend, compact = false }: { backend: BackendConnection; compact?: boolean } = $props();
 	let confirm = $state<'start' | 'force' | null>(null);
 	let saving = $state(false);
@@ -27,22 +35,24 @@
 	}
 </script>
 
-<div class="flex min-w-0 flex-col gap-2" data-self-update>
+<div class="flex min-w-0 flex-col gap-1.5" data-self-update>
 	{#if busy}
-		<p role="status" class="text-sm">{update?.message}</p>
+		<p role="status" class="text-xs text-(--chat-fg-muted)">{update?.message}</p>
 		{#if update?.phase === 'waiting'}
-			<div class="flex flex-wrap gap-2">
-				<button class="min-h-11 rounded-lg border border-(--chat-border) px-3 text-sm" disabled={saving} onclick={() => request('cancel', update!.toVersion)}>Cancel</button>
-				{#if update.restartAllowed}<button class="min-h-11 rounded-lg border border-(--chat-border) px-3 text-sm" disabled={saving} onclick={() => ask('force')}>Restart anyway</button>{/if}
+			<div class="flex flex-wrap items-center gap-1">
+				<Button variant="ghost" size="xs" disabled={saving} onclick={() => request('cancel', update!.toVersion)} data-update-action="cancel">Cancel</Button>
+				{#if update.restartAllowed}
+					<Button variant="ghost" size="xs" class="text-amber-700 dark:text-amber-300" disabled={saving} onclick={() => ask('force')} title="Restart now and interrupt the running commands" data-update-action="force">Restart anyway</Button>
+				{/if}
 			</div>
 		{/if}
 	{:else}
-		{#if update && ['succeeded', 'rolled_back', 'failed', 'cancelled'].includes(update.phase)}<p role="status" class="text-sm">{update.message}</p>{/if}
+		{#if update && ['succeeded', 'rolled_back', 'failed', 'cancelled'].includes(update.phase)}<p role="status" class="text-xs text-(--chat-fg-muted)">{update.message}</p>{/if}
 		{#if available && update?.enabled}
-			<button class="min-h-11 self-start rounded-lg bg-(--primary) px-3 text-sm font-medium text-(--primary-foreground)" disabled={saving || backend.connection.status !== 'ready'} onclick={() => ask('start')}>Update now</button>
-		{:else if !compact && update?.disabledReason}<p class="text-sm text-(--chat-fg-muted)">{update.disabledReason}</p>{/if}
+			<Button size="sm" class="self-start" disabled={saving || backend.connection.status !== 'ready'} onclick={() => ask('start')} data-update-action="start">Update now</Button>
+		{:else if !compact && update?.disabledReason}<p class="text-xs text-(--chat-fg-muted)">{update.disabledReason}</p>{/if}
 	{/if}
-	{#if error}<p role="alert" class="text-sm">{error}</p>{/if}
+	{#if error}<p role="alert" class="text-xs text-(--chat-danger)">{error}</p>{/if}
 </div>
 
 <Dialog.Root open={confirm !== null} onOpenChange={(open) => { if (!open) confirm = null; }}>
@@ -55,10 +65,13 @@
 		</Dialog.Header>
 		<p class="text-sm">{confirm === 'force' ? 'Running commands will be interrupted and may not be safe to retry. Restart anyway?' : 'The release will be verified, then Aiki holds new tool calls and waits only for running commands before restarting. Your clients reconnect automatically.'}</p>
 		<p class="text-sm">If the new release is not healthy within 30 seconds, Aiki restores the old code. This does not undo data migrations. Back up important data first.</p>
-		<a class="min-h-11 content-center text-sm underline" href={confirmedNotesUrl} target="_blank" rel="noopener noreferrer">Release notes</a>
+		<Button variant="ghost" size="sm" class="self-start" href={confirmedNotesUrl} target="_blank" rel="noopener noreferrer">
+			<ExternalLinkIcon data-icon="inline-start" />
+			Release notes
+		</Button>
 		<Dialog.Footer>
-			<button class="min-h-11 rounded-lg border border-(--chat-border) px-4" onclick={() => confirm = null}>Cancel</button>
-			<button class="min-h-11 rounded-lg bg-(--primary) px-4 text-(--primary-foreground)" disabled={saving} onclick={() => request(confirm!, confirmedVersion)}>{confirm === 'force' ? 'Confirm restart' : 'Confirm update'}</button>
+			<Button variant="ghost" size="sm" onclick={() => confirm = null} data-update-confirm="cancel">Cancel</Button>
+			<Button size="sm" disabled={saving} onclick={() => request(confirm!, confirmedVersion)} data-update-confirm="accept">{confirm === 'force' ? 'Confirm restart' : 'Confirm update'}</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
