@@ -1,5 +1,28 @@
 # Continue
 
+## T165: built-in HTML design, theme defaults and opt-in CSP
+
+`packages/server/skills/html-artifacts/` ships a lazy skill (25 description tokens, 728 body tokens with cl100k_base),
+four self-contained templates, shared fallback tokens and a pinned cdnjs/SHA-384 list. It is a fallback in the ordinary
+skill catalogue, so personal/project skills can override it. Source releases include the folder; binary builds embed
+its files and materialize private, content-addressed copies under the config directory for the read tool.
+
+Web `artifact-page.ts` and Android `ArtifactPage.kt` prepend low-specificity current-theme defaults, `data-theme`, print
+CSS and a Print control, without changing author source or sandbox permissions. Open dialogs reload when the app's
+light/dark or palette changes. Project → Coordinator has **Block artifact pages from sending data**, persisted as
+`blockArtifactRequests`, off by default. Its first-in-head CSP denies connections/forms, not permitted images/media/CDN
+requests or external links. Android Print uses gesture-checked internal navigation to PrintManager, never a JS bridge.
+**Known web limitation:** Chromium refuses `window.print()` without sandbox `allow-modals`. The brief explicitly kept
+the sandbox unchanged, so the button exists but web printing needs that permission decision; the console proof records it.
+
+Synthetic proof on T165: all four templates in the app at desktop/phone light/dark, report/dashboard on Android,
+plain HTML before/after, live system-theme switching and a scripted faux-model read-skill/read-template/save run (no
+real-model evaluation). Final evidence index `mwevk8ph-71416c2c81`, recording `mweup42t-7e52cfb03c`; 360px overflow,
+keyboard slides and print-all-slides checks `mweutr3f-ce5452de09`. No physical device, push or main movement.
+Sequential gates pass: root 2,606 tests / 93,059 assertions; typecheck; web check zero diagnostics, 1,099 tests / 79,963
+assertions and build; Android 936 JVM tests (two opt-in skips), assembleDebug and lintDebug with JDK 21. Gradle stopped.
+Private-denylist/generic and Gitleaks pass. Owned demo processes and the temporary baseline workspace are removed.
+
 ## T166: versioned artifacts (D74)
 
 Re-saving the same sanitized filename in a project/task updates one stable card. Without taskId the scope is the

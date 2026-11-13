@@ -189,7 +189,7 @@ describe('an HTML artifact is shown as a page', () => {
 	const text = source('../src/lib/components/artifacts/ArtifactText.svelte');
 	test('the dialog renders it by default, in a frame carrying the shared sandbox', () => {
 		// The document travels as `srcdoc`, so no URL of the artifact is ever loaded on the app's origin.
-		expect(text).toContain('srcdoc={content}');
+		expect(text).toContain('srcdoc={pageDocument}');
 		expect(text).toContain('sandbox={ARTIFACT_FRAME_SANDBOX}');
 		expect(text).toContain('referrerpolicy="no-referrer"');
 		expect(text).toContain("import { ARTIFACT_FRAME_SANDBOX, isHtmlArtifact, openArtifactPreview } from '#lib/artifact-preview.js'");

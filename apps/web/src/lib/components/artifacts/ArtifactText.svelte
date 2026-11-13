@@ -4,6 +4,9 @@
 </script>
 
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { harness } from '#lib/harness.svelte.js';
+	import { artifactPageDocument, readArtifactTheme, type ArtifactPageTheme } from '#lib/artifact-page.js';
 	import { overlayScroll } from '#lib/scrollbars.js';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import WrapTextIcon from '@lucide/svelte/icons/wrap-text';
@@ -35,6 +38,18 @@
 	}: { artifact: Artifact; client: HarnessClient; compact?: boolean; roomy?: boolean } = $props();
 
 	let content = $state<string | undefined>(undefined);
+	let artifactTheme = $state<ArtifactPageTheme>({ mode: 'light', tokens: {} });
+	const project = $derived(harness.backends.find((backend) => backend.client === client)?.projects.find((project) => project.id === artifact.projectId));
+	// A restored preview must not briefly allow connections before its project's privacy setting arrives.
+	const blockRequests = $derived(project === undefined || project.blockArtifactRequests === true);
+	const pageDocument = $derived(content === undefined ? '' : artifactPageDocument(content, artifactTheme, blockRequests));
+	onMount(() => {
+		const update = () => { artifactTheme = readArtifactTheme(); };
+		update();
+		const observer = new MutationObserver(update);
+		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] });
+		return () => observer.disconnect();
+	});
 	let problem = $state<string | undefined>(undefined);
 	let truncated = $state(false);
 	let wrap = $state(true);
@@ -109,7 +124,7 @@
 	/** The HTML page in a tab of its own, sandboxed away from this app's origin (see `lib/artifact-preview.ts`). */
 	function openTab(): void {
 		if (content === undefined) return;
-		tabProblem = openArtifactPreview(content, artifact.name) ? '' : 'The browser blocked the new tab. Allow pop-ups for this site and try again.';
+		tabProblem = openArtifactPreview(content, artifact.name, { theme: artifactTheme, blockRequests }) ? '' : 'The browser blocked the new tab. Allow pop-ups for this site and try again.';
 	}
 </script>
 
@@ -171,7 +186,7 @@
 					title={artifact.name}
 					sandbox={ARTIFACT_FRAME_SANDBOX}
 					referrerpolicy="no-referrer"
-					srcdoc={content}
+					srcdoc={pageDocument}
 					class="page-frame block w-full border-0 bg-white"
 					class:compact
 					class:roomy

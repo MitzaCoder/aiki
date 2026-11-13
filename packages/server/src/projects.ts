@@ -43,6 +43,7 @@ export type Project = {
 	promptCacheWarmHours: 1 | 2 | 4 | 8;
 	/** Show UI changes: what agents prove with screenshots or videos; see `uiProofParagraph` in `workers.ts`. */
 	uiProof: UiProof;
+	blockArtifactRequests?: boolean;
 	reportAudit?: ReportAuditSettings;
 	/** Where ticket keys and PR numbers point, as the user set it; null: filled in automatically (`project-links.ts`). */
 	links: ProjectLinks | null;
@@ -67,6 +68,7 @@ export type ProjectChange = {
 	promptCacheWarmHours?: 1 | 2 | 4 | 8 | null;
 	/** `null` restores `DEFAULT_UI_PROOF`. */
 	uiProof?: UiProof | null;
+	blockArtifactRequests?: boolean | null;
 	reportAudit?: ReportAuditSettings | null;
 	/** `null` goes back to filling them in automatically. */
 	links?: ProjectLinks | null;
@@ -107,6 +109,7 @@ function defaultProject(id: string, name: string, path: string): Project {
 		keepPromptCacheWarm: true,
 		promptCacheWarmHours: 8,
 		uiProof: DEFAULT_UI_PROOF,
+		blockArtifactRequests: false,
 		reportAudit: { ...DEFAULT_REPORT_AUDIT },
 		links: null,
 	};
@@ -145,6 +148,7 @@ function parseProject(value: unknown, id: string): Project | undefined {
 		keepPromptCacheWarm: typeof record.keepPromptCacheWarm === "boolean" ? record.keepPromptCacheWarm : true,
 		promptCacheWarmHours: [1, 2, 4, 8].includes(record.promptCacheWarmHours as number) ? record.promptCacheWarmHours as 1 | 2 | 4 | 8 : 8,
 		uiProof: parseUiProof(record.uiProof),
+		blockArtifactRequests: record.blockArtifactRequests === true,
 		reportAudit: parseReportAudit(record.reportAudit),
 		links: cleanLinks(record.links),
 		deployFeed: typeof record.deployFeed === "string" ? record.deployFeed : null,
@@ -352,6 +356,7 @@ export class ProjectStore {
 						: (change.longPromptCache ?? DEFAULT_LONG_PROMPT_CACHE),
 				reportAudit: change.reportAudit === undefined ? parseReportAudit(project.reportAudit) : parseReportAudit(change.reportAudit),
 				uiProof: change.uiProof === undefined ? project.uiProof : (change.uiProof ?? DEFAULT_UI_PROOF),
+				blockArtifactRequests: change.blockArtifactRequests === undefined ? (project.blockArtifactRequests ?? false) : (change.blockArtifactRequests ?? false),
 				links: change.links === undefined ? project.links : cleanLinks(change.links),
 				integrationRef: change.integrationRef === undefined ? project.integrationRef : change.integrationRef,
 				deployFeed: change.deployFeed === undefined ? project.deployFeed : change.deployFeed,

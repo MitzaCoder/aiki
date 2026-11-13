@@ -14,7 +14,9 @@ Android maps `window.print()` to a gesture-checked internal navigation handled b
 `window.print()` in the unchanged web sandbox (it lacks `allow-modals`); the web button is present but that browser
 cannot open the print dialog. Adding that permission needs an explicit sandbox decision.
 
-The per-project **Block artifact pages from sending data** switch defaults off. On, a first-in-head meta CSP allows
+The per-project **Block artifact pages from sending data** switch defaults off. Restored previews fail closed until
+their project's summary arrives, so an enabled policy never has a brief unprotected first load; a known older project
+without this field defaults off. On, a first-in-head meta CSP allows
 inline scripts/styles and cdnjs, HTTPS/data/blob images and media, cdnjs/data fonts, but denies fetch/XHR/WebSocket and
 form submission. This reduces outgoing channels, not all exfiltration: allowed image/media/CDN requests and explicit
 external navigation can still send data. It is not a promise of an offline page. Google Fonts only work with the switch

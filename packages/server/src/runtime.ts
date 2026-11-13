@@ -279,6 +279,7 @@ function projectSummary(
 		keepPromptCacheWarm: project.keepPromptCacheWarm,
 		promptCacheWarmHours: project.promptCacheWarmHours,
 		uiProof: project.uiProof,
+		blockArtifactRequests: project.blockArtifactRequests ?? false,
 		integrationRef: project.integrationRef ?? (project.integrationRef === null ? null : "auto"),
 		deployFeed: project.deployFeed ?? null,
 		links,

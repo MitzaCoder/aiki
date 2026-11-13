@@ -203,6 +203,8 @@ export type ProjectChange = {
 	promptCacheWarmHours?: 1 | 2 | 4 | 8 | null;
 	/** `null` restores the server's default (`screenshots-and-videos`); needs feature `ui-proof`. */
 	uiProof?: UiProof | null;
+	/** Optional HTML-page CSP; null restores off. */
+	blockArtifactRequests?: boolean | null;
 	/** Feature `report-audit`; null restores automatic checks with 65,000 daily tokens. */
 	reportAudit?: ReportAuditSettings | null;
 	/** Feature `task-changes`: auto, a full ref, or null to disable read-only observation. */
@@ -574,6 +576,7 @@ export class HarnessClient {
 			...(change.keepPromptCacheWarm === undefined ? {} : { keepPromptCacheWarm: change.keepPromptCacheWarm }),
 			...(change.promptCacheWarmHours === undefined ? {} : { promptCacheWarmHours: change.promptCacheWarmHours }),
 			...(change.uiProof === undefined ? {} : { uiProof: change.uiProof }),
+			...(change.blockArtifactRequests === undefined ? {} : { blockArtifactRequests: change.blockArtifactRequests }),
 			...(change.reportAudit === undefined ? {} : { reportAudit: change.reportAudit }),
 			...(change.integrationRef === undefined ? {} : { integrationRef: change.integrationRef }),
 			...(change.deployFeed === undefined ? {} : { deployFeed: change.deployFeed }),

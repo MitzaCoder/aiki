@@ -32,6 +32,7 @@
 	let pendingUiProof = $state<UiProof | undefined>(undefined);
 	const modelSave = new SaveState();
 	const uiProofSave = new SaveState();
+	const artifactPrivacySave = new SaveState();
 	const thinkingSave = new SaveState();
 
 	const modelValue = $derived(pendingModel ?? storedModel);
@@ -156,6 +157,13 @@
 		</SettingsRow>
 	</SettingsGroup>
 
+	{#if project?.blockArtifactRequests !== undefined}
+		<SettingsGroup title="Artifact pages">
+			<SettingsRow label="Block artifact pages from sending data" hint="Blocks connections and form submissions. Allowed images, media, CDN files and links can still send requests." status={artifactPrivacySave}>
+				<Combobox aria-label="Block artifact pages from sending data" options={[{value:'off',label:'Off (default)'},{value:'on',label:'On'}]} value={project.blockArtifactRequests ? 'on' : 'off'} onchange={(value) => void artifactPrivacySave.run(() => backend.configureProject(projectId, {blockArtifactRequests: value === 'on'}))} />
+			</SettingsRow>
+		</SettingsGroup>
+	{/if}
 	{#if project?.uiProof !== undefined}
 		<SettingsGroup title="Show UI changes">
 			<SettingsRow

@@ -184,6 +184,7 @@ export const ProjectSummarySchema = Type.Object({
 	promptCacheWarmHours: Type.Optional(Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(4), Type.Literal(8)])),
 	/** Show UI changes (feature `ui-proof`). Absent on servers older than this field. */
 	uiProof: Type.Optional(UiProofSchema),
+	blockArtifactRequests: Type.Optional(Type.Boolean({ description: "Block artifact pages from sending data; default false." })),
 	/** Feature task-changes: auto selects main/master; null disables observation. */
 	integrationRef: Type.Optional(Type.Union([Type.String(), Type.Null()])),
 	/** Feature task-deploys: trusted absolute local file path, null disables. */
@@ -264,6 +265,7 @@ export const ProjectsConfigureRequestSchema = Type.Object({
 		Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(4), Type.Literal(8), Type.Null()]),
 	),
 	reportAudit: Type.Optional(Type.Union([ReportAuditSettingsSchema, Type.Null()], { description: "Feature report-audit; null restores auto and 65000 daily tokens." })),
+	blockArtifactRequests: Type.Optional(Type.Union([Type.Boolean(), Type.Null()])),
 	uiProof: Type.Optional(
 		Type.Union([UiProofSchema, Type.Null()], {
 			description:

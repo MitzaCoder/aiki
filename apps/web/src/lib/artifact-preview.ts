@@ -6,12 +6,13 @@
  * inherits that origin, so a document rendered there could read the app's storage or call its backend with its
  * credentials. Every frame therefore gets `ARTIFACT_FRAME_SANDBOX`: scripts and pop-ups are allowed, `allow-same-origin`
  * never is, which leaves the document in an opaque origin — its own storage is empty and thrown away with it, its
- * requests are cross-origin without cookies, and it cannot reach this page's DOM. No CSP is added on top: a
- * `connect-src`/`default-src` list would break the external scripts, fonts and images a report may legitimately load,
- * while the opaque origin already denies it the backend's answers and the app's session. Nothing of the artifact is
- * ever parsed into the app's own document.
+ * requests are cross-origin without cookies, and it cannot reach this page's DOM. An optional per-project CSP
+ * additionally denies connections and forms (off by default for existing reports). Allowed image/media/CDN requests
+ * and external links still have outgoing channels; it is not an offline guarantee. Nothing of the artifact is ever
+ * parsed into the app's own document.
  */
 import type { Artifact } from "@aiki/protocol";
+import { artifactPageDocument, artifactThemeCss, readArtifactTheme, type ArtifactPageTheme } from "./artifact-page.ts";
 
 /**
  * The sandbox both frames carry — the dialog's page and the new tab's. The same tokens in both places, so neither can
@@ -36,24 +37,25 @@ export function escapeHtml(text: string): string {
  * The page a new tab shows: a bar naming the artifact, and the artifact in a sandboxed frame that fills the window.
  * `frameUrl` is a `blob:` URL of its bytes, so nothing but that frame ever holds them.
  */
-export function sandboxedArtifactDocument(frameUrl: string, name: string): string {
+export function sandboxedArtifactDocument(frameUrl: string, name: string, theme?: ArtifactPageTheme): string {
 	const title = escapeHtml(name);
 	return `<!doctype html>
-<html lang="en">
+<html lang="en"${theme ? ` data-theme="${theme.mode}"` : ""}>
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title}</title>
 <style>
+	${theme ? artifactThemeCss(theme) : ""}
 	html, body { height: 100%; margin: 0; }
-	body { display: flex; flex-direction: column; font: 13px/1.4 system-ui, sans-serif; background: #f4f1ea; color: #1c1a16; }
-	header { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 1rem; padding: .5rem .75rem; border-bottom: 1px solid #d8d2c4; }
+	body { display: flex; flex-direction: column; font: 13px/1.4 system-ui, sans-serif; background: var(--tone-bg, #f4f1ea); color: var(--tone-fg, #1c1a16); }
+	header { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 1rem; padding: .5rem .75rem; border-bottom: 1px solid var(--tone-border, #d8d2c4); }
 	header strong { font-weight: 600; overflow-wrap: anywhere; }
-	header span { color: #6b6459; }
+	header span { color: var(--tone-fg-muted, #6b6459); }
 	main { flex: 1 1 auto; min-height: 0; }
-	iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
-	@media (prefers-color-scheme: dark) { body { background: #1c1a16; color: #f4f1ea; } header { border-color: #3a352c; } header span { color: #a89f90; } }
+	iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--tone-bg, #fff); }
+	@media (prefers-color-scheme: dark) { body { background: var(--tone-bg, #1c1a16); color: var(--tone-fg, #f4f1ea); } header { border-color: var(--tone-border, #3a352c); } header span { color: var(--tone-fg-muted, #a89f90); } }
 </style>
 </head>
 <body>
@@ -70,12 +72,13 @@ export function sandboxedArtifactDocument(frameUrl: string, name: string): strin
 export function openArtifactPreview(
 	content: string,
 	name: string,
-	options: { open?: (url: string) => Window | null; createUrl?: (blob: Blob) => string } = {},
+	options: { open?: (url: string) => Window | null; createUrl?: (blob: Blob) => string; theme?: ArtifactPageTheme; blockRequests?: boolean } = {},
 ): boolean {
 	const createUrl = options.createUrl ?? ((blob: Blob) => URL.createObjectURL(blob));
 	const open = options.open ?? ((url: string) => window.open(url, "_blank"));
-	const frameUrl = createUrl(new Blob([content], { type: "text/html" }));
-	const tab = open(createUrl(new Blob([sandboxedArtifactDocument(frameUrl, name)], { type: "text/html" })));
+	const theme = options.theme ?? (typeof document === "undefined" ? { mode: "light" as const, tokens: {} } : readArtifactTheme());
+	const frameUrl = createUrl(new Blob([artifactPageDocument(content, theme, options.blockRequests)], { type: "text/html" }));
+	const tab = open(createUrl(new Blob([sandboxedArtifactDocument(frameUrl, name, theme)], { type: "text/html" })));
 	if (tab === null) return false;
 	// The wrapper may not reach back into the app's window.
 	try {
