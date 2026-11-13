@@ -6,8 +6,8 @@ Resolve the selected retained snapshot before reading its bytes, then apply the 
 Web keys the player and its source lease by the selected immutable address; Android renews and reads that address
 before rebuilding the origin-less WebView document. Bare IDs still follow latest, and pinned IDs keep their snapshot.
 Android's HTML branch stays outside the details scroller: version controls and Page/Source sit above a weighted WebView,
-with metadata and actions behind Info. WebView owns scrolling and pinch zoom. Sandbox permissions are unchanged;
-`allow-modals` still awaits the owner's decision.
+with metadata and actions behind Info. WebView owns scrolling and pinch zoom. Web frames also allow modal dialogs
+for printing (owner approval Q188); origin isolation remains unchanged.
 
 ## HTML artifact design and privacy (T165 / D74)
 
@@ -18,10 +18,9 @@ User/project design instructions outrank the defaults. Source and binary release
 HTML previews on web (dialog and new tab) and Android prepend theme defaults with zero-specificity selectors, matching
 `--tone-*` colours, type, spacing and radius tokens. The document's `data-theme` follows the app's light/dark choice;
 changes reload an open preview (interactive page state resets). Author styles still win. A floating Print control and
-print CSS are supplied without changing the sandbox: web never grants `allow-same-origin`, Android never adds a bridge.
-Android maps `window.print()` to a gesture-checked internal navigation handled by native PrintManager. Chromium blocks
-`window.print()` in the unchanged web sandbox (it lacks `allow-modals`); the web button is present but that browser
-cannot open the print dialog. Adding that permission needs an explicit sandbox decision.
+print CSS are supplied without granting an app origin: web never grants `allow-same-origin`, Android never adds a bridge.
+Android maps `window.print()` to a gesture-checked internal navigation handled by native PrintManager.
+Q188 permits `allow-modals` in both web artifact frames, so the visible Print button can open the browser's print dialog.
 
 The per-project **Block artifact pages from sending data** switch defaults off. Restored previews fail closed until
 their project's summary arrives, so an enabled policy never has a brief unprotected first load; a known older project
@@ -1687,7 +1686,7 @@ later from this section.
   the video details panel), and Copy always copies the source. Chat cards and lists render the page in the smaller
   compact frame. The external-link button still opens the same page in a tab of its own.
 - **The sandbox is the same in both places.** `ARTIFACT_FRAME_SANDBOX` (`lib/artifact-preview.ts`) is
-  `allow-scripts allow-popups allow-popups-to-escape-sandbox` and both frames carry it. Scripts and charts work, and the
+  `allow-scripts allow-popups allow-popups-to-escape-sandbox allow-modals` and both frames carry it. Scripts, charts and print dialogs work, and the
   document is still in an **opaque origin**: without `allow-same-origin` its `localStorage` throws, its cookies are its
   own and gone with it, and it cannot read this page's DOM or the app's storage. Its requests to the backend are
   cross-origin, without credentials, and answered only with CORS for the app's own origin, so it cannot act as the

@@ -4,7 +4,8 @@
  * An HTML artifact is a report a worker wrote, so it is meant to be seen rendered, and those reports use scripts for
  * charts and counters. The artifact must still not run on the app's origin: a `blob:` URL or `srcdoc` made by the page
  * inherits that origin, so a document rendered there could read the app's storage or call its backend with its
- * credentials. Every frame therefore gets `ARTIFACT_FRAME_SANDBOX`: scripts and pop-ups are allowed, `allow-same-origin`
+ * credentials. Every frame therefore gets `ARTIFACT_FRAME_SANDBOX`: scripts, pop-ups and modal dialogs (including
+ * `window.print()`) are allowed; `allow-same-origin`
  * never is, which leaves the document in an opaque origin — its own storage is empty and thrown away with it, its
  * requests are cross-origin without cookies, and it cannot reach this page's DOM. An optional per-project CSP
  * additionally denies connections and forms (off by default for existing reports). Allowed image/media/CDN requests
@@ -19,7 +20,8 @@ import { artifactPageDocument, artifactThemeCss, readArtifactTheme, type Artifac
  * drift into being more permissive than the other. `allow-same-origin` must never be added: with it the artifact would
  * share the app's origin, and `allow-scripts` would let it read the app's storage and call the backend as the reader.
  */
-export const ARTIFACT_FRAME_SANDBOX = "allow-scripts allow-popups allow-popups-to-escape-sandbox";
+/** Q188: modal dialogs are owner-approved for printing; they do not grant an app origin. */
+export const ARTIFACT_FRAME_SANDBOX = "allow-scripts allow-popups allow-popups-to-escape-sandbox allow-modals";
 
 /** Whether a text artifact is an HTML page, by its type or its name. */
 export function isHtmlArtifact(artifact: Pick<Artifact, "name" | "mimeType">): boolean {

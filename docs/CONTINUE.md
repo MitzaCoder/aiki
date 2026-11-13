@@ -1,5 +1,14 @@
 # Continue
 
+## T165 / Q188: web artifacts may open print dialogs
+
+The owner approved `allow-modals` in the shared web artifact sandbox, used by the dialog and new-tab wrapper.
+`allow-same-origin` remains forbidden. The existing Print button was already visible and needed no UI change.
+Headless Chrome recorded one Print call and one native `beforeprint` event, without a sandbox rejection. Real Chrome
+print preview on a virtual display is retained as `mwexehzs-ffc2fd3358`; the headless result is `mwexei0y-3e3c227851`.
+Web check has zero diagnostics; 1,104 web tests, web build, root typecheck and 51 artifact-focused root tests pass.
+The private denylist, generic public-source guard and Gitleaks pass. No push or main movement.
+
 ## T165 / T166: integrated with the full-height Android page
 
 Rebased T166's server/web/Android chain onto the T162 scrolling fix, then T165's skill/web/Android chain onto it.
@@ -28,8 +37,8 @@ CSS and a Print control, without changing author source or sandbox permissions. 
 light/dark or palette changes. Project → Coordinator has **Block artifact pages from sending data**, persisted as
 `blockArtifactRequests`, off by default. Its first-in-head CSP denies connections/forms, not permitted images/media/CDN
 requests or external links. Android Print uses gesture-checked internal navigation to PrintManager, never a JS bridge.
-**Known web limitation:** Chromium refuses `window.print()` without sandbox `allow-modals`. The brief explicitly kept
-the sandbox unchanged, so the button exists but web printing needs that permission decision; the console proof records it.
+Q188 subsequently approved `allow-modals` for both web artifact frames, so their existing visible Print controls can
+open the browser print dialog. `allow-same-origin` remains forbidden; the optional CSP and Android policy are unchanged.
 
 Synthetic proof on T165: all four templates in the app at desktop/phone light/dark, report/dashboard on Android,
 plain HTML before/after, live system-theme switching and a scripted faux-model read-skill/read-template/save run (no

@@ -120,7 +120,7 @@ describe('an HTML artifact opens in a sandboxed tab', () => {
 		expect(isHtmlArtifact({ name: 'report.txt', mimeType: 'text/plain' })).toBe(false);
 	});
 	test('the frame runs scripts in an opaque origin: no `allow-same-origin`', () => {
-		expect(ARTIFACT_FRAME_SANDBOX).toBe('allow-scripts allow-popups allow-popups-to-escape-sandbox');
+		expect(ARTIFACT_FRAME_SANDBOX).toBe('allow-scripts allow-popups allow-popups-to-escape-sandbox allow-modals');
 		expect(ARTIFACT_FRAME_SANDBOX).not.toContain('allow-same-origin');
 		expect(ARTIFACT_FRAME_SANDBOX).not.toContain('allow-forms');
 		const document = sandboxedArtifactDocument('blob:http://localhost:5186/synthetic', 'report.html');
