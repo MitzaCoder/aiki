@@ -4,8 +4,8 @@ For first installation and pairing, use the [install guide](INSTALL.md).
 Commands and source paths below are relative to the repository root. For current
 authentication behavior, see [device sign-in](DESIGN.md#device-sign-in).
 
-`KEMIRI_*` names are canonical; matching `AIKI_*` names are still read until a
-later release. Existing deployment roots, units, storage keys and private paths
+Only `KEMIRI_*` process/build settings are read. Startup migrates its selected
+server.env from AIKI_* once with a .bak; update unit/deploy inputs yourself first. Existing deployment roots, units, storage keys and private paths
 below intentionally retain their old names; this rename does not move them.
 
 ## Local configuration and publication

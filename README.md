@@ -19,14 +19,16 @@ Kemiri is a personal AI workbench: one coordinator delegates to background agent
 - **See what needs you.** Tasks, questions and reviews share a list, board or graph.
 - **Come back later.** Runs resume after backend restarts; reports and artifacts stay with tasks.
 
-## Renamed from Aiki
+## Upgrading existing installations
 
-Kemiri is the new product name. Use `kemiri` for commands and `KEMIRI_*` for
-settings; `aiki` still works for now and `AIKI_*` settings are still read.
-Compatibility stays until a later release. Existing installation folders stay
-where they are: the app keeps your data, credentials, pairings and settings.
-Do not rename or delete old folders to upgrade. Fresh installations use Kemiri
-folders. Pilot.4 is the first Kemiri release; both commands work.
+Use `kemiri` for commands and `KEMIRI_*` for settings. The next release removes
+the old command and process-setting aliases. Startup rewrites old keys in its own
+server.env once, preserving values and an original .bak; when both keys exist,
+KEMIRI wins and the old assignment is dropped with a key-only log message.
+Rename process/build settings yourself before updating. Existing installation
+folders, credentials, pairings, service names and project context stay put.
+Do not rename or delete them. Fresh installs use Kemiri folders. Pilot.4 is the
+bridge: pilot.3 and earlier must update through it before the next release.
 
 ## Try Kemiri
 
@@ -42,7 +44,7 @@ kemiri start
 Alternative download: `curl -fL https://aikilabs.dev/install.sh -o install.sh`, then the same review/run steps. This small [bootstrap](site/install.sh) verifies the versioned GitHub release installer before running it. Keep `--version`: GitHub's latest release excludes prereleases. Verify direct downloads with the release checksums. You need git; install jj for isolated workers. The installer prefers a standalone executable on Linux x64/arm64 and macOS arm64; private Bun remains a fallback. It also supplies zellij.
 
 Short version: `curl -fsSL https://aikilabs.dev/install.sh | sh`.
-From pilot.3 or earlier, stop it, run `aiki update --version v0.1.0-pilot.4`, then `kemiri start` (or `aiki start`). Keep existing folders; the old command still works. For a user service, use `aiki service remove` before updating and `kemiri service install` afterwards. Install the new Android APK over the old one (same signing key).
+From pilot.3 or earlier, stop it, run `aiki update --version v0.1.0-pilot.4`, then `kemiri start`. Keep existing folders. For a user service, use `aiki service remove` before updating and `kemiri service install` afterwards. Install the new Android APK over the old one (same signing key).
 
 In another terminal:
 

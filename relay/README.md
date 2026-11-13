@@ -5,7 +5,7 @@ Implements T93 and T94 of the approved [design](../docs/research/push-relay-desi
 No real Firebase project, login, credentials, key file, FCM or App Check service is used by the tests.
 Real-project IAM/provider/ingress acceptance is not complete. [DEPLOY.md](DEPLOY.md) contains the reviewed-to-be-run
 operator procedure, private Functions parameters, database/rules/index cases and explicit ADC operator CLI; this is not
-permission for the agent to log in, inspect config or deploy. D53 resolves the credential-digest framing mismatch. T94's budgets, switches, durable cleanup and reconciliation are implemented. D51 makes both relay accounts and relay push optional: Aiki works fully without them.
+permission for the agent to log in, inspect config or deploy. D53 resolves the credential-digest framing mismatch. T94's budgets, switches, durable cleanup and reconciliation are implemented. D51 makes both relay accounts and relay push optional: Kemiri works fully without them.
 D52 settles the original parser, deletion, retry and lost-challenge questions as documented below.
 
 ## Exact emulator recipe
@@ -75,7 +75,7 @@ and explicitly seeds `relayControl/settings` enabled with enrollment open. It ne
 Firestore. It accepts only `--minutes <1..120>` (default 30), a fixed synthetic `demo-aiki-relay` project and the
 seven port variables above. There is no project/host override. It stops its own listener and asks the CLI to stop
 all owned emulators on SIGTERM/SIGINT/SIGHUP, failure or deadline. Stop by the readiness JSON's PID, not a broad
-process-name match; wait for its exit/ports to close before reusing them. Nothing starts an Aiki server.
+process-name match; wait for its exit/ports to close before reusing them. Nothing starts an Kemiri server.
 
 The readiness object includes `pid`, `projectId`, `functionBaseUrl` (ends in `/v1/`),
 `authEmulatorHost`, `firestoreHost`, `databaseId`, `fakeFcmUrl` and `captureFile`. CLI/build logs go to stderr; readiness is one
@@ -385,7 +385,7 @@ The D53 audit found a server parser that ignored string `{error:"code"}` and bac
 purge at the cleanup horizon. Both are resolved in the incoming T99 server change `wmqnkmvw`, not by changing relay
 errors or authorization semantics. The server now consumes named account/token/route/quota/FCM reasons; local
 cleanup_expired erases its own delete authority, not proof that eventual Firestore TTL has physically removed every row.
-The end-to-end cases exercise real flat relay errors and persisted retry/deletion against isolated Aiki backends.
+The end-to-end cases exercise real flat relay errors and persisted retry/deletion against isolated Kemiri backends.
 See [the acceptance record](../docs/push-relay-acceptance.md) for exact scope and remaining real-project gates.
 
 ## HTTP API

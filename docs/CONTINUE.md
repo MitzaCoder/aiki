@@ -1,5 +1,29 @@
 # Continue
 
+## T171 / D80: light compatibility removal
+
+The next release uses only kemiri commands, KEMIRI_* settings, canonical assets,
+kemiri:// Android links and Kemiri-Task writers. Legacy task trailers remain
+readable so past commits stay linked. Existing config/data folders, .aiki project
+context, tokens, storage keys, attachment markers, auth.sock and service/state
+names remain unchanged. Child/MCP boundaries still reject/scrub both prefixes.
+Startup atomically migrates the selected server.env, backs up exact bytes and logs
+key names only; canonical conflicts win, and clean files are untouched.
+
+Verified the published, checksum-checked pilot.4 executable's embedded updater
+against a canonical-only synthetic next binary: requests, activation, retained
+bytes and owned stale-command removal pass. Pilot.3 must go through pilot.4.
+Pilot.4's forced Bun/source fallback still validates aiki/ archives: use the new
+release's downloaded/reviewed installer with the same root for that transition.
+RELEASE.md documents this limit and the next release's 20 canonical-only assets.
+
+Root tests (2,637), typecheck, web check/tests (1,105)/build, Android JVM tests
+(944, two skipped), assembleDebug and lintDebug pass. Gradle stopped. Before/after
+Delivery screenshots and interaction recordings cover real web and disposable
+Android-emulator UIs on T171. No phone, live config, services, deploy scripts,
+bookmarks or remote refs changed. Read-only host/VM config inventory is reported
+privately on the task; those process/build inputs must be renamed before deploy.
+
 ## T169 / Q192: pilot.4 published and verified
 
 Owner approval Q192 authorized publication of the prepared commit. Published

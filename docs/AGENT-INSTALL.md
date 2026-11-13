@@ -5,8 +5,8 @@ links into chat. Linux is tested; macOS and Windows inside WSL are experimental.
 Use the published **`v0.1.0-pilot.4` prerelease**. Step 3 also provides a
 source-checkout fallback. Do not use `/latest`: GitHub excludes prereleases from it.
 
-`kemiri` and `KEMIRI_*` are canonical; `aiki` and `AIKI_*` remain supported until
-a later release. Pilot.3 predates these aliases: use `aiki` with that pinned release.
+Use `kemiri` and `KEMIRI_*`. The next release removes old command/process aliases;
+server.env is migrated once with a .bak. Pilot.3 users must update through pilot.4.
 
 ## 1. Establish boundaries
 
@@ -279,21 +279,21 @@ Do not paste surrounding secret output into a report.
 | Message | Action |
 | --- | --- |
 | `curl: (22) The requested URL returned error: 404` | Check the version and asset names. Use the source fallback if needed. |
-| `aiki: Install unzip and re-run this installer` | Ask for the named bootstrap utility; similarly for curl/tar. |
-| `aiki: Install sha256sum or shasum to verify downloads` | Supply a checksum utility; never skip verification. |
-| `aiki: Bun checksum mismatch; nothing activated` / `aiki: Aiki archive checksum mismatch; nothing activated` / `aiki: zellij checksum mismatch` | Stop; retry only on a trusted connection. Do not bypass hashes. |
-| `aiki: Private Bun could not run or has the wrong version; see docs/INSTALL.md` | Check OS/architecture/libc compatibility. Do not replace global Bun. |
-| `aiki: Directory is not an Aiki-managed installation; choose an empty --dir` | Choose an empty user-owned absolute path, not existing backend state. |
-| `aiki: Another launcher exists at ~/.local/bin/aiki; refusing to overwrite it` | Inspect the existing installation with the human; do not overwrite it. |
-| `aiki: Another install is running (or a stale .install-lock remains)` | Confirm no installer is running before asking to remove a stale lock. |
+| `kemiri: Install unzip and re-run this installer` | Ask for the named bootstrap utility; similarly for curl/tar. |
+| `kemiri: Install sha256sum or shasum to verify downloads` | Supply a checksum utility; never skip verification. |
+| `kemiri: Bun checksum mismatch; nothing activated` / `kemiri: Kemiri archive checksum mismatch; nothing activated` / `kemiri: zellij checksum mismatch` | Stop; retry only on a trusted connection. Do not bypass hashes. |
+| `kemiri: Private Bun could not run or has the wrong version; see docs/INSTALL.md` | Check OS/architecture/libc compatibility. Do not replace global Bun. |
+| `kemiri: Directory is not a Kemiri-managed installation; choose an empty --dir` | Choose an empty user-owned absolute path, not existing backend state. |
+| `kemiri: Another launcher exists at ~/.local/bin/aiki; refusing to overwrite it` | Inspect the existing installation with the human; do not overwrite it. |
+| `kemiri: Another install is running (or a stale .install-lock remains)` | Confirm no installer is running before asking to remove a stale lock. |
 | `Not responding at http://127.0.0.1:7317. Run aiki start or inspect your user service.` | Check the matching foreground terminal/log, paths and port. Status exits nonzero. |
-| `Port 7317: in use; aiki status checks whether it is Aiki. Set AIKI_PORT for another port.` | Pick a free port before start; pass it to every command or, with permission, set it in `$KEMIRI_ROOT/config/server.env`. |
-| `aiki: AIKI_PORT must be 1–65535` | Choose a decimal port in range. |
-| `aiki: Aiki is running. Stop the foreground process (Ctrl-C) or your user service before changing releases.` | Stop the correct installation before start/update/rollback/service installation. |
-| `aiki: server.pid already exists. If a previous process crashed, confirm it is stopped before removing this stale file.` | Verify the recorded PID is stopped; ask before removing the file. |
-| `aiki: No systemctl user service manager. Continue with aiki start.` | Use foreground mode; do not create a system service. |
-| `aiki: Another local Aiki service exists; refusing to overwrite/remove it` | Ask the human to identify the existing service. |
-| `aiki: No previous release retained` | No code rollback is available; do not downgrade data blindly. |
+| `Port 7317: in use; kemiri status checks whether it is Kemiri. Set KEMIRI_PORT for another port.` | Pick a free port before start; pass it to every command or, with permission, set it in `$KEMIRI_ROOT/config/server.env`. |
+| `kemiri: KEMIRI_PORT must be 1–65535` | Choose a decimal port in range. |
+| `kemiri: Kemiri is running. Stop the foreground process (Ctrl-C) or your user service before changing releases.` | Stop the correct installation before start/update/rollback/service installation. |
+| `kemiri: server.pid already exists. If a previous process crashed, confirm it is stopped before removing this stale file.` | Verify the recorded PID is stopped; ask before removing the file. |
+| `kemiri: No systemctl user service manager. Continue with aiki start.` | Use foreground mode; do not create a system service. |
+| `kemiri: Another local Kemiri service exists; refusing to overwrite/remove it` | Ask the human to identify the existing service. |
+| `kemiri: No previous release retained` | No code rollback is available; do not downgrade data blindly. |
 
 For Welcome requiring device sign-in, follow step 5. For provider failures, let the
 human check eligibility or try an API key; never request their secret in chat.

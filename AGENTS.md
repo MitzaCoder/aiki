@@ -15,6 +15,7 @@ A harness based on pi durable.
 
 - Conventional Commits style (`feat:`, `fix:`, `docs:`, …).
 - Author: as set in the repo's jj/git config.
+- Link commits to tasks with a `Kemiri-Task: T…` trailer.
 - Moving the `main` bookmark deploys the app on this host and the backends
   here and on configured remote hosts (`deploy/`). Move it only to commits whose checks
   pass: `bun test`, `bun run typecheck`, and `bun run check` plus

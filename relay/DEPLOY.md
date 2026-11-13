@@ -9,7 +9,7 @@ Never adapt `tools/emulators.ts` or `demo:stack` for production. Never export a 
 Replace **every** `<placeholder>` privately before copying a command. Do not send project identifiers, service-account
 emails, config, credentials, signing data, user IDs, links or payloads to the agent or commit them. Keep operator notes
 under ignored `deploy/local/`; keep client config outside the checkout. Do not run application deploy scripts or
-move the Aiki `main` bookmark as part of a relay deployment.
+move the Kemiri `main` bookmark as part of a relay deployment.
 
 ## 1. Review before provisioning
 

@@ -1,10 +1,10 @@
 # Install Kemiri locally
 
-These commands describe the Kemiri bridge release. Pilot.3 itself still uses `aiki`;
+The download below is the published pilot.4 bridge. Pilot.3 itself uses `aiki`;
 stop it and run `aiki update --version v0.1.0-pilot.4`, then use
 `kemiri`. Existing config/data and service names are retained, with no re-pairing.
-Both `AIKI_*` and `KEMIRI_*` settings work until a later release; process settings
-beat file settings, and KEMIRI wins within a source. Fresh installs use Kemiri XDG
+The next release reads only KEMIRI_* process settings and migrates its server.env.
+Process settings beat file settings. Fresh installs use Kemiri XDG
 roots. Existing legacy defaults are reused without copying; populated independent
 old/new defaults require an explicit path. Recorded installation paths always win.
 
@@ -13,14 +13,16 @@ Each person installs their own backend. This experimental installer is for Linux
 users run it inside WSL. There is no Node fallback. Fresh data starts with device sign-in **required**. This installer
 keeps loopback binding; network/Tailscale HTTPS setup is separate. Do not forward the port or expose it casually.
 
-## Renamed from Aiki
+## Upgrading existing installations
 
-Kemiri is the new product name. Use `kemiri` for commands and `KEMIRI_*` for
-settings; `aiki` still works for now and `AIKI_*` settings are still read.
-Compatibility stays until a later release. Existing installation folders stay
-where they are: the app keeps your data, credentials, pairings and settings.
-Do not rename or delete old folders to upgrade. Fresh installations use Kemiri
-folders. Pilot.4 is the first Kemiri release; both commands work.
+Use `kemiri` for commands and `KEMIRI_*` for settings. The next release removes
+the old command and process-setting aliases. Startup rewrites old keys in its own
+server.env once, preserving values and an original .bak; when both keys exist,
+KEMIRI wins and the old assignment is dropped with a key-only log message.
+Rename process/build settings yourself before updating. Existing installation
+folders, credentials, pairings, service names and project context stay put.
+Do not rename or delete them. Fresh installs use Kemiri folders. Pilot.4 is the
+bridge: pilot.3 and earlier must update through it before the next release.
 
 ## Install
 
@@ -120,11 +122,11 @@ before consent; no account is needed to start sign-in and open its authorize pag
 - `kemiri rollback`: select the retained previous release, swapping it with current.
 
 Default installation root: `${XDG_DATA_HOME:-~/.local/share}/kemiri`; runtime under `runtime/`, immutable releases
-under `releases/` (a binary release contains `aiki` and `.ready`), backend state under `data/`, with `current`
+under `releases/` (a binary release contains `kemiri` and `.ready`), backend state under `data/`, with `current`
 and `previous` symlinks. The launcher checks the selected release, so rollback works across both runtimes.
 An explicit runtime change at the same tag prepares a separate immutable `TAG-bun` or `TAG-binary` directory;
 the recorded version/channel remain the release's original identity. Configuration defaults to
-`${XDG_CONFIG_HOME:-~/.config}/kemiri`. The canonical launcher is `~/.local/bin/kemiri`; `~/.local/bin/aiki` remains an alias. With `--dir /absolute/empty/path`, both
+`${XDG_CONFIG_HOME:-~/.config}/kemiri`. The canonical launcher is `~/.local/bin/kemiri`; an owned stale `~/.local/bin/aiki` launcher is removed. With `--dir /absolute/empty/path`, both
 state and config live there (`data/`, `config/`). Existing unmanaged directories or another launcher are refused.
 Re-running the same version reuses its ready release and does not reinstall dependencies. A normal uninstall
 retains the tiny ownership metadata so reinstalling into the same root reuses your data/config.
@@ -136,7 +138,7 @@ private settings snapshot, not process-environment assignments or a second isola
 entry points then use the same startup/auth dispatcher and live-owner socket check. Startup prints effective data/config
 paths before importing the server. CLI-spawned helpers use the same shared child-environment scrubber. Keep
 persistent storage identity settings stable; never borrow another installation's environment or credential files.
-The source/deploy entry point retains its existing environment behavior.
+Source/deploy entry points use KEMIRI_* only; update unit/deploy inputs before deployment.
 
 Change port by putting `KEMIRI_PORT=17317` in this installation's `server.env`, or supplying `KEMIRI_PORT` to both
 `kemiri start` and `kemiri open`. The installer prints the default URL; `kemiri open` resolves your configured port.
@@ -176,11 +178,11 @@ Settings → About shows available versions and release notes. Installed release
 about once a day, without credentials; turn this off there for the whole backend. Dismissal hides the bottom-left update notice
 for that version, not the About row. Source/deploy checkouts do not check unless explicitly enabled in About.
 **Pilot.3 and earlier users:** stop it, run `aiki update --version v0.1.0-pilot.4`, then
-`kemiri start` (or `aiki start`). For a user service, use `aiki service remove` before updating
+`kemiri start`. For a user service, use `aiki service remove` before updating
 and `kemiri service install` afterwards. Keep existing folders and data.
 **Pilot.3 and older releases lack the self-update API/supervisor.** This stopped manual
 upgrade acquires it before you can use the button.
-Later manual updates still use plain `kemiri update`. Self-update changes the backend, never Android's APK.
+Later binary updates use plain `kemiri update`. For pilot.4 source/Bun fallback upgrades to the next release, download and review that release’s installer and run it with the same `--dir`: pilot.4’s embedded installer only accepts the old archive layout. Self-update changes the backend, never Android's APK.
 Install the Android APK over the old app; the release uses the same owner signing key,
 versionName `0.1.0-pilot.4`, code 1000004.
 An older installer without channel support needs that first exact-version update to acquire this behavior.

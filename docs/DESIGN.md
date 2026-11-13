@@ -1,11 +1,27 @@
 # Design
 
+## Light compatibility removal (T171 / D80)
+
+Kemiri alone is the command, settings prefix, release asset family, Android custom
+link scheme and newly written task trailer. Server startup atomically rewrites its
+selected server.env from AIKI_* to KEMIRI_*, keeping the original bytes in .bak.
+When both spellings exist, the KEMIRI value wins; logs name keys, never values.
+Process settings are not migrated or read through aliases. Both prefixes remain
+private at child/MCP boundaries. Existing folders, .aiki project context, tokens,
+storage keys, attachment markers, sockets, application IDs and service/state names
+stay in place: they identify user data, not branding. Historical Aiki-Task trailers
+remain readable so existing task/commit history stays linked.
+
+Pilot.3 must update through pilot.4 before the canonical-only release. Pilot.4's
+installed installer already requests kemiri-* assets. Its binary path accepts the
+next release; its forced Bun fallback still requires the old source archive layout
+and needs the current installer instead when moving to a kemiri/ source archive.
+
 ## Web branding and source packages (T167)
 
 Web display text and manifests say Kemiri; commands shown to users use `kemiri`.
-Build inputs accept KEMIRI_* before AIKI_* within each source, with process
-values ahead of web.env. Browser keys, cache/IDB names, discovery URLs, client
-names and task trailer writers keep their installed identity. Workspace packages
+Build inputs accept only KEMIRI_*, with process values ahead of web.env. Browser keys, cache/IDB names, discovery URLs, client
+names keep their installed identity; task trailer writers use Kemiri-Task. Workspace packages
 use @kemiri/* atomically; this changes source imports, not the wire protocol.
 
 ## Android Kemiri source identity and in-place upgrades (T167)
@@ -19,14 +35,11 @@ DataStore files, channel IDs and wire strings do not change. Explicit legacy
 `@SerialName` values keep saved navigation/highlight and pending-link discriminators
 byte-compatible despite the source package move.
 
-The old fully qualified MainActivity is a launcher activity-alias targeting the
-new class, preserving existing home-screen components without a duplicate icon.
-The configurable pre-T70 alias is retained too. Custom connect links accept
-`kemiri://`, `aiki://` and `harness://`; HTTPS origins remain configured per install.
+MainActivity is the sole launcher; old activity aliases are removed. Custom
+connect links accept only `kemiri://`; HTTPS origins remain configured per install.
 Android MCP environment imports reject both private prefixes. Public release
-scripts sign one canonical `kemiri-TAG-android-universal.apk`, then copy its exact
-bytes to the legacy `aiki-*` name. Notices/source archives follow the same rule;
-each filename has its own checksum sidecar. Source archive layout is unchanged.
+scripts sign one canonical `kemiri-TAG-android-universal.apk`. Notices/source
+archives are canonical only too; each filename has its own checksum sidecar.
 
 ## Public site and documentation identity (T167)
 
@@ -34,8 +47,7 @@ Kemiri is the public product name; canonical marketing and support addresses are
 `https://kemiri.dev` and `support@kemiri.dev`. The public repository is
 `https://github.com/MitzaCoder/kemiri`. This marketing move does not move paired
 backend origins, OAuth callbacks, persisted identities or installed data. Current
-guides use `kemiri` and `KEMIRI_*`; the `aiki` command and `AIKI_*` settings remain
-compatible until a later release. Historical release notes and protocol literals
+guides use `kemiri` and `KEMIRI_*`; old command/process-setting aliases are removed. Historical release notes and protocol literals
 keep their original names. See SITE.md for the owner-operated DNS/mail cutover.
 
 ## Kemiri compatibility bridge (T167)
@@ -43,17 +55,15 @@ keep their original names. See SITE.md for the owner-operated DNS/mail cutover.
 Launcher and supervisor diagnostics use Kemiri even when rejecting legacy
 installation metadata or service paths; ownership markers remain unchanged.
 
-Kemiri is the command and fresh XDG config/data default; `aiki` remains a same-root
-launcher alias. Recorded installation paths, service paths, ownership markers and
+Kemiri is the only command and fresh XDG config/data default. Recorded installation paths, service paths, ownership markers and
 storage/wire identities remain authoritative. Existing default `aiki` directories
 are reused without copying; independent populated defaults require an explicit path.
-Settings resolve process KEMIRI → process AIKI → file KEMIRI → file AIKI → default.
+Settings resolve process KEMIRI → migrated file KEMIRI → default.
 Both prefixes are private and scrubbed from children, which receive both child markers.
-The bridge publishes canonical Kemiri assets and explicitly compiled legacy Aiki
-version-probe binaries for pilot.3. Installed wrappers use `--kemiri-version` for
-those binaries; source archives retain the `aiki/` layout and `scripts/aiki.ts` entry.
+The release publishes only canonical Kemiri assets and a `kemiri/` source tree.
+The internal `scripts/aiki.ts` entry remains for installed metadata/rollback.
 Updates never rename a service or migrate data. Both task trailer spellings are read;
-agents continue writing `Aiki-Task:` until the dual reader is deployed.
+agents write `Kemiri-Task:`.
 
 ## Versioned full-height HTML previews (T165 / T166 / T162)
 
@@ -291,7 +301,7 @@ local developer override.
 
 The neutral Android signing script uses an empty external properties file, `env -i`
 and explicit public build overrides; package ID is `io.github.mitzacoder.aiki` and
-Firebase/relay/backend suggestions are empty. Version inputs are `aiki.version`, then
+Firebase/relay/backend suggestions are empty. Version inputs are `kemiri.version`, then
 `AIKI_RELEASE_VERSION`, then the CI tag. Android names omit `v`; numeric codes allocate
 major/minor/patch slots and order pilot N below stable (formula in Android README).
 Dev builds default to `0.0.0-dev` / 1. Keep package, signing certificate and storage
@@ -1914,7 +1924,7 @@ Conflicting task sets produce diagnostics, never an automatic union; `declareCha
 corrects attribution after verifying objects and board IDs. Structured worker declarations have the same
 verified internal API; no new prompt-heavy tool is added. No attribution is inferred from chat hashes.
 
-Portable trailers occupy the final message paragraph: repeat `Aiki-Task: T1` or use `Aiki-Task: T1, T2`.
+Portable trailers occupy the final message paragraph: repeat `Kemiri-Task: T1` or use `Kemiri-Task: T1, T2`.
 Keys/IDs are case-insensitive; IDs normalize to uppercase `T` plus a positive decimal number.
 Other Git trailers may coexist. Unknown project-board IDs are ignored with a diagnostic, not guessed.
 Squashes/merges must retain trailers. Task membership on a merge includes its newly reachable ancestors.
