@@ -1,5 +1,24 @@
 # Design
 
+## Video artifact failures and installed shell caching (T172)
+
+The installed web service worker must leave signed `/artifacts/` requests and
+all Range requests to the browser network stack, including navigations. They
+must never enter the offline shell/runtime caches: capabilities expire, content
+is private, and Cache.put rejects 206 partial responses. Cache writes are best
+effort and must not turn a successful network response into a failed request.
+This applies equally to installed binaries and production web builds; Vite dev
+mode does not exercise the worker.
+
+A web video error is visible immediately, even while bounded URL recovery runs.
+If metadata has not arrived within eight seconds of assigning a source, show
+“This video can't play here” with Download, Open in new tab and Try again instead
+of an empty 0:00 timeline. Late metadata clears the timeout warning; source
+changes and unmounts cancel the timer. Thumbnails retain their kind placeholder
+when decoding fails. Android's native Media3 path does not use this worker; it
+already reports playback errors visibly and keeps Download in the artifact
+screen footer. Its wording and loading timeout are separate from the web player.
+
 ## Light compatibility removal (T171 / D80)
 
 Kemiri alone is the command, settings prefix, release asset family, Android custom

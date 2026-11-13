@@ -85,6 +85,8 @@
 	let metadataDuration = $state<number | undefined>(undefined);
 	let ratio = $state<number | undefined>(undefined);
 	let downloading = $state(false);
+	let downloadError = $state<string | undefined>(undefined);
+	let metadataTimer: ReturnType<typeof setTimeout> | undefined;
 	/** Where to pick up after the URL is swapped. */
 	let resume: { time: number; playing: boolean } | undefined;
 	/** A seek asked for before the video could take it. */
@@ -114,19 +116,33 @@
 		swap(next);
 	});
 
+	// A stalled request need not emit a media error. Never leave an empty timeline indefinitely.
+	$effect(() => {
+		if (src === undefined) return;
+		metadataTimer = setTimeout(() => {
+			if ((player.video?.readyState ?? 0) < HTMLMediaElement.HAVE_METADATA) {
+				failed = true;
+				waiting = false;
+			}
+		}, 8_000);
+		return () => clearTimeout(metadataTimer);
+	});
+
 	$effect(() => player.watchFullscreen());
 	$effect(() => player.watchPictureInPicture(player.video));
 
 	function swap(next: string): void {
 		const video = player.video;
 		resume = video == null ? undefined : { time: video.currentTime, playing: !video.paused && !failed };
-		failed = false;
 		src = next;
 	}
 
 	function onloadedmetadata(): void {
 		const video = player.video;
 		if (video == null) return;
+		clearTimeout(metadataTimer);
+		failed = false;
+		failures = 0;
 		player.sync();
 		player.applyRate();
 		if (Number.isFinite(video.duration)) metadataDuration = video.duration;
@@ -187,15 +203,17 @@
 
 	function retry(): void {
 		failures = 0;
+		player.video?.load();
 		void onerror();
 	}
 
 	async function download(): Promise<void> {
 		downloading = true;
+		downloadError = undefined;
 		try {
 			await downloadArtifact(client, artifact);
-		} catch {
-			// The dialog's own button reports failures; this one only stops spinning.
+		} catch (error) {
+			downloadError = error instanceof Error ? error.message : String(error);
 		} finally {
 			downloading = false;
 		}
@@ -431,7 +449,7 @@
 	class="video-frame group relative w-full overflow-hidden rounded-2xl bg-black outline-none"
 	class:compact
 	class:theater
-	class:idle={started && !controlsShown}
+	class:idle={started && !controlsShown && !failed}
 	style:--ratio={ratio ?? 16 / 9}
 	role="region"
 	aria-label="Video player: {title}"
@@ -569,13 +587,22 @@
 		</div>
 	{/if}
 
-	{#if failed && failures >= MEDIA_RETRY_LIMIT}
-		<div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 p-4 text-center text-sm text-white" role="alert">
-			<p>The video could not be loaded.</p>
+	{#if failed || source.current?.error}
+		<div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/85 p-4 text-center text-sm text-white" role="alert" data-video-error>
+			<p>This video can't play here</p>
 			{#if source.current?.error}<p class="text-xs text-white/70">{source.current.error}</p>{/if}
-			<button type="button" class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium hover:bg-white/25" onclick={retry}>
-				<RotateCwIcon class="size-3.5" /> Try again
-			</button>
+			<div class="flex flex-wrap items-center justify-center gap-2">
+				<button type="button" class="rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium hover:bg-white/25" disabled={downloading || downloadingOutside} onclick={ondownload ?? download}>
+					{downloading || downloadingOutside ? 'Downloading…' : 'Download'}
+				</button>
+				{#if fresh !== undefined}
+					<a href={fresh} target="_blank" rel="noopener noreferrer" class="rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium hover:bg-white/25">Open in new tab</a>
+				{/if}
+				<button type="button" class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium hover:bg-white/25" onclick={retry}>
+					<RotateCwIcon class="size-3.5" /> Try again
+				</button>
+			</div>
+			{#if downloadError}<p class="text-xs text-white/70">{downloadError}</p>{/if}
 		</div>
 	{:else if started}
 		<!-- svelte-ignore a11y_no_static_element_interactions -->

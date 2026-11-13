@@ -1,5 +1,38 @@
 # Continue
 
+## T172: installed video ranges fail inside the app-shell worker
+
+Reproduced with checksum-verified published pilot.2 and pilot.4 Linux x64
+installers/binaries and main's production web build, paired synthetic Chromium
+157 profiles at both loopback spellings. Same-origin WebM/VP9 and MP4/H.264
+show black / 0:00; cross-origin loopback playback loads 12 seconds. CDP's
+service-worker bypass alone restores playback. The worker awaited Cache.put
+on a successful 206, which browsers reject, and returned a network failure.
+T149 is already in pilot.2; CORS, codecs and compiled Bun.file ranges are not
+the cause. Both binaries return exact range/download bytes and correct MIME,
+length and Content-Range; signed URLs follow the WebSocket backend origin.
+
+The worker now bypasses signed artifacts and every Range request, never caches
+206/no-store responses, and treats cache writes as optional. Eleven regression
+tests include the actual production fetch listener. The web player immediately
+shows errors, warns after eight seconds without metadata, offers Download/Open
+in new tab/Try again, and clears the warning on late metadata. Real paused
+requests verify timeout and recovery. Android source already exposes Media3
+errors and a Download footer; native wording/timeout are unchanged, and no
+Android files or devices were touched.
+
+Root tests pass 2,642 / 93,325 assertions; typecheck, web check (zero diagnostics),
+1,116 web tests / 80,022 assertions, build and external-denylist/generic/Gitleaks
+checks pass with isolated HOME/XDG and scrubbed prefixes. T172 keeps eight
+light/dark before/after screenshots, a 7.5-second playback/download recording,
+and redacted CDP/transport evidence. All owned processes and disposable installs
+are removed. No installer/env files, main bookmark, remote refs or services changed.
+
+Pilot.4 does **not** fix this. Until a release contains this fix, download the
+video. Cross-origin loopback media also works when that browser origin is paired
+to the other backend hostname; changing the address alone may require pairing
+again because browser credentials are origin-scoped. Do not delete pairing/data.
+
 ## T171: live Kemiri site cutover
 
 Owner confirms Pages/HTTPS at kemiri.dev is live; independently verified its

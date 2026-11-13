@@ -1,4 +1,5 @@
 import { installPushEvents } from "./push-events.ts";
+import { bypassAppCache, cacheNetworkResponse } from "./cache-policy.ts";
 /// <reference lib="webworker" />
 /**
  * The app's service worker: an app shell that follows a deploy quickly, the push notifications themselves, and the
@@ -67,7 +68,7 @@ worker.addEventListener("activate", (event) => {
 worker.addEventListener("fetch", (event) => {
 	const request = event.request;
 	// Nothing in development: Vite's HMR and module graph must not be served from a cache.
-	if (dev || request.method !== "GET") return;
+	if (dev || request.method !== "GET" || bypassAppCache(request)) return;
 	let url: URL;
 	try {
 		url = new URL(request.url);
@@ -105,23 +106,31 @@ async function shell(): Promise<Response | undefined> {
 }
 
 async function cacheFirst(request: Request, cacheName: string): Promise<Response> {
-	const cache = await caches.open(cacheName);
-	const cached = await cache.match(request);
-	if (cached !== undefined) return cached;
+	try {
+		const cache = await caches.open(cacheName);
+		const cached = await cache.match(request);
+		if (cached !== undefined) return cached;
+	} catch {
+		// Cache storage is optional; try the network even when it cannot be opened.
+	}
 	const response = await fetch(request);
-	if (response.ok) await cache.put(request, response.clone());
+	await cacheNetworkResponse(caches, cacheName, request, response);
 	return response;
 }
 
 async function networkFirst(request: Request): Promise<Response> {
-	const cache = await caches.open(RUNTIME_CACHE);
 	try {
 		const response = await fetch(request);
-		if (response.ok) await cache.put(request, response.clone());
+		await cacheNetworkResponse(caches, RUNTIME_CACHE, request, response);
 		return response;
 	} catch (error) {
-		const cached = await cache.match(request);
-		if (cached !== undefined) return cached;
+		try {
+			const cache = await caches.open(RUNTIME_CACHE);
+			const cached = await cache.match(request);
+			if (cached !== undefined) return cached;
+		} catch {
+			// Keep the original network error when cache storage is unavailable too.
+		}
 		throw error;
 	}
 }
