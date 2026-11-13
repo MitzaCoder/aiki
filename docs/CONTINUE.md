@@ -1,5 +1,21 @@
 # Continue
 
+## T165 / T166: integrated with the full-height Android page
+
+Rebased T166's server/web/Android chain onto the T162 scrolling fix, then T165's skill/web/Android chain onto it.
+Android conflicts keep the full-height, non-scrolling HTML shell and Info dialog, with version controls above the page.
+Scrolling, horizontal panning and zoom stay in the WebView; its prelude decorates the selected version's loaded bytes.
+Web preserves the version-keyed player/source lease and applies the same prelude to its selection. Docs retain main's
+base with the T165/T166 sections prepended, rather than replacing T162's layout notes. Sandbox permissions are unchanged.
+
+Synthetic merged proof switched v2 → v1 → v2 on both clients: web `mwewch6j-a403683142`, Android
+`mwewgffy-d6ad2f3150`. Both show themed v2 of 2. Android's page spans the width and reaches the navigation inset;
+the WebView bounds are 1080 × 1775 below the app/version/Page headers. The merged web switching recording is
+`mwewkziz-3633e0eb23`. No physical device, push or main movement.
+Sequential checks pass: root 2,619 tests / 93,185 assertions; typecheck; web check zero diagnostics, 1,104 tests /
+79,991 assertions and build; Android 943 JVM tests (two opt-in skips), assembleDebug and lintDebug. Gradle stopped.
+The private denylist, generic public-source guard and Gitleaks pass. Both platforms have selected-byte/prelude regression tests.
+
 ## T165: built-in HTML design, theme defaults and opt-in CSP
 
 `packages/server/skills/html-artifacts/` ships a lazy skill (25 description tokens, 728 body tokens with cl100k_base),

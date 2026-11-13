@@ -1,5 +1,14 @@
 # Design
 
+## Versioned full-height HTML previews (T165 / T166 / T162)
+
+Resolve the selected retained snapshot before reading its bytes, then apply the current-theme prelude to those bytes.
+Web keys the player and its source lease by the selected immutable address; Android renews and reads that address
+before rebuilding the origin-less WebView document. Bare IDs still follow latest, and pinned IDs keep their snapshot.
+Android's HTML branch stays outside the details scroller: version controls and Page/Source sit above a weighted WebView,
+with metadata and actions behind Info. WebView owns scrolling and pinch zoom. Sandbox permissions are unchanged;
+`allow-modals` still awaits the owner's decision.
+
 ## HTML artifact design and privacy (T165 / D74)
 
 Every project is offered the bundled `html-artifacts` skill through the ordinary lazy skill catalogue. Only its name,

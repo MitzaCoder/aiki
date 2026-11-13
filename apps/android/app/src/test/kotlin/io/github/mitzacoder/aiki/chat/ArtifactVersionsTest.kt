@@ -14,6 +14,19 @@ class ArtifactVersionsTest {
         workerId = "worker-$number", taskId = "T1", sourcePath = "", createdAt = "2026-01-01T00:00:00Z", version = number)
     private val versioned get() = legacy.copy(version = 23, versionCount = 23, versions = listOf(snapshot(4), snapshot(22), snapshot(23)))
 
+    @Test fun themePreludeDecoratesTheSelectedSnapshot() {
+        val bytes = mapOf("a~4" to "<h1>First draft</h1>", "a~23" to "<h1>Latest draft</h1>")
+        for (version in listOf(4L, 23L)) {
+            val selected = selectedArtifactVersion(versioned, version)
+            val document = artifactPageDocument(bytes.getValue(selected.id), true, mapOf("tone-bg" to "#09090f"), true)
+            assertTrue(document.contains(bytes.getValue(selected.id)))
+            assertFalse(document.contains(bytes.getValue(if (version == 4L) "a~23" else "a~4")))
+            assertTrue(document.contains("data-theme=\"dark\""))
+            assertTrue(document.contains("Content-Security-Policy"))
+            assertTrue(artifactUsesFullHeight(selected.kind, selected.name, selected.mimeType))
+        }
+    }
+
     @Test fun cacheAndPlaybackIdentityFollowsVersionBytes() {
         assertEquals("a", artifactVersionAddress(legacy))
         assertEquals("a~23", artifactVersionAddress(versioned))

@@ -1,10 +1,27 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import type { Artifact } from "@aiki/protocol";
+import { artifactPageDocument } from "../src/lib/artifact-page.ts";
 import { artifactVersions, selectedArtifactVersion } from "../src/lib/artifact-versions.ts";
 
 const legacy: Artifact = { id: "a", projectId: "p", name: "report.html", title: null, note: null, kind: "text", mimeType: "text/html", size: 12, durationSeconds: null, threadId: "main", workerId: null, taskId: null, sourcePath: "/example/report.html", createdAt: "" };
 const versioned: Artifact = { ...legacy, version: 23, versionCount: 23, versions: [4, 22, 23].map(version => ({ ...legacy, id: "a~" + version, version, note: "Draft " + version, workerId: "worker-" + version })) };
+
+test("theme and CSP decorate the selected version bytes, never the latest bytes instead", () => {
+ const bytes = new Map([[4, "<h1>First draft</h1>"], [23, "<h1>Latest draft</h1>"]]);
+ for (const version of [4, 23]) {
+  const selected = selectedArtifactVersion(versioned, version);
+  const document = artifactPageDocument(bytes.get(selected.version!)!, {mode: "dark", tokens: {"tone-bg":"#09090f"}}, true);
+  expect(document).toContain(bytes.get(version)!);
+  expect(document).not.toContain(bytes.get(version === 4 ? 23 : 4)!);
+  expect(document).toContain('data-theme="dark"');
+  expect(document).toContain("Content-Security-Policy");
+ }
+ const viewer = readFileSync(new URL("../src/lib/components/artifacts/ArtifactText.svelte", import.meta.url), "utf8");
+ expect(viewer).toContain("artifactId: artifact.id");
+ expect(viewer).toContain("artifactPageDocument(content, artifactTheme, blockRequests)");
+ expect(viewer).toContain("srcdoc={pageDocument}");
+});
 
 test("old backends expose their one snapshot without inventing version addresses", () => {
  expect(artifactVersions(legacy)).toEqual([{ ...legacy, versionCount: 1 }]);
