@@ -22,8 +22,8 @@
 		quietHoursDraft,
 		quietHoursProblem
 	} from '#lib/notifications.js';
-	import { mutedProjectEntries, quietHoursSummary, type QuietHours } from '@aiki/client';
-	import type { NotificationKind } from '@aiki/protocol';
+	import { mutedProjectEntries, quietHoursSummary, type QuietHours } from '@kemiri/client';
+	import type { NotificationKind } from '@kemiri/protocol';
 
 	/**
 	 * Notifications for this browser: turn them on for the device, see what each backend knows about it, choose which

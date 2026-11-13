@@ -11,7 +11,7 @@ import type {
 	ConversationWatchResponse,
 	EntryRecord,
 	WatchEndReason,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { backoffDelay, canRetry, type BackoffOptions } from "./backoff.ts";
 import { ClientError, errorMessage } from "./errors.ts";
 

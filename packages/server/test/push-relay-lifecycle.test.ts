@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { HARNESS_FEATURES } from "@aiki/protocol";
+import { HARNESS_FEATURES } from "@kemiri/protocol";
 import { relayPreferences, relaySetup, simulatedPhone } from "./push-relay-support.ts";
 
 const event = { kind: "reply" as const, title: "Synthetic subject", body: "Synthetic body", projectId: null };

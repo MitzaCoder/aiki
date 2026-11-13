@@ -27,7 +27,7 @@ import {
 	THREAD_MESSAGE_PREFIX,
 	type WakeReason,
 	WORKER_REPORT_PREFIX,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import type { Models } from "@earendil-works/pi-ai";
 import { defineExtension, type Extension, GenerationTask, hook } from "@earendil-works/pi-durable";
 import { errorMessage } from "./errors.ts";

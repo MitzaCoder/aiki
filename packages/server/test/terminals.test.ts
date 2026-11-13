@@ -7,7 +7,7 @@ import {
 	isTerminalSessionName,
 	terminalPrefix,
 	type ServerMessage,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";

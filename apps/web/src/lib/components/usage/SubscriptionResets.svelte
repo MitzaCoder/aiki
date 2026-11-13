@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { SubscriptionUsage } from '@aiki/protocol';
+	import type { SubscriptionUsage } from '@kemiri/protocol';
 	import type { BackendConnection } from '#lib/harness.svelte.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';

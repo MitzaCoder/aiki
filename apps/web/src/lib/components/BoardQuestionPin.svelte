@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { markdownText } from '@aiki/protocol';
+	import { markdownText } from '@kemiri/protocol';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
@@ -11,7 +11,7 @@
 	import { isWarning, itemsWaitingLabel } from '#lib/tasks.js';
 	import type { ProjectBoard } from '#lib/board.svelte.js';
 	import { inThread, questionAskedBy, questionPin } from '#lib/threads.js';
-	import type { BoardQuestion, ThreadSummary } from '@aiki/protocol';
+	import type { BoardQuestion, ThreadSummary } from '@kemiri/protocol';
 
 	/**
 	 * The questions waiting on the user, pinned above the composer so they are answered where the conversation is. The

@@ -5,8 +5,8 @@
  * for a minute (finished things longer), and asks that arrive together share one read. Without a tool or its login the
  * source rests for ten minutes and the answer is null; a failed read answers what was known before.
  */
-import type { PullRequestChecks, PullRequestReviews, ProjectLinks, RefDetails, ResolvedRef } from "@aiki/protocol";
-import { refIdentity, resolveRef } from "@aiki/protocol";
+import type { PullRequestChecks, PullRequestReviews, ProjectLinks, RefDetails, ResolvedRef } from "@kemiri/protocol";
+import { refIdentity, resolveRef } from "@kemiri/protocol";
 import { type RunCommand, runHostCommand } from "./host-commands.ts";
 import { hostOf, jiraCategory, jsonIn } from "./ref-status.ts";
 

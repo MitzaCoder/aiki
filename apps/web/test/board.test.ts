@@ -3,7 +3,7 @@
  * `[board]` note and the one-line card for the coordinator's `board` calls.
  */
 import { describe, expect, test } from "bun:test";
-import type { Board, BoardTask } from "@aiki/protocol";
+import type { Board, BoardTask } from "@kemiri/protocol";
 import {
 	activityOpenQuestions,
 	archivedCount,
@@ -26,7 +26,7 @@ import {
 	taskStatusLabel,
 } from "../src/lib/board.ts";
 import { buildTranscript } from "../src/lib/transcript.ts";
-import type { EntryRecord } from "@aiki/protocol";
+import type { EntryRecord } from "@kemiri/protocol";
 
 function task(id: string, overrides: Partial<BoardTask> = {}): BoardTask {
 	return {

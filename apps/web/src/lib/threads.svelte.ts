@@ -4,8 +4,8 @@
  * not pushed, so they are read when the user asks for them and again after each push while they are shown. Stop and
  * archive go through here and put the answer in the list at once, so a row changes without waiting for the push.
  */
-import { backgroundThreads, threadsStateIsFor, type HarnessClient } from "@aiki/client";
-import type { ThreadSummary } from "@aiki/protocol";
+import { backgroundThreads, threadsStateIsFor, type HarnessClient } from "@kemiri/client";
+import type { ThreadSummary } from "@kemiri/protocol";
 
 function messageOf(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);

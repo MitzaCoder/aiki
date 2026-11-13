@@ -6,7 +6,7 @@
 	import * as Popover from '#lib/components/ui/popover/index.js';
 	import { moveChoices, type MoveTarget } from '#lib/kanban.js';
 	import { taskStatusToneClass } from '#lib/tasks.js';
-	import type { BoardTask } from '@aiki/protocol';
+	import type { BoardTask } from '@kemiri/protocol';
 
 	/**
 	 * A card's "Move to…" menu: every status the user may move the task to (never Ready for review, which the agents

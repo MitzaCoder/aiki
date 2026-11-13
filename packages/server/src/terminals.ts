@@ -27,7 +27,7 @@ import {
 	type TerminalLimits,
 	isTerminalSessionName,
 	terminalPrefix,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { ServerError, errorMessage } from "./errors.ts";
 import { childEnvironment } from "./child-environment.ts";
 import { serverSettings } from "./server-settings.ts";

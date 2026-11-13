@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { DEFAULT_REPORT_AUDIT, type ReportAuditSettings } from '@aiki/protocol';
+	import { DEFAULT_REPORT_AUDIT, type ReportAuditSettings } from '@kemiri/protocol';
 	import type { BackendConnection } from '#lib/harness.svelte.js';
 	import { modelKey, modelOptions } from '#lib/models.js';
 	import { parseReportAuditBudget, reportAuditStatusLines, reportAuditSupported } from '#lib/report-audit.js';

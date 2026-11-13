@@ -1,4 +1,4 @@
-import type { BoardTask, BoardTaskActivity, BoardActivityActor, BoardQuestion } from "@aiki/protocol";
+import type { BoardTask, BoardTaskActivity, BoardActivityActor, BoardQuestion } from "@kemiri/protocol";
 
 /** Durable run identities, never worker names alone. Deployment facts have separate typed slots. */
 export type TaskActivitySource = {

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import type { Artifact } from "@aiki/protocol";
+import type { Artifact } from "@kemiri/protocol";
 import { artifactPageDocument } from "../src/lib/artifact-page.ts";
 import { artifactVersions, selectedArtifactVersion } from "../src/lib/artifact-versions.ts";
 

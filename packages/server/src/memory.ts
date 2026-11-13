@@ -38,7 +38,7 @@ import type {
 	MemoryScope,
 	MemorySearchHit,
 	MemoryStatus,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { ServerError, errorMessage } from "./errors.ts";
 import { parseFrontmatter } from "./frontmatter.ts";
 

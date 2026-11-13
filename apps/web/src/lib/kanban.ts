@@ -5,8 +5,8 @@
  * a task sent back from review needs the user's reason. Reordering To do sets the priority the coordinator works by;
  * the other columns sort themselves. Pure functions, so they are tested without a component.
  */
-import { formatMinutes } from "@aiki/client";
-import type { Board, BoardQuestion, BoardTask, BoardTaskInput, BoardTaskStatus } from "@aiki/protocol";
+import { formatMinutes } from "@kemiri/client";
+import type { Board, BoardQuestion, BoardTask, BoardTaskInput, BoardTaskStatus } from "@kemiri/protocol";
 import { compactRelativeTime, relativeTime } from "./relative-time.ts";
 import { isSettled, looseWaiting, rowGist, waitingOn, type TaskSectionId } from "./tasks.ts";
 

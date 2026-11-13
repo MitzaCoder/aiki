@@ -2,7 +2,7 @@
  * Artifact logic outside the components: labels and sizes, the kind filter, what an `artifact_save` call in the chat
  * names, and the image lightbox's zoom and pan maths.
  */
-import type { Artifact, ArtifactKind } from "@aiki/protocol";
+import type { Artifact, ArtifactKind } from "@kemiri/protocol";
 
 /** The tool a thread or worker saves an artifact with. */
 export const ARTIFACT_SAVE_TOOL = "artifact_save";

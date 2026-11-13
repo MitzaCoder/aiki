@@ -18,7 +18,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { constants } from "node:fs";
 import { copyFile, mkdir, open, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
-import { type Artifact, type ArtifactKind, type ArtifactsChangedEvent, normalizeTags } from "@aiki/protocol";
+import { type Artifact, type ArtifactKind, type ArtifactsChangedEvent, normalizeTags } from "@kemiri/protocol";
 import { ServerError, errorMessage } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 import { isOriginAllowed, normalizeOrigin } from "./origins.ts";

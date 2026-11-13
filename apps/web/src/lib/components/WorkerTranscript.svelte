@@ -30,7 +30,7 @@
 		type ProjectContext
 	} from '#lib/harness.svelte.js';
 	import { visibleSidebarTabs, type SidebarTab } from '#lib/sidebar.js';
-	import type { MemoryScope } from '@aiki/protocol';
+	import type { MemoryScope } from '@kemiri/protocol';
 	import { CHAT_COLUMN_CLASS } from '#lib/chat/layout.js';
 	import { buildTranscript, liveState } from '#lib/transcript.js';
 	import { workerPlace } from '#lib/workers.js';

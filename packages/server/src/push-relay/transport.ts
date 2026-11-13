@@ -7,7 +7,7 @@ import {
 	newRelayId,
 	relaySendBody,
 	relayUnbase64,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { ServerError } from "../errors.ts";
 import type { DeliveryOutcome, HoldScheduler, NotificationEvent } from "../notifications.ts";
 import { PUSH_RELAY_CLEANUP_MS, PUSH_RELAY_PENDING_MS, PushRelayStore,

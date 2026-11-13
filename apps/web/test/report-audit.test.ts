@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { ModelInfo, ProviderInfo, ReportAuditStatus } from '@aiki/protocol';
+import type { ModelInfo, ProviderInfo, ReportAuditStatus } from '@kemiri/protocol';
 import { parseReportAuditBudget, reportAuditStatusLines, reportAuditSupported } from '../src/lib/report-audit.js';
 const now = Date.parse('2026-01-01T12:00:00Z');
 const status: ReportAuditStatus = { effectiveModel: null, day: '2026-01-01', tokensUsed: 1240, lastRunAt: '2026-01-01T10:00:00Z', state: 'unavailable', reason: 'no signed-in provider offers a small model' };

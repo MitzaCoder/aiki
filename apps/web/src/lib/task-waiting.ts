@@ -1,4 +1,4 @@
-import type { BoardTask } from '@aiki/protocol';
+import type { BoardTask } from '@kemiri/protocol';
 import { formatWaitingTime } from './work-day.ts';
 import { compactRelativeTime } from './relative-time.ts';
 

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { parseTaskReference } from '@aiki/client';
+	import { parseTaskReference } from '@kemiri/client';
 	import CopyButton from '#lib/components/CopyButton.svelte';
 	import { clockTime, fullTime } from '#lib/chat/time.js';
 	import ImageStrip from './ImageStrip.svelte';
 	import FileChips from './FileChips.svelte';
-	import { splitFileMessage } from '@aiki/protocol';
+	import { splitFileMessage } from '@kemiri/protocol';
 	import { dataUrl, imageCountLabel } from '#lib/chat/images.js';
 	import type { TranscriptImage, WaitingInfo } from '#lib/transcript.js';
 	import { waitingStatus } from '#lib/waiting.js';

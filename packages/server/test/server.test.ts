@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import { HARNESS_FEATURES, type ConversationView, type ServerMessage } from "@aiki/protocol";
+import { HARNESS_FEATURES, type ConversationView, type ServerMessage } from "@kemiri/protocol";
 import { mkdir, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";

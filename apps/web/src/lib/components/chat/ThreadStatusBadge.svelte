@@ -2,7 +2,7 @@
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 	import { Badge } from '#lib/components/ui/badge/index.js';
 	import { threadStatusClass, threadStatusLabel } from '#lib/threads.js';
-	import type { ThreadStatus } from '@aiki/protocol';
+	import type { ThreadStatus } from '@kemiri/protocol';
 
 	/** A background thread's status as a badge: a spinner while it works, red only when it failed. */
 	let {

@@ -2,7 +2,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import LayersIcon from '@lucide/svelte/icons/layers';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
-	import type { ThreadSummary } from '@aiki/protocol';
+	import type { ThreadSummary } from '@kemiri/protocol';
 	import type { ToolPart } from '#lib/transcript.js';
 	import { threadCallSummary } from '#lib/threads.js';
 

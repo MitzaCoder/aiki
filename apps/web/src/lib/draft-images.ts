@@ -4,7 +4,7 @@
  * uploaded (`drafts.attachment.put`, once per image per time it is in the draft) and until another device asks for them
  * (`drafts.attachment.get`, which `MessageImages` does).
  */
-import type { DraftAttachment, DraftContent } from "@aiki/protocol";
+import type { DraftAttachment, DraftContent } from "@kemiri/protocol";
 import { bytesToBase64 } from "./chat/images.ts";
 
 /** Bytes by attachment ID, oldest dropped first once the total passes `maxBytes`. */

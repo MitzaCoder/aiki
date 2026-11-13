@@ -2,8 +2,8 @@
  * Helpers on top of the protocol's worker types: the link from a coordinator tool call to the worker it started, the
  * harness' own inputs in the coordinator's transcript, and small groupings a UI needs.
  */
-import { CHECK_IN_PREFIX, WORKER_REPORT_PREFIX } from "@aiki/protocol";
-import type { WorkerStatus, WorkerSummary } from "@aiki/protocol";
+import { CHECK_IN_PREFIX, WORKER_REPORT_PREFIX } from "@kemiri/protocol";
+import type { WorkerStatus, WorkerSummary } from "@kemiri/protocol";
 import { ClientError } from "./errors.ts";
 
 /**

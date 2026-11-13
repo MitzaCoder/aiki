@@ -13,7 +13,7 @@ import {
 	shortCommit,
 	type MemorySnippetPart,
 	type MemoryTarget,
-} from "@aiki/client";
+} from "@kemiri/client";
 import type {
 	MemoryChange,
 	MemoryChangeKind,
@@ -26,8 +26,8 @@ import type {
 	ModelInfo,
 	ModelRef,
 	ThinkingLevel,
-} from "@aiki/protocol";
-import { THINKING_LEVELS } from "@aiki/protocol";
+} from "@kemiri/protocol";
+import { THINKING_LEVELS } from "@kemiri/protocol";
 import { exactTime, relativeTime, relativeTimeAhead } from "./relative-time.ts";
 import { sameModel } from "./models.ts";
 

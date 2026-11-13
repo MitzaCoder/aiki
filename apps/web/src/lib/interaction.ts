@@ -9,7 +9,7 @@
  * where `keydown` is only a placeholder). A mouse move does not, and neither does a `scroll` event: the transcript
  * scrolls itself while a reply streams, and that is not the user. Synthetic events (`isTrusted` false) are ignored.
  */
-import { INTERACTION_REPORT_INTERVAL_MS } from '@aiki/protocol';
+import { INTERACTION_REPORT_INTERVAL_MS } from '@kemiri/protocol';
 
 export const INTERACTION_EVENTS = ['pointerdown', 'keydown', 'touchstart', 'touchmove', 'wheel', 'input'] as const;
 export const NOTIFICATION_HOLD_FEATURE = 'notification-hold';

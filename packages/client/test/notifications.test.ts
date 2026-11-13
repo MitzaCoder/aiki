@@ -9,7 +9,7 @@ import {
 	type NotificationDevice,
 	type NotificationKind,
 	type NotificationPayload,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import {
 	HarnessClient,
 	NOTIFICATION_DEFAULTS_VERSION,

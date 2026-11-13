@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import type { RefStatus } from '@aiki/protocol';
+import type { RefStatus } from '@kemiri/protocol';
 import { taskRefSummary } from '../src/lib/task-ref-summary.ts';
 import { taskSheetViewport } from '../src/lib/task-sheet-viewport.ts';
 const base = { ref: '#1', url: 'https://example.com/ref', title: 'Synthetic ref', checkedAt: '2026-01-01T00:00:00Z' };

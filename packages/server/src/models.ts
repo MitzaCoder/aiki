@@ -22,7 +22,7 @@ import {
 	type ModelRef,
 	type ProviderInfo,
 	type ThinkingLevel,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 
 /** The providers the harness exposes to clients. */
 /**

@@ -3,7 +3,7 @@
  * asks for, the save it sends, To do's order after a drop, and the remembered List | Board choice.
  */
 import { describe, expect, test } from "bun:test";
-import type { BoardQuestion, BoardTask } from "@aiki/protocol";
+import type { BoardQuestion, BoardTask } from "@kemiri/protocol";
 import {
 	columnOfStatus,
 	dropTarget,

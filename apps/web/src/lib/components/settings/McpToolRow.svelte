@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { McpPolicy } from '@aiki/protocol';
+  import type { McpPolicy } from '@kemiri/protocol';
   import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
   import type { BackendConnection } from '#lib/harness.svelte.js';
   import { MCP_POLICY_OPTIONS, mcpToolHint, type McpTool } from '#lib/mcp.js';

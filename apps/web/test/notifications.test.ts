@@ -3,8 +3,8 @@
  * which project a route is looking at. The page and the service worker follow these, so they are pinned here.
  */
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_NOTIFICATION_KINDS, NOTIFICATION_FAILURE_KINDS, type NotificationDevice } from "@aiki/protocol";
-import { NOTIFICATION_KINDS } from "@aiki/client";
+import { DEFAULT_NOTIFICATION_KINDS, NOTIFICATION_FAILURE_KINDS, type NotificationDevice } from "@kemiri/protocol";
+import { NOTIFICATION_KINDS } from "@kemiri/client";
 import {
 	DEFAULT_KIND_INFO,
 	NOTIFICATION_KIND_INFO,

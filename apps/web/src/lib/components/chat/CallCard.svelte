@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { MemoryScope, WorkerSummary } from '@aiki/protocol';
+	import type { MemoryScope, WorkerSummary } from '@kemiri/protocol';
 	import { BOARD_TOOL_NAME, boardCallView } from '#lib/board.js';
 	import { hasThreadCard, threadIdOfCall, type ThreadCards } from '#lib/threads.js';
 	import { workerForToolCall } from '#lib/workers.js';

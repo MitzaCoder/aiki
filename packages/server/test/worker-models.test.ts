@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "bun:test";
 import type { Models } from "@earendil-works/pi-ai";
-import type { ModelRef, ThinkingLevel, WorkerModel } from "@aiki/protocol";
+import type { ModelRef, ThinkingLevel, WorkerModel } from "@kemiri/protocol";
 import { resolveWorkerModel } from "../src/workers.ts";
 
 const FAUX: ModelRef = { provider: "faux", modelId: "faux-1" };

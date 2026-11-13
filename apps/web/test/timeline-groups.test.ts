@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { BoardTimelineFact, BoardTimelineGroup, BoardTimelineKind } from '@aiki/protocol';
+import type { BoardTimelineFact, BoardTimelineGroup, BoardTimelineKind } from '@kemiri/protocol';
 import { filteredGroupLabel, timelineClock, timelineGroupNames, timelineGroupRange, timelineGroupTone, timelineGroupsSupported, visibleTimelineGroups } from '../src/lib/timeline-groups.js';
 const at = (minute: number) => new Date(2026, 0, 1, 14, minute).toISOString();
 const fact = (id: string, kind: BoardTimelineKind, label: string, outcome = 'recorded', minute = 0): BoardTimelineFact => ({ id, kind, label, outcome, at: at(minute), endAt: at(minute + 10), revision: 2, factCount: 2, group: 'work' });

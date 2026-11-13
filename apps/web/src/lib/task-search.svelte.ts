@@ -1,7 +1,7 @@
 import { taskNowText } from './task-activity.js';
 import { page } from '$app/state';
 import { untrack } from 'svelte';
-import type { BoardTask } from '@aiki/protocol';
+import type { BoardTask } from '@kemiri/protocol';
 import type { ProjectBoard } from './board.svelte.js';
 import { useRefLinks } from './ref-links.svelte.js';
 import { refLabel } from './tasks.js';

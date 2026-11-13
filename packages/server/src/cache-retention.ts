@@ -11,7 +11,7 @@ import { stateKind } from "./state-identity.ts";
  * "none"), and an untagged one is left alone. What "long" does per provider is pi-ai's: a one-hour `cache_control` on
  * Anthropic and Bedrock, a longer one on OpenAI's own API (where its compat allows), nothing on Codex.
  */
-import type { LongPromptCache } from "@aiki/protocol";
+import type { LongPromptCache } from "@kemiri/protocol";
 import type { CacheRetention, Models } from "@earendil-works/pi-ai";
 import { defineExtension, type Extension, GenerationTask, hook } from "@earendil-works/pi-durable";
 

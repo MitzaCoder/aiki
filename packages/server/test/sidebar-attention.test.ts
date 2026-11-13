@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { Board, WorkerSummary, ProjectAttention } from "@aiki/protocol";
+import type { Board, WorkerSummary, ProjectAttention } from "@kemiri/protocol";
 import { boardAttention, workerAttention, threadAttention, EMPTY_ATTENTION, ProjectAttentionStore } from "../src/sidebar-attention.ts";
 import { createSetup, TestClient, type TestSetup } from "./support.ts";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";

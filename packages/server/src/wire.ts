@@ -3,7 +3,7 @@ import type {
 	ConversationRecord as DurableConversationRecord,
 	EntryRecord as DurableEntryRecord,
 } from "@earendil-works/pi-durable";
-import type { ConversationRecord, EntryRecord } from "@aiki/protocol";
+import type { ConversationRecord, EntryRecord } from "@kemiri/protocol";
 
 export function wireEntry(entry: DurableEntryRecord): EntryRecord {
 	return {

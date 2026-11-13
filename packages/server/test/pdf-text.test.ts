@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { INPUT_TEXT_FILE_MAX_BYTES } from '@aiki/protocol';
+import { INPUT_TEXT_FILE_MAX_BYTES } from '@kemiri/protocol';
 import { syntheticPdf } from '../scripts/pdf-fixture.ts';
 import { extractPdfText, PDF_TEXT_MAX_PAGES, truncateUtf8 } from '../src/pdf-text.ts';
 

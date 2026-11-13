@@ -1,6 +1,6 @@
 <script lang="ts">
  import { DropdownMenu } from 'bits-ui';
- import type { BoardTaskStatus } from '@aiki/protocol';
+ import type { BoardTaskStatus } from '@kemiri/protocol';
  import TaskStatusBadge from './TaskStatusBadge.svelte';
  import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
  import { taskStatusToneClass, taskStatusWords } from '#lib/tasks.js';

@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { Board, BoardTask, ModelRef, Schedule, ScheduleInput, ScheduleSpec } from "@aiki/protocol";
+import type { Board, BoardTask, ModelRef, Schedule, ScheduleInput, ScheduleSpec } from "@kemiri/protocol";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { CommandResult, RunCommand } from "../src/host-commands.ts";

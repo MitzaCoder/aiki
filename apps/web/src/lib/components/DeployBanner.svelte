@@ -1,7 +1,7 @@
 <script lang="ts">
 	import XIcon from '@lucide/svelte/icons/x';
-	import { deployProblem } from '@aiki/client';
-	import type { DeployStatus, ServerStatus } from '@aiki/protocol';
+	import { deployProblem } from '@kemiri/client';
+	import type { DeployStatus, ServerStatus } from '@kemiri/protocol';
 	import Banner from '#lib/components/Banner.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { deployBanner, isDeployDismissed } from '#lib/server-status.js';

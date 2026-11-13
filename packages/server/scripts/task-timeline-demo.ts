@@ -2,7 +2,7 @@
 import { createSetup, TestClient, ViewClient } from '../test/support.ts';
 import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context';
 import { BoardDoc, TaskHistoryDoc } from '../src/board.ts';
-import type { BoardTimelineEntry } from '@aiki/protocol';
+import type { BoardTimelineEntry } from '@kemiri/protocol';
 
 const test = await createSetup({ allowedOrigins: [process.env.TIMELINE_WEB_ORIGIN ?? 'http://localhost:5188'], terminals: false });
 console.log(JSON.stringify({ dataDir: test.dataDir, configDir: test.configDir, projectDir: test.projectDir, pid: process.pid }));

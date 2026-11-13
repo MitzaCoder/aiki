@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { installPushBrowser } from './push-browser-mock.ts';
 import { IDBFactory } from 'fake-indexeddb';
-import { HarnessClient } from '@aiki/client';
-import { artifactUrlRefreshIn } from '@aiki/client';
-import { encodePairingFragment } from '@aiki/protocol';
+import { HarnessClient } from '@kemiri/client';
+import { artifactUrlRefreshIn } from '@kemiri/client';
+import { encodePairingFragment } from '@kemiri/protocol';
 import { createSetup, type TestSetup } from '../../../packages/server/test/support.ts';
 import {
 	BackendDeviceAuth,
@@ -483,7 +483,7 @@ test('web push sync rebinds an unreadable legacy row after migration', async () 
 	// Bun executes the class's ordinary TS directly. installPushBrowser supplies the rune stub
 	// and restores its descriptor without reading Svelte's throwing dev-mode $state getter.
 	// SSR component tests may install that getter first, depending on test discovery order.
-	const { applicationServerKey } = await import('@aiki/client');
+	const { applicationServerKey } = await import('@kemiri/client');
 	const browserSubscription = {
 		options: { applicationServerKey: applicationServerKey(await client.readNotificationsConfig()).buffer },
 		toJSON: () => subscription,

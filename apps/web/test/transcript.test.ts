@@ -4,7 +4,7 @@
  * its worker. Both are checked here, away from the components.
  */
 import { describe, expect, test } from "bun:test";
-import type { EntryRecord } from "@aiki/protocol";
+import type { EntryRecord } from "@kemiri/protocol";
 import {
 	codingGroupSummary,
 	buildTranscript,
@@ -18,7 +18,7 @@ import {
 	type ToolPart,
 } from "../src/lib/transcript.ts";
 import { workerForToolCall } from "../src/lib/workers.ts";
-import type { WorkerSummary } from "@aiki/protocol";
+import type { WorkerSummary } from "@kemiri/protocol";
 
 function userEntry(id: number, content: unknown, timestamp = 1_000): EntryRecord {
 	return {

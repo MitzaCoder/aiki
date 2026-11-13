@@ -1,13 +1,13 @@
 /**
  * The usage screen's words and shapes: durations, the pace in a sentence and its tone, the summary line, and the
  * geometry of the gauge and the chart. Pure, so every label is tested; the arithmetic itself (elapsed share, pace ratio,
- * projected exhaustion) is `@aiki/client`'s.
+ * projected exhaustion) is `@kemiri/client`'s.
  */
 import {
 	projectedUsedPercent,
 	type WindowPace,
-} from "@aiki/client";
-import type { SubscriptionUsage, UsageWindow } from "@aiki/protocol";
+} from "@kemiri/client";
+import type { SubscriptionUsage, UsageWindow } from "@kemiri/protocol";
 import { relativeTime } from "./relative-time.ts";
 
 const MINUTE_MS = 60_000;

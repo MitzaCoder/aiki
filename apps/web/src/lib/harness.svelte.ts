@@ -17,7 +17,7 @@ import {
 	type ProjectChange,
 	type WatchStatus,
 	type WorkerDefaultsSupport,
-} from "@aiki/client";
+} from "@kemiri/client";
 import {
 	HARNESS_FEATURES,
 	type AuthLogin,
@@ -48,7 +48,7 @@ import {
 	type ServerStatus,
 	type WorkerDefaults,
 	type WorkerSummary,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import {
 	backendIdFromName,
 	backendWebSocketUrl,
@@ -60,7 +60,7 @@ import {
 import { BackendDeviceAuth, authRequest, AuthHttpError, renewIn, browserDeviceLabel, type ClaimResult } from "./device-auth.ts";
 import { renewBackendAccess } from "./access-renewal.ts";
 import { STORAGE_WARNING } from "./device-credentials.ts";
-import type { AuthPairing } from "@aiki/protocol";
+import type { AuthPairing } from "@kemiri/protocol";
 import { contextAnswerIsCurrent } from "./context.ts";
 import { ProjectBoard } from "./board.svelte.ts";
 import { ProjectThreads } from "./threads.svelte.ts";

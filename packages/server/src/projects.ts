@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, realpath, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
-import type { ReportAuditSettings, LongPromptCache, ModelRef, ProjectCheckIns, ProjectLinks, ThinkingLevel, UiProof, WorkerModel } from "@aiki/protocol";
+import type { ReportAuditSettings, LongPromptCache, ModelRef, ProjectCheckIns, ProjectLinks, ThinkingLevel, UiProof, WorkerModel } from "@kemiri/protocol";
 import {
 	DEFAULT_CHECK_INS,
 	DEFAULT_REPORT_AUDIT,
@@ -14,7 +14,7 @@ import {
 	normalizeGithubRepo,
 	normalizeJiraSite,
 	THINKING_LEVELS,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { ServerError } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 

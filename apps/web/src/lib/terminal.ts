@@ -3,8 +3,8 @@
  * key bar and its sticky modifiers, and the xterm colours derived from the active theme's tones. Pure, so the
  * components only wire these to events and the behaviour is pinned in `test/terminal.test.ts`.
  */
-import { terminalPrefix } from "@aiki/protocol";
-import type { TerminalSessionInfo } from "@aiki/protocol";
+import { terminalPrefix } from "@kemiri/protocol";
+import type { TerminalSessionInfo } from "@kemiri/protocol";
 
 /** Per browser, like the backend list: the tabs each backend's terminal page has open. */
 export const TERMINAL_TABS_STORAGE_KEY = "aiki.terminal-tabs.v1";

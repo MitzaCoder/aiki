@@ -1,4 +1,4 @@
-import { markdownText, newRelayId, type NotificationsConfirmRelayRequest } from "@aiki/protocol";
+import { markdownText, newRelayId, type NotificationsConfirmRelayRequest } from "@kemiri/protocol";
 import type { PushRelayTransport } from "./push-relay/transport.ts";
 /**
  * Web Push notifications: one VAPID key pair for every backend, devices registered per backend, and one `Notifier` the
@@ -30,7 +30,7 @@ import {
 	type NotificationTransport,
 	type PushSubscription,
 	type ScheduleRun,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { Buffer } from "node:buffer";
 import { chmod } from "node:fs/promises";
 import { homedir } from "node:os";

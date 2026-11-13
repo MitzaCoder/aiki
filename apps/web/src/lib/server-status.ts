@@ -13,8 +13,8 @@ import {
 	shortCommit,
 	type DeployProblem,
 	type DiskLevel,
-} from "@aiki/client";
-import type { DeployStatus, DiskStatus, ReleaseInfo, ServerStatus } from "@aiki/protocol";
+} from "@kemiri/client";
+import type { DeployStatus, DiskStatus, ReleaseInfo, ServerStatus } from "@kemiri/protocol";
 import { formatBytes } from "./artifacts.ts";
 import { relativeTime } from "./relative-time.ts";
 

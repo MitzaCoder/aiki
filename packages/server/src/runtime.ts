@@ -1,5 +1,5 @@
 import { configureMcpRole, mcpRoleExtension, type McpService } from "./mcp.ts";
-import { DEFAULT_REPORT_AUDIT } from "@aiki/protocol";
+import { DEFAULT_REPORT_AUDIT } from "@kemiri/protocol";
 import { ChatFileStore } from "./chat-files.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 import { chooseAuditModel, emptyAuditRecord, auditDay, type ReportAuditRecord } from "./report-audit.ts";
@@ -23,7 +23,7 @@ import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite
 import type { ImageProcessor } from "@earendil-works/pi-durable/tools";
 import { createCodingTools } from "@earendil-works/pi-durable/tools";
 import type { SetTimer } from "@earendil-works/pi-durable";
-import type { MemoryMaintenanceSettings, MemoryScopeStatus } from "@aiki/protocol";
+import type { MemoryMaintenanceSettings, MemoryScopeStatus } from "@kemiri/protocol";
 import {
 	type ConversationContext,
 	type MemoryChange,
@@ -56,7 +56,7 @@ import {
 	type RefDetails,
 	type RefStatus,
 	NO_PROJECT_LINKS,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import {
 	DEFAULT_ACTIVITY,
 	ProjectActivityService,

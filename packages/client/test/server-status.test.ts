@@ -3,7 +3,7 @@
  * client's own contract, so they are pinned here without a server (the server side has its own tests).
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { DeployStatus, ReleaseInfo, ServerStatus } from "@aiki/protocol";
+import type { DeployStatus, ReleaseInfo, ServerStatus } from "@kemiri/protocol";
 import {
 	ClientError,
 	HarnessClient,

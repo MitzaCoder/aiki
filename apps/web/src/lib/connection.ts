@@ -3,7 +3,7 @@
  * pages show and the compact dot the projects sidebar's rail shows. Pure, so both
  * stay in step with the client's connection states.
  */
-import type { ClientState } from "@aiki/client";
+import type { ClientState } from "@kemiri/client";
 
 /** A tone for the badge's border and text, or the dot's fill. `muted` is before the first handshake. */
 export type ConnectionTone = "ok" | "warn" | "err" | "muted";

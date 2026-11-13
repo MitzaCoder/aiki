@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MCP_PRESET_GROUPS, parseMcpImport, mcpImportId, type McpImportRow, type McpListResponse, type McpPolicy, type McpServer } from '@aiki/protocol';
+  import { MCP_PRESET_GROUPS, parseMcpImport, mcpImportId, type McpImportRow, type McpListResponse, type McpPolicy, type McpServer } from '@kemiri/protocol';
   import type { BackendConnection } from '#lib/harness.svelte.js';
   import { filterMcpTools, mcpServerId, mcpStatus } from '#lib/mcp.js';
   import { mcpRequest } from '#lib/mcp-rpc.js';

@@ -12,10 +12,10 @@
 	import ThreadFacts from '#lib/components/chat/ThreadFacts.svelte';
 	import ThreadStatusBadge from '#lib/components/chat/ThreadStatusBadge.svelte';
 	import { exactTime, relativeTime } from '#lib/relative-time.js';
-	import { isThreadActive } from '@aiki/client';
+	import { isThreadActive } from '@kemiri/client';
 	import { sortThreads, threadActivityLine, threadStartedByText } from '#lib/threads.js';
 	import type { ProjectThreads } from '#lib/threads.svelte.js';
-	import type { ThreadSummary } from '@aiki/protocol';
+	import type { ThreadSummary } from '@kemiri/protocol';
 
 	/**
 	 * Main's background threads: what each does now, its workers and tasks, who started it and when, with open, stop

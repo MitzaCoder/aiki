@@ -4,7 +4,7 @@ import type { Op } from "@earendil-works/chord/delta";
 import type { MutableModels } from "@earendil-works/pi-ai";
 import { createModels } from "@earendil-works/pi-ai";
 import { fauxProvider, type FauxProviderHandle } from "@earendil-works/pi-ai/providers/faux";
-import type { ConversationView, ServerMessage } from "@aiki/protocol";
+import type { ConversationView, ServerMessage } from "@kemiri/protocol";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

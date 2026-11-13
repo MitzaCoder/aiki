@@ -2,7 +2,7 @@
  * Helpers on top of the protocol's board types: which project a pushed board belongs to, how a refused change reads, and
  * which transcript inputs are the harness's `[board]` notes, and how long a task has been in progress.
  */
-import { BOARD_PREFIX, TASK_REFERENCE_PREFIX, type Board, type BoardStateEvent, type BoardTask } from "@aiki/protocol";
+import { BOARD_PREFIX, TASK_REFERENCE_PREFIX, type Board, type BoardStateEvent, type BoardTask } from "@kemiri/protocol";
 
 /** A project's board as `board.get` and `board.state` carry it. */
 export type BoardSnapshot = { board: Board };

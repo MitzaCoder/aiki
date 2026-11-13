@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { ProjectSummary, ProjectAttention } from "@aiki/protocol";
+import type { ProjectSummary, ProjectAttention } from "@kemiri/protocol";
 import { attentionCount, needsYouLinks, projectAttentionActions, sidebarStatus } from "../src/lib/sidebar-attention.ts";
 import { projectRow } from "../src/lib/projects.ts";
 const empty: ProjectAttention = { questions: 0, warnings: 0, reviewTasks: 0, waitingTasks: 0, nextReturnAt: null, failedWorkers: 0, failedThreads: 0, runningWorkers: 0, questionTaskId: null, warningTaskId: null, reviewTaskId: null, failedWorkerTaskId: null, failedThreadId: null };

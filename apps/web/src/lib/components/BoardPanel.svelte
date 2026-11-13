@@ -12,7 +12,7 @@
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import TimerIcon from '@lucide/svelte/icons/timer';
-	import { inProgressText } from '@aiki/client';
+	import { inProgressText } from '@kemiri/client';
 	import { tick } from 'svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import Banner from '#lib/components/Banner.svelte';
@@ -44,7 +44,7 @@
 	import { taskStatusToneClass } from '#lib/tasks.js';
 	import type { ProjectBoard } from '#lib/board.svelte.js';
 	import { questionAskedBy, taskOwner } from '#lib/threads.js';
-	import type { BoardQuestion, BoardTask, BoardTaskStatus, ThreadSummary, WorkerSummary } from '@aiki/protocol';
+	import type { BoardQuestion, BoardTask, BoardTaskStatus, ThreadSummary, WorkerSummary } from '@kemiri/protocol';
 
 	/**
 	 * The project's board, the body of the sidebar's Board tab: the questions waiting on the user (answered right here),

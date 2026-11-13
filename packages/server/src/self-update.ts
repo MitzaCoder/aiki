@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ReleaseUpdateState, SelfUpdateState, ServerUpdateRequest } from "@aiki/protocol";
+import type { ReleaseUpdateState, SelfUpdateState, ServerUpdateRequest } from "@kemiri/protocol";
 import type { ToolCallDrain } from "./drain.ts";
 import { ServerError } from "./errors.ts";
 

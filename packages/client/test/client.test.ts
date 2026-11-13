@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
-import type { AuthLogin, ConversationView, WorkerDefaults, WorkerSummary } from "@aiki/protocol";
+import type { AuthLogin, ConversationView, WorkerDefaults, WorkerSummary } from "@kemiri/protocol";
 import {
 	ClientError,
 	HarnessClient,

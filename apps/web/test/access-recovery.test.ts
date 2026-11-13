@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'bun:test';
 import { IDBFactory } from 'fake-indexeddb';
-import { HarnessClient } from '@aiki/client';
+import { HarnessClient } from '@kemiri/client';
 import { createSetup } from '../../../packages/server/test/support.ts';
 import { BackendDeviceAuth, authRequest, type ClaimResult } from '../src/lib/device-auth.ts';
 import { DeviceCredentialStore, newClaimProof } from '../src/lib/device-credentials.ts';

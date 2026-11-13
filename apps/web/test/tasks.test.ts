@@ -5,7 +5,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { Board, BoardQuestion, BoardTask } from "@aiki/protocol";
+import type { Board, BoardQuestion, BoardTask } from "@kemiri/protocol";
 import {
 	diffLines,
 	firstLine,

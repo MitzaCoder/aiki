@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { markdownText } from '@aiki/protocol';
+	import { markdownText } from '@kemiri/protocol';
 	import CircleDotIcon from '@lucide/svelte/icons/circle-dot';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
 	import FlagIcon from '@lucide/svelte/icons/flag';
@@ -17,7 +17,7 @@
 	import { timelineOrder } from '#lib/timeline-order.svelte.js';
 	import { exactTime, relativeTime } from '#lib/relative-time.js';
 	import { TIMELINE_KINDS, timelineCounts, visibleTimeline } from '#lib/task-relations.js';
-	import type { BoardTimelineEntry, BoardTimelineFact, BoardTimelineGroup, BoardTimelineKind, BoardWriter } from '@aiki/protocol';
+	import type { BoardTimelineEntry, BoardTimelineFact, BoardTimelineGroup, BoardTimelineKind, BoardWriter } from '@kemiri/protocol';
 
 	/**
 	 * Everything that happened to a task, newest first by default: feedback and what became of it, status moves, workers, questions,

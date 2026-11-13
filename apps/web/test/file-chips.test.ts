@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { createServer } from 'vite';
-import type { ChatFile } from '@aiki/protocol';
+import type { ChatFile } from '@kemiri/protocol';
 
 test('file chip component renders name, size, type, accessible removal and download link', async () => {
 	const previousStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');

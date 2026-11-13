@@ -1,5 +1,22 @@
 # Continue
 
+## T167: atomic @kemiri workspace scope
+
+Root package is kemiri; protocol/client/server/web workspace packages and every
+active import/metadata/test/docs reference use @kemiri/*. Bun regenerated the lock
+without dependency-version changes. No Android files needed scope edits. Only one
+old scope reference remains, in this file’s historical project bootstrap notes.
+Persistent/wire IDs and relay’s independent unscoped package name are unchanged.
+
+Integration gates pass: root 2,627 tests / 93,261 assertions, typecheck, web check
+zero diagnostics, 1,105 web tests / 79,998 assertions, build, generic/private denylist
+and Gitleaks. The first root run caught an old startup-log regex; fixed in the web
+commit and full rerun passed. Linux x64 binary smoke compiles from the neutral
+release archive and runs without Bun on PATH: PDF text extraction, coordinator,
+worker report, QuickJS timeout/recovery and Photon decode/resize all pass. Its first
+runtime attempt lacked Git; supplying only Git/bash (not Bun) resolved that setup
+error. No bookmarks, push, live services, real accounts or devices were changed.
+
 ## T167: Kemiri web display name
 
 Web titles, manifests, Welcome/pairing, About/update instructions, MCP return text,

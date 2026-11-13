@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import type { JsonObject } from "@earendil-works/pi-durable";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { BoardTask, BoardTaskSnapshot, ModelRef } from "@aiki/protocol";
+import type { BoardTask, BoardTaskSnapshot, ModelRef } from "@kemiri/protocol";
 import {
 	type BoardState,
 	HARNESS_WRITER,

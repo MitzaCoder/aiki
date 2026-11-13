@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import type { JsonObject } from "@earendil-works/pi-durable";
-import type { Board, BoardFeedback, BoardTask, BoardTaskInput, ModelRef } from "@aiki/protocol";
+import type { Board, BoardFeedback, BoardTask, BoardTaskInput, ModelRef } from "@kemiri/protocol";
 import {
 	type BoardState,
 	type TaskHistoryState,

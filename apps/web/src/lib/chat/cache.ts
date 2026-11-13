@@ -3,7 +3,7 @@
  * miss, the footer's cached count, and a conversation's totals. Detection itself is the protocol's `CacheMissTracker`,
  * shared with the server; this only words its results.
  */
-import { type CacheMiss, type CacheMissTotals } from "@aiki/protocol";
+import { type CacheMiss, type CacheMissTotals } from "@kemiri/protocol";
 import { formatTokenCount as tokens } from "../context-usage.ts";
 import { exactTime } from "../relative-time.ts";
 import type { TurnUsage } from "../transcript.ts";

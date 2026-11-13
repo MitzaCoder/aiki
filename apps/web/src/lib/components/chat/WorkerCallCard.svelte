@@ -4,7 +4,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { Badge } from '#lib/components/ui/badge/index.js';
 	import { workerScheduleLabel } from '#lib/schedules.js';
-	import type { WorkerSummary } from '@aiki/protocol';
+	import type { WorkerSummary } from '@kemiri/protocol';
 	import type { ToolPart } from '#lib/transcript.js';
 	import { workerPlace, workerSendLine, workerToolAction } from '#lib/workers.js';
 	import WorkerStatusBadge from './WorkerStatusBadge.svelte';

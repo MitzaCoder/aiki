@@ -4,7 +4,7 @@ import { fauxAssistantMessage } from '@earendil-works/pi-ai/providers/faux';
 import { createSetup, TestClient, ViewClient } from '../test/support.ts';
 import { BoardDoc } from '../src/board.ts';
 import { WorkersDoc, type WorkerRecord } from '../src/workers.ts';
-import type { BoardTaskInput } from '@aiki/protocol';
+import type { BoardTaskInput } from '@kemiri/protocol';
 
 const origin = process.env.GRAPH_WEB_ORIGIN ?? 'http://localhost:5173';
 const output = process.env.GRAPH_DEMO_OUTPUT ?? '/tmp/task-graph-demo.json';

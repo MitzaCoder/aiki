@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ArtifactFilter, HarnessClient } from '@aiki/client';
+	import type { ArtifactFilter, HarnessClient } from '@kemiri/client';
 	import ArtifactList from './ArtifactList.svelte';
 
 	/**

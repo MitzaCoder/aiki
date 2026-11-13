@@ -1,4 +1,4 @@
-import type { ServerStatus } from "@aiki/protocol";
+import type { ServerStatus } from "@kemiri/protocol";
 import { visibleReleaseUpdate } from "./release-updates.ts";
 
 /** Normalize release tags, but leave commit IDs and dev labels alone. */

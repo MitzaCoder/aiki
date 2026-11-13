@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { SubscriptionResetCredit } from '@aiki/protocol';
+import type { SubscriptionResetCredit } from '@kemiri/protocol';
 import { groupResets, resetExplanation, resetExpiry, resetUnavailableReason } from '../src/lib/subscription-resets.ts';
 const fable: SubscriptionResetCredit = { id: 'synthetic-fable', label: 'Fable reset', program: 'cedar_ember', remaining: 1, usable: true, expiresAt: '2027-03-09T23:59:59Z', clears: ['five_hour', 'seven_day_overage_included'], givesBackWeekly: true };
 describe('limit reset rows', () => {

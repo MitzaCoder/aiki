@@ -1,5 +1,5 @@
 import { expect, it } from 'bun:test';
-import type { McpOAuthFlow } from '@aiki/protocol';
+import type { McpOAuthFlow } from '@kemiri/protocol';
 import { HarnessClient, type HarnessWebSocket } from '../src/index.ts';
 
 it('delivers MCP OAuth events, isolates listeners and stops after unsubscribe', async () => {

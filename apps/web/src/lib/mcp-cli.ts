@@ -1,4 +1,4 @@
-import { mcpCliSetupMessage } from '@aiki/protocol';
+import { mcpCliSetupMessage } from '@kemiri/protocol';
 /** Same submission path as the chat composer; open only after server admission. */
 export async function askCoordinatorForMcpCli(
  client: { submit(projectId: string, content: string, options: { whenBusy: 'steer' }): Promise<unknown> },

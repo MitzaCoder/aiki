@@ -3,7 +3,7 @@
  * user message shows again.
  */
 import { describe, expect, test } from "bun:test";
-import { parseTaskReference, withTaskReference } from "@aiki/client";
+import { parseTaskReference, withTaskReference } from "@kemiri/client";
 import {
 	messageWithQuotes,
 	quoteFromSelection,

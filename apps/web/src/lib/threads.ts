@@ -7,14 +7,14 @@
  * title and says plainly that it works in the background.
  */
 import type { Snippet } from "svelte";
-import { isMainThread, parseThreadInput, type ThreadInput } from "@aiki/client";
+import { isMainThread, parseThreadInput, type ThreadInput } from "@kemiri/client";
 import {
 	MAIN_THREAD_ID,
 	type BoardQuestion,
 	type BoardTask,
 	type ThreadStatus,
 	type ThreadSummary,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 
 /** The coordinator's thread tools. `thread_finish` is a background thread's own. */
 export const THREAD_TOOL_NAMES = [

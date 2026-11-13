@@ -2,7 +2,7 @@
  * Helpers on top of the protocol's artifact types: which lists a pushed change belongs to, how a list takes it in, and
  * when a signed URL should be asked for again.
  */
-import type { Artifact, ArtifactsChangedEvent } from "@aiki/protocol";
+import type { Artifact, ArtifactsChangedEvent } from "@kemiri/protocol";
 
 /** The filters `artifacts.list` takes besides the project; together they narrow the list. */
 export type ArtifactFilter = { artifactId?: string; threadId?: string; workerId?: string; taskId?: string };

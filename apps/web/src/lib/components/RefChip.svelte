@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ProjectLinks, RefStatus } from '@aiki/protocol';
+	import type { ProjectLinks, RefStatus } from '@kemiri/protocol';
 	import { refHref, refStatusToneClass, refTooltip } from '#lib/refs.js';
 	import { refLabel } from '#lib/tasks.js';
 

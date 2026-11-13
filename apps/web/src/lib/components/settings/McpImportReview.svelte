@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { McpImportRow } from '@aiki/protocol';
+  import type { McpImportRow } from '@kemiri/protocol';
   let { entries, checked = $bindable<string[]>([]) }: { entries: McpImportRow[]; checked?: string[] } = $props();
 </script>
 <div class="flex flex-col gap-4">

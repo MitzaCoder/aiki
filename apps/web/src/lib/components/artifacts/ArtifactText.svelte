@@ -12,8 +12,8 @@
 	import WrapTextIcon from '@lucide/svelte/icons/wrap-text';
 	import CodeXmlIcon from '@lucide/svelte/icons/code-xml';
 	import BookOpenTextIcon from '@lucide/svelte/icons/book-open-text';
-	import type { HarnessClient } from '@aiki/client';
-	import type { Artifact } from '@aiki/protocol';
+	import type { HarnessClient } from '@kemiri/client';
+	import type { Artifact } from '@kemiri/protocol';
 	import CopyButton from '#lib/components/CopyButton.svelte';
 	import Markdown from '#lib/components/markdown/Markdown.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';

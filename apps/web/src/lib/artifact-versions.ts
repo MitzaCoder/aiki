@@ -1,4 +1,4 @@
-import type { Artifact } from "@aiki/protocol";
+import type { Artifact } from "@kemiri/protocol";
 
 /** Snapshot IDs pin all preview/download leases to bytes rather than a moving latest ID. */
 export function artifactVersions(artifact: Artifact): Artifact[] {

@@ -8,7 +8,7 @@ import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import { estimateTextTokens } from "@earendil-works/pi-ai/utils/estimate";
-import type { Board, BoardTask, BoardTaskInput, ConversationView, ModelRef, WorkerModel } from "@aiki/protocol";
+import type { Board, BoardTask, BoardTaskInput, ConversationView, ModelRef, WorkerModel } from "@kemiri/protocol";
 import {
 	type BoardState,
 	addDecision,

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { parseMcpImport } from '@aiki/protocol';
+import { parseMcpImport } from '@kemiri/protocol';
 import { createServer } from 'vite';
 
 test('command confirmation shows exact argv/cwd, masks env and renders command metadata as plain text', async () => {

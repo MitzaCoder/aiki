@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { applyImmutable, type Op } from "@earendil-works/chord/delta";
 import { createModels } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { ConversationView, ServerMessage } from "@aiki/protocol";
+import type { ConversationView, ServerMessage } from "@kemiri/protocol";
 import { loadServerEnv, resolvedServerConfig } from "../src/server-env.ts";
 import { configureServerSettings } from "../src/server-settings.ts";
 import { packagedResources } from "../src/packaged-resources.ts";

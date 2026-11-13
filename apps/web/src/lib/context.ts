@@ -10,7 +10,7 @@ import type {
 	SkillInfo,
 	SkillSource,
 	ToolInfo,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 
 /** What the path helpers need to shorten an absolute path; `homeDir` may be absent from an older backend. */
 export type PathRoots = {

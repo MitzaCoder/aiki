@@ -17,7 +17,7 @@
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { Context } from "@earendil-works/chord/context";
 import type { Conversation, ConversationView, EntryRecord } from "@earendil-works/pi-durable";
-import type { ProjectActivity, ProjectRunningTool } from "@aiki/protocol";
+import type { ProjectActivity, ProjectRunningTool } from "@kemiri/protocol";
 
 type LiveToolSlot = { callId: string; name: string; status: string };
 

@@ -3,7 +3,7 @@ import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import type { JsonObject, SetTimer } from "@earendil-works/pi-durable";
-import { DEFAULT_CHECK_INS, DEFAULT_LONG_PROMPT_CACHE, DEFAULT_UI_PROOF } from "@aiki/protocol";
+import { DEFAULT_CHECK_INS, DEFAULT_LONG_PROMPT_CACHE, DEFAULT_UI_PROOF } from "@kemiri/protocol";
 import type {
 	BoardTask,
 	ConversationContext,
@@ -11,7 +11,7 @@ import type {
 	ModelRef,
 	ThreadSummary,
 	WorkersListResponse,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
 import { type BoardState, changeOwner, emptyBoardState, saveTask } from "../src/board.ts";

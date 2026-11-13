@@ -1,4 +1,4 @@
-import type { BoardTask, BoardTaskActivity } from '@aiki/protocol';
+import type { BoardTask, BoardTaskActivity } from '@kemiri/protocol';
 import { relativeTime } from './relative-time.js';
 
 export function taskActivitySupported(features: readonly string[] | undefined): boolean {

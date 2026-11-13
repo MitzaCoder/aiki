@@ -6,7 +6,7 @@ import { InboxDoc, type JsonObject } from "@earendil-works/pi-durable";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { NO_NEW_WORKER_REPORT, WorkersDoc } from "../src/workers.ts";
 import { openBoard, saveTask } from "../src/board.ts";
-import type { ConversationView, ModelRef, WorkerModel, WorkersListResponse } from "@aiki/protocol";
+import type { ConversationView, ModelRef, WorkerModel, WorkersListResponse } from "@kemiri/protocol";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { SetTimer } from "@earendil-works/pi-durable";

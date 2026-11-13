@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
-import { markdownText } from "@aiki/protocol";
-import { isNotificationFailure, notificationUrl, parseNotificationPayload } from "@aiki/client";
-import type { NotificationPayload } from "@aiki/protocol";
+import { markdownText } from "@kemiri/protocol";
+import { isNotificationFailure, notificationUrl, parseNotificationPayload } from "@kemiri/client";
+import type { NotificationPayload } from "@kemiri/protocol";
 import { PUSH_CHANGED_MESSAGE, setPushSyncNeeded } from "../lib/push-sync.ts";
 
 /** Shared presentation and root-app click routing; never authentication or subscription creation. */

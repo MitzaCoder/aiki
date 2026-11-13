@@ -4,7 +4,7 @@ import { expect, it } from "bun:test";
 import { createModels } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxProvider, fauxToolCall, fauxThinking, fauxText, type FauxResponseStep } from "@earendil-works/pi-ai/providers/faux";
 import { estimateTextTokens } from "@earendil-works/pi-ai/utils/estimate";
-import { DEFAULT_REPORT_AUDIT, LEGACY_HARNESS_FEATURES, HARNESS_FEATURES, type ReportAuditSettings } from "@aiki/protocol";
+import { DEFAULT_REPORT_AUDIT, LEGACY_HARNESS_FEATURES, HARNESS_FEATURES, type ReportAuditSettings } from "@kemiri/protocol";
 import { askQuestion, coordinatorWriter, emptyBoardState, saveTask, writeReport, type BoardState } from "../src/board.ts";
 import { acknowledgeReportNudge, markReportStale, noteTaskFact, prepareReportNudges } from "../src/task-freshness.ts";
 import { AUDIT_SYSTEM, AUDIT_HOUR_MS, ReportAuditService, auditEligible, auditTaskInput, chooseAuditModel, parseAuditVerdicts } from "../src/report-audit.ts";

@@ -8,7 +8,7 @@
 	import type { ProjectBoard } from '#lib/board.svelte.js';
 	import type { TasksViewMode } from '#lib/kanban.js';
 	import { tasksView } from '#lib/tasks-view.svelte.js';
-	import type { ThreadSummary, WorkerSummary } from '@aiki/protocol';
+	import type { ThreadSummary, WorkerSummary } from '@kemiri/protocol';
 
 	/**
 	 * The full-width Tasks view: list, board or graph, with a switch this device remembers. The sidebar

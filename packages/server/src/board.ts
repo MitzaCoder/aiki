@@ -2,7 +2,7 @@ import { buildTimelineGroups, recordTimelineRun, timelineId, upsertTimelineFact 
 import { deploySummary, type TaskDeployFact } from "./task-deploys.ts";
 import { activityTracking, taskActivity, endActivitySource, setActivityPhase, type TaskActivityTracking, DELIVERY_ACTIVITY_MS } from "./task-activity.ts";
 import type { Models } from "@earendil-works/pi-ai";
-import { DEFAULT_REPORT_AUDIT } from "@aiki/protocol";
+import { DEFAULT_REPORT_AUDIT } from "@kemiri/protocol";
 import { ReportAuditService, type ReportAuditRecord } from "./report-audit.ts";
 import { initializeTaskFreshness, coverReportSection, noteTaskFact, markReportStale, prepareReportNudges, acknowledgeReportNudge, reportDueAt, sweepReportAge, substantiveTaskMentions, reportChatUserTasks, REPORT_SECTIONS, REPORT_SWEEP_MS, type ReportSection, type TaskFact, type TaskReportTracking, type ReportOutbox } from "./task-freshness.ts";
 import { stateKind } from "./state-identity.ts";
@@ -48,7 +48,7 @@ import {
 	type BoardTimelineEntry,
 	type BoardTimelineKind,
 	type BoardWriter,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { estimateTextTokens } from "@earendil-works/pi-ai/utils/estimate";
 import { createHash } from "node:crypto";
 import { type Static, Type } from "typebox";
@@ -174,7 +174,7 @@ export type TaskHistoryState = {
 	/** What happened that nothing else on the board records: workers started and reported, link changes. Oldest first. Absent before links. */
 	events?: BoardTimelineEntry[];
  /** Stable evolving entries; legacy events/snapshots are folded only on read. */
- timelineEntries?: import("@aiki/protocol").BoardTimelineFact[];
+ timelineEntries?: import("@kemiri/protocol").BoardTimelineFact[];
 	/** The task's feedback entries, oldest first. Absent before feedback. */
 	feedback?: BoardFeedback[];
 	/** Request IDs of messages already recorded as feedback, with the entry each made, so a re-sent message adds none. */
@@ -2021,7 +2021,7 @@ export class BoardService {
 	 * A task's timeline, oldest first, and its feedback entries (open ones first). `kinds` keeps only those kinds of entry.
 	 * `unknown_task` when the board has no such task.
 	 */
-	async timeline(taskId: string, kinds?: readonly BoardTimelineKind[], grouped = false): Promise<{ entries: BoardTimelineEntry[]; feedback: BoardFeedback[]; groups?: import("@aiki/protocol").BoardTimelineGroup[]; timelineRevision?: number }> {
+	async timeline(taskId: string, kinds?: readonly BoardTimelineKind[], grouped = false): Promise<{ entries: BoardTimelineEntry[]; feedback: BoardFeedback[]; groups?: import("@kemiri/protocol").BoardTimelineGroup[]; timelineRevision?: number }> {
 		const state = await this.state();
 		if (!state.tasks.some((task) => task.id === taskId)) throw unknownTask(taskId);
 		const history = await this.#options.harness.snapshot(TaskHistoryDoc, this.coordinator.id, taskId, BACKGROUND_CONTEXT);

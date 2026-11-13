@@ -13,7 +13,7 @@ import {
 	type DraftAttachment,
 	type InputContent,
 	type InputImageMimeType,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 
 /** The smallest long edge a shrunk image is stepped down to before giving up. */
 export const MIN_ENCODE_EDGE = 800;

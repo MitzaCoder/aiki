@@ -1,5 +1,5 @@
 /** Replaced by the binary builder with file imports. Source installs keep the published package layout. */
-import type { ReleaseInfo } from "@aiki/protocol";
+import type { ReleaseInfo } from "@kemiri/protocol";
 
 export type PackagedResources = {
 	web?: Readonly<Record<string, string>>;

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import type { ConversationView, EntryRecord } from "@earendil-works/pi-durable";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { ModelRef, ProjectActivity } from "@aiki/protocol";
+import type { ModelRef, ProjectActivity } from "@kemiri/protocol";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

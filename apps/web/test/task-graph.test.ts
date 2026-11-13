@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@aiki/protocol';
+import type { BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@kemiri/protocol';
 import { buildTaskGraph, graphLabel, graphNeighborhood, reconcileGraphPositions, stepGraphLayout } from '../src/lib/task-graph.ts';
 import { loadTasksViewMode } from '../src/lib/kanban.ts';
 function task(id:string, extra:Partial<BoardTask>={}):BoardTask {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import type { AuthLogin, ServerMessage } from "@aiki/protocol";
+import type { AuthLogin, ServerMessage } from "@kemiri/protocol";
 import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

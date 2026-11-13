@@ -5,8 +5,8 @@
  * A schedule's times are in the backend's timezone, never the browser's: the harness fires them on the server, so the
  * app shows both a relative phrase and the absolute time with the timezone named.
  */
-import { latestScheduleRun } from "@aiki/client";
-import { isEventSpec, normalizeGithubRepo } from "@aiki/protocol";
+import { latestScheduleRun } from "@kemiri/client";
+import { isEventSpec, normalizeGithubRepo } from "@kemiri/protocol";
 import type {
 	ModelRef,
 	Schedule,
@@ -16,7 +16,7 @@ import type {
 	ScheduleSpec,
 	ThinkingLevel,
 	WorkerIsolation,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { relativeTime } from "./relative-time.ts";
 
 /** Sunday first, as the protocol numbers days. */

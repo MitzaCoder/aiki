@@ -2,7 +2,7 @@
 import { randomBytes } from 'node:crypto';
 import { mkdir, open, readFile, readdir, rm, lstat } from 'node:fs/promises';
 import { basename, extname, join, resolve } from 'node:path';
-import { INPUT_FILE_MAX_BYTES, INPUT_MAX_FILES, INPUT_TEXT_FILE_MAX_BYTES, fileMessageText, type ChatFile, type InputContent } from '@aiki/protocol';
+import { INPUT_FILE_MAX_BYTES, INPUT_MAX_FILES, INPUT_TEXT_FILE_MAX_BYTES, fileMessageText, type ChatFile, type InputContent } from '@kemiri/protocol';
 import { ServerError } from './errors.ts';
 import { extractPdfText } from './pdf-text.ts';
 

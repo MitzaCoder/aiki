@@ -6,7 +6,7 @@
 	import SettingsSection from '#lib/components/settings/SettingsSection.svelte';
 	import type { BackendConnection } from '#lib/harness.svelte.js';
 	import { SaveState } from '#lib/save-state.svelte.js';
-	import { DEFAULT_LONG_PROMPT_CACHE, type LongPromptCache } from '@aiki/protocol';
+	import { DEFAULT_LONG_PROMPT_CACHE, type LongPromptCache } from '@kemiri/protocol';
 
 	/** Project → Prompt cache: who gets the one-hour cache. One choice, saved when picked. */
 	let { backend, projectId }: { backend: BackendConnection; projectId: string } = $props();

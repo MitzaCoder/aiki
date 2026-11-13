@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { HARNESS_FEATURES, newRelayId, newRelaySecret } from "@aiki/protocol";
+import { HARNESS_FEATURES, newRelayId, newRelaySecret } from "@kemiri/protocol";
 import { readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { authClient, authSetup, httpEnroll } from "./device-auth-test-support.ts";

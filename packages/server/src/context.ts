@@ -31,7 +31,7 @@ import type {
 	SkillInfo,
 	SkillSource,
 	ToolInfo,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { type Dirent, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { taskStatusToneClass, taskStatusWords } from '#lib/tasks.js';
-	import type { BoardTaskStatus } from '@aiki/protocol';
+	import type { BoardTaskStatus } from '@kemiri/protocol';
 
 	/** A task's status as a pill in its own colour (see `base.css`), the same one its row's edge and its chip's dot wear. */
 	let {

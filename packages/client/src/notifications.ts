@@ -10,7 +10,7 @@ import {
 	type NotificationKind,
 	type NotificationPayload,
 	type NotificationPreferences,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 
 /**
  * Every kind the protocol declares, in its order. The protocol exports the type and the two lists but not the schema, so

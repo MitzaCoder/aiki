@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ProjectLinks } from "@aiki/protocol";
+import type { ProjectLinks } from "@kemiri/protocol";
 import {
 	boardRefFor,
 	cardRefLabel,

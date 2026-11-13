@@ -4,7 +4,7 @@
  * project settings page share one search and it can be tested without a
  * component.
  */
-import type { ModelInfo, ModelRef, ProviderInfo } from "@aiki/protocol";
+import type { ModelInfo, ModelRef, ProviderInfo } from "@kemiri/protocol";
 import type { ComboOption } from "./combobox.ts";
 
 /** How a model is named on the wire and in a list key: `provider/modelId`. */

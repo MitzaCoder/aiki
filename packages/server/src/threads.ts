@@ -55,7 +55,7 @@ import {
 	type ThreadStatus,
 	type ThreadSummary,
 	type WorkerSummary,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { Type } from "typebox";

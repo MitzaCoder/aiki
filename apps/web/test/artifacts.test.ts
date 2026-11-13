@@ -3,7 +3,7 @@
  * lightbox's zoom and pan.
  */
 import { describe, expect, test } from "bun:test";
-import type { Artifact } from "@aiki/protocol";
+import type { Artifact } from "@kemiri/protocol";
 import {
 	ZOOM_FIT,
 	ZOOM_MAX,

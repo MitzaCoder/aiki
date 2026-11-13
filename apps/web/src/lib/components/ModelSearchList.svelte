@@ -4,7 +4,7 @@
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import type { Snippet } from 'svelte';
 	import { groupModels } from '#lib/models.js';
-	import type { ModelInfo, ProviderInfo } from '@aiki/protocol';
+	import type { ModelInfo, ProviderInfo } from '@kemiri/protocol';
 
 	/**
 	 * The searchable model catalog: a filter over every model a backend offers,

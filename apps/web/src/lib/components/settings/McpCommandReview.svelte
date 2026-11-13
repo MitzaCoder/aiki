@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { McpImportRow } from '@aiki/protocol';
+  import type { McpImportRow } from '@kemiri/protocol';
   let { entries, retainedEnvNames }: { entries: McpImportRow[]; retainedEnvNames?: string[] } = $props();
 </script>
 {#each entries.filter(row => row.command) as row}

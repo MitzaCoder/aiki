@@ -3,7 +3,7 @@
  * over to the entry the run placed it as (by submission ID, never by text).
  */
 import { describe, expect, test } from "bun:test";
-import type { EntryRecord, QueuedInput } from "@aiki/protocol";
+import type { EntryRecord, QueuedInput } from "@kemiri/protocol";
 import { buildTranscript, isTypedInput, type TranscriptItem } from "../src/lib/transcript.ts";
 import {
 	departures,

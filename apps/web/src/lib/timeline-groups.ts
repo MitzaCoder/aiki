@@ -1,4 +1,4 @@
-import type { BoardTimelineFact, BoardTimelineGroup, BoardTimelineGroupKind, BoardTimelineKind } from '@aiki/protocol';
+import type { BoardTimelineFact, BoardTimelineGroup, BoardTimelineGroupKind, BoardTimelineKind } from '@kemiri/protocol';
 import type { TimelineOrder } from './task-timeline.js';
 
 export function timelineGroupsSupported(features: readonly string[] | undefined): boolean {

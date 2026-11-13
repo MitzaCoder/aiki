@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { BoardTask, BoardTimelineEntry, BoardTimelineFact, BoardTimelineGroup, BoardTimelineGroupKind, BoardTimelineKind } from "@aiki/protocol";
+import type { BoardTask, BoardTimelineEntry, BoardTimelineFact, BoardTimelineGroup, BoardTimelineGroupKind, BoardTimelineKind } from "@kemiri/protocol";
 import type { BoardState, TaskHistoryState } from "./board.ts";
 
 /** Hash source keys, not labels/timestamps that change as work advances. */
@@ -132,7 +132,7 @@ export function timelineGroupLabel(group: BoardTimelineGroup): string {
 }
 
 /** Lifecycle-only projection; phase/check-in/report rewrites never call this reducer. */
-export function recordTimelineRun(history: TaskHistoryState, task: BoardTask, actor: import("@aiki/protocol").BoardActivityActor, outcome: string, at: string, detail: string): void {
+export function recordTimelineRun(history: TaskHistoryState, task: BoardTask, actor: import("@kemiri/protocol").BoardActivityActor, outcome: string, at: string, detail: string): void {
  if (actor.kind === "coordinator") return;
  const previous = [...(history.timelineEntries ?? [])].reverse().find(entry => entry.source === actor.kind && entry.actor?.conversationId === actor.conversationId && entry.actor.threadId === actor.threadId);
  const exact = history.timelineEntries?.find(entry => entry.actor?.id === actor.id);

@@ -1,7 +1,7 @@
 /**
  * This browser's notifications: independent push subscriptions, one device identity, and a registration on every backend that
  * offers them. Svelte runes live here; the wording and the decision rules are in `notifications.ts`, and the wire
- * helpers in `@aiki/client`.
+ * helpers in `@kemiri/client`.
  *
  * The root app-shell worker preserves legacy push; separate scoped workers handle independent keys. Workers only
  * mark subscription changes for signed-in page repair. Presence still holds pushes while the app is open
@@ -25,8 +25,8 @@ import {
 	withMutedProject,
 	type DeviceNotificationSettings,
 	type QuietHours,
-} from "@aiki/client";
-import type { NotificationDevice, NotificationKind } from "@aiki/protocol";
+} from "@kemiri/client";
+import type { NotificationDevice, NotificationKind } from "@kemiri/protocol";
 import type { BackendConnection } from "./harness.svelte.ts";
 import {
 	backendNotificationView,

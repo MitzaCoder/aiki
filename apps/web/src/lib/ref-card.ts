@@ -12,7 +12,7 @@ import {
 	type ResolvedRef,
 	refIdentity,
 	resolveRef,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 
 /** What a card can be about: a GitHub pull request or issue, or a Jira ticket. */
 export type CardRef = Exclude<ResolvedRef, { source: "web" }>;

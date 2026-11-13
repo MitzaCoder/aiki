@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { ArtifactFilter, HarnessClient } from '@aiki/client';
-	import type { Artifact, ArtifactKind } from '@aiki/protocol';
+	import type { ArtifactFilter, HarnessClient } from '@kemiri/client';
+	import type { Artifact, ArtifactKind } from '@kemiri/protocol';
 	import { artifactTitle, filterByKind, formatBytes, formatMediaDuration, kindCounts, kindLabel, savedByLabel } from '#lib/artifacts.js';
 	import { useArtifactFeed } from '#lib/artifacts.svelte.js';
 	import { exactTime, relativeTime } from '#lib/relative-time.js';

@@ -5,7 +5,7 @@
 	import { draftKey } from '#lib/drafts.js';
 	import { draftChannel } from '#lib/draft-channel.js';
 	import type { BackendConnection } from '#lib/harness.svelte.js';
-	import type { ChatFile } from '@aiki/protocol';
+	import type { ChatFile } from '@kemiri/protocol';
 
 	/** Keyed by task in TaskSheet: its draft and send result cannot leak to the next opened task. */
 	let { backend, projectId, taskId }: { backend: BackendConnection; projectId: string; taskId: string } = $props();

@@ -4,7 +4,7 @@
 	import Markdown from './markdown/Markdown.svelte';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import Maximize2Icon from '@lucide/svelte/icons/maximize-2';
-	import { markdownText } from '@aiki/protocol';
+	import { markdownText } from '@kemiri/protocol';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
 	import LayersIcon from '@lucide/svelte/icons/layers';
@@ -13,7 +13,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import type { AnswerOutcome } from '#lib/board.svelte.js';
-	import type { BoardQuestion } from '@aiki/protocol';
+	import type { BoardQuestion } from '@kemiri/protocol';
 
 	/**
 	 * One question the coordinator asked: its text, the options it suggests as chips, and a free-text answer. Used in the

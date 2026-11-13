@@ -3,7 +3,7 @@
  * service, and the state file is real (a temp dir), so a restart is a second `Notifier` on the same directory.
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import { DEFAULT_NOTIFICATION_KINDS, NOTIFICATION_HOLD_MS, type NotificationPreferences } from "@aiki/protocol";
+import { DEFAULT_NOTIFICATION_KINDS, NOTIFICATION_HOLD_MS, type NotificationPreferences } from "@kemiri/protocol";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

@@ -1,5 +1,5 @@
 /** Text-only PDF fallback. unpdf's serverless PDF.js bundle needs no canvas, native module or external worker file. */
-import { INPUT_TEXT_FILE_MAX_BYTES } from '@aiki/protocol';
+import { INPUT_TEXT_FILE_MAX_BYTES } from '@kemiri/protocol';
 
 export interface PdfText {
 	text: string;

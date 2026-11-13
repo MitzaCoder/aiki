@@ -1,4 +1,4 @@
-import type { RefStatus } from '@aiki/protocol';
+import type { RefStatus } from '@kemiri/protocol';
 
 /** Compact counts plus the most actionable live state; missing status is never treated as done. */
 export function taskRefSummary(statuses: readonly (RefStatus | undefined)[]): { counts: string; status: string; attention: boolean } {

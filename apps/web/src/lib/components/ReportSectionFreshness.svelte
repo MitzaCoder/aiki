@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { BoardReportSection } from '@aiki/protocol';
+	import type { BoardReportSection } from '@kemiri/protocol';
 	import { reportSectionAge, reportSectionReasons } from '#lib/report-freshness.js';
 	import { exactTime } from '#lib/relative-time.js';
 	let { section, emptyResults = false }: { section: BoardReportSection; emptyResults?: boolean } = $props();

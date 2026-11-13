@@ -6,7 +6,7 @@
 import { readdir, realpath, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join } from "node:path";
-import { COMPLETION_LIMIT, type DirectoryEntry } from "@aiki/protocol";
+import { COMPLETION_LIMIT, type DirectoryEntry } from "@kemiri/protocol";
 import { ServerError } from "./errors.ts";
 
 /** A directory with more subdirectories than this lists the first ones and says so. Keeps a phone responsive. */

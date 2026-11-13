@@ -3,7 +3,7 @@
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
 	import XIcon from '@lucide/svelte/icons/x';
-	import { fileSizeLabel, type ChatFile } from '@aiki/protocol';
+	import { fileSizeLabel, type ChatFile } from '@kemiri/protocol';
 	import { fileDownload } from '#lib/chat/file-scope.js';
 	let { files, onremove }: { files: readonly ChatFile[]; onremove?: (id: string) => void } = $props();
 	const download = fileDownload();

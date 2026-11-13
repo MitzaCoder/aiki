@@ -5,7 +5,7 @@
  *
  * Everything that can be decided without state lives in `projects.ts`.
  */
-import type { ProjectActivity } from "@aiki/protocol";
+import type { ProjectActivity } from "@kemiri/protocol";
 import {
 	loadProjectSeens,
 	loadProjectsNavState,

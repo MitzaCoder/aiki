@@ -1,4 +1,4 @@
-import type { UsageGroup } from '@aiki/protocol';
+import type { UsageGroup } from '@kemiri/protocol';
 export const USAGE_TABS = ['Overview', 'By role', 'By model', 'Projects & tasks', 'Waste'] as const;
 export type UsageTab = (typeof USAGE_TABS)[number];
 export function usageTabKey(tab: UsageTab): string {

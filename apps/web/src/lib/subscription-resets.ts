@@ -1,4 +1,4 @@
-import type { SubscriptionResetCredit } from '@aiki/protocol';
+import type { SubscriptionResetCredit } from '@kemiri/protocol';
 
 export type ResetGroup = { credit: SubscriptionResetCredit; remaining: number };
 /** Group only interchangeable grants. Keep their opaque IDs for an explicit single-grant spend. */

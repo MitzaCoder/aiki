@@ -2,7 +2,7 @@
  * Backend configuration: the list a browser keeps in localStorage, and the URLs routes use. Pure helpers, no runes,
  * so they can be tested and imported anywhere in the app.
  */
-import { threadAnchor } from "@aiki/client";
+import { threadAnchor } from "@kemiri/client";
 
 /** One configured harness backend: a stable ID for routes, a display name, and its origin. */
 export type BackendConfig = {

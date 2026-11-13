@@ -1,4 +1,4 @@
-import type { Board, BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@aiki/protocol';
+import type { Board, BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@kemiri/protocol';
 
 export const FIXTURE_NOW = '2026-06-12T12:00:00Z';
 export const FAMILY_NAMES = ['Access & identity', 'Reliable sync', 'Search & discovery', 'Release readiness', 'Usage insights', 'Workspace setup', 'Notifications', 'File review', 'Team handoff', 'Mobile polish'];

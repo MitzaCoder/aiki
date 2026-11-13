@@ -10,7 +10,7 @@
  */
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { ConversationView as DurableView, Harness } from "@earendil-works/pi-durable";
-import { type QueuedInput, TASK_REFERENCE_PREFIX } from "@aiki/protocol";
+import { type QueuedInput, TASK_REFERENCE_PREFIX } from "@kemiri/protocol";
 
 /** Entries remembered as placed from a submission; far more than a window holds. */
 const KEPT_PLACEMENTS = 500;

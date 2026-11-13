@@ -3,7 +3,7 @@
  * contract, so they are pinned here without a server.
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { Schedule, ScheduleInput, ScheduleRun } from "@aiki/protocol";
+import type { Schedule, ScheduleInput, ScheduleRun } from "@kemiri/protocol";
 import {
 	HarnessClient,
 	latestScheduleRun,

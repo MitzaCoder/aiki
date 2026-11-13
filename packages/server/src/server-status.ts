@@ -7,10 +7,10 @@
  * every change is pushed as `server.status.changed`; `busy` is computed on demand because a restart only asks for it
  * before restarting.
  */
-import type { ReleaseUpdateState } from "@aiki/protocol";
+import type { ReleaseUpdateState } from "@kemiri/protocol";
 import { serverSettings } from "./server-settings.ts";
 import { packagedResources } from "./packaged-resources.ts";
-import type { DeployStatus, DiskStatus, ReleaseInfo, ServerStatus } from "@aiki/protocol";
+import type { DeployStatus, DiskStatus, ReleaseInfo, ServerStatus } from "@kemiri/protocol";
 import { existsSync, readFileSync, realpathSync, watch, type FSWatcher } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -140,7 +140,7 @@ export type ServerStatusServiceOptions = {
 	/** Free space per filesystem, as last measured; omitted leaves `disks` out. */
 	disks?: () => DiskStatus[];
 	updates?: () => ReleaseUpdateState;
-	selfUpdate?: () => import("@aiki/protocol").SelfUpdateState;
+	selfUpdate?: () => import("@kemiri/protocol").SelfUpdateState;
 };
 
 /**
@@ -151,7 +151,7 @@ export type ServerStatusServiceOptions = {
  */
 export class ServerStatusService {
 	readonly #updates: (() => ReleaseUpdateState) | undefined;
-	readonly #selfUpdate: (() => import("@aiki/protocol").SelfUpdateState) | undefined;
+	readonly #selfUpdate: (() => import("@kemiri/protocol").SelfUpdateState) | undefined;
 	readonly #busy: () => Promise<BusyState>;
 	readonly #releaseRoot: string;
 	readonly #deployStatusFile: string | null;

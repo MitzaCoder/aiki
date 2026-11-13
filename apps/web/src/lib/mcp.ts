@@ -1,5 +1,5 @@
 /** Presentation rules for untrusted remote MCP catalogues. Policies themselves come from the backend. */
-import type { McpOAuthFlow, McpProjectServer, McpServer } from '@aiki/protocol';
+import type { McpOAuthFlow, McpProjectServer, McpServer } from '@kemiri/protocol';
 export type McpTool = McpServer['tools'][number];
 export const MCP_POLICY_OPTIONS = [
   { value: 'off', label: 'Off' }, { value: 'ask', label: 'Ask' }, { value: 'allow', label: 'Allow' }

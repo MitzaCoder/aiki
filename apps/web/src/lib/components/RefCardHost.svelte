@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-	import { type RefDetails, refIdentity } from '@aiki/protocol';
+	import { type RefDetails, refIdentity } from '@kemiri/protocol';
 	import RefCard from '#lib/components/RefCard.svelte';
 	import { type CardRef, boardRefFor, cardKindWords, cardRefLabel, cardRefOf, containsTarget, placeCard, tasksNaming, visiblePart } from '#lib/ref-card.js';
 	import { useRefLinks } from '#lib/ref-links.svelte.js';

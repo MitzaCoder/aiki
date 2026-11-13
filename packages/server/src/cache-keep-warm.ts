@@ -1,4 +1,4 @@
-import type { CacheWarmStretch } from "@aiki/protocol";
+import type { CacheWarmStretch } from "@kemiri/protocol";
 import type { Context, Model, Models, ModelsSimpleStreamOptions } from "@earendil-works/pi-ai";
 import type { Conversation } from "@earendil-works/pi-durable";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";

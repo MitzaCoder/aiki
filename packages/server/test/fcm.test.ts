@@ -7,8 +7,8 @@
  * fake FCM endpoint checks that token and records each message. No network.
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { NotificationPayload, NotificationPreferences } from "@aiki/protocol";
-import { DEFAULT_NOTIFICATION_KINDS } from "@aiki/protocol";
+import type { NotificationPayload, NotificationPreferences } from "@kemiri/protocol";
+import { DEFAULT_NOTIFICATION_KINDS } from "@kemiri/protocol";
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

@@ -1,6 +1,6 @@
 /** Synthetic OAuth settings fixture. No installed credentials, real issuer or Notion requests. */
 import { writeFile } from 'node:fs/promises';
-import { MCP_PRESETS } from '@aiki/protocol';
+import { MCP_PRESETS } from '@kemiri/protocol';
 import { createSetup } from '../test/support.ts';
 import { fakeMcpOAuth } from '../test/mcp-oauth-support.ts';
 import { authSecret } from '../src/device-auth.ts';

@@ -1,5 +1,5 @@
 /** Cross-project triage from the projects subscription alone; no per-project board watches. */
-import type { ProjectSummary } from "@aiki/protocol";
+import type { ProjectSummary } from "@kemiri/protocol";
 import { projectHref, threadHref } from "./backends.js";
 import type { ProjectRow } from "./projects.js";
 

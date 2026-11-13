@@ -4,7 +4,7 @@
  */
 import { afterEach, describe, expect, it } from "bun:test";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { ConversationView } from "@aiki/protocol";
+import type { ConversationView } from "@kemiri/protocol";
 import { describeContent, splitTaskReference } from "../src/queued-inputs.ts";
 import { entryText, TestClient, ViewClient, createSetup, type TestSetup } from "./support.ts";
 

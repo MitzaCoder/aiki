@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { onMount } from 'svelte';
-	import { encodePairingFragment, type AuthDevice, type AuthPairing } from '@aiki/protocol';
+	import { encodePairingFragment, type AuthDevice, type AuthPairing } from '@kemiri/protocol';
 	import type { BackendConnection } from '#lib/harness.svelte.js';
 	import QrCode from '#lib/components/QrCode.svelte';
 	import CopyButton from '#lib/components/CopyButton.svelte';

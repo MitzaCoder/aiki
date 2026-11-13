@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { HarnessClient } from '@aiki/client';
-	import type { Artifact } from '@aiki/protocol';
+	import type { HarnessClient } from '@kemiri/client';
+	import type { Artifact } from '@kemiri/protocol';
 	import ArtifactThumb from './ArtifactThumb.svelte';
 	import ArtifactVideo from './ArtifactVideo.svelte';
 

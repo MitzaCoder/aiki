@@ -2,7 +2,7 @@
 	import CoinsIcon from '@lucide/svelte/icons/coins';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import LightbulbIcon from '@lucide/svelte/icons/lightbulb';
-	import type { CacheGroup } from '@aiki/protocol';
+	import type { CacheGroup } from '@kemiri/protocol';
 	import Banner from '#lib/components/Banner.svelte';
 	import UsageSkeleton from '#lib/components/usage/UsageSkeleton.svelte';
 	import {

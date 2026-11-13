@@ -4,7 +4,7 @@
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import type { MoveQuestion } from '#lib/kanban.js';
-	import type { BoardTask } from '@aiki/protocol';
+	import type { BoardTask } from '@kemiri/protocol';
 
 	/**
 	 * What a move asks before it goes: why a task goes back from review to Working (required; the agents get it with

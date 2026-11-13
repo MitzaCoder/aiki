@@ -26,7 +26,7 @@
 		terminalTarget,
 		type TerminalTab
 	} from '#lib/terminal.js';
-	import type { TerminalListResponse } from '@aiki/protocol';
+	import type { TerminalListResponse } from '@kemiri/protocol';
 
 	/**
 	 * A backend's terminals as one page: tabs for the terminals this browser has attached, a list of the backend's other

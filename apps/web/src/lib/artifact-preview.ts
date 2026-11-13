@@ -12,7 +12,7 @@
  * and external links still have outgoing channels; it is not an offline guarantee. Nothing of the artifact is ever
  * parsed into the app's own document.
  */
-import type { Artifact } from "@aiki/protocol";
+import type { Artifact } from "@kemiri/protocol";
 import { artifactPageDocument, artifactThemeCss, readArtifactTheme, type ArtifactPageTheme } from "./artifact-page.ts";
 
 /**

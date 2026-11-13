@@ -1,4 +1,4 @@
-import { MCP_PRESETS } from "@aiki/protocol";
+import { MCP_PRESETS } from "@kemiri/protocol";
 import { MCP_CREDENTIAL_PREFIX } from "./mcp.ts";
 import { DeviceAuth, DeviceAuthError, type Identity } from "./device-auth.ts";
 /**
@@ -42,9 +42,9 @@ import {
 	decodeTerminalFrame,
 	encodeTerminalFrame,
 	terminalAckBytes,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { Value } from "typebox/value";
-import type { ArtifactsChangedEvent, DraftsChangedEvent } from "@aiki/protocol";
+import type { ArtifactsChangedEvent, DraftsChangedEvent } from "@kemiri/protocol";
 import type { ArtifactUrlSigner } from "./artifacts.ts";
 import type { DraftStore } from "./drafts.ts";
 import { withTaskReference } from "./board.ts";
@@ -56,7 +56,7 @@ import type { SubscriptionUsageService } from "./subscription-usage.ts";
 import { readCacheStats } from "./cache-stats.ts";
 import type { RequestLog } from "./request-log.ts";
 import type { Notifier } from "./notifications.ts";
-import { PushRelayError } from "@aiki/protocol";
+import { PushRelayError } from "@kemiri/protocol";
 import type { ProjectManager } from "./runtime.ts";
 import { QueuedInputs, describeContent, queueClock } from "./queued-inputs.ts";
 import { WatchWindow, resolveWindowBounds } from "./window.ts";
@@ -214,7 +214,7 @@ export class ClientConnection {
 	}
 
 	/** Push an OAuth login change to this connection. */
-	notifyMcpOAuth(flow: import("@aiki/protocol").McpOAuthFlow): void {
+	notifyMcpOAuth(flow: import("@kemiri/protocol").McpOAuthFlow): void {
 		this.#respond({ type: "mcp.oauth.changed", flow });
 	}
 	notifyLogin(login: AuthLogin): void {

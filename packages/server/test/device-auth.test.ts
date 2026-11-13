@@ -8,7 +8,7 @@ import {
 	encodePairingFragment,
 	decodePairingFragment,
 	type DeviceAuthMode,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { DeviceAuth, DeviceAuthError, authSecret, ACCESS_TTL, type SessionCredentials } from "../src/device-auth.ts";
 import { ArtifactUrlSigner } from "../src/artifacts.ts";
 import { ownerCommand } from "../src/device-auth-cli.ts";

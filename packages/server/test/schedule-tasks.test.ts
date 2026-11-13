@@ -4,7 +4,7 @@ import type { TranscriptContext } from "@earendil-works/pi-ai";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
 import { InboxDoc, type SetTimer } from "@earendil-works/pi-durable";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import type { Board, BoardTask, BoardTaskInput, BoardTaskSnapshot, ModelRef, Schedule, ScheduleInput } from "@aiki/protocol";
+import type { Board, BoardTask, BoardTaskInput, BoardTaskSnapshot, ModelRef, Schedule, ScheduleInput } from "@kemiri/protocol";
 import { emptyBoardState, recordScheduledReport, scheduleTaskForRun, saveTask } from "../src/board.ts";
 import { createSetup, entryText, errorOf, TestClient, ViewClient, type TestSetup } from "./support.ts";
 

@@ -4,7 +4,7 @@
  * overview's numbers. Pure functions, tested here.
  */
 import { describe, expect, test } from "bun:test";
-import type { ConversationContext, SkillInfo, ToolInfo } from "@aiki/protocol";
+import type { ConversationContext, SkillInfo, ToolInfo } from "@kemiri/protocol";
 import {
 	contextAnswerIsCurrent,
 	contextCounts,

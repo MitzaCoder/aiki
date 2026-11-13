@@ -1,4 +1,4 @@
-import type { BoardLinkKind, BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@aiki/protocol';
+import type { BoardLinkKind, BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@kemiri/protocol';
 
 export type GraphNode = {
 	id: string; kind: 'task' | 'worker' | 'thread'; title: string; status: string;

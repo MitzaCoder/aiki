@@ -3,7 +3,7 @@
  * pinned here without a server.
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { Board, BoardQuestion, BoardTask, BoardTaskInput } from "@aiki/protocol";
+import type { Board, BoardQuestion, BoardTask, BoardTaskInput } from "@kemiri/protocol";
 import {
 	BOARD_CONFLICT_CODE,
 	ClientError,

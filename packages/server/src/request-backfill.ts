@@ -21,7 +21,7 @@ import {
 	ROOT_CONVERSATION_ID,
 	type Storage,
 } from "@earendil-works/pi-durable";
-import { MAIN_THREAD_ID } from "@aiki/protocol";
+import { MAIN_THREAD_ID } from "@kemiri/protocol";
 import { errorMessage } from "./errors.ts";
 import { messageText } from "./prompt-fingerprint.ts";
 import { ConversationRequests, type RequestLog, wakeOf } from "./request-log.ts";

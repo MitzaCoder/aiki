@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { BoardTaskActivity } from '@aiki/protocol';
+	import type { BoardTaskActivity } from '@kemiri/protocol';
 	import { activityMinute } from '#lib/activity-minute.js';
 	import { taskActivityAge, taskActivityTone } from '#lib/task-activity.js';
 	import { exactTime } from '#lib/relative-time.js';

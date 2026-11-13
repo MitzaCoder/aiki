@@ -4,7 +4,7 @@ import { Database } from "bun:sqlite";
 import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { deviceComparisonCode, type AuthDevice, type AuthPairing, type DeviceAuthMode } from "@aiki/protocol";
+import { deviceComparisonCode, type AuthDevice, type AuthPairing, type DeviceAuthMode } from "@kemiri/protocol";
 
 const MINUTE = 60_000,
 	DAY = 86400_000;

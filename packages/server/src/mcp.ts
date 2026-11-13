@@ -13,15 +13,15 @@ import {
 	type ToolRegistration,
 } from "@earendil-works/pi-durable";
 import type { CodemodeNamespace } from "@earendil-works/pi-durable/codemode";
-import { MCP_PRESETS, mcpPresetQueryAllowed, type McpPolicy, type McpProjectServer, type McpRole, type McpServer } from "@aiki/protocol";
+import { MCP_PRESETS, mcpPresetQueryAllowed, type McpPolicy, type McpProjectServer, type McpRole, type McpServer } from "@kemiri/protocol";
 import { McpSseTransport } from "./mcp-sse.ts";
 import { childEnvironment } from "./child-environment.ts";
-import type { McpAddRequest } from "@aiki/protocol";
+import type { McpAddRequest } from "@kemiri/protocol";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 import type { McpCredential } from "./credentials.ts";
 import { ServerError } from "./errors.ts";
 import { McpOAuth } from "./mcp-oauth.ts";
-import type { McpOAuthFlow } from "@aiki/protocol";
+import type { McpOAuthFlow } from "@kemiri/protocol";
 
 export const MCP_CREDENTIAL_PREFIX = "mcp:";
 export const MCP_ROLES: McpRole[] = ["coordinator", "workers", "background"];

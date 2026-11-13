@@ -10,7 +10,7 @@ import {
 	describePromptChange,
 	PROMPT_CACHE_TTL_MS,
 	type WakeReason,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { idleTime } from "./chat/cache.ts";
 import { formatTokenCount } from "./context-usage.ts";
 

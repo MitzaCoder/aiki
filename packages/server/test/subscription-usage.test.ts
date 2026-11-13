@@ -6,7 +6,7 @@ import { createModels, createProvider, type Models, type OAuthAuth } from "@eare
 import { lazyApi } from "@earendil-works/pi-ai/api/lazy";
 import { opencodeGoProvider } from "@earendil-works/pi-ai/providers/opencode-go";
 import { opencodeProvider } from "@earendil-works/pi-ai/providers/opencode";
-import type { SubscriptionUsage } from "@aiki/protocol";
+import type { SubscriptionUsage } from "@kemiri/protocol";
 import { FileCredentialStore } from "../src/credentials.ts";
 import {
 	appendSample,

@@ -9,7 +9,7 @@
  * Which disks are low is kept in `disks.json` in the data directory, so a restart does not announce a crossing again.
  */
 import { serverSettings } from "./server-settings.ts";
-import type { DiskStatus } from "@aiki/protocol";
+import type { DiskStatus } from "@kemiri/protocol";
 import { stat, statfs } from "node:fs/promises";
 import { join } from "node:path";
 import { errorMessage } from "./errors.ts";

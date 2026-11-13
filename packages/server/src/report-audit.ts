@@ -1,7 +1,7 @@
 /** A bounded, no-tools second opinion. Durable admission precedes every paid request. */
 import { createHash } from "node:crypto";
-import type { BoardTask, ReportAuditSettings, ReportAuditStatus } from "@aiki/protocol";
-import { DEFAULT_REPORT_AUDIT } from "@aiki/protocol";
+import type { BoardTask, ReportAuditSettings, ReportAuditStatus } from "@kemiri/protocol";
+import { DEFAULT_REPORT_AUDIT } from "@kemiri/protocol";
 import type { Models, Model } from "@earendil-works/pi-ai";
 import { estimateTextTokens } from "@earendil-works/pi-ai/utils/estimate";
 import type { BoardState } from "./board.ts";

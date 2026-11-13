@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { McpServer } from '@aiki/protocol';
+import type { McpServer } from '@kemiri/protocol';
 import { filterMcpTools, mcpProjectServer, mcpServerId, mcpStatus, mcpToolHint, mcpSupportsOAuth, mcpOAuthFlowLabel } from '../src/lib/mcp.ts';
 import { backendSettingsHref, projectSectionAvailable, projectSettingsHref, settingsParentHref } from '../src/lib/settings.ts';
 

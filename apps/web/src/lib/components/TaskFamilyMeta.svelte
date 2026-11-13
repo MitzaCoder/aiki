@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TaskActivityLine from './TaskActivityLine.svelte';
-	import type { BoardTaskActivity } from '@aiki/protocol';
+	import type { BoardTaskActivity } from '@kemiri/protocol';
 	import GitBranchIcon from '@lucide/svelte/icons/git-branch';
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import LinkIcon from '@lucide/svelte/icons/link';

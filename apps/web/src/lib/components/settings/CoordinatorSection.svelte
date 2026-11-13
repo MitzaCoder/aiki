@@ -14,7 +14,7 @@
 	import { contextSize, modelKey, modelOptions, providerName } from '#lib/models.js';
 	import { SaveState } from '#lib/save-state.svelte.js';
 	import { backendSettingsHref } from '#lib/settings.js';
-	import { DEFAULT_UI_PROOF, type ThinkingLevel, type UiProof } from '@aiki/protocol';
+	import { DEFAULT_UI_PROOF, type ThinkingLevel, type UiProof } from '@kemiri/protocol';
 
 	/**
 	 * Project → Coordinator: which model the project's main agent runs on, and how hard it thinks. Each field saves the

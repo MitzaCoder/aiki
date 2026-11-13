@@ -3,7 +3,7 @@
  * tested without a component.
  */
 import type { ComboOption } from "./combobox.ts";
-import type { ThinkingLevel } from "@aiki/protocol";
+import type { ThinkingLevel } from "@kemiri/protocol";
 
 /** Increasing effort, as the protocol lists them. */
 export const THINKING_ORDER: readonly ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];

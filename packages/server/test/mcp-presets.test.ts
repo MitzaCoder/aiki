@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { MCP_PRESETS } from '@aiki/protocol';
+import { MCP_PRESETS } from '@kemiri/protocol';
 import { createSetup } from './support.ts';
 
 test('remote presets resolve their verified URL without connecting or enabling projects', async () => {

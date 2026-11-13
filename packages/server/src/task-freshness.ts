@@ -1,5 +1,5 @@
 /** Deterministic report coverage and durable nudge admission. No model calls or timeline writes. */
-import { BOARD_PREFIX, CHECK_IN_PREFIX, THREAD_FINISHED_PREFIX, THREAD_MESSAGE_PREFIX, WORKER_REPORT_PREFIX, type BoardReportSection, type BoardTask, type BoardWriter } from "@aiki/protocol";
+import { BOARD_PREFIX, CHECK_IN_PREFIX, THREAD_FINISHED_PREFIX, THREAD_MESSAGE_PREFIX, WORKER_REPORT_PREFIX, type BoardReportSection, type BoardTask, type BoardWriter } from "@kemiri/protocol";
 import { estimateTextTokens } from "@earendil-works/pi-ai/utils/estimate";
 import type { BoardState } from "./board.ts";
 

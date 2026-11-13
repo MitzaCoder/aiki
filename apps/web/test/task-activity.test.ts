@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { BoardTask, BoardTaskActivity } from '@aiki/protocol';
+import type { BoardTask, BoardTaskActivity } from '@kemiri/protocol';
 import { automaticTaskActivity, taskActivityAge, taskActivitySupported, taskActivityTone, taskNowText } from '../src/lib/task-activity.js';
 import { rowGist, type TaskRow } from '../src/lib/tasks.js';
 import { cardGist, type KanbanCard } from '../src/lib/kanban.js';

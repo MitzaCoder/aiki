@@ -4,7 +4,7 @@
  * logic that lives outside the components and is tested here.
  */
 import { describe, expect, test } from "bun:test";
-import type { WorkerSummary } from "@aiki/protocol";
+import type { WorkerSummary } from "@kemiri/protocol";
 import {
 	addWorkerModel,
 	hasWorkerModel,

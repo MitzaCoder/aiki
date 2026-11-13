@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { deviceComparisonCode } from '@aiki/protocol';
+	import { deviceComparisonCode } from '@kemiri/protocol';
 	import {
 		BackendDeviceAuth,
 		authRequest,

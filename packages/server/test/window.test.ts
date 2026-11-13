@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { applyImmutable } from "@earendil-works/chord/delta";
 import type { Op } from "@earendil-works/chord/delta";
 import type { ConversationView as DurableView } from "@earendil-works/pi-durable";
-import type { ConversationView } from "@aiki/protocol";
+import type { ConversationView } from "@kemiri/protocol";
 import { WatchWindow, resolveWindowBounds } from "../src/window.ts";
 
 /** A durable view as pi-durable 1.5.1 hands one out: already windowed, with `before` naming the entry outside it. */

@@ -1,4 +1,4 @@
-import { markdownText, type BoardTimelineEntry } from '@aiki/protocol';
+import { markdownText, type BoardTimelineEntry } from '@kemiri/protocol';
 
 export const TIMELINE_ORDER_STORAGE_KEY = 'aiki.timeline-order.v1';
 export type TimelineOrder = 'newest' | 'oldest';

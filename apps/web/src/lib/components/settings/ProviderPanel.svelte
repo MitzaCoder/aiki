@@ -5,7 +5,7 @@
 	import { Input } from '#lib/components/ui/input/index.js';
 	import type { BackendConnection } from '#lib/harness.svelte.js';
 	import { SaveState } from '#lib/save-state.svelte.js';
-	import type { AuthLogin, AuthPrompt, ProviderInfo } from '@aiki/protocol';
+	import type { AuthLogin, AuthPrompt, ProviderInfo } from '@kemiri/protocol';
 
 	/**
 	 * What one provider's account needs: sign in with its subscription (the whole OAuth exchange, as the backend runs

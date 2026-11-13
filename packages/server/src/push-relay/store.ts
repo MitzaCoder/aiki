@@ -17,7 +17,7 @@ import {
 	relayUtf8,
 	validateRelayId,
 	verifyRelayConfirmation,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { chmod } from "node:fs/promises";
 import { join } from "node:path";
 import { ServerError } from "../errors.ts";

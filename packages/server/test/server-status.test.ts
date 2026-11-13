@@ -7,7 +7,7 @@ import {
 	type ReleaseInfo,
 	type ServerStatus,
 	type ServerStatusEvent,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { mkdir, mkdtemp, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -90,7 +90,7 @@ describe("release and deploy files", () => {
 		const deep = join(root, "packages", "server", "src");
 		await mkdir(deep, { recursive: true });
 		await writeFile(join(root, "package.json"), JSON.stringify({ name: "aiki", workspaces: ["packages/*"] }));
-		await writeFile(join(root, "packages", "server", "package.json"), JSON.stringify({ name: "@aiki/server" }));
+		await writeFile(join(root, "packages", "server", "package.json"), JSON.stringify({ name: "@kemiri/server" }));
 
 		expect(findPackageRoot(deep)).toBe(root);
 		expect(findPackageRoot(root)).toBe(root);
@@ -104,7 +104,7 @@ describe("release and deploy files", () => {
 		const deep = join(repo, "packages", "server", "src");
 		await mkdir(deep, { recursive: true });
 		await writeFile(join(repo, "package.json"), JSON.stringify({ name: "aiki", workspaces: ["packages/*"] }));
-		await writeFile(join(repo, "packages", "server", "package.json"), JSON.stringify({ name: "@aiki/server" }));
+		await writeFile(join(repo, "packages", "server", "package.json"), JSON.stringify({ name: "@kemiri/server" }));
 		expect(findPackageRoot(deep)).toBe(repo);
 
 		// Nothing declares workspaces: the nearest manifest is the best answer, still not the stray one.

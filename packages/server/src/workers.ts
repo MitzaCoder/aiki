@@ -60,7 +60,7 @@ import {
 	type WorkerModel,
 	type WorkerStatus,
 	type WorkerSummary,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { Type } from "typebox";
 import { mkdir } from "node:fs/promises";
 import {

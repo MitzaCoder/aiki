@@ -1,7 +1,7 @@
 <script lang="ts">
 	import PlayIcon from '@lucide/svelte/icons/play';
-	import type { HarnessClient } from '@aiki/client';
-	import type { Artifact } from '@aiki/protocol';
+	import type { HarnessClient } from '@kemiri/client';
+	import type { Artifact } from '@kemiri/protocol';
 	import { formatMediaDuration, MEDIA_RETRY_LIMIT } from '#lib/artifacts.js';
 	import { useArtifactSource } from '#lib/artifacts.svelte.js';
 	import { inView } from '#lib/in-view.js';

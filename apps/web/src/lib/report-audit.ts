@@ -1,4 +1,4 @@
-import type { ModelInfo, ProviderInfo, ReportAuditStatus } from '@aiki/protocol';
+import type { ModelInfo, ProviderInfo, ReportAuditStatus } from '@kemiri/protocol';
 import { providerName, sameModel } from './models.js';
 import { relativeTime } from './relative-time.js';
 

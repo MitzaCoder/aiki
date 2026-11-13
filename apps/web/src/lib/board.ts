@@ -1,10 +1,10 @@
-import { markdownText } from '@aiki/protocol';
+import { markdownText } from '@kemiri/protocol';
 /**
  * How the board reads in the app: tasks grouped by status, the questions waiting on the user, a task's editor draft and
  * the checks on it, the order after a move, and the transcript's one-line cards for the coordinator's `board` calls and
  * the harness' `[board]` notes. Pure functions, so they are tested without a component.
  */
-import { isBoardMessage } from "@aiki/client";
+import { isBoardMessage } from "@kemiri/client";
 import {
 	BOARD_PREFIX,
 	type Board,
@@ -14,7 +14,7 @@ import {
 	type BoardTaskInput,
 	type BoardTaskStatus,
 	type ProjectActivity,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 
 /** The statuses in the order the editor offers them. */
 export const TASK_STATUSES: readonly BoardTaskStatus[] = ["todo", "in_progress", "blocked", "review", "done", "dropped"];

@@ -1,5 +1,5 @@
 {
-	"name": "@aiki/client",
+	"name": "@kemiri/client",
 	"version": "0.1.0-pilot.3",
 	"private": true,
 	"type": "module",
@@ -10,7 +10,7 @@
 	"types": "./src/index.ts",
 	"dependencies": {
 		"@earendil-works/chord": "1.5.1",
-		"@aiki/protocol": "workspace:*"
+		"@kemiri/protocol": "workspace:*"
 	},
 	"devDependencies": {
 		"@earendil-works/pi-ai": "1.5.1"

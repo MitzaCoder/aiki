@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { BoardFeedback, BoardTask, BoardTimelineEntry } from "@aiki/protocol";
+import type { BoardFeedback, BoardTask, BoardTimelineEntry } from "@kemiri/protocol";
 import {
 	NO_TASK_FILTER,
 	applyTaskFilter,

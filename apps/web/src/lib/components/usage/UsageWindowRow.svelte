@@ -1,7 +1,7 @@
 <script lang="ts">
 	import TimerIcon from '@lucide/svelte/icons/timer';
-	import { windowPace } from '@aiki/client';
-	import type { UsageWindow } from '@aiki/protocol';
+	import { windowPace } from '@kemiri/client';
+	import type { UsageWindow } from '@kemiri/protocol';
 	import PacePill from './PacePill.svelte';
 	import UsageChart from './UsageChart.svelte';
 	import UsageGauge from './UsageGauge.svelte';

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { ArtifactFilter } from '@aiki/client';
-	import type { Artifact } from '@aiki/protocol';
+	import type { ArtifactFilter } from '@kemiri/client';
+	import type { Artifact } from '@kemiri/protocol';
 	import type { BackendConnection } from '#lib/harness.svelte.js';
 	import { artifactTitle } from '#lib/artifacts.js';
 	import { artifactScope, useArtifactFeed } from '#lib/artifacts.svelte.js';

@@ -13,8 +13,8 @@
  * A poll that fails changes nothing: it is logged, its message is kept for the app, and the next tick tries again.
  */
 import type { SetTimer } from "@earendil-works/pi-durable";
-import type { Schedule, ScheduleRun } from "@aiki/protocol";
-import { isEventSpec } from "@aiki/protocol";
+import type { Schedule, ScheduleRun } from "@kemiri/protocol";
+import { isEventSpec } from "@kemiri/protocol";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { errorMessage } from "./errors.ts";

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import type { BoardTimelineEntry } from '@aiki/protocol';
+import type { BoardTimelineEntry } from '@kemiri/protocol';
 import { loadTimelineOrder, orderedTimeline, saveTimelineOrder, timelineDay, timelineDetail, timelineStatus, timelineTone, TIMELINE_ORDER_STORAGE_KEY } from '../src/lib/task-timeline.js';
 
 const entries: BoardTimelineEntry[] = [

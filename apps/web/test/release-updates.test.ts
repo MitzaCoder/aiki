@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { ReleaseUpdateState } from "@aiki/protocol";
+import type { ReleaseUpdateState } from "@kemiri/protocol";
 import { UPDATE_INSTRUCTIONS, visibleReleaseUpdate } from "../src/lib/release-updates.ts";
 
 const updates: ReleaseUpdateState = { schemaVersion: 1, enabled: true, installedVersion: "v0.1.0-pilot.1", channel: "pilot", available: { version: "v0.1.0-pilot.2", notesUrl: "https://github.com/MitzaCoder/aiki/releases/tag/v0.1.0-pilot.2" }, dismissedVersion: null };

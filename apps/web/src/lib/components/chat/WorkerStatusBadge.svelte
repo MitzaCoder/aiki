@@ -2,7 +2,7 @@
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 	import { Badge } from '#lib/components/ui/badge/index.js';
 	import { workerStatusClass, workerStatusLabel } from '#lib/workers.js';
-	import type { WorkerStatus } from '@aiki/protocol';
+	import type { WorkerStatus } from '@kemiri/protocol';
 
 	/** A worker's status as a badge: a spinner while it runs, coloured in the theme's tokens. */
 	let {

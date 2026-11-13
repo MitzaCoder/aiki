@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { UsageGroup } from '@aiki/protocol';
+	import type { UsageGroup } from '@kemiri/protocol';
 	import { money, tokens } from '#lib/cache-stats.js';
 	import { usageCostShare, usageTokenTotal } from '#lib/usage-analysis.js';
 	let {

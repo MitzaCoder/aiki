@@ -1,7 +1,7 @@
 <script lang="ts">
 	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
-	import { serverDisks } from '@aiki/client';
-	import type { ServerStatus } from '@aiki/protocol';
+	import { serverDisks } from '@kemiri/client';
+	import type { ServerStatus } from '@kemiri/protocol';
 	import { diskLevelClass, diskView, diskWarning } from '#lib/server-status.js';
 	import { cn } from '#lib/utils.js';
 

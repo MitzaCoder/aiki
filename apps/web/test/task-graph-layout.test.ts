@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { BoardTask } from '@aiki/protocol';
+import type { BoardTask } from '@kemiri/protocol';
 import { buildTaskGraph, reconcileGraphPositions } from '../src/lib/task-graph.ts';
 import { settledGraphPositions, interpolateGraphPositions } from '../src/lib/task-graph-layout.ts';
 import { fitGraphCamera, loadGraphCamera, saveGraphCamera, placeGraphLabels, boxesOverlap, truncatedGraphTitle } from '../src/lib/task-graph-camera.ts';

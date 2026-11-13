@@ -3,7 +3,7 @@
  * fallback decision are the client's own contract, so they are pinned here without a server.
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { WorkerDefaults } from "@aiki/protocol";
+import type { WorkerDefaults } from "@kemiri/protocol";
 import {
 	ClientError,
 	HarnessClient,

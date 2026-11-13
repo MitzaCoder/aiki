@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Value } from 'typebox/value';
-import { PROTOCOL_SCHEMAS } from '@aiki/protocol';
+import { PROTOCOL_SCHEMAS } from '@kemiri/protocol';
 const { Board: BoardSchema, WorkerSummary: WorkerSummarySchema, ThreadSummary: ThreadSummarySchema } = PROTOCOL_SCHEMAS;
 import { buildGraphModel, graphSummaryCounters, searchGraph } from '../src/lib/task-graph-model.ts';
 import { makeGraphFixture, FIXTURE_NOW, advanceGraphFixture } from './fixtures/task-graph-busy.ts';

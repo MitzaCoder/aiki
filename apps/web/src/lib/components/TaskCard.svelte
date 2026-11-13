@@ -15,7 +15,7 @@
 	import { useRefLinks } from '#lib/ref-links.svelte.js';
 	import { isWarning, refLabel, taskRefs, taskStatusToneClass, taskStatusWords } from '#lib/tasks.js';
 	import { taskOwner } from '#lib/threads.js';
-	import type { BoardTask, BoardTaskBrief, ThreadSummary, WorkerSummary } from '@aiki/protocol';
+	import type { BoardTask, BoardTaskBrief, ThreadSummary, WorkerSummary } from '@kemiri/protocol';
 
 	/**
 	 * One task on the board: what a list row says (status dot, title, gist, refs with their live state, time and ID) and,

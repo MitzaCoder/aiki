@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import type { TranscriptContext } from "@earendil-works/pi-ai";
 import type { SetTimer } from "@earendil-works/pi-durable";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import type { MemoryChange, ModelRef } from "@aiki/protocol";
+import type { MemoryChange, ModelRef } from "@kemiri/protocol";
 import { maintenanceSlotAtOrBefore, nextMaintenanceSlot } from "../src/memory-maintenance.ts";
 import { createSetup, errorOf, TestClient, type TestSetup } from "./support.ts";
 

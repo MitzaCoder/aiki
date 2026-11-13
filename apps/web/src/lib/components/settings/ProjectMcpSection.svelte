@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { McpProjectServer, McpRole, McpServer } from '@aiki/protocol';
+  import type { McpProjectServer, McpRole, McpServer } from '@kemiri/protocol';
   import type { BackendConnection } from '#lib/harness.svelte.js';
   import { MCP_ROLE_OPTIONS, mcpProjectServer, mcpStatus } from '#lib/mcp.js';
   import { mcpRequest } from '#lib/mcp-rpc.js';

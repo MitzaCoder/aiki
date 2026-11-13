@@ -1,5 +1,5 @@
 /** Decision-oriented totals from recorded requests, including internal calls and cache maintenance. */
-import type { UsageAnalysis, UsageGroup } from "@aiki/protocol";
+import type { UsageAnalysis, UsageGroup } from "@kemiri/protocol";
 import type { RequestRow } from "./request-log-store.ts";
 
 export function usageRole(row: RequestRow): string {

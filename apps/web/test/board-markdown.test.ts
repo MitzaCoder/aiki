@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { markdownText } from '@aiki/protocol';
+import { markdownText } from '@kemiri/protocol';
 import { readFileSync } from 'node:fs';
 import { rowGist } from '../src/lib/tasks.ts';
 

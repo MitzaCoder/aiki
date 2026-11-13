@@ -15,7 +15,7 @@ import {
 	relaySharedSecret,
 	relayTranscript,
 	verifyRelayConfirmation,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { authCleanup, authClient, authSetup, httpEnroll, until } from "./device-auth-test-support.ts";
 import type { TestClient } from "./support.ts";
 import type { RelayRegistration } from "../src/push-relay/store.ts";

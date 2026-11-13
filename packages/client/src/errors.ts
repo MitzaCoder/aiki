@@ -1,5 +1,5 @@
 /** Errors a client can raise, separate from protocol error responses. */
-import type { ErrorCode, ErrorInfo, ErrorResponse } from "@aiki/protocol";
+import type { ErrorCode, ErrorInfo, ErrorResponse } from "@kemiri/protocol";
 
 export type ClientErrorCode = ErrorCode | "disconnected" | "timeout" | "closed" | "protocol";
 

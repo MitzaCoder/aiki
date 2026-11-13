@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
-import { applicationServerKey } from "@aiki/client";
-import type { NotificationDevice } from "@aiki/protocol";
+import { applicationServerKey } from "@kemiri/client";
+import type { NotificationDevice } from "@kemiri/protocol";
 import type { BackendConnection } from "../src/lib/harness.svelte.ts";
 import { installPushBrowser } from "./push-browser-mock.ts";
 import { setPushSyncNeeded } from "../src/lib/push-sync.ts";

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import TrashIcon from '@lucide/svelte/icons/trash-2';
-	import { withoutRemoved, type ProjectStorage } from '@aiki/client';
-	import type { StorageItem } from '@aiki/protocol';
+	import { withoutRemoved, type ProjectStorage } from '@kemiri/client';
+	import type { StorageItem } from '@kemiri/protocol';
 	import Banner from '#lib/components/Banner.svelte';
 	import SettingsGroup from '#lib/components/settings/SettingsGroup.svelte';
 	import SettingsRow from '#lib/components/settings/SettingsRow.svelte';

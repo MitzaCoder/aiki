@@ -25,7 +25,7 @@
 		type ContextSection,
 		type SkillSourceGroup
 	} from '#lib/context.js';
-	import type { ConversationContext, SkillInfo, ToolInfo } from '@aiki/protocol';
+	import type { ConversationContext, SkillInfo, ToolInfo } from '@kemiri/protocol';
 	import type { Snippet } from 'svelte';
 
 	/**

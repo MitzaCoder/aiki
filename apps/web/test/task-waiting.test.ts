@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import type { BoardTask } from '@aiki/protocol';
+import type { BoardTask } from '@kemiri/protocol';
 import { TASK_STATUS_CHOICES, waitingDateIn, waitingSummary } from '../src/lib/task-waiting.ts';
 import { taskSections } from '../src/lib/tasks.ts';
 import { groupTasks } from '../src/lib/board.ts';

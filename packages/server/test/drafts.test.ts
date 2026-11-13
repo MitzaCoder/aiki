@@ -4,7 +4,7 @@
  */
 import { afterEach, describe, expect, it } from "bun:test";
 import { fauxAssistantMessage } from "@earendil-works/pi-ai/providers/faux";
-import { HARNESS_FEATURES, type ChatDraft, type DraftContent, type ServerMessage } from "@aiki/protocol";
+import { HARNESS_FEATURES, type ChatDraft, type DraftContent, type ServerMessage } from "@kemiri/protocol";
 import { mkdtemp, readdir, rm, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

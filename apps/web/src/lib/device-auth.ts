@@ -1,4 +1,4 @@
-import { decodePairingFragment, type PairingFragment } from '@aiki/protocol';
+import { decodePairingFragment, type PairingFragment } from '@kemiri/protocol';
 import { normalizeBackendUrl } from './backends.ts';
 import {
 	credentialKey,

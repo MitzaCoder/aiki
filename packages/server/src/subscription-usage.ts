@@ -16,11 +16,11 @@
  */
 import { join } from "node:path";
 import type { CredentialStore, Models } from "@earendil-works/pi-ai";
-import { PROTOCOL_SCHEMAS, type SubscriptionUsage, type UsageSample, type UsageWindow } from "@aiki/protocol";
+import { PROTOCOL_SCHEMAS, type SubscriptionUsage, type UsageSample, type UsageWindow } from "@kemiri/protocol";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { CLAUDE_USAGE_USER_AGENT, consumeReset, discoverResets, type ResetTransport } from "./subscription-resets.ts";
-import type { SubscriptionResets, SubscriptionsResetRequest } from "@aiki/protocol";
+import type { SubscriptionResets, SubscriptionsResetRequest } from "@kemiri/protocol";
 import { errorMessage } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 

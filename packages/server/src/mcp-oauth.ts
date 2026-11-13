@@ -5,7 +5,7 @@ import {
  type McpOAuthSettings, type McpOAuthState, type McpOAuthServerStore, type McpSignInRedirect,
  OAuthIssuerMismatchError, OAuthRegistrationError, McpOAuthAuthorizationRequiredError,
 } from "@earendil-works/pi-mcp/oauth";
-import type { McpOAuthFlow } from "@aiki/protocol";
+import type { McpOAuthFlow } from "@kemiri/protocol";
 import type { McpCredential } from "./credentials.ts";
 import { ServerError } from "./errors.ts";
 

@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { cacheWarmByAnchor, cacheWarmDetail, cacheWarmLabel } from '../src/lib/chat/cache-warm.js';
 import { buildTranscript } from '../src/lib/transcript.js';
-import type { CacheWarmStretch } from '@aiki/protocol';
+import type { CacheWarmStretch } from '@kemiri/protocol';
 const stretch: CacheWarmStretch = { id: 's', anchorEntryId: 2, startedAt: 100, lastAt: 200, attempts: 1, refreshes: 1, cachedTokens: 100, cost: .04 };
 test('one line per stretch, deduplicated between pages and live updates', () => {
  const grouped = cacheWarmByAnchor([stretch, {...stretch, lastAt: 300, attempts: 3, refreshes: 3}], new Set([2]));

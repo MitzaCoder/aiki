@@ -1,4 +1,4 @@
-import type { ReleaseUpdateState, ReleaseUpdatesSetRequest } from "@aiki/protocol";
+import type { ReleaseUpdateState, ReleaseUpdatesSetRequest } from "@kemiri/protocol";
 import { compareReleaseVersions, releaseChannel, RELEASES_API, selectChannelRelease, type PublishedRelease, type UpdateChannel } from "../../protocol/src/release-versions.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 

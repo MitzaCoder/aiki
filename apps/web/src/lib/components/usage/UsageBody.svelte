@@ -4,7 +4,7 @@
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import XIcon from '@lucide/svelte/icons/x';
 	import { onMount } from 'svelte';
-	import type { SubscriptionUsage } from '@aiki/protocol';
+	import type { SubscriptionUsage } from '@kemiri/protocol';
 	import Banner from '#lib/components/Banner.svelte';
 	import Orb from '#lib/components/Orb.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';

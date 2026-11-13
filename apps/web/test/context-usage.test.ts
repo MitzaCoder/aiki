@@ -3,7 +3,7 @@
  * blocks, and the compaction count. Pure functions, tested here.
  */
 import { describe, expect, test } from "bun:test";
-import type { ContextUsage } from "@aiki/protocol";
+import type { ContextUsage } from "@kemiri/protocol";
 import { contextUsageView, formatTokenCount, usagePercent } from "../src/lib/context-usage.ts";
 
 function usage(overrides: Partial<ContextUsage> = {}): ContextUsage {

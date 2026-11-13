@@ -3,7 +3,7 @@
  * tab's order, the pinned questions, the board's owner chip, and the transcript's thread items.
  */
 import { describe, expect, test } from "bun:test";
-import type { BoardQuestion, EntryRecord, ThreadSummary } from "@aiki/protocol";
+import type { BoardQuestion, EntryRecord, ThreadSummary } from "@kemiri/protocol";
 import {
 	backgroundThreadsText,
 	isThreadTool,

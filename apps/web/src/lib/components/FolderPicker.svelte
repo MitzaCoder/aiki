@@ -43,7 +43,7 @@
 		DirectoryEntry,
 		FilesystemCompleteResponse,
 		FilesystemListResponse
-	} from '@aiki/protocol';
+	} from '@kemiri/protocol';
 
 	let {
 		backend,

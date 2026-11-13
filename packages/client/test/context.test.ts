@@ -4,7 +4,7 @@
  * a server (the server side has its own tests).
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { ConversationContext } from "@aiki/protocol";
+import type { ConversationContext } from "@kemiri/protocol";
 import {
 	ClientError,
 	HarnessClient,

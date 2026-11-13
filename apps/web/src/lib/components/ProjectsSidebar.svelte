@@ -35,7 +35,7 @@
 		projectToneDotClass,
 		type ProjectRow,
 	} from '#lib/projects.js';
-	import type { ProjectSummary } from '@aiki/protocol';
+	import type { ProjectSummary } from '@kemiri/protocol';
 
 	/**
 	 * The projects sidebar: every backend's projects, grouped by backend, always beside

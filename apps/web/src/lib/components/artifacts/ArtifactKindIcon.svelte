@@ -4,7 +4,7 @@
 	import ImageIcon from '@lucide/svelte/icons/image';
 	import MusicIcon from '@lucide/svelte/icons/music';
 	import VideoIcon from '@lucide/svelte/icons/video';
-	import type { ArtifactKind } from '@aiki/protocol';
+	import type { ArtifactKind } from '@kemiri/protocol';
 
 	/** The icon for an artifact's kind. */
 	let { kind, class: className = 'size-4' }: { kind: ArtifactKind; class?: string } = $props();

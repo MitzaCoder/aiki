@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { WindowPace } from '@aiki/client';
-	import type { UsageWindow } from '@aiki/protocol';
+	import type { WindowPace } from '@kemiri/client';
+	import type { UsageWindow } from '@kemiri/protocol';
 	import { PACE_TONE_COLOR, clockTime, usageChart, type PaceTone } from '#lib/subscription-usage.js';
 
 	/**

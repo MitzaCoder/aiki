@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { McpServer, McpPreset } from '@aiki/protocol';
+  import type { McpServer, McpPreset } from '@kemiri/protocol';
   import type { BackendConnection } from '#lib/harness.svelte.js';
   import { startMcpOAuth } from '#lib/mcp-oauth.js';
   import { mcpRequest } from '#lib/mcp-rpc.js';

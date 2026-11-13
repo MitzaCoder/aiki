@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack, type Snippet } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import type { ThreadSummary, WorkerSummary } from '@aiki/protocol';
+	import type { ThreadSummary, WorkerSummary } from '@kemiri/protocol';
 	import type { ProjectBoard } from '#lib/board.svelte.js';
 	import { buildTaskGraph, graphLabel, graphNeighborhood, type GraphPosition, type TaskGraph } from '#lib/task-graph.js';
 	import { settledGraphPositions, interpolateGraphPositions } from '#lib/task-graph-layout.js';

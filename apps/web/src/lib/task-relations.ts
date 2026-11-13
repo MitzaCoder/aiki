@@ -13,7 +13,7 @@ import type {
 	BoardTaskStatus,
 	BoardTimelineEntry,
 	BoardTimelineKind,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 
 // --- links -------------------------------------------------------------------------------------------------------
 

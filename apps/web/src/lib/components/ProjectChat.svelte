@@ -37,7 +37,7 @@
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import Composer from '#lib/components/chat/Composer.svelte';
 	import { provideFileDownload } from '#lib/chat/file-scope.js';
-	import type { ChatFile } from '@aiki/protocol';
+	import type { ChatFile } from '@kemiri/protocol';
 	import { draftKey } from '#lib/drafts.js';
 	import { draftChannel } from '#lib/draft-channel.js';
 	import EmptyState from '#lib/components/chat/EmptyState.svelte';
@@ -76,8 +76,8 @@
 	import { withWaiting } from '#lib/waiting.js';
 	import { threadActivityLine, type ThreadCards } from '#lib/threads.js';
 	import type { ProjectThreads } from '#lib/threads.svelte.js';
-	import { isMainThread, isThreadActive, shouldSendWorkerDefaults, threadFromAnchor } from '@aiki/client';
-	import type { MemoryScope, ModelInfo, ThinkingLevel } from '@aiki/protocol';
+	import { isMainThread, isThreadActive, shouldSendWorkerDefaults, threadFromAnchor } from '@kemiri/client';
+	import type { MemoryScope, ModelInfo, ThinkingLevel } from '@kemiri/protocol';
 
 	/**
 	 * One project's coordinator conversation: the transcript, the composer, the

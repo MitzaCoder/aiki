@@ -2,7 +2,7 @@
  * Helpers on top of the protocol's schedule types: the project a pushed list belongs to, and the newest run of a
  * schedule. Everything else (how a schedule reads, when it next runs) is the app's wording, not the wire format.
  */
-import type { Schedule, ScheduleRun, SchedulesStateEvent } from "@aiki/protocol";
+import type { Schedule, ScheduleRun, SchedulesStateEvent } from "@kemiri/protocol";
 
 /** A project's schedules and the backend's timezone, as `schedules.list` and `schedules.state` carry them. */
 export type SchedulesSnapshot = {

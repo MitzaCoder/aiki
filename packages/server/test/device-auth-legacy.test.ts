@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { createECDH, randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { writeFile } from "node:fs/promises";
-import type { DeviceAuthMode } from "@aiki/protocol";
+import type { DeviceAuthMode } from "@kemiri/protocol";
 import { requestOrigin } from "../src/artifacts.ts";
 import { authSecret } from "../src/device-auth.ts";
 import { TestClient, createSetup, type TestSetup } from "./support.ts";

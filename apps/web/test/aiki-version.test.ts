@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { ReleaseUpdateState, ServerStatus } from "@aiki/protocol";
+import type { ReleaseUpdateState, ServerStatus } from "@kemiri/protocol";
 import { aikiVersionLabel, backendVersion, versionBackend, versionLabel } from "../src/lib/aiki-version.ts";
 
 const updates: ReleaseUpdateState = { schemaVersion: 1, enabled: true, installedVersion: "v0.1.0-pilot.2", channel: "pilot", available: null, dismissedVersion: null };

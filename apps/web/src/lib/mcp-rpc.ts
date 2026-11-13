@@ -1,5 +1,5 @@
-import type { ClientRequest } from '@aiki/client';
-import type { Response } from '@aiki/protocol';
+import type { ClientRequest } from '@kemiri/client';
+import type { Response } from '@kemiri/protocol';
 import type { BackendConnection } from './harness.svelte.js';
 /** Typed settings RPCs. No secrets are cached or written to browser storage. */
 export async function mcpRequest<T extends `mcp.${string}` & Response['type']>(

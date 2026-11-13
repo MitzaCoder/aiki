@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { UsageGroup } from '@aiki/protocol';
+import type { UsageGroup } from '@kemiri/protocol';
 import {
 	promptReuse,
 	usageCostShare,

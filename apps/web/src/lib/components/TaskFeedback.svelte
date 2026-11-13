@@ -7,7 +7,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { exactTime, relativeTime } from '#lib/relative-time.js';
 	import { feedbackStateWords, sortedFeedback } from '#lib/task-relations.js';
-	import type { BoardFeedback } from '@aiki/protocol';
+	import type { BoardFeedback } from '@kemiri/protocol';
 
 	/**
 	 * What the user said about a task, one entry per message: open ones first, each with its state and, once addressed,

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import ArrowLeftRightIcon from '@lucide/svelte/icons/arrow-left-right';
 	import ExpandIcon from '@lucide/svelte/icons/maximize-2';
-	import type { HarnessClient } from '@aiki/client';
-	import type { Artifact } from '@aiki/protocol';
+	import type { HarnessClient } from '@kemiri/client';
+	import type { Artifact } from '@kemiri/protocol';
 	import { onMount, untrack } from 'svelte';
 	import { artifactTitle } from '#lib/artifacts.js';
 	import { useArtifactFeed } from '#lib/artifacts.svelte.js';

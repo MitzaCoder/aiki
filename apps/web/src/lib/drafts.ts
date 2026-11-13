@@ -9,7 +9,7 @@
  * last knew to be on the backend (`rev`, `base`), so text typed offline is found and pushed later. Drafts that are empty
  * (and have nothing unsynced) or older than 30 days are dropped.
  */
-import { DRAFT_MAX_AGE_MS, type DraftAttachment } from "@aiki/protocol";
+import { DRAFT_MAX_AGE_MS, type DraftAttachment } from "@kemiri/protocol";
 
 export { DRAFT_MAX_AGE_MS };
 export const DRAFTS_STORAGE_KEY = "aiki.drafts.v1";

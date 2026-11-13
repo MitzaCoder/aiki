@@ -7,7 +7,7 @@
  * coordinator model is chosen, and — when the backend sends it — the coordinator's
  * `activity`: working, failed, how many workers run, when it last answered.
  */
-import type { ProjectActivity, ProjectSummary } from "@aiki/protocol";
+import type { ProjectActivity, ProjectSummary } from "@kemiri/protocol";
 import { elapsedFor } from "./relative-time.ts";
 
 /** Per browser, like the backend list, the theme and the right sidebar. */

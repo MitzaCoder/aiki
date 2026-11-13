@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ReleaseUpdateState, SelfUpdateState } from "@aiki/protocol";
+import type { ReleaseUpdateState, SelfUpdateState } from "@kemiri/protocol";
 import { ToolCallDrain } from "../src/drain.ts";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { SelfUpdate, selfUpdateDisabledReason } from "../src/self-update.ts";

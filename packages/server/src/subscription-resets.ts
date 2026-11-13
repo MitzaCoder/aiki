@@ -1,5 +1,5 @@
 /** Undocumented provider reset contracts. Discovery is GET + skip_spend; mutation is explicit, never retried. */
-import type { SubscriptionResetCredit, SubscriptionResets } from "@aiki/protocol";
+import type { SubscriptionResetCredit, SubscriptionResets } from "@kemiri/protocol";
 const record = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const iso = (v: unknown): string | null =>
 	typeof v === "string" && Number.isFinite(Date.parse(v)) ? new Date(v).toISOString() : null;

@@ -10,8 +10,8 @@
 	import PanelRightCloseIcon from '@lucide/svelte/icons/panel-right-close';
 	import PanelRightOpenIcon from '@lucide/svelte/icons/panel-right-open';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import type { HarnessClient } from '@aiki/client';
-	import type { Artifact } from '@aiki/protocol';
+	import type { HarnessClient } from '@kemiri/client';
+	import type { Artifact } from '@kemiri/protocol';
 	import { MediaQuery } from 'svelte/reactivity';
 	import CopyButton from '#lib/components/CopyButton.svelte';
 	import Markdown from '#lib/components/markdown/Markdown.svelte';

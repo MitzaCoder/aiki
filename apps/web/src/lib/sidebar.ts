@@ -7,7 +7,7 @@
  * the pointer to the window's right edge: dragging the handle left widens it, and
  * ArrowLeft does the same, as if the edge itself moved.
  */
-import type { HarnessFeature } from "@aiki/protocol";
+import type { HarnessFeature } from "@kemiri/protocol";
 
 /**
  * The tabs the sidebar can show: the project's board, main's background threads, the conversation's context, and its

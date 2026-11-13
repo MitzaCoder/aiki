@@ -4,7 +4,7 @@
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import { onDestroy, untrack } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
-	import type { ModelInfo, ModelRef, ProviderInfo, ThinkingLevel } from '@aiki/protocol';
+	import type { ModelInfo, ModelRef, ProviderInfo, ThinkingLevel } from '@kemiri/protocol';
 	import EffortPicker from './EffortPicker.svelte';
 	import ModelPicker from './ModelPicker.svelte';
 	import { hashTrigger, pickerChoices, withoutTrigger, type TaskOption } from '#lib/task-chat.js';
@@ -17,7 +17,7 @@
 	import type { HeldImage } from '#lib/chat/images.js';
 	import AttachButton from './AttachButton.svelte';
 	import FileChips from './FileChips.svelte';
-	import { INPUT_FILE_MAX_BYTES, INPUT_MAX_FILES, isInputImageMimeType, type ChatFile } from '@aiki/protocol';
+	import { INPUT_FILE_MAX_BYTES, INPUT_MAX_FILES, isInputImageMimeType, type ChatFile } from '@kemiri/protocol';
 	import ImageStrip from './ImageStrip.svelte';
 	import QuoteChip from './QuoteChip.svelte';
 	import TaskChip from './TaskChip.svelte';

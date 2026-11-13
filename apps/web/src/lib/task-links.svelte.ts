@@ -4,7 +4,7 @@
  * `task-reports` feature) the chat shows no task links and every line still reads on its own.
  */
 import { getContext, setContext } from "svelte";
-import type { BoardTaskStatus } from "@aiki/protocol";
+import type { BoardTaskStatus } from "@kemiri/protocol";
 import { taskHref } from "./task-chat.ts";
 
 export type TaskLinks = {

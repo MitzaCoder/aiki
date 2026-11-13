@@ -1,4 +1,4 @@
-import type { BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@aiki/protocol';
+import type { BoardQuestion, BoardTask, ThreadSummary, WorkerSummary } from '@kemiri/protocol';
 import { GRAPH_STATUSES } from './task-graph-model.ts';
 
 export type GraphSnapshot = {

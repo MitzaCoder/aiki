@@ -5,7 +5,7 @@
  * report a conflict as an outcome, with the newer row read back, instead of throwing.
  */
 import { taskActivitySupported } from './task-activity.js';
-import { boardConflict, boardStateIsFor, type HarnessClient } from "@aiki/client";
+import { boardConflict, boardStateIsFor, type HarnessClient } from "@kemiri/client";
 import type {
 	Board,
 	BoardFeedback,
@@ -15,7 +15,7 @@ import type {
 	BoardTaskBrief,
 	BoardTaskInput,
 	BoardTaskSnapshot,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 
 export type SaveOutcome =
 	| { kind: "saved"; task: BoardTask }

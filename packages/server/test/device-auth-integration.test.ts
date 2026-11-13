@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { randomBytes } from "node:crypto";
 import { ACCESS_TTL } from "../src/device-auth.ts";
-import { LEGACY_HARNESS_FEATURES } from "@aiki/protocol";
+import { LEGACY_HARNESS_FEATURES } from "@kemiri/protocol";
 import { authSetup, authPost, authClient, claimProof, httpEnroll, ownerControl } from "./device-auth-test-support.ts";
 
 const authRoutes = ["/auth/status", "/auth/bootstrap/redeem", "/auth/pairings/redeem", "/auth/claims/poll", "/auth/claims/ack", "/auth/session/refresh", "/auth/session/rotate", "/auth/migration/claims", "/auth/unknown"];

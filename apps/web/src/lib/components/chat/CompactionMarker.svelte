@@ -10,7 +10,7 @@
 	import type { MemoryExtraction } from '#lib/memory.js';
 	import type { TranscriptItem } from '#lib/transcript.js';
 	import { exactTime, relativeTime } from '#lib/relative-time.js';
-	import type { MemoryScope } from '@aiki/protocol';
+	import type { MemoryScope } from '@kemiri/protocol';
 
 	/**
 	 * A compaction in the transcript: a divider that says earlier messages were summarized and when, opening onto the

@@ -24,7 +24,7 @@ import {
 	draftLimitError,
 	isEmptyDraftContent,
 	sameDraftContent,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { ServerError, errorMessage } from "./errors.ts";
 import { readJsonFile, writeJsonFile } from "./fs-json.ts";
 

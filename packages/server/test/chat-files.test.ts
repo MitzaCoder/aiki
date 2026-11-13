@@ -3,7 +3,7 @@ import { mkdtemp, readFile, readdir, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ChatFileStore, inlineFileText, pdfInputMode, safeAttachmentName } from '../src/chat-files.ts';
-import { INPUT_FILE_MAX_BYTES, INPUT_TEXT_FILE_MAX_BYTES, splitFileMessage } from '@aiki/protocol';
+import { INPUT_FILE_MAX_BYTES, INPUT_TEXT_FILE_MAX_BYTES, splitFileMessage } from '@kemiri/protocol';
 import { createSetup, TestClient, ViewClient } from './support.ts';
 import { httpEnroll } from './device-auth-test-support.ts';
 import { fauxAssistantMessage } from '@earendil-works/pi-ai/providers/faux';

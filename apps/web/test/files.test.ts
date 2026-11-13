@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { fileMessageText, splitFileMessage, fileSizeLabel, type ChatFile } from '@aiki/protocol';
+import { fileMessageText, splitFileMessage, fileSizeLabel, type ChatFile } from '@kemiri/protocol';
 import { imageDrop } from '../src/lib/chat/image-drop.ts';
 import { buildTranscript } from '../src/lib/transcript.ts';
 import { waitingMessages, withWaiting } from '../src/lib/waiting.ts';

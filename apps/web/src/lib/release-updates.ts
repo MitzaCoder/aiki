@@ -1,4 +1,4 @@
-import type { ReleaseUpdateState } from "@aiki/protocol";
+import type { ReleaseUpdateState } from "@kemiri/protocol";
 
 export const UPDATE_INSTRUCTIONS = "Stop Kemiri, then kemiri update, then start it.";
 

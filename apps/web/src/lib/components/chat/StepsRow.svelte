@@ -6,7 +6,7 @@
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import XIcon from '@lucide/svelte/icons/x';
 	import { slide } from 'svelte/transition';
-	import type { MemoryScope, WorkerSummary } from '@aiki/protocol';
+	import type { MemoryScope, WorkerSummary } from '@kemiri/protocol';
 	import { toolIcon } from '#lib/chat/tools.js';
 	import { stepsGroupSummary, type ToolPart } from '#lib/transcript.js';
 	import type { ThreadCards } from '#lib/threads.js';

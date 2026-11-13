@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { ThinkingLevel } from '@aiki/protocol';
+	import type { ThinkingLevel } from '@kemiri/protocol';
 
 	const ORDER: ThinkingLevel[] = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'];
 

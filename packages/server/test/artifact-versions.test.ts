@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { Artifact } from "@aiki/protocol";
+import type { Artifact } from "@kemiri/protocol";
 import { ArtifactStore, ARTIFACT_VERSION_LIMIT } from "../src/artifacts.ts";
 
 const roots: string[] = [];

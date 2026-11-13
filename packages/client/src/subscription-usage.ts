@@ -6,7 +6,7 @@
  * share), when the limit is reached if usage keeps its average rate so far, and which window is the tightest. All of it
  * is pure and takes `now`, so a screen recomputes it as its clock ticks.
  */
-import type { SubscriptionUsage, UsageWindow } from "@aiki/protocol";
+import type { SubscriptionUsage, UsageWindow } from "@kemiri/protocol";
 
 /** Above this ratio a window is used faster than it passes: "ahead of pace". */
 export const AHEAD_OF_PACE_RATIO = 1.15;

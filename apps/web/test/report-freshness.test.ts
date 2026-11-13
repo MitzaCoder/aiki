@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { reportUpdateRequest } from '../src/lib/report-update.js';
-import type { BoardReportSection, BoardTask } from '@aiki/protocol';
+import type { BoardReportSection, BoardTask } from '@kemiri/protocol';
 import { emptyFinishedResults, reportFreshnessEnabled, reportSectionAge, reportSectionReasons } from '../src/lib/report-freshness.js';
 const section: BoardReportSection = { writtenAt: '2026-01-01T10:00:00Z', writtenBy: null, version: 1, coveredEventSeq: 0, approximate: false, stale: true, eventsSince: 6, reasons: ['Q121 answered'] };
 const task = (status: string, results = '', freshness: unknown = { results: section, next: section }) => ({ status, report: { results, freshness } }) as BoardTask;

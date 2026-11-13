@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import { encodePairingFragment, encodeTerminalFrame, TERMINAL_FRAME, decodeTerminalFrame, encodeTerminalAck } from "@aiki/protocol";
+import { encodePairingFragment, encodeTerminalFrame, TERMINAL_FRAME, decodeTerminalFrame, encodeTerminalAck } from "@kemiri/protocol";
 import { mkdtemp, mkdir, rm, writeFile, readFile, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

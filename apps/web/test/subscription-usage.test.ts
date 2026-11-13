@@ -3,8 +3,8 @@
  * geometry of the gauge and the chart. Clock times are pinned to UTC and en-GB so the sentences are stable.
  */
 import { describe, expect, test } from "bun:test";
-import { windowPace } from "@aiki/client";
-import type { SubscriptionUsage, UsageWindow } from "@aiki/protocol";
+import { windowPace } from "@kemiri/client";
+import type { SubscriptionUsage, UsageWindow } from "@kemiri/protocol";
 import {
 	arcPath,
 	clockTime,

@@ -6,7 +6,7 @@
 	import GitPullRequestDraftIcon from '@lucide/svelte/icons/git-pull-request-draft';
 	import GitPullRequestIcon from '@lucide/svelte/icons/git-pull-request';
 	import TicketIcon from '@lucide/svelte/icons/ticket';
-	import type { BoardTaskStatus, RefDetails, RefStatus } from '@aiki/protocol';
+	import type { BoardTaskStatus, RefDetails, RefStatus } from '@kemiri/protocol';
 	import {
 		type CardRef,
 		type TaskMention,

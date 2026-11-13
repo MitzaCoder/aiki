@@ -7,7 +7,7 @@
 import { lstat, mkdir, readdir, realpath, rename, rmdir, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join } from "node:path";
-import { type DirectoryEntry, validateFolderName } from "@aiki/protocol";
+import { type DirectoryEntry, validateFolderName } from "@kemiri/protocol";
 import { describeDirectory } from "./directory-listing.ts";
 import { ServerError } from "./errors.ts";
 

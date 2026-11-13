@@ -8,7 +8,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import type { BackendConnection } from '#lib/harness.svelte.js';
 	import { SaveState } from '#lib/save-state.svelte.js';
-	import { normalizeGithubRepo, normalizeJiraSite } from '@aiki/protocol';
+	import { normalizeGithubRepo, normalizeJiraSite } from '@kemiri/protocol';
 
 	/**
 	 * Project → Tickets and pull requests: which ticket keys and repositories turn into links. Each field saves when

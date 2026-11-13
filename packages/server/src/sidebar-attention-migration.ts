@@ -7,7 +7,7 @@ import type { BoardState } from "./board.ts";
 import type { WorkersState } from "./workers.ts";
 import type { ThreadsState } from "./threads.ts";
 import { boardAttention, workerAttention, threadAttention, EMPTY_ATTENTION } from "./sidebar-attention.ts";
-import type { ProjectAttention } from "@aiki/protocol";
+import type { ProjectAttention } from "@kemiri/protocol";
 
 export async function readStoredAttention(file: string): Promise<ProjectAttention> {
 	if (!(await Bun.file(file).exists())) return { ...EMPTY_ATTENTION };

@@ -10,7 +10,7 @@ import type {
 	MemoryMaintenanceSettings,
 	MemoryScopeStatus,
 	MemorySearchHit,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import {
 	ClientError,
 	HarnessClient,

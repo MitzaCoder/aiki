@@ -11,7 +11,7 @@
 		type ModelRef,
 		type ProviderInfo,
 		type ThinkingLevel
-	} from '@aiki/protocol';
+	} from '@kemiri/protocol';
 
 	/**
 	 * The worker model and thinking level carried by the coordinator's messages:

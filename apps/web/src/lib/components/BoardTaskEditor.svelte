@@ -20,10 +20,10 @@
 		type TaskDraft
 	} from '#lib/board.js';
 	import type { SaveOutcome } from '#lib/board.svelte.js';
-	import { inProgressText } from '@aiki/client';
+	import { inProgressText } from '@kemiri/client';
 	import ArtifactList from '#lib/components/artifacts/ArtifactList.svelte';
 	import { artifactScope } from '#lib/artifacts.svelte.js';
-	import type { BoardTask, BoardTaskInput, BoardTaskStatus } from '@aiki/protocol';
+	import type { BoardTask, BoardTaskInput, BoardTaskStatus } from '@kemiri/protocol';
 
 	/**
 	 * Add or edit one task. A save names the revision the draft was started from; when the task moved on, the editor shows

@@ -14,7 +14,7 @@ import { assertDataDirNotOwned } from "./data-dir-owner.ts";
 import type { CredentialStore, Models } from "@earendil-works/pi-ai";
 import type { SetTimer } from "@earendil-works/pi-durable";
 import type { ImageProcessor } from "@earendil-works/pi-durable/tools";
-import { HARNESS_FEATURES, SERVER_NAME } from "@aiki/protocol";
+import { HARNESS_FEATURES, SERVER_NAME } from "@kemiri/protocol";
 import { basename, join } from "node:path";
 import {
 	ArtifactStore,

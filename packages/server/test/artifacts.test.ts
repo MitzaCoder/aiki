@@ -14,7 +14,7 @@ import {
 	type ServerMessage,
 	normalizeTag,
 	normalizeTags,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";

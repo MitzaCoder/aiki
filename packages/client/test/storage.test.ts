@@ -3,7 +3,7 @@
  * app makes from what they and `server.status` return.
  */
 import { afterEach, describe, expect, it } from "bun:test";
-import type { DiskStatus, ServerStatus, StorageItem } from "@aiki/protocol";
+import type { DiskStatus, ServerStatus, StorageItem } from "@kemiri/protocol";
 import {
 	HarnessClient,
 	diskLevel,

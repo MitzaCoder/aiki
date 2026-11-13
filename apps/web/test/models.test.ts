@@ -4,7 +4,7 @@
  * behaviour is pinned here.
  */
 import { describe, expect, test } from "bun:test";
-import type { ModelInfo, ProviderInfo } from "@aiki/protocol";
+import type { ModelInfo, ProviderInfo } from "@kemiri/protocol";
 import { contextSize, groupModels, modelKey, modelOptions, providerName, sameModel } from "../src/lib/models.ts";
 
 function model(overrides: Partial<ModelInfo> & { provider: string; modelId: string }): ModelInfo {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { INTERACTION_REPORT_INTERVAL_MS } from '@aiki/protocol';
+import { INTERACTION_REPORT_INTERVAL_MS } from '@kemiri/protocol';
 import {
 	INTERACTION_EVENTS,
 	ThrottledReporter,

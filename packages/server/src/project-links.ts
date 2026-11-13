@@ -4,8 +4,8 @@
  * `acli` login, used only when the commits name tickets. Read-only: `git` and `jj` only read (jj with
  * `--ignore-working-copy`, so it never snapshots), and nothing is written to the project.
  */
-import type { ProjectLinks } from "@aiki/protocol";
-import { NO_PROJECT_LINKS, normalizeGithubRepo, normalizeJiraSite } from "@aiki/protocol";
+import type { ProjectLinks } from "@kemiri/protocol";
+import { NO_PROJECT_LINKS, normalizeGithubRepo, normalizeJiraSite } from "@kemiri/protocol";
 import { type RunCommand, runHostCommand } from "./host-commands.ts";
 
 const COMMAND_TIMEOUT_MS = 5_000;

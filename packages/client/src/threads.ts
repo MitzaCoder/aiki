@@ -9,7 +9,7 @@ import {
 	THREAD_MESSAGE_PREFIX,
 	type ThreadsStateEvent,
 	type ThreadSummary,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 
 /** A project's threads as `threads.list` and `threads.state` carry them. */
 export type ThreadsSnapshot = { threads: ThreadSummary[] };

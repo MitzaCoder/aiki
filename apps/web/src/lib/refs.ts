@@ -10,7 +10,7 @@ import {
 	type ResolvedRef,
 	refMentions,
 	resolveRef,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import type { TaskStatusTone } from "./tasks.ts";
 
 /** Where a ref opens; undefined for one the settings cannot link (a bare key without a Jira site, say). */

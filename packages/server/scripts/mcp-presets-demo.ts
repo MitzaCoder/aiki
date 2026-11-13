@@ -1,5 +1,5 @@
 /** Synthetic T157 proof fixture: registered client, no DCR, faux coordinator. */
-import { MCP_PRESETS } from '@aiki/protocol';
+import { MCP_PRESETS } from '@kemiri/protocol';
 import { fauxAssistantMessage } from '@earendil-works/pi-ai/providers/faux';
 import { createSetup, TestClient } from '../test/support.ts';
 import { startServer } from '../src/server.ts';

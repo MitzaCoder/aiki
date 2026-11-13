@@ -1,4 +1,4 @@
-import type { BoardReportSection, BoardTask } from '@aiki/protocol';
+import type { BoardReportSection, BoardTask } from '@kemiri/protocol';
 import { relativeTime } from './relative-time.js';
 
 export function reportFreshnessEnabled(advertised: boolean, task: BoardTask): boolean {

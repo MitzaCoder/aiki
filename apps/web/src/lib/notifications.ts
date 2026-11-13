@@ -7,13 +7,13 @@ import {
 	isNotificationFailure,
 	type DeviceNotificationSettings,
 	type QuietHours,
-} from "@aiki/client";
+} from "@kemiri/client";
 import {
 	NOTIFICATION_FAILURE_KINDS,
 	DEFAULT_NOTIFICATION_KINDS,
 	type NotificationDevice,
 	type NotificationKind,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { currentProject } from "./projects.ts";
 
 /** The Notifications page, linked from the sidebar's footer beside Backends. */

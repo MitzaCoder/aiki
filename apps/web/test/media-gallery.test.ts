@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { Artifact } from "@aiki/protocol";
+import type { Artifact } from "@kemiri/protocol";
 import {
 	addTags,
 	clampPercent,

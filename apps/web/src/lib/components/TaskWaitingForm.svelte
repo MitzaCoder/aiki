@@ -1,5 +1,5 @@
 <script lang="ts">
- import type { BoardTaskWaiting } from '@aiki/protocol';
+ import type { BoardTaskWaiting } from '@kemiri/protocol';
  import { workDay } from '#lib/work-day.svelte.js';
  import { resolveWaitingDate, localWaitingDate, formatWaitingTime } from '#lib/work-day.js';
  import { waitingDateIn } from '#lib/task-waiting.js';

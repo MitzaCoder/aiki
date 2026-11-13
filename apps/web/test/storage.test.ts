@@ -1,6 +1,6 @@
 /** Project settings' Storage section: the words for each workspace, the cleanup summary and what a cleanup did. */
 import { describe, expect, test } from "bun:test";
-import type { StorageItem } from "@aiki/protocol";
+import type { StorageItem } from "@kemiri/protocol";
 import { cleanupNotice, cleanupSummary, storageKindLabel, storageSize, storageStateLabel } from "../src/lib/storage.ts";
 
 function item(overrides: Partial<StorageItem> = {}): StorageItem {

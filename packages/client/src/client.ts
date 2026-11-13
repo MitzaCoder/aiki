@@ -139,8 +139,8 @@ import type {
 	WorkerSummary,
 	WorkersDefaultsSetResponse,
 	WorkersListResponse,
-} from "@aiki/protocol";
-import { LEGACY_HARNESS_FEATURES, PROTOCOL_VERSION, TERMINAL_FRAME, decodeTerminalFrame, encodeTerminalAck, encodeTerminalFrame } from "@aiki/protocol";
+} from "@kemiri/protocol";
+import { LEGACY_HARNESS_FEATURES, PROTOCOL_VERSION, TERMINAL_FRAME, decodeTerminalFrame, encodeTerminalAck, encodeTerminalFrame } from "@kemiri/protocol";
 import { backoffDelay, canRetry, type BackoffOptions } from "./backoff.ts";
 import { ClientError, errorFromResponse, errorMessage } from "./errors.ts";
 import { memoryChangedIsFor, type MemoryTarget } from "./memory.ts";
@@ -312,7 +312,7 @@ export class HarnessClient {
 	readonly #artifactListeners = new Set<(event: ArtifactsChangedEvent) => void>();
 	readonly #draftListeners = new Set<(event: DraftsChangedEvent) => void>();
 	readonly #loginListeners = new Set<(login: AuthLogin) => void>();
-	readonly #mcpOAuthListeners = new Set<(flow: import('@aiki/protocol').McpOAuthFlow) => void>();
+	readonly #mcpOAuthListeners = new Set<(flow: import('@kemiri/protocol').McpOAuthFlow) => void>();
 	readonly #errorListeners = new Set<(error: ClientError) => void>();
 	readonly #pending = new Map<string, Pending>();
 	readonly #watches = new Set<ConversationWatch>();
@@ -353,7 +353,7 @@ export class HarnessClient {
 	}
 
 	/** MCP sign-in changes, including completion in another paired tab. Read mcp.list for server status. */
-	onMcpOAuthChanged(listener: (flow: import('@aiki/protocol').McpOAuthFlow) => void): () => void {
+	onMcpOAuthChanged(listener: (flow: import('@kemiri/protocol').McpOAuthFlow) => void): () => void {
 		this.#mcpOAuthListeners.add(listener);
 		return () => this.#mcpOAuthListeners.delete(listener);
 	}
@@ -1109,8 +1109,8 @@ export class HarnessClient {
 	 * provider should still have cached: why, where, and what a longer cache would have saved. Needs `cache-stats`.
 	 */
 	/** Spend one saved reset only after the user confirms. Needs subscription-resets. */
-	async resetSubscription(options: Omit<import("@aiki/protocol").SubscriptionsResetRequest, "type" | "id">): Promise<import("@aiki/protocol").SubscriptionsResetResponse> {
-		return this.#call<import("@aiki/protocol").SubscriptionsResetResponse>({type:"subscriptions.reset",...options});
+	async resetSubscription(options: Omit<import("@kemiri/protocol").SubscriptionsResetRequest, "type" | "id">): Promise<import("@kemiri/protocol").SubscriptionsResetResponse> {
+		return this.#call<import("@kemiri/protocol").SubscriptionsResetResponse>({type:"subscriptions.reset",...options});
 	}
 
 	async readCacheStats(options: { days?: number; projectId?: string; utcOffsetMinutes?: number; calendarToday?: boolean } = {}): Promise<CacheStats> {

@@ -22,7 +22,7 @@
 	import TaskReply from '#lib/components/TaskReply.svelte';
 	import TaskSectionNav from '#lib/components/TaskSectionNav.svelte';
 	import TaskSection from '#lib/components/TaskSection.svelte';
-	import { formatMinutes } from '@aiki/client';
+	import { formatMinutes } from '@kemiri/client';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import TaskFiles from '#lib/components/artifacts/TaskFiles.svelte';
@@ -60,7 +60,7 @@
 		BoardWriter,
 		ThreadSummary,
 		WorkerSummary
-	} from '@aiki/protocol';
+	} from '@kemiri/protocol';
 
 	/**
 	 * A task as a sheet over the project chat, opened by `?task=T12` on main's page or a thread's: a wide panel on a

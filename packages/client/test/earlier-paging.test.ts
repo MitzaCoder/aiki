@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { ConversationWatch, type WatchHost } from '../src/watch.ts';
-import type { ConversationPageResponse } from '@aiki/protocol';
+import type { ConversationPageResponse } from '@kemiri/protocol';
 
 test('older pages are single-flight and their error survives independently of the live watch until retry', async () => {
 	let requests = 0;

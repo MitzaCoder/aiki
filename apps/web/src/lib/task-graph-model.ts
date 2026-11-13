@@ -1,4 +1,4 @@
-import type { BoardQuestion, BoardTask, BoardTaskStatus, ThreadSummary, WorkerSummary } from '@aiki/protocol';
+import type { BoardQuestion, BoardTask, BoardTaskStatus, ThreadSummary, WorkerSummary } from '@kemiri/protocol';
 
 export const GRAPH_STATUSES: { key: BoardTaskStatus; label: string; mark: string; tone: string }[] = [
 	{ key: 'todo', label: 'Planned', mark: '○', tone: 'var(--graph-muted)' },

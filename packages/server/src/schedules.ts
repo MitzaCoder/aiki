@@ -48,7 +48,7 @@ import {
 	type ThinkingLevel,
 	ThinkingLevelSchema,
 	type WorkerIsolation,
-} from "@aiki/protocol";
+} from "@kemiri/protocol";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { Type } from "typebox";

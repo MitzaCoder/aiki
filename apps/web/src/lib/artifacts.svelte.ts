@@ -13,8 +13,8 @@ import {
 	artifactUrlUsable,
 	type ArtifactFilter,
 	type HarnessClient,
-} from "@aiki/client";
-import type { Artifact } from "@aiki/protocol";
+} from "@kemiri/client";
+import type { Artifact } from "@kemiri/protocol";
 import { getContext, setContext } from "svelte";
 import { artifactBrowserUrl } from "./artifacts.js";
 
