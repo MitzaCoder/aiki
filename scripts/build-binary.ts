@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { BUN_VERSION } from "./aiki.ts";
+import { builtinSkillFiles } from "../packages/server/src/builtin-skills.ts";
 
 const args = process.argv.slice(2);
 const valueOptions = new Set(["--version", "--target", "--out", "--archive"]);
@@ -60,8 +61,9 @@ try {
 		asset(`${kind}Worker`, file);
 	}
 	const skills: string[] = [];
-	for (const name of (await readdir(join(server, "skills/html-artifacts"))).sort()) {
-		skills.push(`${JSON.stringify(name)}: ${asset(`skill${skills.length}`, join(server, "skills/html-artifacts", name))}`);
+	const skillFiles = builtinSkillFiles(join(server, "skills"));
+	for (const name of Object.keys(skillFiles).sort()) {
+		skills.push(`${JSON.stringify(name)}: ${asset(`skill${skills.length}`, skillFiles[name]!)}`);
 	}
 	const web: string[] = [];
 	async function embedWeb(directory: string, prefix = ""): Promise<void> {

@@ -189,6 +189,11 @@ for printing (owner approval Q188); origin isolation remains unchanged.
 Every project is offered the bundled `html-artifacts` skill through the ordinary lazy skill catalogue. Only its name,
 short description and read path enter the prompt; the body and four self-contained templates are read on demand.
 User/project design instructions outrank the defaults. Source and binary releases both ship the skill and templates.
+Both materialize all bundled skill folders and their files under `<configDir>/builtin-skills/<content-hash>/`,
+with private directories (0700) and files (0600). The hash covers sorted relative names and file contents, not the
+release location, so unchanged deploys keep the same read paths and rendered skills section for prompt caching.
+Missing or edited copies are repaired on render; identical files are not rewritten. Old hash directories are retained
+because another server may still use them. Relative template paths remain siblings of their materialized `SKILL.md`.
 
 HTML previews on web (dialog and new tab) and Android prepend theme defaults with zero-specificity selectors, matching
 `--tone-*` colours, type, spacing and radius tokens. The document's `data-theme` follows the app's light/dark choice;
@@ -1397,6 +1402,8 @@ feature) and get it pushed as `conversation.context.changed` while they watch th
   `read` tool when a task matches; `read` in the response says whether this conversation's transcript already did.
   A name clash keeps the first: harness over pi over Claude, and within a source global over project. A skill whose
   `SKILL.md` real path was already loaded is dropped too, so one symlinked into two places is offered once.
+  Bundled skills are last-resort harness skills, after all of these sources; source and binary installs both offer
+  stable, content-addressed paths under `<configDir>/builtin-skills/<content-hash>/` (see HTML artifact design above).
 - Both are sections of one extension installed for the project, so the coordinator and every worker have them: a worker's
   cwd is its jj workspace when isolated, and it reads that checkout's files. Workers get no worker tools, and the worker
   tools themselves refuse to run outside the coordinator conversation.

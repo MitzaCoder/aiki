@@ -1,5 +1,20 @@
 # Continue
 
+## T181: stable built-in skill paths across releases
+
+Source and binary installs now materialize all bundled skill files at
+`<configDir>/builtin-skills/<content-hash>/<skill>/…`. Sorted relative names
+and contents determine the hash, never the release directory. Identical copies
+are not rewritten; missing/edited copies are repaired, with private modes.
+Old hashes stay available for overlapping servers. The binary builder shares
+the recursive file enumeration; sibling HTML templates still resolve unchanged.
+Regression tests cover identical rendered catalogues across synthetic releases,
+content/name invalidation, source/binary parity, repair, modes and unsafe paths.
+Seven built-in-skill tests and six HTML-skill tests pass within the isolated
+root suite: 2,676 tests, 94,346 assertions, zero failures. Typecheck passes next;
+no flaky retries were needed. Temporary roots were cleaned. No UI change,
+binary build, deployment, push or bookmark movement.
+
 ## T182 follow-up: identify the reported lone mascot
 
 The lone mascot in the original `after-web-phone-dark-waiting.png` was the

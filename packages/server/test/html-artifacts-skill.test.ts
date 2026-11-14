@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { loadAgentContext, renderSkills } from "../src/context.ts";
+import { builtinSkillsDirectory } from "../src/builtin-skills.ts";
 
 const directory = join(import.meta.dir, "../skills/html-artifacts");
 
@@ -14,7 +15,10 @@ test("every fresh project offers the bundled short-description skill without its
 		expect(skill).toBeDefined();
 		expect(skill?.source).toBe("harness");
 		expect(skill?.description.length).toBeLessThan(160); // 25 cl100k_base tokens, measured independently.
-		expect(dirname(skill!.path)).toBe(directory);
+		expect(dirname(skill!.path)).toBe(join(builtinSkillsDirectory(root), "html-artifacts"));
+		for (const name of ["SKILL.md", "report.html", "proof-index.html", "dashboard.html", "deck.html", "tokens.css", "cdn.json"]) {
+			expect(await readFile(join(dirname(skill!.path), name))).toEqual(await readFile(join(directory, name)));
+		}
 		const prompt = renderSkills(context.skills)!;
 		expect(prompt).toContain(skill!.description);
 		expect(prompt).not.toContain("Never depend on browser storage");
