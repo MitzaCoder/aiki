@@ -19,8 +19,6 @@ import {
 	restoreSidebarOpen,
 	saveSidebarState,
 	sidebarTabLabel,
-	sidebarTabLayout,
-	sidebarTabName,
 	sidebarWidthAfterKey,
 	sidebarWidthFromPointer,
 	visibleSidebarTabs,
@@ -101,7 +99,6 @@ describe("sidebar tabs", () => {
 		expect(sidebarTabLabel("memory")).toBe("Memory");
 		expect(sidebarTabLabel("board", { board: "Tasks" })).toBe("Tasks");
 		expect(sidebarTabLabel("info", { board: "Tasks" })).toBe("Info");
-		expect(sidebarTabName("board", 2, { board: "Tasks" })).toBe("Tasks (2)");
 	});
 
 	test("restores an open sidebar only on a wide screen, never a sheet", () => {
@@ -189,57 +186,5 @@ describe("stored sidebar state", () => {
 		};
 		expect(loadSidebarState(broken)).toEqual({ width: DEFAULT_SIDEBAR_WIDTH, open: false, tab: "info" });
 		expect(() => saveSidebarState({ width: 400, open: true, tab: "info" }, broken)).not.toThrow();
-	});
-});
-
-describe("sidebar tab layout", () => {
-	const all = ["board", "background", "info", "memory"] as const;
-
-	test("shows every label when the row has room", () => {
-		expect(sidebarTabLayout(470, all, "info")).toBe("labels");
-		expect(sidebarTabLayout(1000, all, "board")).toBe("labels");
-	});
-
-	test("keeps only the active label, then icons alone, as the row narrows", () => {
-		expect(sidebarTabLayout(250, all, "info")).toBe("active-label");
-		expect(sidebarTabLayout(150, all, "info")).toBe("icons");
-		expect(sidebarTabLayout(0, all, "info")).toBe("icons");
-	});
-
-	test("a longer active label needs more room than a shorter one", () => {
-		const widths = [150, 180, 210, 240, 270, 300, 330];
-		const ranks = { icons: 0, "active-label": 1, labels: 2 } as const;
-		for (const width of widths) {
-			expect(ranks[sidebarTabLayout(width, all, "background")]).toBeLessThanOrEqual(ranks[sidebarTabLayout(width, all, "info")]);
-		}
-	});
-
-	test("grows with the room, never back", () => {
-		const ranks = { icons: 0, "active-label": 1, labels: 2 } as const;
-		let last = 0;
-		for (let width = 0; width <= 600; width += 10) {
-			const rank = ranks[sidebarTabLayout(width, all, "memory")];
-			expect(rank).toBeGreaterThanOrEqual(last);
-			last = rank;
-		}
-	});
-
-	test("a badge costs room only beside a shown label", () => {
-		const badges = { board: 2, background: 3, info: 1 };
-		expect(sidebarTabLayout(420, all, "info", badges)).toBe("labels");
-		expect(sidebarTabLayout(380, all, "info", badges)).toBe("active-label");
-		expect(sidebarTabLayout(380, all, "info")).toBe("labels");
-		// Icons alone take 128px whatever the badges.
-		expect(sidebarTabLayout(128, all, "info", badges)).toBe("icons");
-	});
-
-	test("fewer tabs fit with labels at the narrowest width", () => {
-		expect(sidebarTabLayout(199, ["info", "memory"], "info")).toBe("labels");
-	});
-
-	test("names a tab with its count, for the tooltip and the screen reader", () => {
-		expect(sidebarTabName("background")).toBe("Background");
-		expect(sidebarTabName("background", 0)).toBe("Background");
-		expect(sidebarTabName("background", 2)).toBe("Background (2)");
 	});
 });

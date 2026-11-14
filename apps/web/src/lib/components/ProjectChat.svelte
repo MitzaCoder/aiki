@@ -813,7 +813,7 @@
 	<Button
 		variant="ghost"
 		size={labelled ? 'sm' : 'icon-sm'}
-		class={labelled ? 'shrink-0' : 'relative shrink-0'}
+		class={`aria-pressed:bg-muted aria-pressed:text-foreground ${labelled ? 'shrink-0' : 'relative shrink-0'}`}
 		href={action.href}
 		onclick={action.onclick}
 		aria-label={action.name}
@@ -837,7 +837,7 @@
 	<Button
 		variant="ghost"
 		size="sm"
-		class="h-8 w-full justify-start gap-2 px-2 font-normal"
+		class="h-8 w-full justify-start gap-2 px-2 font-normal aria-pressed:bg-muted aria-pressed:text-foreground"
 		href={action.href}
 		onclick={() => pickHeaderAction(action)}
 		aria-label={action.name}
@@ -1112,7 +1112,6 @@
 					bind:tab={sidebarTab}
 					bind:expanded={sidebarExpanded}
 					tabs={sidebarTabs}
-					badges={{ board: questionsWaiting, background: backgroundActive }}
 					labels={{ board: boardTabName }}
 					label="Project sidebar"
 				>

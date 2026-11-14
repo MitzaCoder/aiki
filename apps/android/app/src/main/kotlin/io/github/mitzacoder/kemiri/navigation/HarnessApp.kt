@@ -14,6 +14,7 @@ import android.content.Context
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -237,7 +238,7 @@ private fun PanelSurface(
 ) {
     val title = io.github.mitzacoder.kemiri.features.panels.panelTabLabel(initialTab, rememberTasksView(context.backend.client))
     Scaffold(modifier.semantics { contentDescription = title }, topBar = {
-        TopAppBar(title = { Text(title) }, navigationIcon = {
+        TopAppBar(title = { Text(title, Modifier.semantics { heading() }) }, navigationIcon = {
             JarvisIconButton(Lucide.X, "Close panels", onClick = close)
         }, actions = {
             // Beside the chat only: a phone's panel and the Tasks board already take the whole width.

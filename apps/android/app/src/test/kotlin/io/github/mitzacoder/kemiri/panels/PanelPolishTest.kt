@@ -30,16 +30,6 @@ class PanelPolishTest {
         assertTrue(panelTaskInitiallyCollapsed("dropped"))
         assertFalse(panelTaskInitiallyCollapsed("blocked"))
     }
-    @Test fun tabLabelsAdaptWithoutChangingAccessibleNames() {
-        val tabs = listOf(PanelTab.Board, PanelTab.Threads, PanelTab.Info, PanelTab.Memory)
-        assertEquals(tabs.toSet(), panelVisibleLabels(700f, tabs, PanelTab.Threads))
-        assertEquals(setOf(PanelTab.Threads), panelVisibleLabels(340f, tabs, PanelTab.Threads))
-        assertEquals(emptySet<PanelTab>(), panelVisibleLabels(250f, tabs, PanelTab.Threads))
-        assertEquals(emptySet<PanelTab>(), panelVisibleLabels(310f, panelTabOrder, PanelTab.Artifacts))
-        assertEquals(setOf(PanelTab.Artifacts), panelVisibleLabels(311f, panelTabOrder, PanelTab.Artifacts))
-        assertEquals(panelTabOrder.toSet(), panelVisibleLabels(800f, panelTabOrder, PanelTab.Artifacts))
-        assertEquals("Background, 2 running threads", panelTabDescription(PanelTab.Threads, 2))
-    }
     @Test fun previewRenewalIsBoundedAndOwnerNamesNeverInventNullFields() {
         assertEquals(55_000L, panelPreviewRenewDelay("2026-11-05T12:01:00Z", java.time.Instant.parse("2026-11-05T12:00:00Z").toEpochMilli()))
         assertEquals(1_000L, panelPreviewRenewDelay("2026-11-05T11:00:00Z", java.time.Instant.parse("2026-11-05T12:00:00Z").toEpochMilli()))
@@ -56,10 +46,13 @@ class PanelPolishTest {
         assertEquals("2 min ago", panelRelativeTime("2026-11-05T12:00:00Z", java.time.Instant.parse("2026-11-05T12:02:20Z")))
         assertEquals("unknown", panelRelativeTime("unknown"))
     }
-    @Test fun tabNamesAndBadgesAreAccessible() {
+    @Test fun panelHeadingsNameTheShownContent() {
+        assertEquals("Board", panelTabLabel(PanelTab.Board))
+        assertEquals("Tasks", panelTabLabel(PanelTab.Board, true))
         assertEquals("Background", panelTabLabel(PanelTab.Threads))
-        assertEquals("Board, 2 questions waiting for you", panelTabDescription(PanelTab.Board, 2))
-        assertEquals("Background", panelTabDescription(PanelTab.Threads, 0))
+        assertEquals("Info", panelTabLabel(PanelTab.Info))
+        assertEquals("Memory", panelTabLabel(PanelTab.Memory))
+        assertEquals("Artifacts", panelTabLabel(PanelTab.Artifacts))
     }
     @Test fun reorderPreservesOtherGroupsAndArchivedSlots() {
         val ids = listOf("todo-a", "blocked", "archived", "todo-b", "done", "todo-c")

@@ -1,10 +1,6 @@
 package io.github.mitzacoder.kemiri.features.panels
 
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,38 +34,8 @@ fun PanelsScreen(context: ProjectScreenContext, initialTab: PanelTab = PanelTab.
     // Keep the last hello through reconnect: a temporary offline state must not close an editor.
     val tabs = rememberPanelTabs(context.backend.client).filter { it != PanelTab.Threads || (normalizedThread(context.route.threadId) == "main" && context.route.workerId == null) }.sortedBy { panelTabOrder.indexOf(it) }
     val active = resolvedPanelTab(initialTab, tabs)
-    val project = context.route.projectId
-    val counts = if (PanelTab.Threads in tabs) panelData(context, "tab-counts", { it is ThreadsStateEvent && it.projectId == project }) {
-        context.backend.client.request(ThreadsListRequest(projectId = project)).threads
-    }.value else null
-    // The shared board's open questions, for the Board/Tasks tab's badge.
-    val board by context.board.view.collectAsStateWithLifecycle()
     val tasksView = rememberTasksView(context.backend.client)
     Column(modifier.padding(horizontal = 12.dp)) {
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val labels = panelVisibleLabels(maxWidth.value, tabs, active, tasksView)
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
-            tabs.forEach { tab ->
-                val count = when (tab) {
-                    PanelTab.Board -> board.questions.count { it.status == "open" && panelQuestionVisible(context.route.threadId, it.threadId) }
-                    PanelTab.Threads -> counts.orEmpty().count { !it.main && it.status == "running" && !it.archived }
-                    else -> 0
-                }
-                val selected = active == tab
-                val bringIntoView = remember(tab) { BringIntoViewRequester() }
-                LaunchedEffect(selected, labels) { if (selected) bringIntoView.bringIntoView() }
-                Surface(onClick = { context.navigate(Destination.Panel(context.route, tab)) }, shape = MaterialTheme.shapes.medium,
-                    color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface.copy(alpha = 0f),
-                    modifier = Modifier.bringIntoViewRequester(bringIntoView).semantics { contentDescription = panelTabDescription(tab, count, tasksView); this.selected = selected; role = Role.Tab }) {
-                    Row(Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        BadgedBox(badge = { if (count > 0) PanelTabBadge(tab, count) }) { LucideGlyph(panelTabIcon(tab), size = 18.dp) }
-                        if (tab in labels) Text(panelTabLabel(tab, tasksView), style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-            }
-        }
-        }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         if (connection.status != ConnectionStatus.Ready) Text("Offline · showing last loaded data", color = MaterialTheme.colorScheme.error)
         key(context.backend.client, context.route, active) {
             when (active) {
@@ -114,13 +80,6 @@ private fun TasksTab(context: ProjectScreenContext, modifier: Modifier) {
             }
         },
     ) { start -> TasksPanel(context, toolbarStart = start) }
-}
-
-/** A tab's count, coloured like the header's buttons: questions in the primary colour, running threads in the accent. */
-@Composable private fun PanelTabBadge(tab: PanelTab, count: Int) {
-    val colors = io.github.mitzacoder.kemiri.ui.theme.Jarvis.colors
-    Badge(containerColor = if (tab == PanelTab.Board) MaterialTheme.colorScheme.primary else colors.accent2,
-        contentColor = if (tab != PanelTab.Board && colors.neutral) colors.bg else androidx.compose.ui.graphics.Color.White) { Text(if (count > 9) "9+" else count.toString()) }
 }
 
 /** Relative times in a panel move on while it is open. */

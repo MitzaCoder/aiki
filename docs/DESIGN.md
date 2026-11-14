@@ -28,6 +28,13 @@ formatted schedule and maintenance descriptions use the display preference.
 Arbitrary transcript text, artifact contents, cron expressions and wire timestamps
 are not rewritten.
 
+## Conversation panel controls
+
+Android follows the same header-only panel selection rule (T192). Its panel surface already supplies the title and
+close action, so PanelsScreen draws only the selected body. Header buttons retain question/running badges and expose
+selected semantics; the phone overflow also keeps every panel reachable. Artifacts, previously reachable only through
+the removed tab row, now has a header action too. Its viewer and artifact page components are unchanged.
+
 ## Agent mascot state mapping (T177 / Q199)
 
 Chat activity uses the 40 px/dp mascot (T182): A while a run works, C for an open
@@ -1758,8 +1765,12 @@ Status: backend, protocol, client and web UI done (milestone 2).
   `ProjectSummary.checkIns` and `projects.configure`'s
   `checkIns` (null resets to the defaults) carry the check-in settings, `longPromptCache` the one-hour prompt cache
   (Context → One-hour prompt cache).
-- Web app: a right sidebar with three tabs, shared by the coordinator's chat and the worker transcript page, and hidden
-  per tab when the backend lacks its feature. Info shows the conversation's context (`conversation.context`, live from
+- Web app (T192 / Q210): header toggle buttons alone select Tasks (or Board), Background, Info and Memory.
+  Badges stay in the header, and `aria-pressed` plus a filled background identifies the open panel; pressing it again
+  closes it. At narrow header widths, every hidden panel remains in More actions. The shared right sidebar has no
+  panel tab row: a plain heading labels its content region beside Close (and desktop Expand). Below 72rem the same
+  heading and close appear in a full-screen modal sheet, with focus containment and Escape dismissal. Main and thread
+  chats share this shell; worker transcripts offer only Info and Memory. Panels are feature-gated. Info shows the conversation's context (`conversation.context`, live from
   `conversation.context.changed`) for scanning: a Context usage block above the overview (a bar of the tokens the next
   request would send against the model's window with tick marks at the background and blocking thresholds, the numbers
   in k tokens, the compaction count and when the last one was, "Compacting…" while one runs, and a "Compact now" action
@@ -1779,7 +1790,7 @@ Status: backend, protocol, client and web UI done (milestone 2).
   the section and a snippet with the matches highlighted, the topic files by title, summary, tags and updated time with archived ones
   behind a toggle, an opened file's front matter (tags, links to other memories, source conversation) above its rendered
   body, and the scope's commits. Nothing edits or pins memory in the app. The sidebar resizes from its left edge (360px default, 280px to 60% of the window, double-click resets,
-  keyboard-accessible), remembers width, open state and tab per browser, expands to fill the chat area below the header,
+  keyboard-accessible), remembers width, open state and panel per browser, expands to fill the chat area below the header,
   and becomes a full-screen sheet below 72rem. A read-only worker transcript page shares its turns and tool cards with
   the chat but has no composer, because the user talks only to the coordinator. A compact worker card in the
   coordinator's transcript links each `worker_*` call through `spawnedByCallId`; report, failure and `[check-in]`

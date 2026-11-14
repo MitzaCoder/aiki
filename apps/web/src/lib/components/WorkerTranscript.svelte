@@ -247,6 +247,7 @@
 							variant="ghost"
 							size="icon-sm"
 							onclick={() => toggleSidebar('info')}
+							class="aria-pressed:bg-muted aria-pressed:text-foreground"
 							aria-label="This worker's context"
 							title="Context"
 							aria-pressed={sidebarOpen && sidebarTab === 'info'}
@@ -259,6 +260,7 @@
 							variant="ghost"
 							size="icon-sm"
 							onclick={() => toggleSidebar('memory')}
+							class="aria-pressed:bg-muted aria-pressed:text-foreground"
 							aria-label="Memory"
 							title="Memory"
 							aria-pressed={sidebarOpen && sidebarTab === 'memory'}

@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -228,6 +229,8 @@ fun RowScope.ProjectHeaderActions(context: ProjectScreenContext, panel: Destinat
             Lucide.Layers, background.takeIf { it > 0 }?.toString(), pressed = panel?.tab == PanelTab.Threads) { toggle(PanelTab.Threads) })
         if (PanelTab.Info in tabs) add(HeaderAction("info", if (worker) "This worker's context" else "Conversation info", "Info", Lucide.Info, pressed = panel?.tab == PanelTab.Info) { toggle(PanelTab.Info) })
         if (PanelTab.Memory in tabs) add(HeaderAction("memory", "Memory", "Memory", StatusGlyphs.BookOpen, pressed = panel?.tab == PanelTab.Memory) { toggle(PanelTab.Memory) })
+        // The old panel tabs were the only route to Artifacts. Keep it reachable from the header too.
+        if (PanelTab.Artifacts in tabs) add(HeaderAction("artifacts", "Artifacts", "Artifacts", Lucide.Paperclip, pressed = panel?.tab == PanelTab.Artifacts) { toggle(PanelTab.Artifacts) })
         // A shell on this backend in the project's folder (a worker's page: in its workspace), on a screen of its own.
         if (connection.supports(HarnessFeature.TERMINAL)) {
             val workspace = route.workerId?.let { id -> workers.firstOrNull { it.id == id }?.workspacePath }
@@ -266,7 +269,7 @@ fun RowScope.ProjectHeaderActions(context: ProjectScreenContext, panel: Destinat
                     leadingIcon = { LucideGlyph(action.icon, size = 18.dp) },
                     trailingIcon = if (action.pressed && action.id != "mute") ({ LucideGlyph(Lucide.Check, size = 16.dp) }) else null,
                     onClick = { menu = false; action.onClick() },
-                    modifier = Modifier.semantics { contentDescription = action.name },
+                    modifier = Modifier.semantics { contentDescription = action.name; selected = action.pressed },
                 )
             }
             HorizontalDivider(Modifier.padding(vertical = 4.dp))
@@ -294,7 +297,7 @@ private fun HeaderButton(action: HeaderAction, showLabel: Boolean) {
         action.count?.let { Badge(containerColor = if (action.primary && action.id == "board") MaterialTheme.colorScheme.primary else colors.accent2, contentColor = Color.White) { Text(it) } }
     }
     if (showLabel) {
-        TextButton(onClick = action.onClick, modifier = Modifier.semantics { contentDescription = action.name },
+        TextButton(onClick = action.onClick, modifier = Modifier.semantics { contentDescription = action.name; selected = action.pressed },
             colors = ButtonDefaults.textButtonColors(contentColor = tint, containerColor = if (action.pressed) colors.surface2 else Color.Transparent)) {
             LucideGlyph(action.icon, size = 18.dp)
             Spacer(Modifier.width(6.dp))
@@ -302,7 +305,7 @@ private fun HeaderButton(action: HeaderAction, showLabel: Boolean) {
             action.count?.let { Spacer(Modifier.width(6.dp)); Badge(containerColor = if (action.id == "board") MaterialTheme.colorScheme.primary else colors.accent2, contentColor = Color.White) { Text(it) } }
         }
     } else {
-        IconButton(onClick = action.onClick, modifier = Modifier.semantics { contentDescription = action.name },
+        IconButton(onClick = action.onClick, modifier = Modifier.semantics { contentDescription = action.name; selected = action.pressed },
             colors = IconButtonDefaults.iconButtonColors(containerColor = if (action.pressed) colors.surface2 else Color.Transparent)) {
             BadgedBox(badge = badge) { LucideGlyph(action.icon, size = 20.dp, tint = tint) }
         }

@@ -1,5 +1,17 @@
 # Continue
 
+## T192 / Q210: header-only conversation panels
+
+Web and Android remove the duplicate panel tabs; header buttons alone switch panels,
+keep badges and pressed styling, and toggle closed. The shared web shell has a labelled
+heading, Close and desktop Expand; phone sheets keep the heading and Close. Main/thread
+and worker routes stay consistent. Android also adds Artifacts to the header because its
+old tab was the only selector; no artifact viewer/page components changed.
+Proof index on T192: mwgm941g-26ecaa34a1 (24 screenshots, two recordings and keyboard checks).
+All requested gates pass: root 2,694 tests/typecheck; web 1,141 tests/check/build; Android
+967 JVM tests (two skipped), assemble/lint (49 existing warnings); external public checks.
+Synthetic backend/emulator only; no real phone, deployment, main movement or push.
+
 ## T190: device-local 12/24-hour clocks
 
 Appearance → Time offers Automatic (locale), 24-hour and 12-hour on both clients.

@@ -77,45 +77,6 @@ export function sidebarTabLabel(tab: SidebarTab, labels: Partial<Record<SidebarT
 	return labels[tab] ?? SIDEBAR_TAB_LABELS[tab];
 }
 
-/** How much of each tab shows: every label, only the active tab's, or icons alone. */
-export type SidebarTabLayout = "labels" | "active-label" | "icons";
-
-/** Room one tab's icon, padding and gap need, and one character of a label at the tab's text size (a little generous). */
-const TAB_CHROME_PX = 36;
-const TAB_ICON_ONLY_PX = 30;
-const TAB_LABEL_CHAR_PX = 7.5;
-const TAB_BADGE_PX = 22;
-const TAB_GAP_PX = 2;
-
-function tabWidth(tab: SidebarTab, showLabel: boolean, badge: number | undefined): number {
-	if (!showLabel) return TAB_ICON_ONLY_PX + TAB_GAP_PX;
-	const badgeWidth = badge !== undefined && badge > 0 ? TAB_BADGE_PX : 0;
-	return TAB_CHROME_PX + sidebarTabLabel(tab).length * TAB_LABEL_CHAR_PX + badgeWidth + TAB_GAP_PX;
-}
-
-/**
- * What the tab row shows in `available` pixels: all labels when they fit, else icons with just the active tab's
- * label, else icons alone. A badge sits inline beside a label and over the icon corner without one, so only a shown label pays for it.
- */
-export function sidebarTabLayout(
-	available: number,
-	tabs: readonly SidebarTab[],
-	active: SidebarTab,
-	badges: Partial<Record<SidebarTab, number>> = {},
-): SidebarTabLayout {
-	const total = (showLabel: (tab: SidebarTab) => boolean): number =>
-		tabs.reduce((sum, tab) => sum + tabWidth(tab, showLabel(tab), badges[tab]), 0);
-	if (total(() => true) <= available) return "labels";
-	if (total((tab) => tab === active) <= available) return "active-label";
-	return "icons";
-}
-
-/** The name a tab answers to when its label is hidden or a badge adds to it: "Background (2)". */
-export function sidebarTabName(tab: SidebarTab, badge?: number, labels: Partial<Record<SidebarTab, string>> = {}): string {
-	const name = sidebarTabLabel(tab, labels);
-	return badge !== undefined && badge > 0 ? `${name} (${badge})` : name;
-}
-
 /** The widest the sidebar may be dragged in a window of this width. */
 export function maxSidebarWidth(viewportWidth: number): number {
 	return Math.max(MIN_SIDEBAR_WIDTH, Math.round(viewportWidth * MAX_SIDEBAR_WINDOW_SHARE));

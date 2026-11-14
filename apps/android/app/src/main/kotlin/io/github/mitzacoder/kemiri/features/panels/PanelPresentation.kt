@@ -21,18 +21,6 @@ internal fun panelTabLabel(tab: PanelTab, tasks: Boolean = false) = when {
     tab == PanelTab.Board && tasks -> "Tasks"
     else -> tab.label
 }
-internal fun panelTabDescription(tab: PanelTab, count: Int, tasks: Boolean = false): String = panelTabLabel(tab, tasks) + if (count <= 0) "" else when (tab) {
-    PanelTab.Board -> ", $count questions waiting for you"
-    PanelTab.Threads -> ", $count running threads"
-    else -> ", $count"
-}
-internal fun panelTabIcon(tab: PanelTab) = when (tab) {
-    PanelTab.Board -> Lucide.Kanban
-    PanelTab.Threads -> Lucide.Layers
-    PanelTab.Info -> Lucide.Info
-    PanelTab.Memory -> Lucide.Brain
-    PanelTab.Artifacts -> Lucide.Paperclip
-}
 internal data class BoardOrderState(val ids: List<String>? = null, val saving: Boolean = false, val error: String? = null, val status: String? = null) {
     fun failed(message: String) = BoardOrderState(error = message)
 }
@@ -77,12 +65,6 @@ internal val panelTaskStatuses = listOf("in_progress", "review", "blocked", "tod
 internal fun panelTaskInitiallyCollapsed(status: String) = status in listOf("done", "dropped")
 
 internal val panelTabOrder = listOf(PanelTab.Board, PanelTab.Threads, PanelTab.Info, PanelTab.Memory, PanelTab.Artifacts)
-internal fun panelVisibleLabels(width: Float, tabs: List<PanelTab>, active: PanelTab?, tasks: Boolean = false): Set<PanelTab> {
-    val iconWidth = tabs.size * 48f
-    val allWidth = iconWidth + tabs.sumOf { panelTabLabel(it, tasks).length * 7 + 8 }
-    val activeWidth = iconWidth + (active?.let { panelTabLabel(it, tasks).length * 7 + 8 } ?: 0)
-    return when { width >= allWidth -> tabs.toSet(); width >= activeWidth -> setOfNotNull(active); else -> emptySet() }
-}
 internal fun panelBytes(bytes: Long): String = when {
     bytes < 0 -> "—"
     bytes < 1024 -> "$bytes B"
