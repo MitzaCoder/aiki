@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mascot animation previews · Kemiri</title>
+<style>
+@layer artifact-defaults {
+:root {
+	color-scheme: light;
+
+	--tone-radius: 0.875rem;
+
+	--tone-bg: #fbfaff;
+	--tone-surface: #f3f1fb;
+	--tone-surface-2: #eae7f6;
+	--tone-border: #e3dff0;
+	--tone-border-strong: #d2cce6;
+
+	--tone-fg: #1a1830;
+	--tone-fg-muted: #5d5a78;
+	--tone-fg-subtle: #8c89a6;
+
+	--tone-primary: #6366f1;
+	--tone-primary-fg: #ffffff;
+
+	--tone-accent-1: #22d3ee;
+	--tone-accent-2: #6366f1;
+	--tone-accent-3: #d946ef;
+	--tone-accent-4: #fb923c;
+
+	--tone-user-bubble: linear-gradient(135deg, #eef2ff, #fae8ff);
+	--tone-user-border: #ddd6fe;
+
+	--tone-danger: #e11d48;
+	--tone-success: #059669;
+	--tone-warning: #d97706;
+	--tone-ring: #8b5cf6;
+
+	--tone-shadow: 0 10px 40px -12px rgb(76 29 149 / 0.25), 0 2px 8px -2px rgb(76 29 149 / 0.08);
+--font-sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--font-mono:ui-monospace,SFMono-Regular,Menlo,monospace;--text-task:.9375rem;--text-task-sm:.8125rem;--spacing:.25rem;}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+	color-scheme: dark;
+
+	--tone-bg: #09090f;
+	--tone-surface: #15141f;
+	--tone-surface-2: #1d1b2b;
+	--tone-border: #262437;
+	--tone-border-strong: #34314b;
+
+	--tone-fg: #ecebf5;
+	--tone-fg-muted: #a3a0bd;
+	--tone-fg-subtle: #6e6b88;
+
+	--tone-primary: #818cf8;
+	--tone-primary-fg: #0b0b14;
+
+	--tone-accent-1: #22d3ee;
+	--tone-accent-2: #818cf8;
+	--tone-accent-3: #e879f9;
+	--tone-accent-4: #fb923c;
+
+	--tone-user-bubble: linear-gradient(135deg, #1e1b4b, #3b0f4a);
+	--tone-user-border: #3f3470;
+
+	--tone-danger: #fb7185;
+	--tone-success: #34d399;
+	--tone-warning: #fbbf24;
+	--tone-ring: #a78bfa;
+
+	--tone-shadow: 0 10px 40px -12px rgb(0 0 0 / 0.7), 0 2px 8px -2px rgb(0 0 0 / 0.4);
+}}
+:root[data-theme="dark"]{
+	color-scheme: dark;
+
+	--tone-bg: #09090f;
+	--tone-surface: #15141f;
+	--tone-surface-2: #1d1b2b;
+	--tone-border: #262437;
+	--tone-border-strong: #34314b;
+
+	--tone-fg: #ecebf5;
+	--tone-fg-muted: #a3a0bd;
+	--tone-fg-subtle: #6e6b88;
+
+	--tone-primary: #818cf8;
+	--tone-primary-fg: #0b0b14;
+
+	--tone-accent-1: #22d3ee;
+	--tone-accent-2: #818cf8;
+	--tone-accent-3: #e879f9;
+	--tone-accent-4: #fb923c;
+
+	--tone-user-bubble: linear-gradient(135deg, #1e1b4b, #3b0f4a);
+	--tone-user-border: #3f3470;
+
+	--tone-danger: #fb7185;
+	--tone-success: #34d399;
+	--tone-warning: #fbbf24;
+	--tone-ring: #a78bfa;
+
+	--tone-shadow: 0 10px 40px -12px rgb(0 0 0 / 0.7), 0 2px 8px -2px rgb(0 0 0 / 0.4);
+}
+}
+
+*{box-sizing:border-box}body{margin:0;background:var(--tone-bg);color:var(--tone-fg);font:16px/1.65 var(--font-sans)}
+main{max-width:72rem;margin:auto;padding:clamp(1.25rem,5vw,4rem);padding-bottom:5rem}header{padding-bottom:2rem;border-bottom:1px solid var(--tone-border)}
+.kicker{font:600 .75rem/1.5 var(--font-mono);text-transform:uppercase;letter-spacing:.12em;color:var(--tone-fg-muted)}
+h1{font-size:clamp(2rem,5vw,3.8rem);line-height:1.08;letter-spacing:-.045em;font-weight:650;margin:1rem 0;max-width:23ch}h2{font-size:1.5rem;letter-spacing:-.025em;line-height:1.25}h3{font-size:1rem;margin-top:0}
+p{max-width:70ch}.lead{font-size:1.125rem;color:var(--tone-fg-muted);max-width:56ch}.muted,figcaption{color:var(--tone-fg-muted)}section{margin-top:2.5rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr));gap:1rem}.card{padding:1.5rem;border:1px solid var(--tone-border);border-radius:var(--tone-radius);background:var(--tone-surface)}.verdict{border-left:3px solid var(--tone-primary)}
+.metric{font-size:2.75rem;font-weight:650;letter-spacing:-.05em;line-height:1.2;font-variant-numeric:tabular-nums}.tag{display:inline-block;font-size:.75rem;padding:.1rem .5rem;border:1px solid var(--tone-border-strong);border-radius:99px;color:var(--tone-fg-muted)}
+a{color:var(--tone-primary);text-underline-offset:3px}button{font:inherit;border:1px solid var(--tone-border-strong);border-radius:.5rem;background:var(--tone-surface);color:var(--tone-fg);padding:.5rem 1rem;cursor:pointer}:focus-visible{outline:3px solid var(--tone-ring);outline-offset:3px}
+.table{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.875rem}caption{text-align:left;color:var(--tone-fg-muted);padding:.5rem 0}td,th{text-align:left;padding:.85rem .5rem;border-bottom:1px solid var(--tone-border)}th{font-weight:600;color:var(--tone-fg-muted)}.ok{color:var(--tone-fg);font-weight:600}
+figure{margin:0}img,video,svg{display:block;max-width:100%;height:auto;border-radius:.5rem}figcaption{font-size:.8125rem;padding-top:.65rem}footer{margin-top:3rem;border-top:1px solid var(--tone-border);padding-top:1rem;font-size:.8125rem;color:var(--tone-fg-muted)}
+.bar{height:1rem;background:var(--tone-primary);border-radius:3px}.track{background:var(--tone-surface-2);border-radius:3px}.chart-row{display:grid;grid-template-columns:4rem 1fr 3rem;gap:.75rem;align-items:center;margin:1rem 0;font-size:.875rem}.chart-row span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}
+@media print{body{background:white;color:black;font-size:11pt}main{padding:0;max-width:none}.card{background:none;border-color:#bbb;break-inside:avoid}header{padding-bottom:1rem}h1{font-size:28pt}h2,h3{break-after:avoid}figure,tr{break-inside:avoid}.no-print,button{display:none!important}.muted,.lead,figcaption,.kicker,th,footer,.tag,.ok{color:#444}.grid{display:grid;grid-template-columns:1fr 1fr}section{margin-top:1.5rem}a{color:inherit}.table{overflow:visible}}
+
+</style><style>
+/* The sample surfaces deliberately stay light/dark regardless of the surrounding artifact theme. */
+main{max-width:86rem;padding:clamp(1rem,3vw,3rem)}header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:1rem;padding-bottom:1.5rem}h1{font-size:clamp(2rem,4vw,3.4rem);margin:.5rem 0;max-width:24ch}.lead{font-size:1rem;margin:.5rem 0}.controls{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.controls button{font-size:.875rem}.motion-status{font-size:.8125rem;color:var(--tone-fg-muted);flex-basis:100%}.variants{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-top:1.5rem}.motion-card{border:1px solid var(--tone-border);border-radius:var(--tone-radius);overflow:hidden;background:var(--tone-surface)}.variant-heading{padding:1rem 1.1rem .25rem}.variant-heading h2{font-size:1.25rem;margin:.25rem 0}.variant-heading p{font-size:.875rem;color:var(--tone-fg-muted);min-height:3em;margin:.4rem 0 .7rem}.swatch{margin:.75rem;padding:.8rem;border-radius:.7rem;border:1px solid var(--sample-border);background:var(--sample-bg);color:var(--sample-fg)}.swatch-light{--sample-bg:#fbfaff;--sample-surface:#f3f1fb;--sample-fg:#1a1830;--sample-muted:#5d5a78;--sample-border:#e3dff0;--sample-user:linear-gradient(135deg,#eef2ff,#fae8ff)}.swatch-dark{--sample-bg:#09090f;--sample-surface:#15141f;--sample-fg:#ecebf5;--sample-muted:#a3a0bd;--sample-border:#262437;--sample-user:linear-gradient(135deg,#1e1b4b,#3b0f4a)}.surface-label{margin:0;font-size:.75rem;font-weight:600;color:var(--sample-muted)}.samples{display:grid;grid-template-columns:1fr 1fr 128px;gap:.5rem;align-items:end;min-height:166px;padding-top:.4rem}.sample{display:flex;flex-direction:column;align-items:center;justify-content:end;gap:.7rem;height:100%;padding-top:.6rem}.sample figcaption{font: .75rem var(--font-mono);color:var(--sample-muted);padding:0}.mascot-motion{width:var(--size);height:var(--size);max-width:none;flex-shrink:0;border-radius:0}.mock-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.mock-grid .swatch{margin:0;padding:1.25rem}.user-message{margin:.75rem 0 1.5rem auto;border:1px solid var(--sample-border);border-radius:1rem;background:var(--sample-user);padding:.6rem 1rem;max-width:85%;font-size:var(--text-task)}.assistant-row{display:flex;gap:16px;align-items:center;font-size:14px;min-height:42px;padding:4px 0}.assistant-row .mascot-motion,.current-orb{width:26px;height:26px;flex-shrink:0}.row-caption{font-size:.75rem;color:var(--sample-muted);margin-left:auto;text-align:right}.current-orb{position:relative;border-radius:50%;isolation:isolate}.current-orb::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(#22d3ee,#818cf8,#e879f9,#fb923c,#22d3ee);filter:blur(1px);box-shadow:0 0 18px -2px #e879f9aa;animation:preview-orb 1.6s linear infinite}.current-orb::after{content:"";position:absolute;inset:18%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffffd9,transparent 60%);mix-blend-mode:soft-light}.working-label{font-weight:500;background:linear-gradient(110deg,var(--sample-muted) 20%,var(--sample-fg) 45%,var(--sample-muted) 70%);background-size:200% 100%;background-clip:text;color:transparent;animation:preview-shimmer 2.5s ease-in-out infinite}.mock-caption{font-size:.8125rem;margin:.75rem 0 0;color:var(--sample-muted)}.notes{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1.5rem}.notes h2{font-size:1rem}.notes p{font-size:.875rem;color:var(--tone-fg-muted)}footer{margin-top:1.5rem}.state-label{color:var(--sample-fg)}[data-motion-paused="true"] .current-orb::before,[data-motion-paused="true"] .working-label{animation-play-state:paused}@keyframes preview-orb{to{transform:rotate(360deg)}}@keyframes preview-shimmer{to{background-position:-200% 0}}
+@media(max-width:1000px){.variants{grid-template-columns:1fr}.variant-heading p{min-height:0}.motion-card{display:grid;grid-template-columns:1fr 1fr}.variant-heading{grid-column:1/-1}.samples{grid-template-columns:1fr 1fr 128px}.mock-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.motion-card{display:block}.notes{grid-template-columns:1fr;gap:.5rem}.row-caption{max-width:7rem}.mock-grid .swatch{padding:1rem}.assistant-row{gap:12px}.user-message{max-width:100%}}
+@media(prefers-reduced-motion:reduce){.current-orb::before,.working-label{animation:none!important}}
+@media print{header{display:block}.variants{grid-template-columns:1fr}.motion-card{break-inside:avoid;display:grid;grid-template-columns:1fr 1fr}.variant-heading{grid-column:1/-1}.swatch{background:white!important;color:black!important;border-color:#bbb}.surface-label,.sample figcaption,.row-caption,.mock-caption{color:#444!important}.swatch{--sample-bg:white;--sample-fg:black;--sample-muted:#444;--sample-border:#bbb;--sample-user:white}.mock-grid{grid-template-columns:1fr 1fr}.notes{display:block}.current-orb::before,.working-label{animation:none}.working-label{background:none;color:black}.mock-grid .swatch{break-inside:avoid}}
+/* Preview-only motion. All distances and pivots use the SVG master's 1024-unit coordinates. */
+.mascot-motion { --mascot-bob: -12px; --mascot-hop: -42px; --mascot-sway: 4.5deg; overflow: visible; }
+.mascot-motion[data-size="small"] { --mascot-bob: -7px; --mascot-hop: -30px; --mascot-sway: 3deg; }
+.mascot-pose { transform-origin: 512px 850px; }
+.mascot-leaf { transform-origin: 523px 380px; }
+.mascot-eye-left { transform-origin: 422px 592px; }
+.mascot-eye-right { transform-origin: 602px 592px; }
+.mascot-motion[data-state="working"] .mascot-pose { animation: kemiri-breathe 3s ease-in-out infinite; }
+.mascot-motion[data-state="working"] .mascot-leaf { animation: kemiri-sway 3s ease-in-out infinite; }
+.mascot-motion[data-state="working"] .mascot-eye { animation: kemiri-working-blink 6s ease-in-out infinite; }
+.mascot-motion[data-state="done"][data-play] .mascot-pose { animation: kemiri-hop 1.3s ease-in-out both; }
+.mascot-motion[data-state="done"][data-play] .mascot-leaf { animation: kemiri-flutter 1.3s ease-in-out both; }
+.mascot-motion[data-state="thinking"] .mascot-eyes-gaze { animation: kemiri-look 3.5s ease-in-out infinite; }
+.mascot-motion[data-state="thinking"] .mascot-eye { animation: kemiri-thinking-blink 3.5s ease-in-out infinite; }
+.mascot-motion[data-state="thinking"] .mascot-leaf { animation: kemiri-twitch 3.5s ease-in-out infinite; }
+@keyframes kemiri-breathe {
+  0%,100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(var(--mascot-bob)) scale(.985,1.02); }
+}
+/* The pose peaks at 50%; the leaf follows at 60%, then returns without a seam. */
+@keyframes kemiri-sway {
+  0%,100% { transform: rotate(0deg); }
+  30% { transform: rotate(calc(-1 * var(--mascot-sway))); }
+  60% { transform: rotate(var(--mascot-sway)); }
+}
+/* One 180 ms blink per two breathing loops. */
+@keyframes kemiri-working-blink {
+  0%,91%,94%,100% { transform: scaleY(1); }
+  92.5% { transform: scaleY(.08); }
+}
+@keyframes kemiri-hop {
+  0%,100% { transform: translateY(0) scale(1); }
+  15% { transform: translateY(0) scale(1.035,.96); }
+  34% { transform: translateY(var(--mascot-hop)) scale(.985,1.02); }
+  49% { transform: translateY(calc(var(--mascot-hop) * .65)) scale(1); }
+  65% { transform: translateY(0) scale(1.035,.975); }
+  82% { transform: translateY(-4px) scale(.995,1.005); }
+}
+@keyframes kemiri-flutter {
+  0%,15%,100% { transform: rotate(0deg); }
+  33% { transform: rotate(-8deg); }
+  44% { transform: rotate(6deg); }
+  56% { transform: rotate(-4deg); }
+  70% { transform: rotate(2deg); }
+  86% { transform: rotate(0deg); }
+}
+/* Three half-second holds; back at centre before the final blink. The body never moves. */
+@keyframes kemiri-look {
+  0%,3%,72%,100% { transform: translate(0,0); }
+  9%,23% { transform: translate(-14px,0); }
+  30%,44% { transform: translate(0,-13px); }
+  51%,65% { transform: translate(14px,0); }
+}
+@keyframes kemiri-thinking-blink {
+  0%,85%,92%,100% { transform: scaleY(1); }
+  88.5% { transform: scaleY(.08); }
+}
+@keyframes kemiri-twitch {
+  0%,77%,89%,100% { transform: rotate(0deg); }
+  81% { transform: rotate(-3deg); }
+  85% { transform: rotate(2deg); }
+}
+[data-motion-paused="true"] .mascot-motion * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .mascot-motion * { animation: none !important; transform: none !important; }
+}
+@media print {
+  .mascot-motion * { animation: none !important; transform: none !important; }
+}
+
+</style>
+</head>
+<body><main>
+<header><div><p class="kicker">Kemiri · T177 · preview only</p><h1>A little life for Kemiri.</h1><p class="lead">Three SVG motions. Same candlenut. Nothing is wired into chat yet.</p></div><div class="controls no-print"><button type="button" data-replay>Replay B · Done</button><button type="button" id="pause" aria-pressed="false">Pause motion</button><button type="button" id="theme">Switch page theme</button><span class="motion-status" id="motion-status" role="status">Motion follows your system’s accessibility setting.</span></div></header>
+<section class="variants" aria-label="Mascot animation previews"><article class="motion-card" aria-labelledby="variant-A"><div class="variant-heading"><span class="tag">A · 3 s loop</span><h2 id="variant-A">Working</h2><p>A gentle breath, a delayed leaf sway. One blink every other loop.</p></div><div class="swatch swatch-light"><p class="surface-label">Light surface</p><div class="samples"><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="24" height="24" class="mascot-motion" data-state="working" data-size="small" style="--size:24px" role="img" aria-label="Kemiri working mascot"><defs>
+    <linearGradient id="A-light-24-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="A-light-24-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="A-light-24-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="A-light-24-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#A-light-24-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#A-light-24-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#A-light-24-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#A-light-24-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>24 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="32" height="32" class="mascot-motion" data-state="working" data-size="small" style="--size:32px" role="img" aria-label="Kemiri working mascot"><defs>
+    <linearGradient id="A-light-32-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="A-light-32-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="A-light-32-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="A-light-32-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#A-light-32-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#A-light-32-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#A-light-32-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#A-light-32-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>32 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="128" height="128" class="mascot-motion" data-state="working" style="--size:128px" role="img" aria-label="Kemiri working mascot"><defs>
+    <linearGradient id="A-light-128-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="A-light-128-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="A-light-128-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="A-light-128-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#A-light-128-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#A-light-128-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#A-light-128-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#A-light-128-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>128 px</figcaption></figure></div></div><div class="swatch swatch-dark"><p class="surface-label">Dark · #09090f</p><div class="samples"><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="24" height="24" class="mascot-motion" data-state="working" data-size="small" style="--size:24px" role="img" aria-label="Kemiri working mascot"><defs>
+    <linearGradient id="A-dark-24-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="A-dark-24-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="A-dark-24-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="A-dark-24-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#A-dark-24-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#A-dark-24-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#A-dark-24-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#A-dark-24-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>24 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="32" height="32" class="mascot-motion" data-state="working" data-size="small" style="--size:32px" role="img" aria-label="Kemiri working mascot"><defs>
+    <linearGradient id="A-dark-32-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="A-dark-32-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="A-dark-32-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="A-dark-32-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#A-dark-32-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#A-dark-32-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#A-dark-32-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#A-dark-32-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>32 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="128" height="128" class="mascot-motion" data-state="working" style="--size:128px" role="img" aria-label="Kemiri working mascot"><defs>
+    <linearGradient id="A-dark-128-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="A-dark-128-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="A-dark-128-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="A-dark-128-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#A-dark-128-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#A-dark-128-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#A-dark-128-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#A-dark-128-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>128 px</figcaption></figure></div></div></article>
+<article class="motion-card" aria-labelledby="variant-B"><div class="variant-heading"><span class="tag">B · 1.3 s once</span><h2 id="variant-B">Done</h2><p>Squash, a small hop, a leaf flutter. Soft landing, then still.</p></div><div class="swatch swatch-light"><p class="surface-label">Light surface</p><div class="samples"><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="24" height="24" class="mascot-motion" data-state="done" data-size="small" data-play style="--size:24px" role="img" aria-label="Kemiri done mascot"><defs>
+    <linearGradient id="B-light-24-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="B-light-24-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="B-light-24-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="B-light-24-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#B-light-24-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#B-light-24-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#B-light-24-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#B-light-24-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>24 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="32" height="32" class="mascot-motion" data-state="done" data-size="small" data-play style="--size:32px" role="img" aria-label="Kemiri done mascot"><defs>
+    <linearGradient id="B-light-32-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="B-light-32-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="B-light-32-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="B-light-32-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#B-light-32-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#B-light-32-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#B-light-32-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#B-light-32-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>32 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="128" height="128" class="mascot-motion" data-state="done" data-play style="--size:128px" role="img" aria-label="Kemiri done mascot"><defs>
+    <linearGradient id="B-light-128-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="B-light-128-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="B-light-128-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="B-light-128-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#B-light-128-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#B-light-128-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#B-light-128-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#B-light-128-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>128 px</figcaption></figure></div></div><div class="swatch swatch-dark"><p class="surface-label">Dark · #09090f</p><div class="samples"><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="24" height="24" class="mascot-motion" data-state="done" data-size="small" data-play style="--size:24px" role="img" aria-label="Kemiri done mascot"><defs>
+    <linearGradient id="B-dark-24-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="B-dark-24-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="B-dark-24-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="B-dark-24-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#B-dark-24-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#B-dark-24-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#B-dark-24-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#B-dark-24-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>24 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="32" height="32" class="mascot-motion" data-state="done" data-size="small" data-play style="--size:32px" role="img" aria-label="Kemiri done mascot"><defs>
+    <linearGradient id="B-dark-32-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="B-dark-32-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="B-dark-32-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="B-dark-32-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#B-dark-32-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#B-dark-32-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#B-dark-32-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#B-dark-32-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>32 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="128" height="128" class="mascot-motion" data-state="done" data-play style="--size:128px" role="img" aria-label="Kemiri done mascot"><defs>
+    <linearGradient id="B-dark-128-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="B-dark-128-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="B-dark-128-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="B-dark-128-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#B-dark-128-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#B-dark-128-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#B-dark-128-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#B-dark-128-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>128 px</figcaption></figure></div></div></article>
+<article class="motion-card" aria-labelledby="variant-C"><div class="variant-heading"><span class="tag">C · 3.5 s loop</span><h2 id="variant-C">Thinking / waiting</h2><p>Still body. Look left, up, right, centre. A blink and a leaf twitch.</p></div><div class="swatch swatch-light"><p class="surface-label">Light surface</p><div class="samples"><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="24" height="24" class="mascot-motion" data-state="thinking" data-size="small" style="--size:24px" role="img" aria-label="Kemiri thinking mascot"><defs>
+    <linearGradient id="C-light-24-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="C-light-24-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="C-light-24-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="C-light-24-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#C-light-24-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#C-light-24-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#C-light-24-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#C-light-24-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>24 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="32" height="32" class="mascot-motion" data-state="thinking" data-size="small" style="--size:32px" role="img" aria-label="Kemiri thinking mascot"><defs>
+    <linearGradient id="C-light-32-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="C-light-32-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="C-light-32-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="C-light-32-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#C-light-32-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#C-light-32-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#C-light-32-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#C-light-32-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>32 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="128" height="128" class="mascot-motion" data-state="thinking" style="--size:128px" role="img" aria-label="Kemiri thinking mascot"><defs>
+    <linearGradient id="C-light-128-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="C-light-128-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="C-light-128-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="C-light-128-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#C-light-128-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#C-light-128-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#C-light-128-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#C-light-128-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>128 px</figcaption></figure></div></div><div class="swatch swatch-dark"><p class="surface-label">Dark · #09090f</p><div class="samples"><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="24" height="24" class="mascot-motion" data-state="thinking" data-size="small" style="--size:24px" role="img" aria-label="Kemiri thinking mascot"><defs>
+    <linearGradient id="C-dark-24-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="C-dark-24-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="C-dark-24-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="C-dark-24-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#C-dark-24-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#C-dark-24-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#C-dark-24-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#C-dark-24-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>24 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="32" height="32" class="mascot-motion" data-state="thinking" data-size="small" style="--size:32px" role="img" aria-label="Kemiri thinking mascot"><defs>
+    <linearGradient id="C-dark-32-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="C-dark-32-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="C-dark-32-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="C-dark-32-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#C-dark-32-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#C-dark-32-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#C-dark-32-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#C-dark-32-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>32 px</figcaption></figure><figure class="sample"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="128" height="128" class="mascot-motion" data-state="thinking" style="--size:128px" role="img" aria-label="Kemiri thinking mascot"><defs>
+    <linearGradient id="C-dark-128-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="C-dark-128-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="C-dark-128-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="C-dark-128-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#C-dark-128-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#C-dark-128-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#C-dark-128-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#C-dark-128-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><figcaption>128 px</figcaption></figure></div></div></article></section>
+<section aria-labelledby="chat-heading"><h2 id="chat-heading">At home in a reply.</h2><p class="muted">The current working row uses a 26 px orb, a 16 px desktop gap and shimmering “Working…” text. These mock rows keep that footprint; they are not a proposed new chat card.</p><div class="mock-grid"><article class="swatch swatch-light" aria-label="light mock assistant chat"><p class="surface-label">Light · assistant chat mock · 26 px</p><p class="user-message">Check the last change and tell me what needs attention.</p><div class="assistant-row"><span class="current-orb" aria-hidden="true"></span><span class="working-label">Working…</span><span class="row-caption">Current orb</span></div><div class="assistant-row"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="26" height="26" class="mascot-motion" data-state="working" data-size="small" style="--size:26px" role="img" aria-label="Kemiri working mascot"><defs>
+    <linearGradient id="chat-light-A-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="chat-light-A-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="chat-light-A-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="chat-light-A-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#chat-light-A-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#chat-light-A-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#chat-light-A-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#chat-light-A-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><span class="working-label">Working…</span><span class="row-caption">A · preview</span></div><div class="assistant-row"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="26" height="26" class="mascot-motion" data-state="done" data-size="small" data-play style="--size:26px" role="img" aria-label="Kemiri done mascot"><defs>
+    <linearGradient id="chat-light-B-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="chat-light-B-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="chat-light-B-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="chat-light-B-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#chat-light-B-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#chat-light-B-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#chat-light-B-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#chat-light-B-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><span class="state-label">Done.</span><span class="row-caption">B · preview</span></div><div class="assistant-row"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="26" height="26" class="mascot-motion" data-state="thinking" data-size="small" style="--size:26px" role="img" aria-label="Kemiri thinking mascot"><defs>
+    <linearGradient id="chat-light-C-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="chat-light-C-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="chat-light-C-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="chat-light-C-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#chat-light-C-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#chat-light-C-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#chat-light-C-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#chat-light-C-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><span class="state-label">Thinking…</span><span class="row-caption">C · preview</span></div><p class="mock-caption">Same alignment as the existing working row. On narrower screens the gap becomes 12 px; streaming-reply gutter avatars remain a separate choice.</p></article><article class="swatch swatch-dark" aria-label="dark mock assistant chat"><p class="surface-label">Dark · assistant chat mock · 26 px</p><p class="user-message">Check the last change and tell me what needs attention.</p><div class="assistant-row"><span class="current-orb" aria-hidden="true"></span><span class="working-label">Working…</span><span class="row-caption">Current orb</span></div><div class="assistant-row"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="26" height="26" class="mascot-motion" data-state="working" data-size="small" style="--size:26px" role="img" aria-label="Kemiri working mascot"><defs>
+    <linearGradient id="chat-dark-A-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="chat-dark-A-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="chat-dark-A-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="chat-dark-A-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#chat-dark-A-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#chat-dark-A-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#chat-dark-A-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#chat-dark-A-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><span class="working-label">Working…</span><span class="row-caption">A · preview</span></div><div class="assistant-row"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="26" height="26" class="mascot-motion" data-state="done" data-size="small" data-play style="--size:26px" role="img" aria-label="Kemiri done mascot"><defs>
+    <linearGradient id="chat-dark-B-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="chat-dark-B-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="chat-dark-B-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="chat-dark-B-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#chat-dark-B-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#chat-dark-B-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#chat-dark-B-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#chat-dark-B-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><span class="state-label">Done.</span><span class="row-caption">B · preview</span></div><div class="assistant-row"><svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width="26" height="26" class="mascot-motion" data-state="thinking" data-size="small" style="--size:26px" role="img" aria-label="Kemiri thinking mascot"><defs>
+    <linearGradient id="chat-dark-C-seed" x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
+    </linearGradient>
+    <linearGradient id="chat-dark-C-tip" x1="398" y1="759" x2="578" y2="850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#713cc5"/><stop offset="1" stop-color="#a641d6"/>
+    </linearGradient>
+    <linearGradient id="chat-dark-C-highlight" x1="340" y1="440" x2="658" y2="747" gradientUnits="userSpaceOnUse">
+      <stop offset=".12" stop-color="#5b7bef"/><stop offset=".5" stop-color="#9472ed"/><stop offset="1" stop-color="#ea6cf3"/>
+    </linearGradient>
+    <linearGradient id="chat-dark-C-leaf" x1="384" y1="212" x2="529" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffa447"/><stop offset="1" stop-color="#fba04a"/>
+    </linearGradient>
+  </defs>
+<g class="mascot-pose">
+  <g class="mascot-leaf"><path fill="url(#chat-dark-C-leaf)" d="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"/><path fill="#f9893f" d="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z"/></g>
+  <g class="mascot-body"><path fill="url(#chat-dark-C-tip)" d="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"/><path fill="url(#chat-dark-C-seed)" d="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/><path fill="url(#chat-dark-C-highlight)" d="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"/>
+    <g class="mascot-eyes-gaze"><g class="mascot-eye mascot-eye-left"><path fill="#26245f" d="M453 592C453 609 439 624 422 624C404 624 391 610 391 592C391 575 405 561 422 561C439 561 453 575 453 592Z"/></g><g class="mascot-eye mascot-eye-right"><path fill="#26245f" d="M633 592C633 610 619 624 602 624C584 624 571 610 571 592C571 575 585 561 602 561C619 561 633 575 633 592Z"/></g></g>
+    <path class="mascot-mouth" fill="#26245f" d="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z"/>
+  </g>
+</g></svg><span class="state-label">Thinking…</span><span class="row-caption">C · preview</span></div><p class="mock-caption">Same alignment as the existing working row. On narrower screens the gap becomes 12 px; streaming-reply gutter avatars remain a separate choice.</p></article></div></section>
+<section class="notes" aria-label="Motion notes"><div><h2>Small on purpose.</h2><p>At 24 and 32 px the bob, hop and sway are reduced. The 26 px mock uses the same small-size treatment. The bottom tip anchors the stretch; the leaf follows a little later.</p></div><div><h2>Quiet when requested.</h2><p>Reduced motion shows the static mascot in every state, including after replay. A and C return seamlessly to their start. B plays once in 1.3 seconds and settles; replay is explicit.</p></div></section>
+<footer>Hand-drawn vector from Q196 / T173 · CSS transforms only · No raster, animation libraries, network requests or storage. Static brand master unchanged. Owner review decides where each motion belongs.</footer>
+</main><script>
+const root=document.documentElement;
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+const status=document.querySelector('#motion-status');
+function motionStatus(){status.textContent=reduced.matches?'Reduced motion is on · all mascots stay still.':root.dataset.motionPaused==='true'?'Paused · compare the poses, then resume.':'A and C loop · B plays once; use Replay to see it again.';}
+reduced.addEventListener('change',motionStatus);motionStatus();
+document.querySelectorAll('[data-replay]').forEach(button=>button.addEventListener('click',()=>{const mascots=[...document.querySelectorAll('svg[data-state="done"]')];mascots.forEach(svg=>svg.removeAttribute('data-play'));void document.body.offsetHeight;mascots.forEach(svg=>svg.setAttribute('data-play',''));motionStatus();}));
+document.querySelector('#pause').addEventListener('click',event=>{const paused=root.dataset.motionPaused!=='true';root.dataset.motionPaused=String(paused);event.currentTarget.setAttribute('aria-pressed',String(paused));event.currentTarget.textContent=paused?'Resume motion':'Pause motion';motionStatus();});
+document.querySelector('#theme').addEventListener('click',()=>{const dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;root.dataset.theme=dark?'light':'dark';});
+</script></body></html>

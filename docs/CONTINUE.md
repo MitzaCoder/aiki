@@ -1,5 +1,25 @@
 # Continue
 
+## T177: mascot motion previews, not integrated
+
+A separate commit atop T173 adds `assets/brand/mascot-motion.svg` (6,455 bytes),
+its CSS (3,440 bytes) and a self-contained preview HTML (94,653 bytes). The
+static logo remains byte-identical. Grouped body/leaf/eyes/mouth reuse its paths.
+Working breathes over 3 s and blinks every 6 s; Done hops once over 1.3 s;
+Thinking holds a stationary body with gaze/blink/twitch over 3.5 s. Small-size
+motion is reduced; system reduced motion and print are fully static.
+
+HTML preview: mwfocc2y-34313121d0. Fourteen-second recording:
+mwfocc41-39e3c41946. Desktop light/dark screenshots: mwfocc6a-1ff0be9638 /
+mwfocc77-d4a8deeaa4; 360 px reduced-motion proof: mwfocc84-48c3126483.
+The page compares 24/32/128 px on both backgrounds and 26 px chat mocks beside
+current orbs. Replay, settled state, pause, zero reduced-motion animations,
+print and no phone overflow pass real Chromium checks. Three regression tests,
+root typecheck and external-denylist/generic/Gitleaks checks pass. App sources
+were not touched, so no new web build/check was needed. Owned proof browsers and
+temporary files are removed; no push or bookmark movement. Regenerate with
+`bun scripts/generate-mascot-preview.ts`. Owner review chooses any future wiring.
+
 ## T179: pi packages 1.5.2
 
 Client/server pins for chord, pi-ai, pi-codemode and pi-durable are exactly
