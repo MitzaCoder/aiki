@@ -1,5 +1,28 @@
 # Continue
 
+## T176: pilot.5 agent install guide and fresh-install proof
+
+AGENT-INSTALL.md pins pilot.5 once through KEMIRI_VERSION; site tests compare it
+with site/install.sh's default and require versioned fresh-install commands.
+Verified the actual 20-asset public release and unchanged pilot.5 installer/CLI
+code before correcting canonical archives, internal names, real error text,
+the supervisor PID stop recipe and supervised-update/rollback wording.
+README now includes the pilot.4 Bun-upgrade exception; INSTALL.md's development
+asset examples use kemiri names. Pilot.3 and earlier still go through pilot.4.
+
+Real downloaded Linux glibc x64 standalone and forced --runtime bun source-archive
+installs pass in separate env -i temporary HOMEs, USER set, minimal PATH without
+Bun, unique ports and setsid-owned supervisors. Fresh headless Chromium profiles
+load Welcome, pair via the private printed URL and open authenticated Welcome.
+Stopped before provider/project setup. Transcript mwfnfjkb-e4635ea786 is on T176,
+alongside standalone screenshot mwfnanzb-be72638870 and Bun mwfnao1e-5bc27b3d8c.
+No grant captured; owned processes stopped, installs purged and temp files removed.
+
+Root tests pass 2,651; typecheck and 23 focused site/release tests pass, as do
+external-denylist/generic/Gitleaks checks. Not tested here: macOS, ARM64, musl,
+WSL, native services, Git --ref builds, real providers or Android network pairing.
+No services, phone, deployment scripts, main movement or push.
+
 ## T174: pilot.5 published and verified
 
 Published [v0.1.0-pilot.5](https://github.com/MitzaCoder/kemiri/releases/tag/v0.1.0-pilot.5)

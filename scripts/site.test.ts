@@ -45,6 +45,24 @@ test('current install guides use the live domain; app help has no retired-domain
 	}
 });
 
+test('agent install pin matches the site installer default and all fresh install commands use it', async () => {
+	const installer = await Bun.file(bootstrap).text();
+	const guide = await Bun.file(resolve(import.meta.dir, '../docs/AGENT-INSTALL.md')).text();
+	const defaultTag = installer.match(/^version=(v[^\s]+)$/m)?.[1];
+	if (!defaultTag) throw new Error('Missing pinned default tag in site/install.sh');
+	const guidePins = [...guide.matchAll(/^\s*KEMIRI_VERSION=(v[^\s]+)$/gm)];
+	expect(guidePins).toHaveLength(1);
+	expect(guidePins[0]?.[1]).toBe(defaultTag);
+	expect(guide).toContain('releases/download/$KEMIRI_VERSION');
+	expect(guide).toContain('sh install.sh --version "$KEMIRI_VERSION" --dir "$KEMIRI_ROOT" --no-service');
+	expect(guide).toContain('sh install.sh --version "$KEMIRI_VERSION" --runtime bun --dir "$KEMIRI_ROOT" --no-service');
+	expect(guide).toContain('"refs/tags/$KEMIRI_VERSION^{}"');
+	// The bridge is intentionally historical, never a fresh installation pin.
+	expect(guide).not.toMatch(/sh (?:install|install-bootstrap)\.sh --version v/);
+	expect(guide).not.toContain('aiki-$KEMIRI_VERSION');
+	expect(guide).toContain('kemiri-$KEMIRI_VERSION-android-universal.apk');
+});
+
 test('site checker rejects the retired bootstrap host with no exception', async () => {
 	const scratch = await mkdtemp(join(tmpdir(), 'kemiri-retired-site-'));
 	try {

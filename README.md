@@ -21,14 +21,14 @@ Kemiri is a personal AI workbench: one coordinator delegates to background agent
 
 ## Upgrading existing installations
 
-Use `kemiri` for commands and `KEMIRI_*` for settings. The next release removes
+Use `kemiri` for commands and `KEMIRI_*` for settings. Pilot.5 removes
 the old command and process-setting aliases. Startup rewrites old keys in its own
 server.env once, preserving values and an original .bak; when both keys exist,
 KEMIRI wins and the old assignment is dropped with a key-only log message.
 Rename process/build settings yourself before updating. Existing installation
 folders, credentials, pairings, service names and project context stay put.
 Do not rename or delete them. Fresh installs use Kemiri folders. Pilot.4 is the
-bridge: pilot.3 and earlier must update through it before the next release.
+bridge: pilot.3 and earlier must update through it before pilot.5.
 
 ## Try Kemiri
 
@@ -44,7 +44,11 @@ kemiri start
 Alternative download: `curl -fL https://kemiri.dev/install.sh -o install.sh`, then the same review/run steps. This small [bootstrap](site/install.sh) verifies the versioned GitHub release installer before running it. Keep `--version`: GitHub's latest release excludes prereleases. Verify direct downloads with the release checksums. You need git; install jj for isolated workers. The installer prefers a standalone executable on Linux x64/arm64 and macOS arm64; private Bun remains a fallback. It also supplies zellij.
 
 Short version: `curl -fsSL https://kemiri.dev/install.sh | sh`.
-From pilot.3 or earlier, stop it, run `aiki update --version v0.1.0-pilot.4`, then `kemiri update --version v0.1.0-pilot.5` and `kemiri start`. Keep existing folders. For a user service, use `aiki service remove` before updating and `kemiri service install` afterwards. Install the new Android APK over the old one (same signing key).
+From pilot.3 or earlier, stop it and run `aiki update --version v0.1.0-pilot.4` to reach the bridge. Then, for standalone installs, run `kemiri update --version v0.1.0-pilot.5` and `kemiri start`. Keep existing folders.
+
+For pilot.4 Bun/source installs, Intel Macs and Linux musl, use the verified pilot.5 installer with the same recorded install root instead of pilot.4's embedded updater; see the [fallback upgrade steps](docs/INSTALL.md#updating-rollback-backup-and-removal).
+
+For a user service, use `aiki service remove` before updating and `kemiri service install` afterwards. Install the new Android APK over the old one (same signing key).
 
 In another terminal:
 

@@ -26,7 +26,7 @@ bridge: pilot.3 and earlier must update through it before pilot.5.
 
 ## Install
 
-Install the `v0.1.0-pilot.5` prerelease after publication:
+Install the published `v0.1.0-pilot.5` prerelease:
 
 ```sh
 curl -fL https://github.com/MitzaCoder/kemiri/releases/download/v0.1.0-pilot.5/install.sh -o install.sh
@@ -211,7 +211,7 @@ by this CLI. The local service refuses to overwrite an unrelated unit/agent at i
 For source testing instead of a published release, use an explicit git ref (not a moving `main` watcher):
 
 ```sh
-sh install.sh --ref COMMIT_OR_TAG --dir "$HOME/aiki-test" --no-service
+sh install.sh --ref COMMIT_OR_TAG --dir "$HOME/kemiri-test" --no-service
 ```
 
 This fetches a clean source archive from the public repository, installs the frozen lockfile and builds the web
@@ -220,9 +220,9 @@ Locally, with Bun 1.4.4, build and install archives without creating a tag or a 
 
 ```sh
 bun scripts/build-release.ts --version v0.0.1-test.1 --out .preview/releases
-sh install.sh --version v0.0.1-test.1 --archive .preview/releases/aiki-v0.0.1-test.1.tar.gz --dir "$HOME/aiki-test" --no-service
+sh install.sh --version v0.0.1-test.1 --archive .preview/releases/kemiri-v0.0.1-test.1.tar.gz --dir "$HOME/kemiri-test" --no-service
 # Build a second version, stop the test server, then:
-kemiri update --version v0.0.1-test.2 --archive .preview/releases/aiki-v0.0.1-test.2.tar.gz
+kemiri update --version v0.0.1-test.2 --archive .preview/releases/kemiri-v0.0.1-test.2.tar.gz
 kemiri rollback
 ```
 
@@ -235,8 +235,8 @@ The workflow does not create tags. The CLI remembers pilot/stable independently 
 
 ### Single-binary release assets
 
-CI also builds `aiki-VERSION-linux-x64`, `aiki-VERSION-linux-arm64` and
-`aiki-VERSION-darwin-arm64`, each with a sibling `.sha256`. They join the existing assets on a
+CI also builds `kemiri-VERSION-linux-x64`, `kemiri-VERSION-linux-arm64` and
+`kemiri-VERSION-darwin-arm64`, each with a sibling `.sha256`. They join the existing assets on a
 **draft**, never an automatically published release. Linux binaries require glibc; x64 uses Bun's
 baseline target. The release also contains `SHA256SUMS`, covering the executables, source archive and
 installer. macOS signing/notarization is separate. The installer and `kemiri update` prefer matching binaries;
@@ -248,9 +248,9 @@ Build and smoke locally on Linux x64, without tags, GitHub releases or service m
 bun install --frozen-lockfile
 bun scripts/build-binary.ts --version v0.0.0-test.72 --target bun-linux-x64-baseline --out .preview/binaries
 bun scripts/build-binary.ts --version v0.0.0-test.72 --target bun-linux-x64-baseline --out .preview/binaries \
-  --archive .preview/binaries/aiki-v0.0.0-test.72.tar.gz --smoke
-python3 scripts/smoke-binary.py --binary .preview/binaries/aiki-v0.0.0-test.72-linux-x64 \
-  --smoke .preview/binaries/aiki-v0.0.0-test.72-linux-x64-smoke
+  --archive .preview/binaries/kemiri-v0.0.0-test.72.tar.gz --smoke
+python3 scripts/smoke-binary.py --binary .preview/binaries/kemiri-v0.0.0-test.72-linux-x64 \
+  --smoke .preview/binaries/kemiri-v0.0.0-test.72-linux-x64-smoke
 ```
 
 The builder uses the same compiler as `bun build --compile`, a neutral staged web build, explicit
@@ -275,8 +275,8 @@ other target sizes and the original part-1 measurements are in
 For a Linux installed-runtime rehearsal, build a binary and a differently versioned source archive, then run:
 
 ```sh
-bun scripts/smoke-install.ts --binary .preview/binaries/aiki-v0.0.0-test.72-linux-x64 \
-  --binary-version v0.0.0-test.72 --archive .preview/releases/aiki-v0.0.1-test.1.tar.gz \
+bun scripts/smoke-install.ts --binary .preview/binaries/kemiri-v0.0.0-test.72-linux-x64 \
+  --binary-version v0.0.0-test.72 --archive .preview/releases/kemiri-v0.0.1-test.1.tar.gz \
   --bun-version v0.0.1-test.1
 ```
 
