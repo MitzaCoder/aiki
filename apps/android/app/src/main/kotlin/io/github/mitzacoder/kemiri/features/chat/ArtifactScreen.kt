@@ -29,7 +29,7 @@ import java.time.Instant
 
 /** Signed URLs exist only in this composition. No disk/image cache, logging or saved-state tokens. */
 @Composable
-fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: Modifier = Modifier) {
+fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: Modifier = Modifier, onBack: () -> Unit = {}, onFullHeightChange: (Boolean) -> Unit = {}) {
     var latestArtifact by remember(context.route,artifactId) { mutableStateOf<Artifact?>(null) }
     var selectedVersion by rememberSaveable(context.route,artifactId) { mutableStateOf<Long?>(null) }
     val artifact = latestArtifact?.let { selectedArtifactVersion(it, selectedVersion) }
@@ -150,44 +150,11 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
                 }
             }) { Text(if(deletion == ArtifactDeleteState.Sending) "Deleting…" else "Delete", color = MaterialTheme.colorScheme.error) } })
     }
+    val fullHeight = !deleted && artifact?.let { artifactUsesFullHeight(it.kind, it.name, it.mimeType) } == true
+    SideEffect { onFullHeightChange(fullHeight) }
     // HTML is a document viewport, not media inside a scrolling details sheet. The caller supplies system insets.
     if (!deleted && artifact?.let { artifactUsesFullHeight(it.kind, it.name, it.mimeType) } == true) {
-        var showDetails by remember(artifactId) { mutableStateOf(false) }
-        if (showDetails) AlertDialog(
-            onDismissRequest = { showDetails = false },
-            title = { Text("Artifact details") },
-            text = {
-                Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    artifact?.let { ArtifactDetails(it, ::copy) }
-                    actionStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                }
-            },
-            confirmButton = { ArtifactDownloadAction(context, artifact, artifact?.id ?: artifactId, canSave = deletion != ArtifactDeleteState.Sending) },
-            dismissButton = {
-                Row {
-                    TextButton(onClick = { showDetails = false; deletion = ArtifactDeleteState.Confirming },
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("Delete") }
-                    TextButton(onClick = { showDetails = false }) { Text("Close") }
-                }
-            },
-        )
         Column(modifier.fillMaxSize()) {
-            if (!deleted && versions.size > 1 && artifact != null) {
-                val index = versions.indexOfFirst { it.id == artifact.id }
-                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center) {
-                    IconButton(enabled = index > 0, onClick = { selectedVersion = versions[index - 1].version; signed = null; text = null }) {
-                        Text("←", modifier = Modifier.semantics { contentDescription = "Previous version" })
-                    }
-                    Text("v${artifact.version ?: 1} of ${latestArtifact?.versionCount ?: versions.size} · ${io.github.mitzacoder.kemiri.features.tasks.relativeTime(artifact.createdAt)}",
-                        style = MaterialTheme.typography.bodySmall)
-                    IconButton(enabled = index < versions.lastIndex, onClick = { selectedVersion = versions[index + 1].version; signed = null; text = null }) {
-                        Text("→", modifier = Modifier.semantics { contentDescription = "Next version" })
-                    }
-                }
-                HorizontalDivider(color = Jarvis.colors.border)
-            }
             if (connection.status != ConnectionStatus.Ready) Text("Offline · reconnect to refresh or delete this artifact.",
                 Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall)
             error?.let {
@@ -198,11 +165,16 @@ fun ArtifactScreen(context: ProjectScreenContext, artifactId: String, modifier: 
                 ArtifactTextPreview(artifact?.name ?: "Text", loaded, html = true, truncated = textTruncated,
                     size = artifact?.size ?: -1, blockRequests = blockArtifactRequests, fillHeight = true, modifier = Modifier.weight(1f),
                     copy = { copy(loaded) },
-                    actions = {
-                        IconButton(onClick = { showDetails = true }) {
-                            LucideGlyph(io.github.mitzacoder.kemiri.ui.components.Lucide.Info, size = 18.dp,
-                                contentDescription = "Artifact details")
+                    htmlActions = { dismiss ->
+                        val index = versions.indexOfFirst { it.id == artifact?.id }
+                        if (versions.size > 1) {
+                            DropdownMenuItem(text = { Text("Previous version") }, enabled = index > 0, onClick = { selectedVersion = versions[index - 1].version; dismiss() })
+                            Text("v${artifact?.version ?: 1} of ${latestArtifact?.versionCount ?: versions.size}", Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall)
+                            DropdownMenuItem(text = { Text("Next version") }, enabled = index < versions.lastIndex, onClick = { selectedVersion = versions[index + 1].version; dismiss() })
                         }
+                        ArtifactDownloadAction(context, artifact, artifact?.id ?: artifactId, canSave = deletion != ArtifactDeleteState.Sending, menuItem = true)
+                        DropdownMenuItem(text = { Text("Delete…") }, onClick = { dismiss(); deletion = ArtifactDeleteState.Confirming })
+                        DropdownMenuItem(text = { Text("Close") }, onClick = { dismiss(); onBack() })
                     })
             } ?: Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         }

@@ -19,7 +19,7 @@ test("theme and CSP decorate the selected version bytes, never the latest bytes 
  }
  const viewer = readFileSync(new URL("../src/lib/components/artifacts/ArtifactText.svelte", import.meta.url), "utf8");
  expect(viewer).toContain("artifactId: artifact.id");
- expect(viewer).toContain("artifactPageDocument(content, artifactTheme, blockRequests)");
+ expect(viewer).toContain("artifactPageDocument(content, artifactTheme, blockRequests, fullSpace)");
  expect(viewer).toContain("srcdoc={pageDocument}");
 });
 

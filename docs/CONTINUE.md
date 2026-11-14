@@ -1,5 +1,22 @@
 # Continue
 
+## T191: full-space HTML artifact viewers
+
+Web HTML now fills the viewport at phone, desktop and ultrawide sizes, without
+filename, note or frame. A top-right ⋮ menu holds all actions, including versions,
+source, Print, download and close; Escape restores trigger focus. The sandboxed
+new tab also loses its title banner. Android had a filename/action bar, so it now
+matches with a floating menu and no app header/sidebar. No gestures were added;
+other artifact kinds keep their viewers. Sandbox/CSP and original bytes stay put.
+
+Proof index: mwgmm38q-db512ce995 (28 media artifacts, desktop/phone/wide light/dark
+before/after, menus, web and emulator recordings; Android video v2 supersedes v1).
+Rebased onto T192; final gates pass: isolated root 2,696 tests, typecheck; web
+1,143 tests, zero-diagnostic check/build; Android 968 JVM tests (two skipped),
+assembleDebug/lintDebug (49 existing warnings). One earlier JVM attach-timing test
+failed; the final full run passes. Gradle stopped; external-denylist/Gitleaks pass.
+No physical phone, push or main movement. Owned proof processes/temp files cleaned.
+
 ## T192 / Q210: header-only conversation panels
 
 Web and Android remove the duplicate panel tabs; header buttons alone switch panels,

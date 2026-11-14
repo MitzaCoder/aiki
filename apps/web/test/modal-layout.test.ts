@@ -128,7 +128,8 @@ describe('an HTML artifact opens in a sandboxed tab', () => {
 		expect(document).toContain('src="blob:http://localhost:5186/synthetic"');
 		expect(document).not.toContain('allow-same-origin');
 		// The app's own origin appears nowhere as a document of the artifact.
-		expect(document).toContain('cannot read the app');
+		expect(document).toContain('popovertarget="actions"');
+		expect(document).not.toContain('<header>');
 	});
 	test('a hostile artifact name cannot become markup in the wrapper', () => {
 		const document = sandboxedArtifactDocument('blob:x', '<script>alert(1)</script>"');

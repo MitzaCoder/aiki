@@ -132,6 +132,7 @@ fun HarnessApp(
             }
         }
     }
+    var htmlArtifactViewport by remember(current) { mutableStateOf(false) }
     val tabs = if (backend != null) rememberPanelTabs(backend.client) else emptyList()
     BoxWithConstraints(Modifier.fillMaxSize()) {
     val wide = maxWidth >= 1024.dp
@@ -139,7 +140,7 @@ fun HarnessApp(
     LaunchedEffect(wide) { if (wide) drawer.snapTo(DrawerValue.Closed) }
     ModalNavigationDrawer(drawerState = drawer, gesturesEnabled = !wide || drawer.isOpen, drawerContent = { if (!wide) ProjectsDrawer(repository, current, navigate, unknownBackend) { unknownBackend = null } }) {
         Row(Modifier.fillMaxSize()) {
-        if (wide) ProjectsSidebar(repository, current, navigate, sidebarCollapsed, toggleCollapsed = {
+        if (wide && !htmlArtifactViewport) ProjectsSidebar(repository, current, navigate, sidebarCollapsed, toggleCollapsed = {
             sidebarCollapsed = !sidebarCollapsed
             navPreferences.edit { putBoolean("collapsed", sidebarCollapsed) }
         }, unknownBackend = unknownBackend, dismissUnknownBackend = { unknownBackend = null })
@@ -159,7 +160,7 @@ fun HarnessApp(
                     modifier = Modifier.weight(1f),
                     topBar = {
                         // The terminal screen draws its own header: Sessions, the connection and the tabs belong to it.
-                        if (terminal == null) TopAppBar(
+                        if (terminal == null && !htmlArtifactViewport) TopAppBar(
                             title = {
                                 if (current is Destination.Settings) Text("Settings")
                                 else if (current is Destination.ProjectSettings) Text("Project settings")
@@ -186,7 +187,7 @@ fun HarnessApp(
                             is Destination.Settings -> GeneralSettingsScreen(repository, current.page, settingsNavigator, navigate, connectPayload, onConnectHandled, modifier)
                             is Destination.ProjectSettings -> if (context != null) ProjectSettingsScreen(context, current.section, current.scheduleId, settingsNavigator, modifier) else MissingBackend(modifier)
                             is Destination.Chat, is Destination.Panel, is Destination.Task -> if (context != null) ChatScreen(visibleContext!!, modifier) else MissingBackend(modifier)
-                            is Destination.Artifact -> if (context != null) ArtifactScreen(context, current.artifactId, modifier) else MissingBackend(modifier)
+                            is Destination.Artifact -> if (context != null) ArtifactScreen(context, current.artifactId, modifier, onBack = ::pop, onFullHeightChange = { htmlArtifactViewport = it }) else MissingBackend(modifier)
                             is Destination.Terminal -> sessions.firstOrNull { it.config.key == current.backendKey }
                                 ?.let { TerminalScreen(it, current, onBack = ::pop, modifier = modifier) } ?: MissingBackend(modifier)
                         }

@@ -23,7 +23,7 @@ import okhttp3.OkHttpClient
 private val downloadHttp = OkHttpClient.Builder().build()
 
 /** SAF is an explicit user save: only file contents reach the selected document, never its signed URL. */
-@Composable internal fun ArtifactDownloadAction(context: ProjectScreenContext, artifact: Artifact?, viewerArtifactId: String, canSave: Boolean) {
+@Composable internal fun ArtifactDownloadAction(context: ProjectScreenContext, artifact: Artifact?, viewerArtifactId: String, canSave: Boolean, menuItem: Boolean = false) {
     val resolver = LocalContext.current.contentResolver
     val scope = rememberCoroutineScope()
     var targetBackend by rememberSaveable { mutableStateOf<String?>(null) }
@@ -66,11 +66,17 @@ private val downloadHttp = OkHttpClient.Builder().build()
             }
         }
     }
-    OutlinedButton(enabled = canSave && artifact != null && !saving && !selecting,onClick = {
-        val item = artifact ?: return@OutlinedButton
-        targetBackend = context.backend.config.key; targetProject = item.projectId; targetArtifact = item.id
-        status = null; selecting = true
-        launcher.launch(artifactDownloadName(item.name))
-    }) { LucideGlyph(Lucide.ArrowDown); Spacer(Modifier.width(6.dp)); Text(if(saving) "Saving…" else "Save a copy…") }
+    val startSave: () -> Unit = {
+        artifact?.let { item ->
+            targetBackend = context.backend.config.key; targetProject = item.projectId; targetArtifact = item.id
+            status = null; selecting = true
+            launcher.launch(artifactDownloadName(item.name))
+        }
+    }
+    val enabled = canSave && artifact != null && !saving && !selecting
+    if (menuItem) DropdownMenuItem(text = { Text(if (saving) "Saving…" else "Save a copy…") }, enabled = enabled, onClick = startSave)
+    else OutlinedButton(enabled = enabled, onClick = startSave) {
+        LucideGlyph(Lucide.ArrowDown); Spacer(Modifier.width(6.dp)); Text(if(saving) "Saving…" else "Save a copy…")
+    }
     status?.let { Text(it,style = MaterialTheme.typography.bodySmall) }
 }

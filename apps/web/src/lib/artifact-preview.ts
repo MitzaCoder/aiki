@@ -36,7 +36,7 @@ export function escapeHtml(text: string): string {
 }
 
 /**
- * The page a new tab shows: a bar naming the artifact, and the artifact in a sandboxed frame that fills the window.
+ * The page a new tab shows: an edge-to-edge sandboxed frame and an unobtrusive actions popover.
  * `frameUrl` is a `blob:` URL of its bytes, so nothing but that frame ever holds them.
  */
 export function sandboxedArtifactDocument(frameUrl: string, name: string, theme?: ArtifactPageTheme): string {
@@ -52,16 +52,19 @@ export function sandboxedArtifactDocument(frameUrl: string, name: string, theme?
 	${theme ? artifactThemeCss(theme) : ""}
 	html, body { height: 100%; margin: 0; }
 	body { display: flex; flex-direction: column; font: 13px/1.4 system-ui, sans-serif; background: var(--tone-bg, #f4f1ea); color: var(--tone-fg, #1c1a16); }
-	header { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 1rem; padding: .5rem .75rem; border-bottom: 1px solid var(--tone-border, #d8d2c4); }
-	header strong { font-weight: 600; overflow-wrap: anywhere; }
-	header span { color: var(--tone-fg-muted, #6b6459); }
+	.actions { position:fixed; right:12px; top:12px; z-index:2; }
+	button { border:0; border-radius:999px; padding:10px 14px; background:var(--tone-surface,#fff); color:var(--tone-fg,#111); font:inherit; cursor:pointer; box-shadow:0 1px 8px #0003; }
+	button:focus-visible { outline:2px solid var(--tone-primary,#6366f1); outline-offset:2px; }
+	#actions { inset:60px 12px auto auto; margin:0; padding:6px; border:1px solid var(--tone-border,#ccc); border-radius:12px; background:var(--tone-surface,#fff); color:var(--tone-fg,#111); }
+	#actions button { display:block; width:100%; border-radius:6px; box-shadow:none; text-align:left; }
+	@media print { .actions, #actions { display:none; } }
 	main { flex: 1 1 auto; min-height: 0; }
 	iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--tone-bg, #fff); }
-	@media (prefers-color-scheme: dark) { body { background: var(--tone-bg, #1c1a16); color: var(--tone-fg, #f4f1ea); } header { border-color: var(--tone-border, #3a352c); } header span { color: var(--tone-fg-muted, #a89f90); } }
 </style>
 </head>
 <body>
-<header><strong>${title}</strong><span>Sandboxed artifact: it runs in its own origin, so it cannot read the app's storage or act as you.</span></header>
+<div class="actions"><button type="button" popovertarget="actions" aria-label="Artifact actions" title="Artifact actions">⋮</button></div>
+<div id="actions" popover><button type="button" onclick="document.querySelector('iframe').contentWindow.postMessage('kemiri:print-artifact','*');document.getElementById('actions').hidePopover()">Print</button><button type="button" onclick="window.close()">Close tab</button></div>
 <main><iframe title="${title}" sandbox="${ARTIFACT_FRAME_SANDBOX}" referrerpolicy="no-referrer" src="${escapeHtml(frameUrl)}"></iframe></main>
 </body>
 </html>`;
@@ -79,7 +82,7 @@ export function openArtifactPreview(
 	const createUrl = options.createUrl ?? ((blob: Blob) => URL.createObjectURL(blob));
 	const open = options.open ?? ((url: string) => window.open(url, "_blank"));
 	const theme = options.theme ?? (typeof document === "undefined" ? { mode: "light" as const, tokens: {} } : readArtifactTheme());
-	const frameUrl = createUrl(new Blob([artifactPageDocument(content, theme, options.blockRequests)], { type: "text/html" }));
+	const frameUrl = createUrl(new Blob([artifactPageDocument(content, theme, options.blockRequests, true)], { type: "text/html" }));
 	const tab = open(createUrl(new Blob([sandboxedArtifactDocument(frameUrl, name, theme)], { type: "text/html" })));
 	if (tab === null) return false;
 	// The wrapper may not reach back into the app's window.

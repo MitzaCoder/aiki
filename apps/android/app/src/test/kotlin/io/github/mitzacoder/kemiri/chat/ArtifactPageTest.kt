@@ -22,6 +22,15 @@ class ArtifactPageTest {
         assertFalse(html.contains("Content-Security-Policy"))
     }
 
+    @Test fun nativeMenuReplacesOnlyTheInjectedPrintButton() {
+        val source = "<h1>Report</h1><script>window.example = true</script>"
+        val html = artifactPageDocument(source, false, emptyMap(), true, showPrintButton = false)
+        assertTrue(html.contains(source))
+        assertTrue(html.contains(ARTIFACT_CSP))
+        assertTrue(html.contains("window.print=function(){location.href='aiki-artifact:print'}"))
+        assertFalse(html.contains("document.createElement('button')"))
+    }
+
     @Test fun cspIsOptInAndFirstInHead() {
         val html = artifactPageDocument("<html><head><script>fetch('https://example.com')</script></head><body>Report</body></html>", false, emptyMap(), true)
         assertTrue(html.startsWith("<!doctype html><html data-theme=\"light\"><head><meta http-equiv=\"Content-Security-Policy\""))

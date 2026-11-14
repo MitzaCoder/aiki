@@ -1,5 +1,31 @@
 # Design
 
+## Full-space HTML artifact viewers (T191)
+
+An HTML artifact's web viewer uses the entire viewport, without a chat-width
+cap, outer frame, filename, note or metadata panel. Its own document supplies
+the title. A themed, floating ⋮ button stays at the top right. Its keyboard
+menu contains Page/Source, source wrapping, Print, Open in a new tab, Copy HTML
+source, retained-version navigation, Download, Delete (confirmed) and Close.
+Escape dismisses the menu and restores its trigger focus before it can dismiss
+the viewer; arrow keys and Enter use the standard Bits UI menu behavior.
+Version changes keep that trigger mounted. Other artifact kinds keep their
+existing layouts and controls. The new-tab wrapper also fills its viewport,
+with Print and Close tab behind its own ⋮ popover instead of a title banner.
+
+The opaque-origin sandbox and optional CSP are unchanged. Full-space web
+frames omit the injected Print button: an exact parent-window message requests
+printing inside the frame, without exposing any host DOM or credentials.
+Source, copy and download still use original bytes, not decorated HTML.
+
+Android's HTML branch also drops its filename, Page/Source/version bars and
+app header/sidebar. The existing WebView fills the system-inset viewport;
+its ⋮ menu offers Page/Source, wrapping, native Print, Copy HTML source,
+versions, Save a copy, confirmed Delete and Close. Native Print uses the
+WebView's print adapter directly, without a JavaScript bridge. HTML's existing
+scrolling and pinch zoom are unchanged; no gesture is added. Images, videos,
+Markdown and text keep their existing native screen.
+
 ## Device-local clock format (T190)
 
 Settings → Appearance → Time offers Automatic (default), 24-hour and 12-hour
@@ -215,8 +241,8 @@ agents write `Kemiri-Task:`.
 Resolve the selected retained snapshot before reading its bytes, then apply the current-theme prelude to those bytes.
 Web keys the player and its source lease by the selected immutable address; Android renews and reads that address
 before rebuilding the origin-less WebView document. Bare IDs still follow latest, and pinned IDs keep their snapshot.
-Android's HTML branch stays outside the details scroller: version controls and Page/Source sit above a weighted WebView,
-with metadata and actions behind Info. WebView owns scrolling and pinch zoom. Web frames also allow modal dialogs
+Android's HTML branch stays outside the details scroller: a weighted WebView owns the viewport,
+with controls in the floating actions menu (T191). WebView owns scrolling and pinch zoom. Web frames also allow modal dialogs
 for printing (owner approval Q188); origin isolation remains unchanged.
 
 ## HTML artifact design and privacy (T165 / D74)
@@ -232,7 +258,7 @@ because another server may still use them. Relative template paths remain siblin
 
 HTML previews on web (dialog and new tab) and Android prepend theme defaults with zero-specificity selectors, matching
 `--tone-*` colours, type, spacing and radius tokens. The document's `data-theme` follows the app's light/dark choice;
-changes reload an open preview (interactive page state resets). Author styles still win. A floating Print control and
+changes reload an open preview (interactive page state resets). Author styles still win. Print controls (in the full-space viewer's actions menu) and
 print CSS are supplied without granting an app origin: web never grants `allow-same-origin`, Android never adds a bridge.
 Android maps `window.print()` to a gesture-checked internal navigation handled by native PrintManager.
 Q188 permits `allow-modals` in both web artifact frames, so the visible Print button can open the browser's print dialog.

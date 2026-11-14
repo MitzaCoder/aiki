@@ -4,6 +4,8 @@
 </script>
 
 <script lang="ts">
+	import { DropdownMenu } from 'bits-ui';
+	import ArtifactText from './ArtifactText.svelte';
 	import { overlayScroll } from '#lib/scrollbars.js';
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
@@ -222,7 +224,26 @@
 {/snippet}
 
 <Dialog.Root bind:open>
-	{#if theater && artifact !== undefined}
+	{#if artifact !== undefined && artifact.kind === 'text' && isHtmlArtifact(artifact)}
+		<Dialog.Content class="artifact-dialog html-artifact-dialog flex h-dvh w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none p-0 ring-0 sm:max-w-none" showCloseButton={false} data-artifact-dialog data-html-artifact-dialog onEscapeKeydown={(event) => { if ((event.target as Element | null)?.closest?.('[role="menu"]')) event.preventDefault(); }}>
+			<Dialog.Title class="sr-only">HTML artifact</Dialog.Title>
+			<Dialog.Description class="sr-only">Sandboxed HTML page. Use Artifact actions for source, versions, printing and closing.</Dialog.Description>
+				<ArtifactText {artifact} {client} roomy fullSpace>
+					{#snippet menuActions()}
+						{#if versions.length > 1}
+							<DropdownMenu.Item disabled={versionIndex <= 0} onSelect={() => selectedVersion = versions[versionIndex - 1]?.version}>Previous version</DropdownMenu.Item>
+							<DropdownMenu.Item disabled={versionIndex >= versions.length - 1} onSelect={() => selectedVersion = versions[versionIndex + 1]?.version}>Next version</DropdownMenu.Item>
+							<div class="px-3 py-1 text-xs text-(--chat-fg-muted)" aria-live="polite">v{artifact.version ?? 1} of {latestArtifact?.versionCount ?? versions.length}</div>
+						{/if}
+						<DropdownMenu.Item disabled={busy === 'download'} onSelect={() => void download()}>Download</DropdownMenu.Item>
+						<DropdownMenu.Item onSelect={() => confirming = true}>Delete…</DropdownMenu.Item>
+						<DropdownMenu.Item onSelect={() => open = false}>Close</DropdownMenu.Item>
+					{/snippet}
+				</ArtifactText>
+			{#if problem}<p class="absolute bottom-3 left-3 rounded-lg bg-(--chat-surface) p-3 text-(--chat-danger)" role="alert">{problem}</p>{/if}
+
+		</Dialog.Content>
+	{:else if theater && artifact !== undefined}
 		<Dialog.Content
 			class="artifact-dialog flex h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
 			data-artifact-dialog
@@ -318,6 +339,19 @@
 		</Dialog.Content>
 	{/if}
 </Dialog.Root>
+
+{#if artifact !== undefined && artifact.kind === 'text' && isHtmlArtifact(artifact)}
+	<Dialog.Root bind:open={confirming}>
+		<Dialog.Content>
+			<Dialog.Title>Delete artifact?</Dialog.Title>
+			<Dialog.Description>Delete {artifact.name} from the backend? This cannot be undone.</Dialog.Description>
+			<div class="flex justify-end gap-2">
+				<Button variant="ghost" onclick={() => confirming = false} disabled={busy === 'delete'}>Keep it</Button>
+				<Button variant="destructive" onclick={remove} disabled={busy === 'delete'} data-confirm-delete>Delete</Button>
+			</div>
+		</Dialog.Content>
+	</Dialog.Root>
+{/if}
 
 <style>
 	/* The video fills this, keeping its shape (`ArtifactVideo`'s `theater`). */

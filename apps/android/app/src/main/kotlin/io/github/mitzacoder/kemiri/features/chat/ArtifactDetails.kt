@@ -21,6 +21,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.mitzacoder.kemiri.features.status.formatBytes
@@ -140,16 +142,21 @@ internal fun artifactDetailFacts(item: Artifact, now: Long = System.currentTimeM
     modifier: Modifier = Modifier,
     copy: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
+    htmlActions: @Composable (dismiss: () -> Unit) -> Unit = {},
 ) {
     var wrap by remember(name) { mutableStateOf(true) }
     var showSource by remember(name) { mutableStateOf(false) }
     var view by remember(name) { mutableStateOf(artifactPageView(ArtifactPageChoice.remembered(), truncated)) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var printPage by remember { mutableStateOf<(() -> Unit)?>(null) }
     val rendered = markdown && !showSource
     val page = html && view == ArtifactPageView.Page
     Surface(modifier.fillMaxWidth(),
         shape = if (fillHeight) RectangleShape else MaterialTheme.shapes.medium,
         border = if (fillHeight) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+        Box {
         Column {
+            if (!fillHeight) {
             Row(Modifier.fillMaxWidth().padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(name, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelMedium)
                 if (html) ArtifactPageToggle(view) { view = it; ArtifactPageChoice.remember(it) }
@@ -159,9 +166,10 @@ internal fun artifactDetailFacts(item: Artifact, now: Long = System.currentTimeM
                 actions()
             }
             HorizontalDivider()
+            }
             when {
                 page -> ArtifactPage(text, Modifier.fillMaxWidth()
-                    .then(if (fillHeight) Modifier.weight(1f) else Modifier.height(288.dp)).clipToBounds(), blockRequests = blockRequests)
+                    .then(if (fillHeight) Modifier.weight(1f) else Modifier.height(288.dp)).clipToBounds(), blockRequests = blockRequests, hostControls = fillHeight, onPrintReady = { printPage = it })
                 rendered -> RichMarkdown(text.ifEmpty { "(Empty file)" }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp))
                 else -> SelectionContainer(
                     if (fillHeight) Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()) else Modifier
@@ -182,6 +190,22 @@ internal fun artifactDetailFacts(item: Artifact, now: Long = System.currentTimeM
                     Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                     style = MaterialTheme.typography.bodySmall, color = Jarvis.colors.fgSubtle)
             }
+        }
+        if (fillHeight) Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+            FilledTonalIconButton(onClick = { menuOpen = true }) {
+                Text("⋮", style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { contentDescription = "Artifact actions" })
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(text = { Text(if (page) "Show HTML source" else "Show page") }, onClick = {
+                    view = if (page) ArtifactPageView.Source else ArtifactPageView.Page
+                    ArtifactPageChoice.remember(view); menuOpen = false
+                })
+                if (!page) DropdownMenuItem(text = { Text(if (wrap) "Do not wrap lines" else "Wrap lines") }, onClick = { wrap = !wrap; menuOpen = false })
+                DropdownMenuItem(text = { Text("Print") }, enabled = page && printPage != null, onClick = { printPage?.invoke(); menuOpen = false })
+                copy?.let { DropdownMenuItem(text = { Text("Copy HTML source") }, onClick = { it(); menuOpen = false }) }
+                htmlActions { menuOpen = false }
+            }
+        }
         }
     }
 }

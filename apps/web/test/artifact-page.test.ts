@@ -1,3 +1,4 @@
+import { runInNewContext } from "node:vm";
 import { expect, test } from "bun:test";
 import { openArtifactPreview, sandboxedArtifactDocument } from "../src/lib/artifact-preview.ts";
 import { artifactPageDocument, ARTIFACT_CSP, ARTIFACT_TOKEN_NAMES } from "../src/lib/artifact-page.ts";
@@ -55,4 +56,32 @@ test("fragments, documents without a head and attempted CSS injection retain a f
 		expect(html).toStartWith('<!doctype html><html data-theme="light"><head><meta http-equiv="Content-Security-Policy"');
 		expect(html).not.toContain("<script>bad()");
 	}
+});
+
+
+test("host controls replace the injected print button without changing author bytes or the policy", () => {
+    const source = "<h1>Report</h1><script>window.example = true</script>";
+    const html = artifactPageDocument(source, theme, true, true);
+    expect(html).toContain(source);
+    expect(html).toContain(ARTIFACT_CSP);
+    expect(html).not.toContain("document.createElement('button')");
+    const listener = html.slice(html.indexOf("window.addEventListener('message'"), html.indexOf("</script>"));
+    let receive: (event: unknown) => void = () => {};
+    const parent = {};
+    let prints = 0;
+    runInNewContext(listener, { parent, window: { addEventListener(name: string, callback: typeof receive) { expect(name).toBe("message"); receive = callback; }, print() { prints++; } } });
+    receive({ source: {}, data: "kemiri:print-artifact" });
+    receive({ source: parent, data: "unrecognized" });
+    expect(prints).toBe(0);
+    receive({ source: parent, data: "kemiri:print-artifact" });
+    expect(prints).toBe(1);
+});
+
+test("the new-tab wrapper gives the document the viewport, not a title or safety banner", () => {
+    const html = sandboxedArtifactDocument("blob:example", "report.html", theme);
+    expect(html).not.toContain("<header");
+    expect(html).toContain('aria-label="Artifact actions"');
+    expect(html).toContain('popover');
+    expect(html).toContain("height: 100%");
+    expect(html).not.toContain("allow-same-origin");
 });

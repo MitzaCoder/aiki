@@ -162,10 +162,10 @@ internal fun artifactLinkIntent(url: String): Intent? {
  */
 @SuppressLint("ClickableViewAccessibility") // The listener never consumes events; WebView keeps native click/accessibility handling.
 @Composable
-internal fun ArtifactPage(html: String, modifier: Modifier = Modifier, blockRequests: Boolean = false) {
+internal fun ArtifactPage(html: String, modifier: Modifier = Modifier, blockRequests: Boolean = false, hostControls: Boolean = false, onPrintReady: ((() -> Unit)?) -> Unit = {}) {
     val context = LocalContext.current
     val colors = Jarvis.colors
-    val document = artifactPageDocument(html, colors.dark, artifactThemeTokens(colors), blockRequests)
+    val document = artifactPageDocument(html, colors.dark, artifactThemeTokens(colors), blockRequests, !hostControls)
     val webView = remember(context) {
         WebView(context).also { view ->
             applyArtifactPagePolicy(view)
@@ -200,8 +200,13 @@ internal fun ArtifactPage(html: String, modifier: Modifier = Modifier, blockRequ
             }
         }
     }
-    DisposableEffect(webView) {
+    DisposableEffect(webView, hostControls) {
+        onPrintReady {
+            val printing = webView.context.getSystemService(Context.PRINT_SERVICE) as PrintManager
+            printing.print("Artifact", webView.createPrintDocumentAdapter("Artifact"), null)
+        }
         onDispose {
+            onPrintReady(null)
             webView.stopLoading()
             webView.loadUrl("about:blank")
             webView.destroy()
@@ -236,7 +241,7 @@ internal fun artifactThemeTokens(colors: JarvisColors): Map<String, String> {
 internal const val ARTIFACT_CSP = "default-src 'none'; script-src 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'unsafe-inline' https://cdnjs.cloudflare.com; img-src data: blob: https:; font-src data: https://cdnjs.cloudflare.com; media-src data: blob: https:; connect-src 'none'; form-action 'none'; base-uri 'none'"
 
 /** First-in-head CSP and defaults. No author bytes enter a native/app origin or a JavaScript bridge. */
-internal fun artifactPageDocument(html: String, dark: Boolean, tokens: Map<String, String>, blockRequests: Boolean = false): String {
+internal fun artifactPageDocument(html: String, dark: Boolean, tokens: Map<String, String>, blockRequests: Boolean = false, showPrintButton: Boolean = true): String {
     val mode = if (dark) "dark" else "light"
     val variables = tokens.filterKeys { it.matches(Regex("[a-z-]+")) }.entries.joinToString("") { (name, value) -> "--$name:" + value.replace(Regex("[<>{};]"), "") + ";" }
     val policy = if (blockRequests) "<meta http-equiv=\"Content-Security-Policy\" content=\"$ARTIFACT_CSP\">" else ""
@@ -251,7 +256,7 @@ internal fun artifactPageDocument(html: String, dark: Boolean, tokens: Map<Strin
 <script>
 window.aikiArtifactScroll=function(fragment){try{var id=decodeURIComponent(fragment);if(!id)window.scrollTo(0,0);else{var target=document.getElementById(id)||document.getElementsByName(id)[0];if(target)target.scrollIntoView()}}catch(e){}};
 document.addEventListener('click',function(event){if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;var anchor=event.target.closest&&event.target.closest('a[href]');if(!anchor)return;var href=anchor.getAttribute('href').trim();if(href.charAt(0)==='#'){event.preventDefault();window.aikiArtifactScroll(href.slice(1))}},true);
-window.print=function(){location.href='aiki-artifact:print'};(function(){function add(){var b=document.createElement('button');b.id='aiki-artifact-print';b.type='button';b.textContent='Print';b.setAttribute('aria-label','Print this artifact');b.onclick=function(){window.print()};document.body.appendChild(b)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()})();</script>"""
+window.print=function(){location.href='aiki-artifact:print'};${if (showPrintButton) """(function(){function add(){var b=document.createElement('button');b.id='aiki-artifact-print';b.type='button';b.textContent='Print';b.setAttribute('aria-label','Print this artifact');b.onclick=function(){window.print()};document.body.appendChild(b)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()})();""" else ""}</script>"""
     val source = html.replaceFirst(Regex("^\\s*<!doctype[^>]*>", RegexOption.IGNORE_CASE), "")
     val opening = Regex("""^\s*<html\b((?:[^"'<>]|"[^"]*"|'[^']*')*)>""", RegexOption.IGNORE_CASE).find(source)
     val attributes = (opening?.groupValues?.get(1) ?: "").replace(Regex("""\s+([^\s=/>]+)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?""")) {

@@ -4,7 +4,10 @@
 </script>
 
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, type Snippet } from 'svelte';
+	import { DropdownMenu } from 'bits-ui';
+	import EllipsisVerticalIcon from '@lucide/svelte/icons/ellipsis-vertical';
+	import { copyText } from '#lib/clipboard.js';
 	import { harness } from '#lib/harness.svelte.js';
 	import { artifactPageDocument, readArtifactTheme, type ArtifactPageTheme } from '#lib/artifact-page.js';
 	import { overlayScroll } from '#lib/scrollbars.js';
@@ -34,15 +37,17 @@
 		artifact,
 		client,
 		compact = false,
-		roomy = false
-	}: { artifact: Artifact; client: HarnessClient; compact?: boolean; roomy?: boolean } = $props();
+		roomy = false,
+		fullSpace = false,
+		menuActions
+	}: { artifact: Artifact; client: HarnessClient; compact?: boolean; roomy?: boolean; fullSpace?: boolean; menuActions?: Snippet } = $props();
 
 	let content = $state<string | undefined>(undefined);
 	let artifactTheme = $state<ArtifactPageTheme>({ mode: 'light', tokens: {} });
 	const project = $derived(harness.backends.find((backend) => backend.client === client)?.projects.find((project) => project.id === artifact.projectId));
 	// A restored preview must not briefly allow connections before its project's privacy setting arrives.
 	const blockRequests = $derived(project === undefined || project.blockArtifactRequests === true);
-	const pageDocument = $derived(content === undefined ? '' : artifactPageDocument(content, artifactTheme, blockRequests));
+	const pageDocument = $derived(content === undefined ? '' : artifactPageDocument(content, artifactTheme, blockRequests, fullSpace));
 	onMount(() => {
 		const update = () => { artifactTheme = readArtifactTheme(); };
 		update();
@@ -72,9 +77,23 @@
 	let failures = 0;
 	let attempt = $state(0);
 	let tabProblem = $state('');
+	let frame = $state<HTMLIFrameElement>();
+	let menuOpen = $state(false);
+	let copyStatus = $state('');
+	async function copySource(): Promise<void> {
+		copyStatus = content !== undefined && await copyText(content) ? 'Source copied.' : 'Could not copy the source.';
+	}
 
 	const source = useArtifactSource(() => ({ client, projectId: artifact.projectId, artifactId: artifact.id }));
 	const url = $derived(source.current?.url);
+
+	$effect(() => {
+		artifact.id;
+		content = undefined;
+		problem = undefined;
+		truncated = false;
+		tabProblem = '';
+	});
 
 	$effect(() => {
 		attempt;
@@ -128,7 +147,23 @@
 	}
 </script>
 
-<div class="overflow-hidden rounded-2xl border border-(--chat-border) bg-(--chat-bg)/60" data-artifact-text>
+<div class={fullSpace ? 'html-viewport' : 'overflow-hidden rounded-2xl border border-(--chat-border) bg-(--chat-bg)/60'} data-artifact-text>
+	{#if fullSpace}
+		<div class="html-actions">
+			<DropdownMenu.Root bind:open={menuOpen}>
+				<DropdownMenu.Trigger class="html-actions-trigger" aria-label="Artifact actions" title="Artifact actions" data-artifact-actions><EllipsisVerticalIcon class="size-5" /></DropdownMenu.Trigger>
+				<DropdownMenu.Portal><DropdownMenu.Content align="end" sideOffset={6} class="html-actions-menu" data-artifact-actions-menu>
+					<DropdownMenu.Item disabled={content === undefined} onSelect={() => setView(page ? 'source' : 'page')}>{page ? 'Show HTML source' : 'Show page'}</DropdownMenu.Item>
+					{#if !page}<DropdownMenu.Item onSelect={() => wrap = !wrap}>{wrap ? 'Do not wrap lines' : 'Wrap lines'}</DropdownMenu.Item>{/if}
+					<DropdownMenu.Item disabled={content === undefined || !page} onSelect={() => frame?.contentWindow?.postMessage('kemiri:print-artifact', '*')}>Print</DropdownMenu.Item>
+					<DropdownMenu.Item disabled={content === undefined} onSelect={openTab}>Open in a new tab</DropdownMenu.Item>
+					<DropdownMenu.Item disabled={content === undefined} onSelect={() => void copySource()}>Copy HTML source</DropdownMenu.Item>
+					{@render menuActions?.()}
+				</DropdownMenu.Content></DropdownMenu.Portal>
+			</DropdownMenu.Root>
+		</div>
+		<p class="sr-only" role="status">{copyStatus}</p>
+	{:else}
 	<div class="flex items-center gap-1 border-b border-(--chat-border) px-2.5 py-1 text-xs text-(--chat-fg-subtle)">
 		<span class="min-w-0 flex-1 truncate font-mono">{artifact.name}</span>
 		{#if markdown}
@@ -178,11 +213,13 @@
 			<CopyButton text={content} label="Copy the text" />
 		{/if}
 	</div>
+	{/if}
 	{#if tabProblem}<p class="border-b border-(--chat-border) px-3 py-1.5 text-xs text-(--chat-danger)" role="alert">{tabProblem}</p>{/if}
 	{#if content !== undefined}
 		{#if page}
-			<div class="relative">
+			<div class:html-document={fullSpace} class="relative">
 				<iframe
+					bind:this={frame}
 					title={artifact.name}
 					sandbox={ARTIFACT_FRAME_SANDBOX}
 					referrerpolicy="no-referrer"
@@ -190,6 +227,7 @@
 					class="page-frame block w-full border-0 bg-white"
 					class:compact
 					class:roomy
+					class:fullSpace
 					data-artifact-page
 				></iframe>
 			</div>
@@ -200,7 +238,7 @@
 			</div>
 			</div>
 		{:else}
-			<div class="relative">
+			<div class:html-source={fullSpace} class="relative">
 			<pre use:overlayScroll={'parent'} class="text-body m-0 overflow-auto px-3 py-2.5 font-mono text-[0.78rem] leading-relaxed" class:wrap class:compact class:roomy>{content}</pre>
 			</div>
 		{/if}
@@ -221,6 +259,18 @@
 </div>
 
 <style>
+	.html-viewport { display:flex; flex:1; min-height:0; flex-direction:column; background:var(--chat-bg); }
+	.html-source { flex:1; min-height:0; overflow:auto; padding-top:50px; }
+	.html-document { flex:1; min-height:0; }
+	.html-document .page-frame.fullSpace { height:100%; }
+	.html-actions { position:absolute; top:max(10px, env(safe-area-inset-top)); right:max(10px, env(safe-area-inset-right)); z-index:10; }
+	:global(.html-actions-trigger) { display:grid; place-items:center; width:40px; height:40px; cursor:pointer; border:0; border-radius:999px; color:var(--chat-fg); background:var(--chat-surface); box-shadow:0 1px 8px #0003; opacity:.88; }
+	:global(.html-actions-trigger:hover), :global(.html-actions-trigger:focus-visible) { opacity:1; outline:2px solid var(--accent-2); outline-offset:2px; }
+	:global(.html-actions-menu) { z-index:100; min-width:220px; max-width:calc(100vw - 24px); max-height:calc(100dvh - 70px); overflow-y:auto; padding:6px; border:1px solid var(--chat-border); border-radius:12px; background:var(--chat-surface); color:var(--chat-fg); box-shadow:0 8px 32px #0003; font-size:14px; }
+	:global(.html-actions-menu [role=menuitem]) { padding:9px 12px; border-radius:6px; cursor:pointer; outline:none; }
+	:global(.html-actions-menu [data-highlighted]) { background:var(--chat-surface-2); }
+	:global(.html-actions-menu [data-disabled]) { opacity:.4; cursor:default; }
+
 	.text-body {
 		max-height: min(60dvh, 36rem);
 		white-space: pre;
