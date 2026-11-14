@@ -1,5 +1,63 @@
 # Continue
 
+## T183: full per-project skills stack verification
+
+Verified the complete wmokzkqu → vozxrssy → oxnkzqvy → twtxqkxo stack,
+without code changes or history/bookmark changes. In requested order:
+`bun install` (263 packages); isolated root `bun test` (2,692 passed,
+94,467 assertions, zero failures, 260.70 s); root typecheck; web tests
+(1,139 passed, 80,209 assertions), check (zero errors/warnings), build;
+Android protocol check (395 DTOs, 108 request overloads); Android JVM tests,
+assembleDebug and lintDebug; external-denylist public-source check. JVM XML
+reports 964 tests: 962 passed, two skipped, zero failures/errors. Lint reports
+zero errors, 49 warnings and four hints. No flaky retries or fixes needed.
+
+The first Android build used disposable caches and passed in 6m 30s. After
+clarification, its daemon was stopped and caches removed; the wrapper's normal
+shared-cache rerun passed in 12s (53 up-to-date tasks, two executed). Its daemon
+was also stopped. Root tests used fresh HOME/XDG paths with every AIKI_*/KEMIRI_*
+variable unset. All owned temporary directories were cleaned. No physical
+device, deployment, push or bookmark movement. Only this continuation note is
+left in the working copy; no squash was needed.
+
+## T183 / T186: web project Skills settings (D82)
+
+Project settings → Skills is capability-gated by `project-skills`, next to MCP.
+It uses the settings section/group/switch/chip pieces, with found/offered counts,
+All / Offered / Off / New plus text filters, origin groups and source labels.
+Rows disclose winning and hidden paths read-only. The switch stays right on
+390 px screens. Nonempty subsets are on with Some roles; an on action writes
+all three roles, off writes []. No role editor or reset action is introduced.
+Info shows positive skillsHeldBack counts. Off never means a file is unreadable.
+
+The framework-free ProjectSkillChoices controller owns optimistic one-second
+batches, last-write-per-name merging, serial writes, rollback on failure and
+newer pending edits. Push refresh is project-scoped, deferred while edits are
+pending; reconnect reloads. Navigation flushes rather than dropping pending
+choices. HarnessClient has typed get/set calls and an isolated event listener.
+Nine pure web tests cover availability, grouping/source labels, subset mapping,
+filter chips, batching, rollback, refresh races and navigation flushing.
+
+Gates passed in requested order: web 1,139 tests / 80,209 assertions, check with
+zero diagnostics, build; root typecheck; isolated root 2,692 tests / 94,464
+assertions, zero failures. The first root run hit the tool's 240-second deadline;
+the complete rerun took 257 seconds, with no flaky test failure. The inherited
+built-in skill test fixture needed origin/hides after the backend stack merge.
+
+Synthetic T183 proof: before desktop light/dark mwgdviwy-da8a993f89 /
+mwgdviy6-60ca8baf7a; before phone light/dark mwgdvizd-429d248014 /
+mwgdvj0h-36c18a72e6. After desktop light/dark mwgdvj1r-d6f67d4261 /
+mwgdvj2q-2f7e2d80c2; after phone light/dark mwgdvj43-f353b62cbc /
+mwgdvj52-ea71b042d7. Five-second off/on + New removal recording (version 2):
+mwgdvj62-15729537c1. Hidden paths: mwgdvj7x-ce65387caa. Info count:
+mwgdvj8z-b8b5b48a06. Before was the unchanged oxnkzqvy settings list.
+
+Recipe: skills-web-demo.ts uses createSetup with fake pi/Claude/.agents skills,
+a shadowed name and one saved-off choice. skills-web-proof.ts uses bounded CDP
+calls, one session for viewport/theme/interactions, and dedicated Vite/Chromium.
+All data is synthetic in temporary HOME/XDG directories; owned processes and
+profiles are cleaned after capture. No deployment, push or bookmark movement.
+
 ## T183 / T187: Android project Skills settings
 
 Android adds `project-skills`-gated Skills beside MCP in Project settings.

@@ -7,6 +7,7 @@
 	import PromptCacheSection from '#lib/components/settings/PromptCacheSection.svelte';
 	import RedirectWhenWide from '#lib/components/settings/RedirectWhenWide.svelte';
 	import TicketsSection from '#lib/components/settings/TicketsSection.svelte';
+	import ProjectSkillsSection from '#lib/components/settings/ProjectSkillsSection.svelte';
 	import ProjectMcpSection from '#lib/components/settings/ProjectMcpSection.svelte';
 	import WorkersSection from '#lib/components/settings/WorkersSection.svelte';
 	import SchedulesSection from '#lib/components/SchedulesSection.svelte';
@@ -58,6 +59,8 @@
 		<PromptCacheSection {backend} {projectId} />
 	{:else if section === 'mcp'}
 		{#key `${backend.id}:${projectId}`}<ProjectMcpSection {backend} {projectId} />{/key}
+	{:else if section === 'skills'}
+		{#key `${backend.id}:${projectId}`}<ProjectSkillsSection {backend} {projectId} />{/key}
 	{:else if section === 'storage'}
 		<StorageSection {backend} {projectId} />
 	{/if}

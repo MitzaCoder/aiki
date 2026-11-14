@@ -328,6 +328,9 @@
 					Skills
 					<span class="font-normal normal-case">({context.skills.length})</span>
 				</h3>
+				{#if (context.skillsHeldBack ?? 0) > 0}
+					<p class="px-1 text-xs text-(--chat-fg-subtle)">{context.skillsHeldBack} skills held back by this project's settings</p>
+				{/if}
 				{#if context.skills.length === 0}
 					<p class="px-1 text-xs text-(--chat-fg-subtle)">No skills are offered to this conversation.</p>
 				{:else}

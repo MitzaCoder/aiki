@@ -49,6 +49,7 @@ export const PROJECT_SECTIONS = [
 	{ id: "tickets", label: "Tickets and pull requests", hint: "Jira site, prefixes, repositories", icon: "ticket" },
 	{ id: "cache", label: "Prompt cache", hint: "How long Claude keeps a conversation", icon: "database-zap" },
 	{ id: "mcp", label: "MCP", hint: "Remote servers and agent roles", icon: "server" },
+	{ id: "skills", label: "Skills", hint: "What this project’s agents know how to do", icon: "key-round" },
 	{ id: "storage", label: "Storage", hint: "Finished workspaces and disk use", icon: "hard-drive" },
 ] as const satisfies readonly SettingsSectionInfo[];
 
@@ -157,6 +158,8 @@ export function projectSectionAvailable(
 			return has.longPromptCache;
 		case "mcp":
 			return has.supports("mcp-servers");
+		case "skills":
+			return has.supports("project-skills");
 		case "storage":
 			return has.supports("storage");
 	}

@@ -312,6 +312,7 @@ export class HarnessClient {
 	readonly #artifactListeners = new Set<(event: ArtifactsChangedEvent) => void>();
 	readonly #draftListeners = new Set<(event: DraftsChangedEvent) => void>();
 	readonly #loginListeners = new Set<(login: AuthLogin) => void>();
+	readonly #projectSkillsListeners = new Set<(event: import('@kemiri/protocol').SkillsProjectChangedEvent) => void>();
 	readonly #mcpOAuthListeners = new Set<(flow: import('@kemiri/protocol').McpOAuthFlow) => void>();
 	readonly #errorListeners = new Set<(error: ClientError) => void>();
 	readonly #pending = new Map<string, Pending>();
@@ -350,6 +351,20 @@ export class HarnessClient {
 	subscribe(listener: (state: ClientState) => void): () => void {
 		this.#listeners.add(listener);
 		return () => this.#listeners.delete(listener);
+	}
+
+	/** A project's skill catalogue changed, including edits from another paired client. */
+	onProjectSkillsChanged(listener: (event: import('@kemiri/protocol').SkillsProjectChangedEvent) => void): () => void {
+		this.#projectSkillsListeners.add(listener);
+		return () => this.#projectSkillsListeners.delete(listener);
+	}
+
+	async getProjectSkills(projectId: string): Promise<import('@kemiri/protocol').SkillsProjectGetResponse> {
+		return this.#call<import('@kemiri/protocol').SkillsProjectGetResponse>({ type: 'skills.project.get', projectId });
+	}
+
+	async setProjectSkills(projectId: string, changes: import('@kemiri/protocol').SkillsProjectSetRequest['changes']): Promise<import('@kemiri/protocol').SkillsProjectSetResponse> {
+		return this.#call<import('@kemiri/protocol').SkillsProjectSetResponse>({ type: 'skills.project.set', projectId, changes });
 	}
 
 	/** MCP sign-in changes, including completion in another paired tab. Read mcp.list for server status. */
@@ -1815,6 +1830,12 @@ export class HarnessClient {
 			}
 			case "terminal.resync": {
 				this.#terminalsById.get(message.terminalId)?.receiveResync();
+				return;
+			}
+			case "skills.project.changed": {
+				for (const listener of this.#projectSkillsListeners) {
+					try { listener(message); } catch { /* Consumer isolation. */ }
+				}
 				return;
 			}
 			case "mcp.oauth.changed": {

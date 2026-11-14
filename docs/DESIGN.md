@@ -4180,10 +4180,21 @@ section lists, the URLs and the rules below as pure functions (`test/settings.te
 - `/` stays the projects home (it was both): every backend's projects, Add a project (opens `FolderPicker`), the
   first-run backend form. Management moved to Settings → Backends.
 
-Skills choices belong to the backend project, not a repo. The planned Skills screen uses simple on/off controls;
-undecided skills are offered to every role and marked New. The protocol/storage retain independent coordinator,
-workers and background roles. Clients hide the section when `project-skills` is absent. The backend contract and
-prompt filtering are implemented independently of the client screens.
+Skills choices belong to the backend project, not a repo. Web Project settings → Skills reuses SettingsSection,
+SettingsGroup, StatusChip and Switch, and is hidden (including its deep link) without `project-skills`. It shows
+found/offered counts, text search and All / Offered / Off / New chips. Winners group by This project, Built in,
+then On this backend, for every project; source labels distinguish Kemiri, pi, Claude Code and .agents. Read-only
+File details discloses SKILL.md and hidden duplicate paths. Undecided skills are offered and marked New. A switch
+is on for any nonempty role set; a subset says Some roles. Switching on selects coordinator, workers and background;
+off selects []. The protocol still allows role subsets and null reset; this UI does not edit those separately.
+
+`ProjectSkillChoices` batches edits after one quiet second, keeps the last edit per name, serializes writes, and
+optimistically overlays unsaved choices over server catalogues. A failed batch reverts to the confirmed catalogue
+with an error, without dropping newer pending edits. Project-scoped pushes and reconnection refresh the catalogue;
+pushes during a save defer their refresh so they cannot undo optimistic switches. Leaving the section flushes edits.
+The phone keeps each switch on the right and wraps text. The footer explains backend/project scope, next-turn
+application and that Off hides a skill from the agents' list but leaves its file readable. Conversation Info also
+shows the optional skillsHeldBack count when positive.
 
 ### Routes and redirects
 
@@ -4197,7 +4208,7 @@ Every section has a URL; the last segment is the section name, which Android reu
 /settings/backends/<id>/accounts            Accounts and API keys
 /settings/backends/<id>/mcp                 MCP servers
 /b/<backend>/projects/<id>/settings         list (phone) / General (wide)
-/b/<backend>/projects/<id>/settings/general | coordinator | workers | schedules | tickets | cache | mcp | storage
+/b/<backend>/projects/<id>/settings/general | coordinator | workers | schedules | tickets | cache | mcp | skills | storage
 ```
 
 - `/notifications` redirects to `/settings/notifications`. The old `.../settings` URL still works: it is the list on a
