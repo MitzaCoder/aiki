@@ -114,10 +114,10 @@ private const val ORB_MIN_WIDTH_DP = 640
  * The orb's column beside a reply's row: the orb on the turn's first row, an empty gutter on the rest, so the whole turn
  * lines up as on the web.
  */
-@Composable private fun TurnGutter(orb: TurnOrb, content: @Composable () -> Unit) {
+@Composable private fun TurnGutter(orb: TurnOrb, motion: io.github.mitzacoder.kemiri.ui.components.AgentMotion, content: @Composable () -> Unit) {
     Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         Box(Modifier.width(26.dp)) {
-            if(orb.first) AssistantOrb(Modifier.padding(top = 2.dp),size = 26.dp,active = orb.active,animationsEnabled = orb.active && !rememberReducedMotion(),contentDescription = "Assistant")
+            if(orb.first) io.github.mitzacoder.kemiri.ui.components.AgentMascot(motion,Modifier.padding(top = 2.dp),label = "Assistant")
         }
         Box(Modifier.weight(1f)) { content() }
     }
@@ -127,11 +127,11 @@ private const val ORB_MIN_WIDTH_DP = 640
  * The coordinator is working but no reply streams yet (web `TranscriptColumn`'s working row): an active orb and a
  * shimmering "Working…", still with animations off.
  */
-@Composable fun WorkingRow(modifier: Modifier = Modifier) {
-    val still = rememberReducedMotion()
+@Composable fun WorkingRow(modifier: Modifier = Modifier, motion: io.github.mitzacoder.kemiri.ui.components.AgentMotion = io.github.mitzacoder.kemiri.ui.components.AgentMotion.Working) {
+    val still = io.github.mitzacoder.kemiri.ui.components.rememberAgentReducedMotion()
     Row(modifier.fillMaxWidth().semantics(mergeDescendants = true) {},verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        AssistantOrb(size = 26.dp,active = true,animationsEnabled = !still)
-        ShimmerText("Working…",animate = !still)
+        io.github.mitzacoder.kemiri.ui.components.AgentMascot(motion)
+        ShimmerText(when(motion) { io.github.mitzacoder.kemiri.ui.components.AgentMotion.Waiting -> "Waiting for your answer…"; io.github.mitzacoder.kemiri.ui.components.AgentMotion.Done -> "Done."; else -> "Working…" },animate = !still && motion == io.github.mitzacoder.kemiri.ui.components.AgentMotion.Working)
     }
 }
 
@@ -150,8 +150,8 @@ private const val ORB_MIN_WIDTH_DP = 640
     Text(text,modifier.onSizeChanged { width = it.width.toFloat() },style = style.copy(brush = brush))
 }
 
-@Composable fun TranscriptRow(row: ChatRow, scope: TranscriptScope, streaming: Boolean = false, orb: TurnOrb? = null) {
-    if(orb != null) TurnGutter(orb) { TranscriptRowContent(row,scope,streaming) }
+@Composable fun TranscriptRow(row: ChatRow, scope: TranscriptScope, streaming: Boolean = false, orb: TurnOrb? = null, motion: io.github.mitzacoder.kemiri.ui.components.AgentMotion = if(orb?.active == true) io.github.mitzacoder.kemiri.ui.components.AgentMotion.Working else io.github.mitzacoder.kemiri.ui.components.AgentMotion.Idle) {
+    if(orb != null) TurnGutter(orb,motion) { TranscriptRowContent(row,scope,streaming) }
     else TranscriptRowContent(row,scope,streaming)
 }
 

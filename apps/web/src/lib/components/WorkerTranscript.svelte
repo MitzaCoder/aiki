@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { agentWaitingForUser } from '#lib/agent-activity.js';
+	import type { ProjectBoard } from '#lib/board.svelte.js';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import BotIcon from '@lucide/svelte/icons/bot';
@@ -84,6 +86,14 @@
 	const live = $derived(liveState(session?.view));
 	const items = $derived(buildTranscript(session?.entries ?? [], live));
 	const busy = $derived(live?.run !== undefined);
+	let board = $state<ProjectBoard | undefined>(undefined);
+	const waitingForUser = $derived(agentWaitingForUser(board?.board?.questions ?? [], threadId, worker?.taskId, true));
+	$effect(() => {
+		if (!backend.supports('board')) return;
+		const watched = backend.watchBoard(projectId);
+		board = watched;
+		return () => { watched.stop(); if (board === watched) board = undefined; };
+	});
 
 	function updatedTitle(worker: { updatedAt: string }): string {
 		const ms = Date.parse(worker.updatedAt);
@@ -327,6 +337,10 @@
 				loadingEarlier={session?.loadingEarlier ?? false}
 				onLoadEarlier={loadEarlier}
 				working={busy}
+				running={busy}
+				{waitingForUser}
+				connected={session?.status === 'live'}
+				runFailed={live?.runFailure !== undefined}
 				onopentopic={openMemoryTopic}
 				empty={emptyState}
 			/>

@@ -1,0 +1,69 @@
+/* Preview-only motion. All distances and pivots use the SVG master's 1024-unit coordinates. */
+.mascot-motion { --mascot-bob: -12px; --mascot-hop: -42px; --mascot-sway: 4.5deg; overflow: visible; }
+.mascot-motion[data-size="small"] { --mascot-bob: -7px; --mascot-hop: -30px; --mascot-sway: 3deg; }
+.mascot-pose { transform-origin: 512px 850px; }
+.mascot-leaf { transform-origin: 523px 380px; }
+.mascot-eye-left { transform-origin: 422px 592px; }
+.mascot-eye-right { transform-origin: 602px 592px; }
+.mascot-motion[data-state="working"] .mascot-pose { animation: kemiri-breathe 3s ease-in-out infinite; }
+.mascot-motion[data-state="working"] .mascot-leaf { animation: kemiri-sway 3s ease-in-out infinite; }
+.mascot-motion[data-state="working"] .mascot-eye { animation: kemiri-working-blink 6s ease-in-out infinite; }
+.mascot-motion[data-state="done"][data-play] .mascot-pose { animation: kemiri-hop 1.3s ease-in-out both; }
+.mascot-motion[data-state="done"][data-play] .mascot-leaf { animation: kemiri-flutter 1.3s ease-in-out both; }
+.mascot-motion[data-state="thinking"] .mascot-eyes-gaze { animation: kemiri-look 3.5s ease-in-out infinite; }
+.mascot-motion[data-state="thinking"] .mascot-eye { animation: kemiri-thinking-blink 3.5s ease-in-out infinite; }
+.mascot-motion[data-state="thinking"] .mascot-leaf { animation: kemiri-twitch 3.5s ease-in-out infinite; }
+@keyframes kemiri-breathe {
+  0%,100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(var(--mascot-bob)) scale(.985,1.02); }
+}
+/* The pose peaks at 50%; the leaf follows at 60%, then returns without a seam. */
+@keyframes kemiri-sway {
+  0%,100% { transform: rotate(0deg); }
+  30% { transform: rotate(calc(-1 * var(--mascot-sway))); }
+  60% { transform: rotate(var(--mascot-sway)); }
+}
+/* One 180 ms blink per two breathing loops. */
+@keyframes kemiri-working-blink {
+  0%,91%,94%,100% { transform: scaleY(1); }
+  92.5% { transform: scaleY(.08); }
+}
+@keyframes kemiri-hop {
+  0%,100% { transform: translateY(0) scale(1); }
+  15% { transform: translateY(0) scale(1.035,.96); }
+  34% { transform: translateY(var(--mascot-hop)) scale(.985,1.02); }
+  49% { transform: translateY(calc(var(--mascot-hop) * .65)) scale(1); }
+  65% { transform: translateY(0) scale(1.035,.975); }
+  82% { transform: translateY(-4px) scale(.995,1.005); }
+}
+@keyframes kemiri-flutter {
+  0%,15%,100% { transform: rotate(0deg); }
+  33% { transform: rotate(-8deg); }
+  44% { transform: rotate(6deg); }
+  56% { transform: rotate(-4deg); }
+  70% { transform: rotate(2deg); }
+  86% { transform: rotate(0deg); }
+}
+/* Three half-second holds; back at centre before the final blink. The body never moves. */
+@keyframes kemiri-look {
+  0%,3%,72%,100% { transform: translate(0,0); }
+  9%,23% { transform: translate(-14px,0); }
+  30%,44% { transform: translate(0,-13px); }
+  51%,65% { transform: translate(14px,0); }
+}
+@keyframes kemiri-thinking-blink {
+  0%,85%,92%,100% { transform: scaleY(1); }
+  88.5% { transform: scaleY(.08); }
+}
+@keyframes kemiri-twitch {
+  0%,77%,89%,100% { transform: rotate(0deg); }
+  81% { transform: rotate(-3deg); }
+  85% { transform: rotate(2deg); }
+}
+[data-motion-paused="true"] .mascot-motion * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .mascot-motion * { animation: none !important; transform: none !important; }
+}
+@media print {
+  .mascot-motion * { animation: none !important; transform: none !important; }
+}

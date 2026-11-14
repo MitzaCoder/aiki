@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from assets/brand by bun scripts/generate-brand.ts. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt" android:width="26dp" android:height="26dp" android:viewportWidth="780" android:viewportHeight="780">
+  <group android:translateX="-122" android:translateY="-115">
+    <path android:pathData="M342 746C377 770 423 775 451 797C465 807 473 820 483 834C491 845 501 850 512 850C524 850 534 843 542 831C557 807 576 792 606 780L672 752Z"><aapt:attr name="android:fillColor"><gradient android:type="linear" android:startX="398" android:startY="759" android:endX="578" android:endY="850"><item android:offset="0" android:color="#713cc5"/><item android:offset="1" android:color="#a641d6"/></gradient></aapt:attr></path>
+    <path android:pathData="M512 380C626 380 725 455 748 562C760 618 751 674 724 712C690 760 625 782 554 786C483 790 399 782 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"><aapt:attr name="android:fillColor"><gradient android:type="linear" android:startX="330" android:startY="427" android:endX="722" android:endY="777"><item android:offset="0" android:color="#5b7bea"/><item android:offset=".48" android:color="#9564e8"/><item android:offset="1" android:color="#f24aeb"/></gradient></aapt:attr></path>
+    <path android:pathData="M512 380C540 380 569 385 591 394C661 438 705 503 707 574C710 636 683 688 633 721C565 766 456 783 371 762C363 760 355 757 349 754C297 725 271 674 271 610C269 542 299 481 350 437C394 399 453 379 512 380Z"><aapt:attr name="android:fillColor"><gradient android:type="linear" android:startX="340" android:startY="440" android:endX="658" android:endY="747"><item android:offset=".12" android:color="#5b7bef"/><item android:offset=".5" android:color="#9472ed"/><item android:offset="1" android:color="#ea6cf3"/></gradient></aapt:attr></path>
+  </group>
+</vector>

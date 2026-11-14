@@ -33,6 +33,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.input.TextFieldValue
 import io.github.mitzacoder.kemiri.features.tasks.*
+import io.github.mitzacoder.kemiri.ui.components.AgentMotion
 import io.github.mitzacoder.kemiri.navigation.ChatHighlight
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -180,7 +181,20 @@ fun ChatScreen(context: ProjectScreenContext, modifier: Modifier = Modifier) {
     val busy = state.view?.docs?.get("pi.live").obj()?.get("run") != null
     // The run is on but no reply streams yet: the transcript ends in "Working…".
     val working = isWorking(state.view?.docs?.get("pi.live"),worker = context.route.workerId != null)
-    val orbs = if(showsTurnOrbs()) remember(rows) { turnOrbs(rows) } else null
+    val wideReplies = showsTurnOrbs()
+    val orbs = if(wideReplies) remember(rows) { turnOrbs(rows) } else null
+    val lastAvatar = orbs?.indexOfLast { it?.first == true } ?: -1
+    val hasLiveAgentReply = rows.any { it.turn?.streaming == true } || state.view?.docs?.get("pi.live").obj()?.get("tools").objects().isNotEmpty()
+    val waitingForUser = agentWaitingForUser(boardView.questions,context.route.threadId,workers.find { it.id == context.route.workerId }?.taskId,context.route.workerId != null)
+    val runFailed = rows.lastOrNull()?.parts?.any { it.kind == "error" || it.status == "error" || it.text == "Stopped." } == true || state.view?.docs?.get("pi.live").obj()?.get("runFailure") != null
+    var previouslyRunning by remember(context.route) { mutableStateOf(busy) }
+    var completed by remember(context.route) { mutableStateOf(false) }
+    LaunchedEffect(busy,waitingForUser,state.status,runFailed) {
+        val finished = agentFinished(previouslyRunning,busy,waitingForUser,state.status == WatchStatus.Live,runFailed)
+        previouslyRunning = busy && state.status == WatchStatus.Live
+        if(finished) { completed = true; delay(1300); completed = false }
+        else completed = false
+    }
     // Rows that arrive while the chat is open rise in, as on the web; never with animations off.
     val reducedMotion = rememberReducedMotion()
     val live = state.status == WatchStatus.Live
@@ -292,10 +306,10 @@ fun ChatScreen(context: ProjectScreenContext, modifier: Modifier = Modifier) {
                 // Decided when the row first shows, so it rises once and not again when scrolled back into view.
                 val rises = remember(row.key) { row.key in arrived }
                 Box(Modifier.riseIn(rises && !reducedMotion).padding(top = gap).clip(RoundedCornerShape(12.dp)).background(flash)) {
-                    TranscriptRow(row,transcriptScope,streaming = busy && index == rows.lastIndex,orb = orbs?.get(index))
+                    TranscriptRow(row,transcriptScope,streaming = busy && index == rows.lastIndex,orb = orbs?.get(index),motion = when { index == lastAvatar && busy && hasLiveAgentReply -> if(waitingForUser) AgentMotion.Waiting else AgentMotion.Working; completed && index == lastAvatar -> AgentMotion.Done; else -> AgentMotion.Idle })
                 }
             }
-            if(working) item(key = "working") { WorkingRow(Modifier.riseIn(!reducedMotion).padding(top = if(rows.isEmpty()) 0.dp else 16.dp)) }
+            if((waitingForUser && (!wideReplies || !hasLiveAgentReply)) || (!waitingForUser && working && (!wideReplies || !hasLiveAgentReply)) || (completed && lastAvatar < 0)) item(key = "working") { WorkingRow(Modifier.padding(top = if(rows.isEmpty()) 0.dp else 16.dp),motion = if(waitingForUser) AgentMotion.Waiting else if(completed) AgentMotion.Done else AgentMotion.Working) }
         }
         }
         androidx.compose.animation.AnimatedVisibility(

@@ -3,6 +3,14 @@ package io.github.mitzacoder.kemiri.features.chat
 import io.github.mitzacoder.kemiri.data.WatchStatus
 import io.github.mitzacoder.kemiri.protocol.ProjectSummary
 import kotlinx.serialization.json.JsonElement
+import io.github.mitzacoder.kemiri.protocol.BoardQuestion
+
+/** Blocking asks/approvals in this conversation, not warnings, retries, queues or timed task waiting. */
+internal fun agentWaitingForUser(questions: List<BoardQuestion>, threadId: String? = null, workerTaskId: String? = null, worker: Boolean = false): Boolean =
+    questions.any { it.status == "open" && (it.blocksWork ?: (it.kind != "warning")) && (it.threadId ?: "main") == (threadId ?: "main") && (!worker || (workerTaskId != null && it.taskId == workerTaskId)) }
+
+internal fun agentFinished(previousRunning: Boolean, running: Boolean, waiting: Boolean, connected: Boolean, failed: Boolean) =
+    previousRunning && !running && !waiting && connected && !failed
 
 /**
  * What the chat says about its own state, as the web's `ProjectChat` and `WorkerTranscript` word it: whether the

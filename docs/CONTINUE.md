@@ -1,5 +1,36 @@
 # Continue
 
+## T177 / Q199: mascot wired into agent activity
+
+A now replaces the 26 px/dp chat orb while a run/reply/tool is active. C marks
+open blocking board questions (including MCP approvals), scoped by thread and,
+for workers, linked task. Warnings default non-blocking; retries, queues,
+network reconnects and timed task waits do not select C. B plays once on a
+successful live run completion, then settles in the desktop gutter or leaves
+the transient phone row. History, failures, stops and merely clearing a question
+do not celebrate. Working text and Assistant labels remain. Decorative orbs in
+Usage/empty states and non-orb worker/thread/graph status glyphs remain.
+
+`bun scripts/generate-brand.ts` now generates the inline web component/CSS and
+five Android vector layers from the same masters. Compose animates the layers
+without dependencies and observes animator scale changes, including scale 0.
+Web reduced motion is static. Six introduced lint warnings were removed by
+using 26 dp intrinsic vectors and a required motion argument.
+
+Proof index on T177: mwfr88hh-f21713d8ec (44 screenshots, 12 recordings and all
+artifact IDs). Web after videos: mwfr6p09-ee63fc0b21 (desktop light),
+mwfr6pei-93d6ac7d36 (desktop dark), mwfr6p4t-170f945ae2 (phone light),
+mwfr6pj1-583dfdbab8 (phone dark). Android: mwfr6p9q-bd1cbefb94 (light),
+mwfr6pnj-7bef89cc15 (dark). Real clients used an isolated checkout backend and
+synthetic model/tools/questions; no physical phone or provider account.
+
+All gates pass: isolated root 2,662 tests / 94,194 assertions, typecheck; web
+1,122 tests / 80,065 assertions, zero-diagnostic check and build; Android 950 JVM
+tests (two skipped), assembleDebug and lintDebug (zero errors, 49 existing
+warnings). Gradle stopped; external-denylist/generic/Gitleaks checks pass.
+Runtime processes and owned temp files are cleaned. T175 artifact files were
+not touched; no push or main movement. This change sits atop preview vsnkvplx.
+
 ## T177: mascot motion previews, not integrated
 
 A separate commit atop T173 adds `assets/brand/mascot-motion.svg` (6,455 bytes),

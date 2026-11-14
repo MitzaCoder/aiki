@@ -3,12 +3,13 @@
 	import ArrowDownIcon from '@lucide/svelte/icons/arrow-down';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Spinner } from '#lib/components/ui/spinner/index.js';
-	import { tick, untrack, type Snippet } from 'svelte';
+	import { tick, untrack, onDestroy, type Snippet } from 'svelte';
+	import { agentFinished, agentTurnWorking } from '#lib/agent-activity.js';
 	import { loadEarlierPage, shouldPrefetchEarlier } from '#lib/chat/earlier-paging.js';
 	import type { WorkerSummary } from '@kemiri/protocol';
 	import type { MemoryExtraction } from '#lib/memory.js';
 	import type { MemoryScope } from '@kemiri/protocol';
-	import Orb from '#lib/components/Orb.svelte';
+	import AgentMascot from '#lib/components/AgentMascot.svelte';
 	import { CHAT_COLUMN_CLASS } from '#lib/chat/layout.js';
 	import type { TranscriptItem } from '#lib/transcript.js';
 	import AssistantTurn from './AssistantTurn.svelte';
@@ -41,6 +42,10 @@
 		loadingEarlier = false,
 		onLoadEarlier,
 		working = false,
+		running = false,
+		waitingForUser = false,
+		connected = true,
+		runFailed = false,
 		extractionFor = undefined,
 		onopentopic,
 		onopenboard,
@@ -67,6 +72,10 @@
 		onLoadEarlier?: () => void | Promise<void>;
 		/** The coordinator is working but no turn says so yet. */
 		working?: boolean;
+		running?: boolean;
+		waitingForUser?: boolean;
+		connected?: boolean;
+		runFailed?: boolean;
 		/**
 		 * The memories a compaction entry saved, from the scope histories the screen already holds: a marker shows them and
 		 * their undo without asking the server again.
@@ -87,6 +96,22 @@
 		/** Who a waiting message is for, in its status line. */
 		waitingTarget?: 'coordinator' | 'thread';
 	} = $props();
+
+	const lastTurn = $derived(items.filter(item => item.kind === 'turn').at(-1));
+	const liveTurn = $derived(items.some(item => item.kind === 'turn' && agentTurnWorking(item, running)));
+	const failed = $derived(runFailed || (lastTurn?.parts.some(part => part.type === 'error' || part.type === 'stopped') ?? false));
+	let completed = $state(false);
+	let wasRunning = untrack(() => running);
+	let completionTimer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		if (agentFinished(wasRunning, running, waitingForUser, connected, failed)) {
+			completed = true;
+			clearTimeout(completionTimer);
+			completionTimer = setTimeout(() => { completed = false; }, 1300);
+		} else if (running || waitingForUser || !connected || failed) completed = false;
+		wasRunning = connected && running;
+	});
+	onDestroy(() => clearTimeout(completionTimer));
 
 	let scroller = $state<HTMLDivElement | null>(null);
 	let content = $state<HTMLDivElement | null>(null);
@@ -238,6 +263,7 @@
 							<AssistantTurn
 								parts={item.parts}
 								streaming={item.streaming === true}
+								motion={agentTurnWorking(item, running) ? (waitingForUser ? 'waiting' : 'working') : completed && item.key === lastTurn?.key ? 'done' : 'idle'}
 								{cwd}
 								{workers}
 								{workerHref}
@@ -287,10 +313,10 @@
 						{/if}
 					{/snippet}
 
-					{#if working}
-						<div class="flex animate-rise items-center gap-3 text-sm sm:gap-4">
-							<Orb size={26} active />
-							<span class="shimmer-text font-medium">Working…</span>
+					{#if waitingForUser || working || completed}
+						<div class="flex items-center gap-3 text-sm sm:gap-4 {((liveTurn && (waitingForUser || working)) || (completed && lastTurn !== undefined)) ? 'sm:hidden' : ''}" data-agent-activity={waitingForUser ? 'waiting' : completed ? 'done' : 'working'}>
+							<AgentMascot state={waitingForUser ? 'waiting' : completed ? 'done' : 'working'} />
+							<span class="font-medium" class:shimmer-text={!waitingForUser && !completed}>{waitingForUser ? 'Waiting for your answer…' : completed ? 'Done.' : 'Working…'}</span>
 						</div>
 					{/if}
 				</div>

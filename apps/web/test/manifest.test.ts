@@ -116,7 +116,8 @@ describe("candlenut branding", () => {
 	test("product identity is separate from assistant activity", () => {
 		for (const path of ["/src/lib/components/Welcome.svelte", "/src/lib/components/settings/AboutSection.svelte", "/src/routes/pair/+page.svelte"]) expect(read(path)).toContain("<BrandMark");
 		expect(read("/src/lib/components/BrandMark.svelte")).toContain('src="/logo.svg"');
-		expect(read("/src/lib/components/chat/AssistantTurn.svelte")).toContain("Orb");
+		expect(read("/src/lib/components/chat/AssistantTurn.svelte")).toContain("AgentMascot");
+		expect(read("/src/lib/components/usage/UsageBody.svelte")).toContain("Orb");
 	});
 });
 

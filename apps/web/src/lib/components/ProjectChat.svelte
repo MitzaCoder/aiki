@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { agentWaitingForUser } from '#lib/agent-activity.js';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import LayersIcon from '@lucide/svelte/icons/layers';
@@ -205,6 +206,7 @@
 		)
 	);
 	/** A turn is being written, so its own orb and shimmer already say so. */
+	const waitingForUser = $derived(agentWaitingForUser(board?.board?.questions ?? [], threadId));
 	const working = $derived(busy && !items.some((item) => item.kind === 'turn' && item.live === true));
 	const empty = $derived(session !== undefined && session.status === 'live' && items.length === 0);
 	const canChat = $derived(project !== undefined && (isThread || project.coordinator.model !== null));
@@ -972,6 +974,10 @@
 					loadingEarlier={session?.loadingEarlier ?? false}
 					onLoadEarlier={loadEarlier}
 					{working}
+					running={busy}
+					{waitingForUser}
+					connected={session?.status === 'live'}
+				runFailed={live?.runFailure !== undefined}
 					{extractionFor}
 					onopentopic={openMemoryTopic}
 					onopenboard={supportsBoard ? openBoard : undefined}

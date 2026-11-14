@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from assets/brand by bun scripts/generate-brand.ts. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt" android:width="26dp" android:height="26dp" android:viewportWidth="780" android:viewportHeight="780">
+  <group android:translateX="-122" android:translateY="-115">
+    <path android:pathData="M485 626C503 629 520 629 538 626C546 624 551 630 548 639C543 655 530 665 512 665C494 665 481 655 476 640C473 632 477 625 485 626Z" android:fillColor="#26245f"/>
+  </group>
+</vector>

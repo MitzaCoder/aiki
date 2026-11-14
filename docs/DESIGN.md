@@ -1,5 +1,26 @@
 # Design
 
+## Agent mascot state mapping (T177 / Q199)
+
+Chat activity uses the 26 px/dp mascot: A while a run works, C for an open
+blocking question/approval belonging to that conversation, and B once on a
+successful live working-to-idle transition. Initial history, reconnects, failures,
+stops and merely answering/withdrawing a question must not replay Done. C is not
+network waiting, queued user messages, provider retries or timed task waiting.
+Warnings default non-blocking. Thread IDs scope coordinator questions; worker
+transcripts use their linked task and thread rather than unrelated project asks.
+MCP approvals already surface as board questions, so no speculative wire state
+is invented. Waiting keeps its own accessible “Waiting for your answer…” label;
+ordinary activity keeps “Working…”.
+
+Streaming reply gutters retain the existing large-screen footprint. A transient
+completion row makes the one-shot visible on phone, then disappears; desktop
+reply avatars settle to the still mascot. Idle/empty and Usage decoration may
+retain the orb, as do lists/graphs whose status glyphs are not assistant avatars.
+Reduced motion is static on web and Android, including animator duration scale 0.
+Android renders generated vector parts in Compose with the same pivots/timings,
+without new dependencies. The static logo and launcher icons do not animate.
+
 ## Mascot motion previews (T177)
 
 This is a review surface, not a chat integration. The static `logo.svg` stays

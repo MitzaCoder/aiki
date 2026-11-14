@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from assets/brand by bun scripts/generate-brand.ts. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt" android:width="26dp" android:height="26dp" android:viewportWidth="780" android:viewportHeight="780">
+  <group android:translateX="-122" android:translateY="-115">
+    <path android:pathData="M492 382C438 383 400 363 383 329C364 292 381 252 397 224C407 206 418 189 427 178C431 173 433 174 435 183C445 222 475 232 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382Z"><aapt:attr name="android:fillColor"><gradient android:type="linear" android:startX="384" android:startY="212" android:endX="529" android:endY="376"><item android:offset="0" android:color="#ffa447"/><item android:offset="1" android:color="#fba04a"/></gradient></aapt:attr></path>
+    <path android:pathData="M444 206C461 228 483 237 501 255C527 278 535 303 536 329C549 307 564 286 578 278C585 272 592 277 600 285C607 292 612 299 609 304C607 310 589 315 574 329C555 345 545 362 538 382L509 381C492 349 474 327 457 299C436 266 428 243 444 206Z" android:fillColor="#f9893f"/>
+  </group>
+</vector>

@@ -4,7 +4,8 @@
 	import CoinsIcon from '@lucide/svelte/icons/coins';
 	import CopyButton from '#lib/components/CopyButton.svelte';
 	import Markdown from '#lib/components/markdown/Markdown.svelte';
-	import Orb from '#lib/components/Orb.svelte';
+	import AgentMascot from '#lib/components/AgentMascot.svelte';
+	import type { AgentMotion } from '#lib/agent-activity.js';
 	import { clockTime, compactNumber, duration, fullTime } from '#lib/chat/time.js';
 	import { cacheMissDetail, cacheMissLine, turnUsageTitle } from '#lib/chat/cache.js';
 	import { groupTurnParts, turnText, type TurnPart, type TurnUsage } from '#lib/transcript.js';
@@ -24,6 +25,7 @@
 	let {
 		parts,
 		streaming = false,
+		motion,
 		cwd,
 		workers = [],
 		workerHref,
@@ -40,6 +42,7 @@
 	}: {
 		parts: readonly TurnPart[];
 		streaming?: boolean;
+		motion?: AgentMotion;
 		/** The project directory, to shorten paths in tool cards. */
 		cwd?: string;
 		/** The project's workers, so a `worker_*` call shows the worker it acted on. */
@@ -88,7 +91,7 @@
 
 <div class="flex gap-3 sm:gap-4">
 	<div class="hidden pt-0.5 sm:block">
-		<Orb size={26} active={streaming} />
+		<AgentMascot state={motion ?? (streaming ? 'working' : 'idle')} />
 	</div>
 	<div class="min-w-0 flex-1">
 		{#each rows as row (row.key)}
@@ -145,7 +148,7 @@
 		{/each}
 
 		{#if streaming && parts.length === 0}
-			<p class="my-2 shimmer-text text-sm font-medium">Working…</p>
+			<p class="my-2 text-sm font-medium" class:shimmer-text={motion !== 'waiting'}>{motion === 'waiting' ? 'Waiting for your answer…' : 'Working…'}</p>
 		{/if}
 
 		{#each cacheMisses as miss, index (index)}
