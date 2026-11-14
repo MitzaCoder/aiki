@@ -177,9 +177,20 @@ Source/development checkouts and deploy-watcher hosts cannot self-update; About 
 Settings → About shows available versions and release notes. Installed releases check the public GitHub API
 about once a day, without credentials; turn this off there for the whole backend. Dismissal hides the bottom-left update notice
 for that version, not the About row. Source/deploy checkouts do not check unless explicitly enabled in About.
-**Pilot.3 and earlier users:** stop it, run `aiki update --version v0.1.0-pilot.4`, then
-`kemiri update --version v0.1.0-pilot.5` and `kemiri start`. For a user service, use `aiki service remove` before updating
+**Pilot.3 and earlier users:** stop it and run `aiki update --version v0.1.0-pilot.4`.
+For a supported binary install, then run `kemiri update --version v0.1.0-pilot.5`;
+for source/Bun installs use the downloaded pilot.5 installer as described below.
+Finally run `kemiri start`. For a user service, use `aiki service remove` before updating
 and `kemiri service install` afterwards. Keep existing folders and data.
+**Pilot.1 specifically:** the published exact-version update directly to pilot.4 works;
+no pilot.2/3 hop is needed. Its old updater installs pilot.4 through private Bun, not
+as a binary. Continue with the reviewed, checksum-verified pilot.5 installer:
+`sh install.sh --version v0.1.0-pilot.5 --dir "$ROOT" --runtime bun --no-service`,
+where `ROOT` is the same recorded absolute installation root. Then use `kemiri start`
+or `kemiri service install`. This source path and rollback to pilot.4 were rehearsed
+with published assets on Linux x64; it does not certify other platforms or services.
+If an old source launcher prints help for `--version`, use `aiki version` instead;
+`.aiki-install.json` and `current/.ready` also record the selected version.
 **Pilot.3 and older releases lack the self-update API/supervisor.** This stopped manual
 upgrade acquires it before you can use the button.
 Later binary updates use plain `kemiri update`. For pilot.4 source/Bun fallback upgrades to pilot.5, download and review that release’s installer and run it with the same `--dir`: pilot.4’s embedded installer only accepts the old archive layout. Source activation can retain a harmless pilot.4-written `aiki` launcher pointing at pilot.5; use `kemiri` from now on. Self-update changes the backend, never Android's APK.

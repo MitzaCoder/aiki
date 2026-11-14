@@ -1,5 +1,33 @@
 # Continue
 
+## T174: friends' note is an agent-only update prompt
+
+Replaced the friends' HTML note with one copy-friendly, numbered agent prompt.
+`friends-note.html` is artifact mwfdxosc-cc74990d09 version 2; its plain-text
+counterpart is mwfn95zj-160adf5910. The published release list contains only
+pilot.1 through pilot.5. Instructions cover each starting version, discovery,
+platform/runtime/service selection, stopped backups, exact update commands,
+settings migration, retained-state checks, approved rollback and Android updates.
+Already pilot.5 does nothing. Unsupported/untested cases are explicit.
+
+A new real-published rehearsal verifies pilot.1 directly to pilot.4 using its old
+exact-version updater: it installs source/private Bun, not a binary. No pilot.2/3
+hop is needed. The downloaded, checksum-checked pilot.5 installer with the same
+root and `--runtime bun --no-service` then succeeds. Synthetic paired-device
+authentication/project identity survive both hops and rollback to pilot.4; stopped
+pilot.1 data bytes survive the bridge, and server.env migration keeps an exact
+original .bak. Rehearsal transcript: mwfn95zj-2ee1a1eb9b. INSTALL now distinguishes
+this source path from the binary updater path and explains old `aiki version`.
+
+Headless Chromium verifies opaque-sandbox Copy fallback selects the complete
+prompt (apart from its terminal newline), exact HTML/text prompt parity, light/dark
+desktop/360px layouts without horizontal overflow, and white-paper print styling.
+T174 keeps before/after screenshots, print proof and the 7.2-second copy/scroll
+recording mwfn95zj-9e2c393650. Temporary installs/processes are cleaned; no services,
+phone, deployment scripts, bookmarks or remote refs changed. Native macOS,
+ARM64/musl updates, real service-manager transitions and on-device APK acceptance
+were not rehearsed here; prior release notes establish signing-key continuity.
+
 ## T176: pilot.5 agent install guide and fresh-install proof
 
 AGENT-INSTALL.md pins pilot.5 once through KEMIRI_VERSION; site tests compare it
