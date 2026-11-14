@@ -1,6 +1,9 @@
 package io.github.mitzacoder.kemiri.features.settings
 
 import android.content.Intent
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import io.github.mitzacoder.kemiri.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -24,6 +27,7 @@ fun AboutSection(repository: HarnessRepository) {
     var document by remember { mutableStateOf<String?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         SettingsGroup(title = "About Kemiri") {
+            Image(painterResource(R.drawable.ic_brand), contentDescription = "Kemiri candlenut", modifier = Modifier.fillMaxWidth().height(88.dp).padding(top = 16.dp))
             GroupNote("Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             GroupNote("A client for your own Kemiri backend. The pilot has no phone push notifications.")
         }
