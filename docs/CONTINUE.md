@@ -1,5 +1,33 @@
 # Continue
 
+## T179: pi packages 1.5.2
+
+Client/server pins for chord, pi-ai, pi-codemode and pi-durable are exactly
+1.5.2. The lock also advances transitive pi-schema/pi-telemetry; pi-mcp was
+already 1.5.2. All seven Earendil resolutions are unique at 1.5.2, with no
+1.5.1 copies. The model-extension table was already empty. Upstream adds four
+chat models and one classifier (listed in DESIGN); none changes the four
+harness provider catalogs. The local Claude Code user-agent override would
+otherwise hide upstream's identity bump: it and transport tests now use
+2.1.322 instead of 2.1.311. No protocol or Android changes.
+
+A built main/1.5.1 server with a faux provider wrote a synthetic project, two
+completed conversation turns, task T1 and an artifact through artifact_save.
+After stopping its PID, copied the durable store and started the built 1.5.2
+server on that copy. Project/configuration, transcript, task and exact artifact
+bytes survived; a new turn completed with the old turns in model context.
+No contract/fingerprint/mismatch errors appeared. All 53 original stopped-store
+files remained byte-identical. Evidence: mwfpolrb-fb8acdbe5f on T179. Both
+processes used env -i, USER, setsid, allocated loopback ports and explicit /tmp
+HOME/XDG/data/config paths. Owned PIDs stopped and temporary runners/data removed.
+This proves stopped-store forward compatibility, not rollback or in-flight recovery.
+
+Sequential checks pass: isolated root 2,659 tests / 94,189 assertions;
+typecheck; web 1,122 tests / 80,100 assertions, check with zero errors/warnings,
+and production build (non-blocking large-chunk advisory). External-denylist,
+generic public-tree and Gitleaks checks pass. Android skipped because protocol
+is unchanged. No real data, phone, services, main movement or push.
+
 ## T175: links inside HTML artifacts
 
 Both web viewers use the same prelude link policy: fragments scroll without history,

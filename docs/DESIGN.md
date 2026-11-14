@@ -306,7 +306,7 @@ first PDF use and remains embedded in Bun-compiled executables. Extraction walks
 at most 200 pages and inlines at most 100 KiB UTF-8, with page count, truncation
 notice and original tool path. Image-only, encrypted or malformed PDFs keep their
 original path without extracted text; no OCR, rendering or archive expansion.
-Installed pi-ai 1.5.1's `UserMessage.content` is text/image only and its
+Installed pi-ai 1.5.2's `UserMessage.content` is text/image only and its
 `MODEL_INPUT_MODALITIES` is `["text", "image"]`. Its Anthropic, OpenAI and Codex
 adapters expose no document/file content block. Therefore **no current model gets
 native PDFs**. Upstream would need document/file user-content types, catalog PDF
@@ -1096,7 +1096,7 @@ routing sit behind a small interface. D72 permits command provisioning from any
 paired device after confirmation.
 
 Compatibility: standalone `@earendil-works/pi-mcp` 1.5.2 imports and runs under
-Bun with pi-ai/pi-durable/pi-codemode 1.5.1 unchanged. Its client follows catalogue
+Bun with pi-ai/pi-durable/pi-codemode 1.5.2. Its client follows catalogue
 pagination and its Streamable HTTP transport accepts an injected `AuthProvider`.
 The fake peer proves initialization, bearer auth, GET-stream list notifications,
 search/describe/call and restart. No CLI extension or fallback SDK is installed.
@@ -3746,7 +3746,13 @@ one quiet line; a failed one keeps the existing notice. The Info tab's usage blo
   `models.ts`. `model-catalog-extensions.ts` holds a small temporary extra-model table for
   releases pi-ai has not shipped yet. Its provider wrapper extends both chat/all-model lists,
   so runtime lookup, `models.list`, web/Android pickers, usage costs and cache stats agree.
-  A native entry with the same ID always wins; the temporary table is empty with pi-ai 1.5.1.
+  A native entry with the same ID always wins; the temporary table remains empty with pi-ai 1.5.2.
+  This patch adds chat models `meta/muse-ember-1.0`, `opencode/minimax-m3.1-flash-free`,
+  `openrouter/nex-agi/nex-n2.6`, `radius/claude-fable-5-2` and classifier
+  `openrouter/nace-ai/drex-max-finance` upstream; the four harness provider catalogs are unchanged.
+  The harness's Anthropic user-agent override matches pi-ai's Claude Code identity, 2.1.322.
+  Chord's new host-keyed members preserve existing contract fingerprints; a stopped synthetic
+  1.5.1 durable-store copy loads and continues conversations under 1.5.2 without migration errors.
 
   Native Fable 5.2 supplies $8/$40 input/output, $0.20 cache reads, $10 short writes ($16 long writes),
   1M context and 128K output. Managed effort suppresses temperature without a local compat override.
@@ -4622,7 +4628,7 @@ interaction; an interaction in that time means they are using the app and a noti
   `@earendil-works/chord/delta`.
 
 - TypeScript on Bun. No Nix flake for now.
-- `@earendil-works/pi-durable` is experimental; pin its exact version.
+- `@earendil-works/pi-durable` is experimental; pin its exact version (currently 1.5.2).
 - Bun 1.4.2 on the host provides `node:sqlite`, so the Node SQLite
   storage may work as is. Not verified yet.
 

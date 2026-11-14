@@ -31,8 +31,8 @@ import {
  */
 export const HARNESS_PROVIDERS = ["opencode-go", "anthropic", "openai", "openai-codex"] as const;
 
-/** Claude Code version sent with Anthropic requests; pi-ai 1.5.1 sends 2.1.280, which newer models refuse. */
-export const CLAUDE_CODE_VERSION = "2.1.311";
+/** Claude Code version sent with Anthropic requests; kept aligned with pi-ai's OAuth identity (1.5.2: 2.1.322). */
+export const CLAUDE_CODE_VERSION = "2.1.322";
 
 export function createHarnessModels(options: { credentials: CredentialStore }): Models {
 	const models = createModels({ credentials: options.credentials });

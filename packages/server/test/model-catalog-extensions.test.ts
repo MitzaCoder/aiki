@@ -39,7 +39,7 @@ describe("local model catalog extensions", () => {
 			const chatModels = catalog.filter(model => model.type === undefined || model.type === "chat");
 			expect(chatModels.length).toBeGreaterThan(0);
 			for (const model of chatModels) {
-				expect(model.headers?.["user-agent"]).toBe("claude-cli/2.1.311");
+				expect(model.headers?.["user-agent"]).toBe("claude-cli/2.1.322");
 				expect((model as Model<"anthropic-messages">).compat?.allowedFallbackModels ?? []).toEqual([]);
 			}
 		}

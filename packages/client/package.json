@@ -9,10 +9,10 @@
 	},
 	"types": "./src/index.ts",
 	"dependencies": {
-		"@earendil-works/chord": "1.5.1",
+		"@earendil-works/chord": "1.5.2",
 		"@kemiri/protocol": "workspace:*"
 	},
 	"devDependencies": {
-		"@earendil-works/pi-ai": "1.5.1"
+		"@earendil-works/pi-ai": "1.5.2"
 	}
 }

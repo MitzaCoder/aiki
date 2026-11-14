@@ -166,7 +166,7 @@ it.each(["api_key", "oauth"] as const)("adapts the real pi-ai Anthropic %s auth/
     const first = await models.streamSimple(model, context, { ...requestOptions,
         fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
             const request = new Request(input, init); original = JSON.parse(await request.text()); fingerprint = cacheWarmAuthFingerprint(request.headers); cacheHeaders = cacheWarmHeaders(request.headers);
-            expect(request.headers.get("user-agent")).toBe("claude-cli/2.1.311");
+            expect(request.headers.get("user-agent")).toBe("claude-cli/2.1.322");
             expect(request.headers.get("x-api-key")).toBe(authType === "api_key" ? "fake-test-only" : null);
             expect(request.headers.get("authorization")).toBe(authType === "oauth" ? "Bearer sk-ant-oat-fake-test-only" : null);
             if (authType === "oauth") expect(request.headers.get("anthropic-beta")).toContain("oauth-2025-04-20");
@@ -183,7 +183,7 @@ it.each(["api_key", "oauth"] as const)("adapts the real pi-ai Anthropic %s auth/
             expect(original.thread).toEqual({ type: "create" });
             expect(body).toEqual({ ...fullOriginal, stream: false, max_tokens: 0 });
             expect(body.thread).toBeUndefined();
-            expect(request.headers.get("user-agent")).toBe("claude-cli/2.1.311");
+            expect(request.headers.get("user-agent")).toBe("claude-cli/2.1.322");
             expect(cacheWarmAuthFingerprint(request.headers)).toBe(fingerprint);
             const outdatedHeaders = new Headers(request.headers);
             outdatedHeaders.set("user-agent", "claude-cli/2.1.280");
