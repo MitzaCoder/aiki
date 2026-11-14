@@ -22,6 +22,21 @@ not the product logo: replacing it would conflate identity with running state.
 The colourful outline and pointed base remain visible on #09090f. Site social
 cards use the logo, Kemiri wordmark and “Your personal AI workbench” tagline.
 
+## Links inside HTML artifacts (T175)
+
+Both web viewers prepend the same capture-phase link policy, without adding sandbox grants.
+Plain clicks and keyboard link activation scroll raw `#ids` inside the artifact without history;
+HTTP(S) links open a new tab with no opener, regardless of author/base target. Relative links
+resolve against an explicit author base; otherwise unsupported URLs stay blocked. Cancelled
+and modified clicks retain browser/author handling. Email and telephone links attempt a new
+window and also show a selectable address: browsers cannot tell us whether an external app
+handled the request. No host document or credentials are involved.
+
+Android also intercepts fragments in its document prelude, before an origin-less WebView can
+resolve them as an external navigation. HTTP(S) use ACTION_VIEW, email ACTION_SENDTO and
+telephone ACTION_DIAL (never CALL). All other navigation schemes remain blocked. No bridge,
+base origin, multiple-window support or new WebView permissions are added.
+
 ## Video artifact failures and installed shell caching (T172)
 
 The installed web service worker must leave signed `/artifacts/` requests and
@@ -1837,8 +1852,9 @@ later from this section.
   "utf-8", null)`: no base URL means no origin for cookies, storage or same-origin requests, the WebView counterpart of
   an opaque origin. The app has no WebView cookies to share (`CookieManager` is never used) and the WebView's own jar is
   never read back. A link tapped inside the page never navigates the frame: `shouldOverrideUrlLoading` takes `http` and
-  `https` only (`isExternalBrowserLink`) and hands those to the external browser with an `ACTION_VIEW` intent, while
-  every other scheme — `intent:`, `content:`, `file:`, `javascript:`, `data:`, an app deep link — is dropped.
+  `https` (`isExternalBrowserLink`) and hands those to the external browser with an `ACTION_VIEW` intent;
+  `mailto:` uses `ACTION_SENDTO`, `tel:` uses `ACTION_DIAL`, and fragments scroll in the prelude. Every other scheme —
+  `intent:`, `content:`, `file:`, `javascript:`, `data:`, an app deep link — is dropped.
 - **A page over the preview limit opens as source on Android too.** `ARTIFACT_HTML_PAGE_LIMIT` (256 KiB, the web's
   `TEXT_PREVIEW_BYTES`) caps what an HTML preview keeps, so a longer page starts in Source with the web's note ("The
   first 256 KB of 3 MB; a page cannot be shown whole, so this is its source; download it for the rest"); Page still

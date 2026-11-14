@@ -1,5 +1,32 @@
 # Continue
 
+## T175: links inside HTML artifacts
+
+Both web viewers use the same prelude link policy: fragments scroll without history,
+HTTP(S) opens a no-opener tab regardless of target/base target, and mail/tel attempts
+an external handler while showing a selectable address. Cancelled/modified clicks
+keep their own handling; Enter activates the ordinary click path. Relative links
+need an explicit author base, never srcdoc's inherited app URL. Sandbox grants stay
+unchanged. Source/copy/download bytes are untouched; the bundled skill explains links.
+
+Android fragments already scrolled in the synthetic baseline; the prelude now makes
+that history-free and independent of base target. External links were silently lost
+on the emulator because resolveActivity's package visibility preflight returned null.
+Start ACTION_VIEW directly and catch missing handlers; mail uses ACTION_SENDTO and
+telephone ACTION_DIAL. Other schemes stay blocked. No bridge or WebView grant added.
+
+T175 retains synthetic before/after web recordings (dialog and new tab), screenshots
+of fragment scrolling and contact fallback, and emulator fragment/browser/dialer
+proof. Headless Chromium has no mail app; the emulator also has no email handler.
+No actual email or telephone call was sent. No physical device, branding/site files,
+production state, remote refs or main bookmark were touched.
+
+Root tests (2,654), typecheck, web check (zero diagnostics), 1,120 web tests and build
+pass. Android has 945 JVM tests (two skipped), assembleDebug and lintDebug passing;
+Gradle is stopped. The first JVM attempt was interrupted by a shared-daemon stop,
+then passed on retry. External-denylist/generic/Gitleaks checks pass. Owned fixture,
+browser processes and temporary proof files are cleaned after saving task evidence.
+
 ## T173: candlenut identity
 
 Q196's mascot is redrawn in `assets/brand/logo.svg` (2,535 bytes) with a

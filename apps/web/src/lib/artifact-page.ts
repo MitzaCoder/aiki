@@ -1,3 +1,5 @@
+import { ARTIFACT_LINK_PRELUDE } from "./artifact-links.ts";
+
 /** Theme defaults for an opaque-origin artifact, never markup in the host document. */
 export const ARTIFACT_CSP = "default-src 'none'; script-src 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'unsafe-inline' https://cdnjs.cloudflare.com; img-src data: blob: https:; font-src data: https://cdnjs.cloudflare.com; media-src data: blob: https:; connect-src 'none'; form-action 'none'; base-uri 'none'";
 
@@ -34,7 +36,7 @@ ${artifactThemeCss(theme)}
 #aiki-artifact-print{position:fixed;right:12px;bottom:12px;z-index:2147483647;border:1px solid var(--tone-border,#ccc);border-radius:999px;background:var(--tone-surface,#fff);color:var(--tone-fg,#111);padding:8px 16px;font:14px/1.4 system-ui;cursor:pointer;box-shadow:0 2px 12px #0002}
 @media print{#aiki-artifact-print{display:none!important}:where(body){background:white;color:black}img,video,svg{max-width:100%}pre{white-space:pre-wrap}h1,h2,h3{break-after:avoid}figure,tr{break-inside:avoid}}
 </style>
-<script>(function(){function add(){var b=document.createElement('button');b.id='aiki-artifact-print';b.type='button';b.textContent='Print';b.setAttribute('aria-label','Print this artifact');b.onclick=function(){window.print()};document.body.appendChild(b)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()})();</script>`;
+<script>${ARTIFACT_LINK_PRELUDE}(function(){function add(){var b=document.createElement('button');b.id='aiki-artifact-print';b.type='button';b.textContent='Print';b.setAttribute('aria-label','Print this artifact');b.onclick=function(){window.print()};document.body.appendChild(b)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()})();</script>`;
 	const source = content.replace(/^\s*<!doctype[^>]*>/i, "");
 	// Only recognize an opening document tag, never an apparent <head> inside author script/text. Even a malformed
 	// document with a script before its head receives the CSP before that script can run.

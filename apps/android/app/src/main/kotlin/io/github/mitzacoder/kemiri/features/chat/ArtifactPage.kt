@@ -128,22 +128,32 @@ internal fun applyArtifactPagePolicy(webView: WebView, policy: ArtifactPagePolic
     webView.isVerticalScrollBarEnabled = true
 }
 
-/**
- * Whether a link tapped inside an artifact page goes to the external browser: `http` and `https` only. Any other
- * scheme (`intent:`, `content:`, `file:`, `javascript:`, an app's own deep link) is never followed and never handed to
- * the system.
- */
-internal fun isExternalBrowserLink(url: String): Boolean {
-    val scheme = runCatching { java.net.URI(url).scheme }.getOrNull()?.lowercase() ?: return false
-    return scheme == "http" || scheme == "https"
+/** The only navigation actions an origin-less artifact may request. */
+internal enum class ArtifactLinkAction { Scroll, Browser, Email, Dial, Block }
+
+internal fun artifactLinkAction(url: String): ArtifactLinkAction {
+    val link = url.trim()
+    if (link.startsWith("#") || link.startsWith("about:blank#")) return ArtifactLinkAction.Scroll
+    val uri = runCatching { java.net.URI(link) }.getOrNull() ?: return ArtifactLinkAction.Block
+    return when (uri.scheme?.lowercase()) {
+        "http", "https" -> if (!uri.host.isNullOrBlank()) ArtifactLinkAction.Browser else ArtifactLinkAction.Block
+        "mailto" -> if (!uri.rawSchemeSpecificPart.isNullOrBlank()) ArtifactLinkAction.Email else ArtifactLinkAction.Block
+        "tel" -> if (!uri.rawSchemeSpecificPart.isNullOrBlank()) ArtifactLinkAction.Dial else ArtifactLinkAction.Block
+        else -> ArtifactLinkAction.Block
+    }
 }
 
-/** A page tapped inside the artifact, or null when the URL must not leave the WebView. */
-internal fun artifactLinkIntent(url: String, context: Context): Intent? {
-    if (!isExternalBrowserLink(url)) return null
-    return Intent(Intent.ACTION_VIEW, url.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).let { intent ->
-        if (context.packageManager.resolveActivity(intent, 0) == null) null else intent
+internal fun isExternalBrowserLink(url: String): Boolean = artifactLinkAction(url) == ArtifactLinkAction.Browser
+
+/** Do not preflight resolveActivity: package visibility can hide an otherwise available handler. */
+internal fun artifactLinkIntent(url: String): Intent? {
+    val action = when (artifactLinkAction(url)) {
+        ArtifactLinkAction.Browser -> Intent.ACTION_VIEW
+        ArtifactLinkAction.Email -> Intent.ACTION_SENDTO
+        ArtifactLinkAction.Dial -> Intent.ACTION_DIAL
+        else -> return null
     }
+    return Intent(action, url.toUri().normalizeScheme()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 }
 
 /**
@@ -174,7 +184,12 @@ internal fun ArtifactPage(html: String, modifier: Modifier = Modifier, blockRequ
                         printing.print("Artifact", view.createPrintDocumentAdapter("Artifact"), null)
                         return true
                     }
-                    val intent = artifactLinkIntent(request.url.toString(), view.context) ?: return true
+                    if (artifactLinkAction(request.url.toString()) == ArtifactLinkAction.Scroll) {
+                        val fragment = request.url.toString().substringAfter('#')
+                        view.evaluateJavascript("window.aikiArtifactScroll(" + org.json.JSONObject.quote(fragment) + ")", null)
+                        return true
+                    }
+                    val intent = artifactLinkIntent(request.url.toString()) ?: return true
                     try {
                         view.context.startActivity(intent)
                     } catch (_: ActivityNotFoundException) {
@@ -233,7 +248,10 @@ internal fun artifactPageDocument(html: String, dark: Boolean, tokens: Map<Strin
 #aiki-artifact-print{position:fixed;right:12px;bottom:12px;z-index:2147483647;border:1px solid var(--tone-border,#ccc);border-radius:999px;background:var(--tone-surface,#fff);color:var(--tone-fg,#111);padding:8px 16px;font:14px/1.4 system-ui}
 @media print{#aiki-artifact-print{display:none!important}:where(body){background:white;color:black}img,video,svg{max-width:100%}pre{white-space:pre-wrap}h1,h2,h3{break-after:avoid}figure,tr{break-inside:avoid}}
 </style>
-<script>window.print=function(){location.href='aiki-artifact:print'};(function(){function add(){var b=document.createElement('button');b.id='aiki-artifact-print';b.type='button';b.textContent='Print';b.setAttribute('aria-label','Print this artifact');b.onclick=function(){window.print()};document.body.appendChild(b)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()})();</script>"""
+<script>
+window.aikiArtifactScroll=function(fragment){try{var id=decodeURIComponent(fragment);if(!id)window.scrollTo(0,0);else{var target=document.getElementById(id)||document.getElementsByName(id)[0];if(target)target.scrollIntoView()}}catch(e){}};
+document.addEventListener('click',function(event){if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;var anchor=event.target.closest&&event.target.closest('a[href]');if(!anchor)return;var href=anchor.getAttribute('href').trim();if(href.charAt(0)==='#'){event.preventDefault();window.aikiArtifactScroll(href.slice(1))}},true);
+window.print=function(){location.href='aiki-artifact:print'};(function(){function add(){var b=document.createElement('button');b.id='aiki-artifact-print';b.type='button';b.textContent='Print';b.setAttribute('aria-label','Print this artifact');b.onclick=function(){window.print()};document.body.appendChild(b)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()})();</script>"""
     val source = html.replaceFirst(Regex("^\\s*<!doctype[^>]*>", RegexOption.IGNORE_CASE), "")
     val opening = Regex("""^\s*<html\b((?:[^"'<>]|"[^"]*"|'[^']*')*)>""", RegexOption.IGNORE_CASE).find(source)
     val attributes = (opening?.groupValues?.get(1) ?: "").replace(Regex("""\s+([^\s=/>]+)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?""")) {

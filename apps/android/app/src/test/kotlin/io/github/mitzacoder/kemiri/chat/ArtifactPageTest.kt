@@ -100,6 +100,27 @@ class ArtifactPageTest {
         assertNull(ArtifactPageChoice.remembered())
     }
 
+    @Test fun linkPolicyAllowsFragmentsBrowserEmailAndDialOnly() {
+        assertEquals(ArtifactLinkAction.Scroll, artifactLinkAction("#update"))
+        assertEquals(ArtifactLinkAction.Scroll, artifactLinkAction("about:blank#agent"))
+        assertEquals(ArtifactLinkAction.Scroll, artifactLinkAction("#"))
+        assertEquals(ArtifactLinkAction.Browser, artifactLinkAction("https://example.com"))
+        assertEquals(ArtifactLinkAction.Email, artifactLinkAction("mailto:support@example.com"))
+        assertEquals(ArtifactLinkAction.Email, artifactLinkAction("MAILTO:support@example.com"))
+        assertEquals(ArtifactLinkAction.Dial, artifactLinkAction("tel:+12025550123"))
+        for (url in listOf("https:", "https:missing-host", "mailto:", "tel:", "javascript:alert(1)",
+            "intent://example.com", "content://media/1", "file:///tmp/page", "data:text/html,hi",
+            "kemiri://connect", "about:blank", "next", "")) {
+            assertEquals(url, ArtifactLinkAction.Block, artifactLinkAction(url))
+        }
+        val html = artifactPageDocument("<a href=\"#update\">Update</a>", false, emptyMap())
+        assertTrue(html.contains("scrollIntoView()"))
+        assertTrue(html.contains("event.preventDefault()"))
+        assertTrue(html.contains("event.defaultPrevented"))
+        assertTrue(html.contains("},true)"))
+        assertFalse(html.contains("location.hash"))
+    }
+
     @Test fun onlyHttpLinksLeaveTheWebView() {
         assertTrue(isExternalBrowserLink("https://example.com/report?q=1#top"))
         assertTrue(isExternalBrowserLink("http://127.0.0.1:4900/page"))
