@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/web/static/icons/icon-192.png" width="64" height="64" alt="Kemiri" />
+  <img src="assets/brand/logo.svg" width="64" height="88" alt="Kemiri candlenut mascot" />
 </p>
 
 <h1 align="center">Kemiri</h1>

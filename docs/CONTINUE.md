@@ -1,5 +1,27 @@
 # Continue
 
+## T173: candlenut identity
+
+Q196's mascot is redrawn in `assets/brand/logo.svg` (2,535 bytes) with a
+transparent background and clean linear gradients; `logo-mark-mono.svg` has
+true face cutouts. `bun scripts/generate-brand.ts` uses Chromium to regenerate
+web/site PNGs and Android vectors. Welcome, pairing, About, browser/PWA/Apple
+icons, adaptive/themed/notification icons, site headers, social card and README
+share the mark. The assistant's animated activity orb stays separate. Android
+has no legacy mipmaps; API 31+ uses the adaptive vector. IDs/signing stay put.
+
+T173 has 48 before/after UI screenshots, two interaction videos, SVG downloads
+and 512 px original/redraw/dark comparisons. Comparison: mwfmxa06-2bdb254d76;
+full proof index: mwfnqzyr-a8c50d722e. Web proof covers desktop/phone light/dark
+Welcome/About, actual desktop tab favicons and site headers. A disposable Android
+emulator covers normal/themed home icons, About and a synthetic notification.
+No physical phone, accounts, push service, deployment, main movement or push.
+
+Sequential gates pass: isolated root 2,654 tests / 94,119 assertions; typecheck;
+web zero-diagnostic check, 1,118 tests and build; Android 946 JVM tests (two
+skipped), assembleDebug and lintDebug (zero errors, 49 warnings); Gradle stopped;
+site check/17 tests; external denylist, generic public tree and Gitleaks checks.
+
 ## T174: friends' note is an agent-only update prompt
 
 Replaced the friends' HTML note with one copy-friendly, numbered agent prompt.

@@ -16,6 +16,23 @@ test('site links resolve and hero assets stay identical to the README images', a
 	expect(Bun.spawnSync(['sh', '-n', bootstrap]).exitCode).toBe(0);
 });
 
+test('site shares the candlenut master and publishes a complete social card', async () => {
+	const root = resolve(import.meta.dir, '..');
+	const home = await Bun.file(join(root, 'site/index.html')).text();
+	const privacy = await Bun.file(join(root, 'site/privacy/index.html')).text();
+	for (const page of [home, privacy]) {
+		expect(page).toContain('src="/assets/logo.svg"');
+		expect(page).toContain('href="/assets/favicon.svg"');
+		expect(page).toContain('rel="apple-touch-icon"');
+	}
+	expect(await Bun.file(join(root, 'site/assets/logo.svg')).text()).toBe(await Bun.file(join(root, 'assets/brand/logo.svg')).text());
+	expect(home).toContain('property="og:image" content="https://kemiri.dev/assets/og.png"');
+	expect(home).toContain('name="twitter:card" content="summary_large_image"');
+	const image = Buffer.from(await Bun.file(join(root, 'site/assets/og.png')).arrayBuffer());
+	expect(image.readUInt32BE(16)).toBe(1200);
+	expect(image.readUInt32BE(20)).toBe(630);
+});
+
 test('site uses canonical Kemiri links and preserves privacy promises', async () => {
 	const root = resolve(import.meta.dir, '../site');
 	const home = await Bun.file(join(root, 'index.html')).text();
