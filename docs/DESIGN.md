@@ -1,10 +1,15 @@
 # Design
 
-## Full-space HTML artifact viewers (T191)
+## HTML artifact viewers (T191)
 
-An HTML artifact's web viewer uses the entire viewport, without a chat-width
-cap, outer frame, filename, note or metadata panel. Its own document supplies
-the title. A themed, floating ⋮ button stays at the top right. Its keyboard
+On web at widths of 640 px and above, HTML opens in a centred modal over a
+dimmed backdrop: 90dvh tall, min(80vw, 100rem) wide, with a subtle 1 px themed
+border and small rounded corners. Width is deliberately predictable rather than
+measured from opaque-origin sandbox content, whose natural width is not reliably
+available. Phones below 640 px stay edge-to-edge and full height, without a border.
+There is no filename, note or metadata panel: the document supplies its own title.
+Backdrop clicks, Escape and menu Close dismiss it; the standard dialog traps focus
+and restores the opener. A themed, floating ⋮ button stays inside the top right. Its keyboard
 menu contains Page/Source, source wrapping, Print, Open in a new tab, Copy HTML
 source, retained-version navigation, Download, Delete (confirmed) and Close.
 Escape dismisses the menu and restores its trigger focus before it can dismiss

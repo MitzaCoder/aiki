@@ -66,15 +66,23 @@ test("host controls replace the injected print button without changing author by
     expect(html).toContain(ARTIFACT_CSP);
     expect(html).not.toContain("document.createElement('button')");
     const listener = html.slice(html.indexOf("window.addEventListener('message'"), html.indexOf("</script>"));
-    let receive: (event: unknown) => void = () => {};
-    const parent = {};
+    const listeners = new Map<string, (event: unknown) => void>();
+    const messages: unknown[] = [];
+    const parent = { postMessage(data: unknown, target: string) { messages.push([data, target]); } };
     let prints = 0;
-    runInNewContext(listener, { parent, window: { addEventListener(name: string, callback: typeof receive) { expect(name).toBe("message"); receive = callback; }, print() { prints++; } } });
+    runInNewContext(listener, { parent, window: { addEventListener(name: string, callback: (event: unknown) => void) { listeners.set(name, callback); }, print() { prints++; } } });
+    const receive = listeners.get('message')!;
     receive({ source: {}, data: "kemiri:print-artifact" });
     receive({ source: parent, data: "unrecognized" });
     expect(prints).toBe(0);
     receive({ source: parent, data: "kemiri:print-artifact" });
     expect(prints).toBe(1);
+    const keydown = listeners.get('keydown')!;
+    keydown({ key: 'Enter' });
+    keydown({ key: 'Escape', defaultPrevented: true });
+    expect(messages).toEqual([]);
+    keydown({ key: 'Escape', defaultPrevented: false });
+    expect(messages).toEqual([['kemiri:close-artifact', '*']]);
 });
 
 test("the new-tab wrapper gives the document the viewport, not a title or safety banner", () => {

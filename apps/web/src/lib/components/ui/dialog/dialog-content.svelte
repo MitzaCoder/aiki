@@ -12,18 +12,21 @@
 		ref = $bindable(null),
 		class: className,
 		portalProps,
+		overlayClass,
 		children,
 		showCloseButton = true,
 		...restProps
 	}: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
 		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof DialogPortal>>;
 		children: Snippet;
+		/** Optional backdrop styling; content sizing does not affect the overlay. */
+		overlayClass?: string;
 		showCloseButton?: boolean;
 	} = $props();
 </script>
 
 <DialogPortal {...portalProps}>
-	<DialogOverlay />
+	<DialogOverlay class={overlayClass} />
 	<DialogPrimitive.Content
 		bind:ref
 		data-slot="dialog-content"

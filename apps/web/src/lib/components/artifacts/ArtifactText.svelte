@@ -39,8 +39,9 @@
 		compact = false,
 		roomy = false,
 		fullSpace = false,
-		menuActions
-	}: { artifact: Artifact; client: HarnessClient; compact?: boolean; roomy?: boolean; fullSpace?: boolean; menuActions?: Snippet } = $props();
+		menuActions,
+		onclose
+	}: { artifact: Artifact; client: HarnessClient; compact?: boolean; roomy?: boolean; fullSpace?: boolean; menuActions?: Snippet; onclose?: () => void } = $props();
 
 	let content = $state<string | undefined>(undefined);
 	let artifactTheme = $state<ArtifactPageTheme>({ mode: 'light', tokens: {} });
@@ -53,7 +54,15 @@
 		update();
 		const observer = new MutationObserver(update);
 		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] });
-		return () => observer.disconnect();
+		// Keyboard events inside an opaque-origin frame cannot bubble to the dialog.
+		const closeFromFrame = (event: MessageEvent) => {
+			if (fullSpace && event.source === frame?.contentWindow && event.data === 'kemiri:close-artifact') onclose?.();
+		};
+		window.addEventListener('message', closeFromFrame);
+		return () => {
+			observer.disconnect();
+			window.removeEventListener('message', closeFromFrame);
+		};
 	});
 	let problem = $state<string | undefined>(undefined);
 	let truncated = $state(false);

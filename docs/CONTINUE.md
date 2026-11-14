@@ -1,5 +1,18 @@
 # Continue
 
+## T191 / F69: large web HTML modal
+
+At ≥640 px the viewer is centred, 90dvh high and min(80vw, 100rem) wide,
+with a subtle 1 px border, 8 px corners and dimmed backdrop. No unreliable
+sandbox width measurement. Phones stay full screen; Android is unchanged.
+The ⋮ menu keeps all actions. Backdrop/menu Close/Escape restore opener focus;
+Escape from the opaque frame is relayed through a source-checked close message.
+Proof index mwgnko5f-537ee7b23d: 12 before/after light/dark screenshots at
+1440×900, 2560×1080 and 390×844; recording mwgnk0o0-d764bfb21e plus menu proof.
+Tablet/breakpoint and keyboard checks pass. Gates: isolated root 2,698 tests,
+root typecheck; web 1,145 tests, check/build; external-denylist/Gitleaks pass.
+Synthetic createSetup/browser only; owned proof files/processes cleaned. No push/main move.
+
 ## T191: full-space HTML artifact viewers
 
 Web HTML now fills the viewport at phone, desktop and ultrawide sizes, without

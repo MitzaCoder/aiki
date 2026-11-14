@@ -166,6 +166,21 @@ describe('an HTML artifact opens in a sandboxed tab', () => {
 });
 
 describe('the viewers wire the new sizing and button up', () => {
+	test('HTML is full screen on phones and a thin-bordered modal on wider screens', () => {
+		const dialog = source('../src/lib/components/artifacts/ArtifactDialog.svelte');
+		const html = dialog.slice(dialog.indexOf('class="artifact-dialog html-artifact-dialog'), dialog.indexOf('<Dialog.Title class="sr-only">HTML artifact'));
+		expect(html).toContain('h-dvh w-screen');
+		expect(html).toContain('rounded-none p-0 ring-0');
+		expect(html).toContain('sm:h-[90dvh] sm:w-[min(80vw,100rem)]');
+		expect(html).toContain('sm:rounded-[8px] sm:border sm:border-(--chat-border)');
+		expect(html).toContain('overlayClass="bg-black/35"');
+		expect(html).toContain('showCloseButton={false}');
+	});
+	test('only the current sandbox frame can request closing its modal', () => {
+		const text = source('../src/lib/components/artifacts/ArtifactText.svelte');
+		expect(text).toContain("fullSpace && event.source === frame?.contentWindow && event.data === 'kemiri:close-artifact'");
+		expect(text).toContain("window.removeEventListener('message', closeFromFrame)");
+	});
 	test('the artifact dialog sizes itself by kind and hands the text the dialog scroll', () => {
 		const dialog = source('../src/lib/components/artifacts/ArtifactDialog.svelte');
 		expect(dialog).toContain('class="artifact-dialog flex {sizing} flex-col gap-0 overflow-hidden p-0"');
