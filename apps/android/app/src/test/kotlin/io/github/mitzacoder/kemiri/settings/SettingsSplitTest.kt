@@ -10,7 +10,7 @@ import org.junit.Test
 class SettingsSplitTest {
     @Test fun sectionListsMatchTheWebUrlSegments() {
         assertEquals(listOf("appearance", "backends", "notifications", "archived", "about"), GeneralSection.entries.map { it.id })
-        assertEquals(listOf("general", "coordinator", "delivery", "workers", "schedules", "tickets", "cache", "storage", "mcp"), ProjectSection.entries.map { it.id })
+        assertEquals(listOf("general", "coordinator", "delivery", "workers", "schedules", "tickets", "cache", "storage", "mcp", "skills"), ProjectSection.entries.map { it.id })
         assertEquals(GeneralSection.Notifications, generalSectionFor("notifications"))
         assertNull(generalSectionFor("nope"))
         assertEquals(ProjectSection.Cache, projectSectionFor("cache"))

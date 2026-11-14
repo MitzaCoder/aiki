@@ -37,6 +37,7 @@ enum class ProjectSection(override val id: String, override val label: String, o
     Cache("cache", "Prompt cache", "How long Claude keeps a conversation", SettingsIcon.DatabaseZap),
     Storage("storage", "Storage", "Finished workspaces and disk use", SettingsIcon.HardDrive),
     Mcp("mcp", "MCP", "Remote servers and project roles", SettingsIcon.Server),
+    Skills("skills", "Skills", "What this project’s agents know how to do", SettingsIcon.Folder),
 }
 
 fun generalSectionFor(id: String?): GeneralSection? = GeneralSection.entries.firstOrNull { it.id == id }
@@ -56,6 +57,7 @@ fun projectSectionAvailable(section: ProjectSection, has: ProjectSectionSupport)
     ProjectSection.Cache -> has.longPromptCache
     ProjectSection.Storage -> has.supports("storage")
     ProjectSection.Mcp -> has.supports(MCP_FEATURE)
+    ProjectSection.Skills -> has.supports(PROJECT_SKILLS_FEATURE)
 }
 
 /** The tone of a status chip (web `StatusChip`). */

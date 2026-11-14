@@ -1,5 +1,35 @@
 # Continue
 
+## T183 / T187: Android project Skills settings
+
+Android adds `project-skills`-gated Skills beside MCP in Project settings.
+Counts, All/Offered/Off/New filters and project/built-in/global groups explain
+source, undecided skills and shadowing. Tap a row for read-only winning/hidden
+paths. Switches retain subset visibility (“Some roles”) but write all roles or
+none. Session-owned choices optimistically batch after one second, survive
+leaving settings, serialize reads/writes, preserve newer edits on failures and
+refresh for this project's changed pushes. Errors revert the failed batch and
+show a snackbar outside the scroll region. Info shows positive held-back counts.
+No generated DTO changes were needed; existing ProtocolEvent whens already have
+fallbacks. The upstream built-in skill test fixture now supplies origin/hides,
+fixing the root typecheck failure inherited from the stack.
+
+Checks: 964 JVM tests (two skipped, no failures), assembleDebug and lintDebug
+pass; lint has zero errors, 49 existing warnings and four hints. Generator check
+passes (395 DTOs/108 requests), then root typecheck passes. Seven built-in-skill
+fixture tests pass. External-denylist, generic public-tree and Gitleaks checks
+pass. No deployment, push or bookmark changes.
+
+Synthetic createSetup backend and owned phone emulator only. Baseline settings
+light/dark: mwgdiw7h-37c4041721 / mwgdiw8n-5fe4a28f0b. After Skills light/dark:
+mwgdmykh-82dbc51ab2 / mwgdmyln-4db0396654. Detail light/dark:
+mwgdmyp4-530560901e / mwgdmyq3-69778eff79. Off/on recording (New clears and
+counts change): mwgdmyr9-dabd0e4dd7. Info held-back count:
+mwgdwcxc-37a879230f. All proof is attached to T183. The fixture
+includes home/project pi, Claude and agents sources, one decided-off skill,
+a shadowed name and built-ins. Temporary runners/data and the emulator are
+cleaned after capture; Gradle stopped. No physical device or real backend data.
+
 ## T183 / T185: per-project skill choices backend (D82)
 
 Capability `project-skills` adds `skills.project.get/set` and the broadcast

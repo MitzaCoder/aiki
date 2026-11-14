@@ -36,9 +36,18 @@ class BackendSession(val config: BackendConfig, val client: HarnessClient) : Clo
     /** The release, last deploy and disks the backend reports (`server-status`), shared by the header, banners and Backends. */
     val serverStatus = ServerStatusStore(client, scope)
     val mcp = io.github.mitzacoder.kemiri.features.settings.McpSession(client, scope)
+    private val skills = java.util.concurrent.ConcurrentHashMap<String, io.github.mitzacoder.kemiri.features.settings.ProjectSkillsChoices>()
+    fun projectSkills(projectId: String) = skills.computeIfAbsent(projectId) {
+        io.github.mitzacoder.kemiri.features.settings.ProjectSkillsChoices(scope,
+            read = { client.request(SkillsProjectGetRequest(projectId = projectId)).skills },
+            save = { changes -> client.request(SkillsProjectSetRequest(projectId = projectId, changes = changes)).skills })
+    }
     init {
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
             client.events.collect { event ->
+                if (event is SkillsProjectChangedEvent && client.state.value.supports("project-skills")) {
+                    skills[event.projectId]?.refresh()
+                }
                 if (event is ProjectStateEvent) {
                     mutableProjects.update { list -> (list.filterNot { it.id == event.project.id } + event.project).sortedBy { it.name } }
                 }

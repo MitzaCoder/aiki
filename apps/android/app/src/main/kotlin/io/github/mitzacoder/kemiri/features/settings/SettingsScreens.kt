@@ -102,38 +102,43 @@ private fun ProjectSettingsContent(context: ProjectScreenContext, section: Proje
     val chips = projectChips(project?.coordinator?.model != null)
     val items = offered.map { SettingsNavItem(it, chips[it]) }
     val effective = section?.takeIf { it in offered }
-    SettingsShell(
-        items, effective?.id, wideSection(null, offered)?.id, "Project settings sections", "Back to chat", { navigator.up(context.route) },
-        "${project?.name ?: "Project"} settings", { navigator.up(Destination.ProjectSettings(context.route)) },
-        onSelect = { id, split -> projectSectionFor(id)?.let { navigator.go(Destination.ProjectSettings(context.route, it), split) } },
-        modifier = modifier,
-        header = {
-            Row(Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Column(Modifier.weight(1f)) {
-                    Text(project?.name ?: "Project settings", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text(context.backend.config.name + (project?.let { " · ${it.path}" } ?: ""), style = MaterialTheme.typography.labelMedium, fontFamily = FontFamily.Monospace, color = Jarvis.colors.fgMuted)
+    val snackbar = remember { SnackbarHostState() }
+    Box(modifier.fillMaxSize()) {
+        SettingsShell(
+            items, effective?.id, wideSection(null, offered)?.id, "Project settings sections", "Back to chat", { navigator.up(context.route) },
+            "${project?.name ?: "Project"} settings", { navigator.up(Destination.ProjectSettings(context.route)) },
+            onSelect = { id, split -> projectSectionFor(id)?.let { navigator.go(Destination.ProjectSettings(context.route, it), split) } },
+            modifier = Modifier.fillMaxSize(),
+            header = {
+                Row(Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text(project?.name ?: "Project settings", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text(context.backend.config.name + (project?.let { " · ${it.path}" } ?: ""), style = MaterialTheme.typography.labelMedium, fontFamily = FontFamily.Monospace, color = Jarvis.colors.fgMuted)
+                    }
+                    ConnectionBadge(connection.status, connection.attempt)
                 }
-                ConnectionBadge(connection.status, connection.attempt)
+            },
+        ) { active ->
+            if (project == null) {
+                SettingsGroup { GroupNote(if (connection.status == ConnectionStatus.Ready) "This project no longer exists on ${context.backend.config.name}." else "Waiting for ${context.backend.config.name}…") }
+                return@SettingsShell
             }
-        },
-    ) { active ->
-        if (project == null) {
-            SettingsGroup { GroupNote(if (connection.status == ConnectionStatus.Ready) "This project no longer exists on ${context.backend.config.name}." else "Waiting for ${context.backend.config.name}…") }
-            return@SettingsShell
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            if (project.state == "failed") ToneBanner(BannerTone.Error) { Text(project.failure ?: "The project failed to open.", style = MaterialTheme.typography.bodySmall) }
-            when (projectSectionFor(active) ?: ProjectSection.General) {
-                ProjectSection.General -> ProjectGeneralSection(context, project)
-                ProjectSection.Coordinator -> CoordinatorSection(context, project, context.navigate)
-                ProjectSection.Delivery -> DeliverySection(context.backend, project)
-                ProjectSection.Workers -> WorkersSection(context, project)
-                ProjectSection.Schedules -> SchedulesSection(context, scheduleId)
-                ProjectSection.Tickets -> project.links?.let { TicketsSection(context, it) }
-                ProjectSection.Cache -> PromptCacheSection(context.backend, project)
-                ProjectSection.Storage -> StorageSection(context.backend, project.id)
-                ProjectSection.Mcp -> McpProjectSection(context.backend, project.id)
+            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                if (project.state == "failed") ToneBanner(BannerTone.Error) { Text(project.failure ?: "The project failed to open.", style = MaterialTheme.typography.bodySmall) }
+                when (projectSectionFor(active) ?: ProjectSection.General) {
+                    ProjectSection.General -> ProjectGeneralSection(context, project)
+                    ProjectSection.Coordinator -> CoordinatorSection(context, project, context.navigate)
+                    ProjectSection.Delivery -> DeliverySection(context.backend, project)
+                    ProjectSection.Workers -> WorkersSection(context, project)
+                    ProjectSection.Schedules -> SchedulesSection(context, scheduleId)
+                    ProjectSection.Tickets -> project.links?.let { TicketsSection(context, it) }
+                    ProjectSection.Cache -> PromptCacheSection(context.backend, project)
+                    ProjectSection.Storage -> StorageSection(context.backend, project.id)
+                    ProjectSection.Mcp -> McpProjectSection(context.backend, project.id)
+                    ProjectSection.Skills -> ProjectSkillsSection(context.backend, project.id, snackbar)
+                }
             }
         }
+        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
 }

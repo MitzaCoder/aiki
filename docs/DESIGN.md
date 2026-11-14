@@ -1098,6 +1098,17 @@ scroll region, the form column and the inputs may shrink below their content (`m
 the dialog scrolls sideways. Only the shared primary submit keeps the primary emphasis; Cancel and Back are ghost
 buttons. The server details view keeps the ordinary page scroll for its tool list.
 
+Android Project settings → Skills sits beside MCP and requires `project-skills`.
+It shows found/offered counts, All/Offered/Off/New filters, project/built-in/global
+source groups, New decisions and shadowed-folder notes. Read-only details show
+the winning SKILL.md path and hidden paths. A switch is on for any non-empty
+role list (subsets say “Some roles”); switching on writes all three roles and
+off writes none. Session-owned optimistic edits batch after one second of quiet,
+keep saving when the screen closes, and revert with a snackbar on failure.
+Project-scoped changed pushes refresh the catalogue without replacing pending
+edits. The footer explains backend/project scope, next-turn application and
+continued file readability. Conversation Info shows positive `skillsHeldBack`.
+
 Android exposes capability-gated Backend settings → MCP servers and Project
 settings → MCP. Backend screens list status/tool counts, presets or URL setup,
 write-only token entry, OAuth, refresh/disconnect/removal, and compact searchable

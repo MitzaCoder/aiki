@@ -151,6 +151,9 @@ import io.github.mitzacoder.kemiri.protocol.*
         // Skills as on the web: the ones this conversation read first and in view, the rest folded under Available once
         // there are more than six; each by source (Harness, pi, Claude), then scope. A filter shows the matches instead.
         Box(Modifier.bringIntoViewRequester(skillsSection)) { PanelDisclosure("SKILLS", info.skills.size.toString(), initiallyExpanded = true) {
+            io.github.mitzacoder.kemiri.features.settings.skillsHeldBackLabel(info.skillsHeldBack)?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = Jarvis.colors.fgMuted)
+            }
             if (info.skills.isEmpty()) Text("No skills are offered to this conversation.", style = MaterialTheme.typography.bodySmall, color = Jarvis.colors.fgSubtle)
             else {
                 if (info.skills.size > 8) FilterField(skillFilter, "Filter skills") { skillFilter = it }
