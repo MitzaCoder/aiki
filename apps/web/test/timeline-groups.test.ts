@@ -1,3 +1,7 @@
+import { beforeEach, afterEach } from 'bun:test';
+import { setTimeFormat } from '../src/lib/time-format.ts';
+beforeEach(() => setTimeFormat('24-hour'));
+afterEach(() => setTimeFormat('automatic'));
 import { describe, expect, test } from 'bun:test';
 import type { BoardTimelineFact, BoardTimelineGroup, BoardTimelineKind } from '@kemiri/protocol';
 import { filteredGroupLabel, timelineClock, timelineGroupNames, timelineGroupRange, timelineGroupTone, timelineGroupsSupported, visibleTimelineGroups } from '../src/lib/timeline-groups.js';

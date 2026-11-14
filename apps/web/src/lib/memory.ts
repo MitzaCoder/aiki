@@ -1,3 +1,4 @@
+import { formatWallTime } from './time-format.ts';
 /**
  * How memory reads in the sidebar's Memory tab: the scope switch's targets, the topic files as
  * scannable rows, the search hits with their highlighted snippets, the history's commits, the
@@ -411,7 +412,7 @@ export function memoryMaintenanceOff(settings: MemoryMaintenanceSettings): boole
 export function memoryMaintenanceSummary(settings: MemoryMaintenanceSettings, timezone: string): string {
 	if (settings.model === null) return "Off: maintenance doesn't run without a model.";
 	const writes = settings.afterWrites === 1 ? "after 1 write" : `after ${settings.afterWrites} writes`;
-	return `Nightly at ${settings.time} (${timezone}), or ${writes}.`;
+	return `Nightly at ${formatWallTime(settings.time)} (${timezone}), or ${writes}.`;
 }
 
 /** A nightly time as the server takes it: "HH:MM" on a 24-hour clock; anything else is undefined. */

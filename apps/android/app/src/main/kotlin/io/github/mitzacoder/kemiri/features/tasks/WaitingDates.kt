@@ -1,12 +1,12 @@
 package io.github.mitzacoder.kemiri.features.tasks
 
+import io.github.mitzacoder.kemiri.data.timeFormatter
 import io.github.mitzacoder.kemiri.data.DEFAULT_WORK_DAY_START
 import io.github.mitzacoder.kemiri.data.normalizeWorkDayStart
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /** Calendar arithmetic: gaps shift forward, overlaps use the earlier offset, matching web Date. */
@@ -24,4 +24,4 @@ internal fun resolveWaitingDate(date: String, start: String = DEFAULT_WORK_DAY_S
 
 internal fun localWaitingDate(timestamp: String, zone: ZoneId = ZoneId.systemDefault()): String = Instant.parse(timestamp).atZone(zone).toLocalDate().toString()
 internal fun formatWaitingTime(timestamp: String, zone: ZoneId = ZoneId.systemDefault()): String =
-    DateTimeFormatter.ofPattern("EEE d MMM, HH:mm", Locale.getDefault()).format(Instant.parse(timestamp).atZone(zone))
+    timeFormatter("EEE d MMM, HH:mm", Locale.getDefault()).format(Instant.parse(timestamp).atZone(zone))

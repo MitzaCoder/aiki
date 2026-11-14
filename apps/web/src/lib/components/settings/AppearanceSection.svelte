@@ -1,4 +1,6 @@
 <script lang="ts">
+ import TimeInput from "#lib/components/TimeInput.svelte";
+ import { timeFormat, setTimeFormat, TIME_FORMAT_OPTIONS, type TimeFormat } from "#lib/time-format.ts";
 	import { workDay } from '#lib/work-day.svelte.js';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import MoonIcon from '@lucide/svelte/icons/moon';
@@ -87,9 +89,16 @@
 			</StatusChip>
 		</SettingsRow>
 	</SettingsGroup>
+	<SettingsGroup title="Time">
+		<SettingsRow label="Time format" hint="Automatic follows your browser locale. Saved in this browser.">
+			<select aria-label="Time format" value={timeFormat.current} onchange={(event) => setTimeFormat(event.currentTarget.value as TimeFormat)} class="min-h-11 rounded-md border border-(--chat-border) bg-(--chat-bg) px-3 text-base">
+				{#each TIME_FORMAT_OPTIONS as option}<option value={option.value}>{option.label}</option>{/each}
+			</select>
+		</SettingsRow>
+	</SettingsGroup>
 	<SettingsGroup title="Waiting tasks">
 		<SettingsRow label="Work day starts at" hint="Return dates use this device’s local time zone. Saved in this browser.">
-			<input aria-label="Work day starts at" type="time" value={workDay.start} onchange={(event)=>workDay.set(event.currentTarget.value)} class="min-h-11 rounded-md border border-(--chat-border) bg-(--chat-bg) px-3 text-base" />
+			<TimeInput aria-label="Work day starts at" value={workDay.start} onchange={(value) => workDay.set(value)} />
 		</SettingsRow>
 	</SettingsGroup>
 	<p class="px-1 text-xs text-(--chat-fg-subtle)">The theme is kept in this browser, not on a backend.</p>

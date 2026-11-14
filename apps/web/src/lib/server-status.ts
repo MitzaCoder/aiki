@@ -1,3 +1,4 @@
+import { formatDateTime } from '#lib/time-format.ts';
 /**
  * What the home page and the chat read from a backend's `server.status`: the release it runs, and a banner when the
  * last deploy needs attention, and how full its disks are. Pure functions plus the per-browser dismissal storage, so the components only lay the
@@ -54,7 +55,7 @@ export function releaseView(release: ReleaseInfo, now: number, deploy?: DeploySt
 		commit: shortCommit(release.commit),
 		description: release.description,
 		when: relativeTime(release.deployedAt, now),
-		title: `${release.name}\n${release.commit}\n${release.description}\nDeployed ${new Date(release.deployedAt).toLocaleString()}`,
+		title: `${release.name}\n${release.commit}\n${release.description}\nDeployed ${formatDateTime(release.deployedAt)}`,
 	};
 	if (deploy?.state === "ok" && deploy.backendUnchanged === true && deploy.commit !== release.commit) {
 		view.unchanged = `${shortCommit(deploy.commit)} deployed, backend unchanged since ${view.commit}`;

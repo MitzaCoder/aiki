@@ -1,5 +1,6 @@
 package io.github.mitzacoder.kemiri.features.status
 
+import io.github.mitzacoder.kemiri.data.localizedTimeFormatter
 import io.github.mitzacoder.kemiri.protocol.*
 import java.time.Instant
 import java.time.ZoneId
@@ -32,7 +33,7 @@ private fun localDate(at: Instant): String = DateTimeFormatter.ofLocalizedDate(F
 
 /** The exact time behind a relative phrase, in the device's zone. */
 fun exactTime(at: String): String = parseInstant(at)?.let {
-    DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withZone(ZoneId.systemDefault()).format(it)
+    localizedTimeFormatter(FormatStyle.MEDIUM, FormatStyle.MEDIUM).withZone(ZoneId.systemDefault()).format(it)
 } ?: at
 
 /** "just now", "5 min ago", "3 h ago", "2 d ago", then a date (web `relativeTime`). */

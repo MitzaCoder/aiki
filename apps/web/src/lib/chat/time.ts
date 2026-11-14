@@ -1,14 +1,13 @@
 /** Times and durations for the transcript, in the reader's locale. */
 
-const clock = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" });
-const full = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" });
+import { formatTime } from '../time-format.ts';
 
 export function clockTime(ms: number): string {
-	return clock.format(new Date(ms));
+	return formatTime(ms);
 }
 
 export function fullTime(ms: number): string {
-	return full.format(new Date(ms));
+	return formatTime(ms, { dateStyle: 'medium', timeStyle: 'medium' });
 }
 
 /** A short duration: 8s, 1m 20s. */

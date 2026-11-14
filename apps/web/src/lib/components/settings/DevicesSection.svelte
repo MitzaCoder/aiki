@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { formatDateTime } from '#lib/time-format.ts';
+
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { onMount } from 'svelte';
 	import { encodePairingFragment, type AuthDevice, type AuthPairing } from '@kemiri/protocol';
@@ -121,7 +123,7 @@
 				error = e instanceof Error ? e.message : 'Could not revoke device.';
 		}
 	}
-	const date = (timestamp: string): string => new Date(timestamp).toLocaleString();
+	const date = (timestamp: string): string => formatDateTime(timestamp);
 </script>
 
 <SettingsGroup title="Devices">

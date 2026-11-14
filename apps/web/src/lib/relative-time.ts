@@ -1,3 +1,4 @@
+import { formatDateTime } from '#lib/time-format.ts';
 /**
  * When something happened, in the reader's words: "just now", "5 min ago", "3 h ago", "2 d ago", then a date. Shared by
  * the deploy release line and the memory panel, so every time in the app reads the same way.
@@ -55,7 +56,7 @@ export function elapsedFor(at: string, now: number): string {
 /** The exact time behind a relative phrase, for a title. */
 export function exactTime(at: string): string {
 	const ms = Date.parse(at);
-	return Number.isFinite(ms) ? new Date(ms).toLocaleString() : at;
+	return Number.isFinite(ms) ? formatDateTime(ms) : at;
 }
 
 /**

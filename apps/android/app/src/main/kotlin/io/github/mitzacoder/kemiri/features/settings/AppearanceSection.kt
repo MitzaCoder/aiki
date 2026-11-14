@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.mitzacoder.kemiri.data.HarnessRepository
+import io.github.mitzacoder.kemiri.data.TimeFormat
+import io.github.mitzacoder.kemiri.data.displayWallTime
 import io.github.mitzacoder.kemiri.data.ThemeMode
 import io.github.mitzacoder.kemiri.data.ThemePalette
 import io.github.mitzacoder.kemiri.ui.components.Lucide
@@ -70,14 +72,24 @@ internal fun AppearanceSection(repository: HarnessRepository) {
                 }
             }
         }
+        SettingsGroup(title = "Time") {
+            SettingsRow("Time format", hint = "Automatic follows your device locale. Saved on this device.", control = RowControl.Wide) {
+                Row(Modifier.selectableGroup().fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TimeFormat.entries.forEach { format ->
+                        FilterChip(settings.timeFormat == format, { scope.launch { repository.setTimeFormat(format) } },
+                            label = { Text(format.label) }, modifier = Modifier.heightIn(min = 44.dp).weight(1f))
+                    }
+                }
+            }
+        }
         SettingsGroup(title = "Waiting tasks") {
             SettingsRow("Work day starts at", hint = "Return dates use this device’s local time zone. Saved on this device.") {
                 TextButton(onClick = {
                     val time = java.time.LocalTime.parse(io.github.mitzacoder.kemiri.data.normalizeWorkDayStart(settings.workDayStart))
                     android.app.TimePickerDialog(context, { _, hour, minute ->
                         scope.launch { repository.setWorkDayStart(String.format(java.util.Locale.ROOT, "%02d:%02d", hour, minute)) }
-                    }, time.hour, time.minute, true).show()
-                }) { Text(settings.workDayStart) }
+                    }, time.hour, time.minute, settings.timeFormat == TimeFormat.Hour24 || (settings.timeFormat == TimeFormat.Automatic && android.text.format.DateFormat.is24HourFormat(context))).show()
+                }) { Text(displayWallTime(settings.workDayStart)) }
             }
         }
         Text("The theme is kept on this device, not on a backend.", Modifier.padding(horizontal = 4.dp), style = MaterialTheme.typography.bodySmall, color = Jarvis.colors.fgSubtle)

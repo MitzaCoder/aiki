@@ -1,5 +1,6 @@
 package io.github.mitzacoder.kemiri.features.chat
 
+import io.github.mitzacoder.kemiri.data.localizedTimeFormatter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,7 +39,6 @@ import io.github.mitzacoder.kemiri.ui.components.*
 import io.github.mitzacoder.kemiri.ui.theme.Jarvis
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 /*
@@ -48,8 +48,8 @@ import java.time.format.FormatStyle
  * `TaskText` and `TaskChip`.
  */
 
-internal fun clockTime(ms: Long): String = Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
-internal fun fullTime(ms: Long): String = Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM))
+internal fun clockTime(ms: Long): String = Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).format(localizedTimeFormatter(timeStyle = FormatStyle.SHORT))
+internal fun fullTime(ms: Long): String = Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).format(localizedTimeFormatter(FormatStyle.MEDIUM, FormatStyle.MEDIUM))
 
 enum class TaskLineTone { Quiet, Report, Done, Failed, Tool }
 

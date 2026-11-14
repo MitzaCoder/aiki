@@ -23,7 +23,7 @@ internal fun maintenanceRequest(model: ModelRef?, thinking: String?, time: Strin
 /** What the maintenance settings say in a line (web `memoryMaintenanceSummary`). */
 internal fun maintenanceSummary(settings: MemoryMaintenanceSettings, timezone: String): String =
     if (settings.model == null) "Off: no model is chosen, so maintenance does not run."
-    else "Runs nightly at ${settings.time} (${timezone.ifEmpty { "the backend's timezone" }}) and after ${settings.afterWrites} new writes to a scope."
+    else "Runs nightly at ${io.github.mitzacoder.kemiri.data.displayWallTime(settings.time)} (${timezone.ifEmpty { "the backend's timezone" }}) and after ${settings.afterWrites} new writes to a scope."
 
 /**
  * A backend's memory maintenance: the model and thinking level a run uses, the nightly time in the backend's timezone and

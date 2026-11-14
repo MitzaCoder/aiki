@@ -1,3 +1,7 @@
+import { beforeEach, afterEach } from 'bun:test';
+import { setTimeFormat } from '../src/lib/time-format.ts';
+beforeEach(() => setTimeFormat('24-hour'));
+afterEach(() => setTimeFormat('automatic'));
 /**
  * How a scheduled task reads and what the editor accepts: the schedule in plain words, the next run in the backend's
  * timezone, the last run, the worker badge, and the form's validation. All of it is outside the components on purpose.

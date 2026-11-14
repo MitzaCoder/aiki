@@ -1,3 +1,4 @@
+import { formatTime, formatDateTime, formatWallTime } from '#lib/time-format.ts';
 /**
  * How a scheduled task reads in the app: the schedule in plain words, when it next runs in the backend's timezone,
  * what its last run did, and what the editor accepts. Pure functions, so they are tested without a component.
@@ -82,15 +83,15 @@ export function describeSchedule(spec: ScheduleSpec): string {
 			return everyPhrase(minutes, "minute");
 		}
 		case "daily":
-			return `Every day at ${spec.time}`;
+			return `Every day at ${formatWallTime(spec.time)}`;
 		case "weekly": {
 			const days = [...new Set(spec.days)].sort((left, right) => left - right);
 			// A single day reads better as "Every Monday" than as a list of one.
-			if (sameDays(days, WEEKDAYS)) return `Weekdays at ${spec.time}`;
-			if (sameDays(days, WEEKEND)) return `Weekends at ${spec.time}`;
-			if (days.length === 7) return `Every day at ${spec.time}`;
-			if (days.length === 1) return `Every ${DAY_NAMES[days[0] ?? 0] ?? "day"} at ${spec.time}`;
-			return `${dayList(days)} at ${spec.time}`;
+			if (sameDays(days, WEEKDAYS)) return `Weekdays at ${formatWallTime(spec.time)}`;
+			if (sameDays(days, WEEKEND)) return `Weekends at ${formatWallTime(spec.time)}`;
+			if (days.length === 7) return `Every day at ${formatWallTime(spec.time)}`;
+			if (days.length === 1) return `Every ${DAY_NAMES[days[0] ?? 0] ?? "day"} at ${formatWallTime(spec.time)}`;
+			return `${dayList(days)} at ${formatWallTime(spec.time)}`;
 		}
 		case "cron":
 			return `Cron: ${spec.expression}`;
@@ -124,15 +125,14 @@ export function absoluteTime(at: string, timezone: string): string {
 			month: "short",
 			year: "numeric",
 		}).format(ms);
-		const time = new Intl.DateTimeFormat("en-GB", {
+		const time = formatTime(ms, {
 			timeZone: timezone,
 			hour: "2-digit",
 			minute: "2-digit",
-			hourCycle: "h23",
-		}).format(ms);
+		});
 		return `${date}, ${time} (${timezone})`;
 	} catch {
-		return new Date(ms).toLocaleString();
+		return formatDateTime(ms);
 	}
 }
 

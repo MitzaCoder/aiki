@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { formatDateTime } from '#lib/time-format.ts';
+
 	import SaveStatus from '#lib/components/settings/SaveStatus.svelte';
 	import SendIcon from '@lucide/svelte/icons/send';
 	import { onMount } from 'svelte';
@@ -249,7 +251,7 @@
 				<SettingsRow label={backend.name} hint={view.detail ?? 'Registration and a test push.'} control="auto">
 					{#snippet learn()}
 						{#if entry?.device}
-							Registered as “{entry.device.label}” since {new Date(entry.device.createdAt).toLocaleString()} · {entry
+							Registered as “{entry.device.label}” since {formatDateTime(entry.device.createdAt)} · {entry
 								.device.preferences.kinds.length} event kinds{entry.device.preferences.quietHours
 								? ` · quiet ${quietHoursSummary(entry.device.preferences.quietHours)}`
 								: ''}.

@@ -1,8 +1,8 @@
 package io.github.mitzacoder.kemiri.features.notifications.relay
 
+import io.github.mitzacoder.kemiri.data.localizedTimeFormatter
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 
@@ -20,7 +20,7 @@ fun relayQuotaResetText(
     val reset = Instant.ofEpochMilli(resetAt).atZone(zone)
     val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
     val whenText = if (reset.toLocalDate() == today.plusDays(1)) "resets tomorrow at" else "resets at"
-    val time = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale).format(reset)
+    val time = localizedTimeFormatter(timeStyle = FormatStyle.SHORT, locale = locale).format(reset)
         .replace('\u202f', ' ').replace('\u00a0', ' ')
     return "$whenText $time"
 }

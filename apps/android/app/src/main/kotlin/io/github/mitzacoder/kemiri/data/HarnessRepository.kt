@@ -116,6 +116,7 @@ class HarnessRepository(private val store: DeviceStore, private val authStore: D
 
     init { scope.launch { lock.withLock {
         val saved = store.load()
+        DeviceTimeFormat.current = saved.timeFormat
         mutableSettings.value = saved
         reconcile(saved.backends)
         mutableLoaded.value = true
@@ -135,6 +136,7 @@ class HarnessRepository(private val store: DeviceStore, private val authStore: D
     }
     suspend fun setNotifications(transform: (NotificationSettings) -> NotificationSettings) = update { it.copy(notifications = transform(it.notifications)) }
     suspend fun setWorkDayStart(start: String) = update { it.copy(workDayStart = normalizeWorkDayStart(start)) }
+    suspend fun setTimeFormat(format: TimeFormat) = update { it.copy(timeFormat = format) }
     suspend fun setTheme(palette: ThemePalette, mode: ThemeMode) = update { it.copy(palette = palette, mode = mode) }
     suspend fun setCodeWrap(stored: String) = update { it.copy(codeWrap = stored) }
     suspend fun setTimelineNewestFirst(newestFirst: Boolean) = update { it.copy(timelineNewestFirst = newestFirst) }
@@ -155,6 +157,7 @@ class HarnessRepository(private val store: DeviceStore, private val authStore: D
     private suspend fun update(transform: (DeviceSettings) -> DeviceSettings) = lock.withLock {
         val next = transform(settings.value)
         store.save(next)
+        DeviceTimeFormat.current = next.timeFormat
         mutableSettings.value = next
         reconcile(next.backends)
     }

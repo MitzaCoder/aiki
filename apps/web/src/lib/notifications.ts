@@ -1,3 +1,4 @@
+import { formatDateTime } from './time-format.ts';
 /**
  * How notifications read in the app: each kind's words, what one backend's registration says, what the push service
  * answered, and which project a route is looking at. Pure, so the page, the chat header and the tests agree.
@@ -279,7 +280,7 @@ export function lastDeliveryText(device: Pick<NotificationDevice, "lastDelivery"
 	const delivery = device.lastDelivery;
 	if (delivery === null) return "Registered; nothing pushed yet.";
 	const when = new Date(delivery.at);
-	const at = Number.isNaN(when.getTime()) ? delivery.at : when.toLocaleString();
+	const at = Number.isNaN(when.getTime()) ? delivery.at : formatDateTime(when);
 	if (delivery.ok) {
 		return delivery.status === null ? `Last push accepted ${at}.` : `Last push accepted ${at} (${delivery.status}).`;
 	}

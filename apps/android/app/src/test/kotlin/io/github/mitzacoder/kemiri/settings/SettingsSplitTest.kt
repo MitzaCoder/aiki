@@ -8,6 +8,9 @@ import org.junit.Test
 
 /** The settings split and redesign's pure logic: the section lists, combobox filtering, thinking options, save states, worker model edits. */
 class SettingsSplitTest {
+    @org.junit.Before fun use24HourClock() { io.github.mitzacoder.kemiri.data.DeviceTimeFormat.current = io.github.mitzacoder.kemiri.data.TimeFormat.Hour24 }
+    @org.junit.After fun restoreClockChoice() { io.github.mitzacoder.kemiri.data.DeviceTimeFormat.current = io.github.mitzacoder.kemiri.data.TimeFormat.Automatic }
+
     @Test fun sectionListsMatchTheWebUrlSegments() {
         assertEquals(listOf("appearance", "backends", "notifications", "archived", "about"), GeneralSection.entries.map { it.id })
         assertEquals(listOf("general", "coordinator", "delivery", "workers", "schedules", "tickets", "cache", "storage", "mcp", "skills"), ProjectSection.entries.map { it.id })

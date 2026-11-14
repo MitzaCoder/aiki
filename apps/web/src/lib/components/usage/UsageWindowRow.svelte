@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { formatTime } from '#lib/time-format.ts';
+
 	import TimerIcon from '@lucide/svelte/icons/timer';
 	import { windowPace } from '@kemiri/client';
 	import type { UsageWindow } from '@kemiri/protocol';
@@ -19,7 +21,7 @@
 	const resetTitle = $derived(
 		pace.resetsAt === null
 			? 'The provider gives no reset time'
-			: new Date(pace.resetsAt).toLocaleString(undefined, { weekday: 'long', hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })
+			: formatTime(pace.resetsAt, { weekday: 'long', hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' }, undefined)
 	);
 </script>
 

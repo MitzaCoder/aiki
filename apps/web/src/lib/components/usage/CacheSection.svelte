@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { formatTime } from '#lib/time-format.ts';
+
 	import CoinsIcon from '@lucide/svelte/icons/coins';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import LightbulbIcon from '@lucide/svelte/icons/lightbulb';
@@ -249,7 +251,7 @@
 								<summary class="flex cursor-pointer list-none items-baseline gap-2 py-1.5 [&::-webkit-details-marker]:hidden">
 									<ChevronRightIcon class="size-3.5 shrink-0 self-center text-(--chat-fg-subtle) transition-transform group-open:rotate-90" />
 									<span class="w-20 shrink-0 text-xs text-(--chat-fg-subtle) tabular-nums sm:w-24" title={exactTime(miss.at)}>
-										{new Date(miss.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+										{formatTime(miss.at, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }, undefined)}
 									</span>
 									<span class="min-w-0 flex-1 sm:truncate">
 										{missHeadline(miss)}

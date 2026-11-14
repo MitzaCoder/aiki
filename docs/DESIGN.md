@@ -1,5 +1,33 @@
 # Design
 
+## Device-local clock format (T190)
+
+Settings → Appearance → Time offers Automatic (default), 24-hour and 12-hour
+on web and Android. Automatic follows the browser/device locale; an explicit
+choice overrides its hour cycle without changing dates, seconds, timezone or
+relative-time wording. Midnight in 24-hour mode is 00, not 24. The preference
+belongs to the device, never a backend: web stores `aiki.time-format.v1` in
+localStorage; Android adds `timeFormat` to the existing DeviceSettings DataStore
+record, with Automatic for older records. There is no protocol change.
+
+Web's `lib/time-format.ts` owns all clock-bearing Intl formatters, including
+full date-time labels and display-only protocol wall times. Its store-backed
+reader tracks Svelte derivations; formatter cache keys include the current
+locale, timezone and hour cycle. Android's `data/TimeFormat.kt` owns all
+clock-bearing DateTimeFormatter construction. Repository load/save updates its
+observable device choice; formatters are created at use rather than frozen at
+file initialization, and memoized worker times include the choice in their key.
+
+Chat, workers, task/board timelines and waiting dates, artifact metadata, usage
+resets/cache history, schedules and nightly memory maintenance, notifications,
+devices and deploy details all use these entry points. Date-only labels and
+elapsed durations are unchanged. Schedule/quiet-hours/editor values remain
+canonical HH:mm; web TimeInput presents a formatted clock button and delegates
+editing to the native browser picker (with a visible input fallback);
+formatted schedule and maintenance descriptions use the display preference.
+Arbitrary transcript text, artifact contents, cron expressions and wire timestamps
+are not rewritten.
+
 ## Agent mascot state mapping (T177 / Q199)
 
 Chat activity uses the 40 px/dp mascot (T182): A while a run works, C for an open

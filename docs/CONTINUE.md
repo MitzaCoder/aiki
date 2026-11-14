@@ -1,5 +1,17 @@
 # Continue
 
+## T190: device-local 12/24-hour clocks
+
+Appearance → Time offers Automatic (locale), 24-hour and 12-hour on both clients.
+Shared clock formatters cover chat, tasks, artifacts, usage, schedules, maintenance,
+notifications and deploy details; dates/durations and canonical editor values stay put.
+Web stores `aiki.time-format.v1`; Android uses DeviceSettings DataStore. No wire change.
+Proof index mwgl5mhf-ff37569d46: 36 synthetic screenshots (web desktop/phone and
+Android emulator, light/dark, before/after); recording mwgkov5r-f6f0b42ae5.
+Checks: isolated root 2,698 tests; web 1,145 tests/check/build; typecheck; Android
+968 JVM tests (two skipped), assemble/lint (49 existing warnings); public checks pass.
+Owned fixture/browser/emulator and temporary proof scripts are cleaned; no push/main movement.
+
 ## T183: full per-project skills stack verification
 
 Verified the complete wmokzkqu → vozxrssy → oxnkzqvy → twtxqkxo stack,

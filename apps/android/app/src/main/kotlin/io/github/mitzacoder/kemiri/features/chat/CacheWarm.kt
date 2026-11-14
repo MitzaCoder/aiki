@@ -1,8 +1,6 @@
 package io.github.mitzacoder.kemiri.features.chat
 
 import io.github.mitzacoder.kemiri.protocol.CacheWarmStretch
-import java.text.DateFormat
-import java.util.Date
 import java.util.Locale
 
 /** Same grouping as web: stable stretch identity, newest version, loaded anchors only. */
@@ -16,6 +14,6 @@ fun cacheWarmLabel(stretch: CacheWarmStretch): String {
     return "$label · ~${String.format(Locale.US, "$%.2f", stretch.cost)}"
 }
 fun cacheWarmDetail(stretch: CacheWarmStretch): String {
-    val format = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
-    return "${format.format(Date(stretch.startedAt.toLong()))} – ${format.format(Date(stretch.lastAt.toLong()))} · ${String.format(Locale.US, "%,.0f", stretch.cachedTokens)} cached-input tokens · ${String.format(Locale.US, "$%.4f", stretch.cost)} equivalent. ${stretch.stopped ?: "Refreshing while idle"}."
+    val format = io.github.mitzacoder.kemiri.data.localizedTimeFormatter(java.time.format.FormatStyle.SHORT).withZone(java.time.ZoneId.systemDefault())
+    return "${format.format(java.time.Instant.ofEpochMilli(stretch.startedAt.toLong()))} – ${format.format(java.time.Instant.ofEpochMilli(stretch.lastAt.toLong()))} · ${String.format(Locale.US, "%,.0f", stretch.cachedTokens)} cached-input tokens · ${String.format(Locale.US, "$%.4f", stretch.cost)} equivalent. ${stretch.stopped ?: "Refreshing while idle"}."
 }

@@ -1,5 +1,6 @@
 package io.github.mitzacoder.kemiri.features.notifications
 
+import io.github.mitzacoder.kemiri.data.localizedTimeFormatter
 import io.github.mitzacoder.kemiri.data.*
 import io.github.mitzacoder.kemiri.protocol.*
 import kotlinx.coroutines.*
@@ -268,7 +269,7 @@ fun backendPushView(state: BackendPushState?, settings: NotificationSettings, ap
 fun relayLastAttemptText(device: NotificationDevice): String {
     val delivery = device.lastDelivery ?: return "No notification attempt yet."
     val at = runCatching {
-        java.time.format.DateTimeFormatter.ofLocalizedDateTime(java.time.format.FormatStyle.SHORT)
+        localizedTimeFormatter(java.time.format.FormatStyle.SHORT, java.time.format.FormatStyle.SHORT)
             .format(java.time.Instant.parse(delivery.at).atZone(java.time.ZoneId.systemDefault()))
     }.getOrNull()
     val outcome = if (delivery.ok) "accepted" else "delayed"
@@ -279,7 +280,7 @@ fun relayLastAttemptText(device: NotificationDevice): String {
 fun lastDeliveryText(device: NotificationDevice): String {
     val delivery = device.lastDelivery ?: return "Registered; nothing pushed yet."
     val at = runCatching {
-        java.time.format.DateTimeFormatter.ofLocalizedDateTime(java.time.format.FormatStyle.SHORT)
+        localizedTimeFormatter(java.time.format.FormatStyle.SHORT, java.time.format.FormatStyle.SHORT)
             .format(java.time.Instant.parse(delivery.at).atZone(java.time.ZoneId.systemDefault()))
     }.getOrDefault(delivery.at)
     if (delivery.ok) return if (delivery.status == null) "Last push accepted $at." else "Last push accepted $at (${delivery.status})."

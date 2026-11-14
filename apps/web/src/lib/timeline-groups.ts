@@ -1,3 +1,4 @@
+import { formatTime } from '#lib/time-format.ts';
 import type { BoardTimelineFact, BoardTimelineGroup, BoardTimelineGroupKind, BoardTimelineKind } from '@kemiri/protocol';
 import type { TimelineOrder } from './task-timeline.js';
 
@@ -7,7 +8,7 @@ export function timelineGroupsSupported(features: readonly string[] | undefined)
 export const timelineGroupNames: Record<BoardTimelineGroupKind, string> = { work: 'Work', decisions: 'Decisions and feedback', delivery: 'Delivery' };
 
 export function timelineClock(at: string): string {
-	return Number.isFinite(Date.parse(at)) ? new Date(at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : 'Unknown time';
+	return Number.isFinite(Date.parse(at)) ? formatTime(at, { hour: '2-digit', minute: '2-digit' }, undefined) : 'Unknown time';
 }
 export function timelineGroupRange(group: BoardTimelineGroup): string {
 	return `${timelineClock(group.range.start)}–${timelineClock(group.range.end)}`;

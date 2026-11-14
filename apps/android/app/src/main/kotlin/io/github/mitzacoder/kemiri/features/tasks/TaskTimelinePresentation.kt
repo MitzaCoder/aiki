@@ -1,5 +1,6 @@
 package io.github.mitzacoder.kemiri.features.tasks
 
+import io.github.mitzacoder.kemiri.data.timeFormatter
 import io.github.mitzacoder.kemiri.protocol.BoardTimelineEntry
 import io.github.mitzacoder.kemiri.protocol.BoardTimelineFact
 import io.github.mitzacoder.kemiri.protocol.BoardTimelineGroup
@@ -42,7 +43,7 @@ internal fun orderedTimelineGroups(groups: List<BoardTimelineGroup>, newestFirst
 }
 
 internal fun timelineRange(start: String, end: String, zone: ZoneId = ZoneId.systemDefault()): String {
-    val format = DateTimeFormatter.ofPattern("HH:mm").withZone(zone)
+    val format = timeFormatter("HH:mm").withZone(zone)
     return "${format.format(Instant.parse(start))}–${format.format(Instant.parse(end))}"
 }
 

@@ -1,3 +1,7 @@
+import { beforeEach, afterEach } from 'bun:test';
+import { setTimeFormat } from '../src/lib/time-format.ts';
+beforeEach(() => setTimeFormat('24-hour'));
+afterEach(() => setTimeFormat('automatic'));
 /**
  * How the Memory tab reads a scope's files, search hits, history and front matter: the scope targets,
  * the archived toggle, the snippet runs, the links across scopes and the source sentence. Pure

@@ -1,4 +1,5 @@
 <script lang="ts">
+ import TimeInput from "#lib/components/TimeInput.svelte";
 	import { overlayScroll } from '#lib/scrollbars.js';
 	import Banner from '#lib/components/Banner.svelte';
 	import Combobox from '#lib/components/settings/Combobox.svelte';
@@ -241,7 +242,7 @@
 				{:else if draft.kind === 'daily'}
 					<Field.Field>
 						<Field.Label for="schedule-time">At</Field.Label>
-						<Input id="schedule-time" class="w-40" type="time" bind:value={draft.time} />
+						<TimeInput id="schedule-time" aria-label="At" class="w-40" bind:value={draft.time} />
 					</Field.Field>
 				{:else if draft.kind === 'weekly'}
 					<Field.Field>
@@ -261,7 +262,7 @@
 					</Field.Field>
 					<Field.Field>
 						<Field.Label for="schedule-weekly-time">At</Field.Label>
-						<Input id="schedule-weekly-time" class="w-40" type="time" bind:value={draft.time} />
+						<TimeInput id="schedule-weekly-time" aria-label="At" class="w-40" bind:value={draft.time} />
 					</Field.Field>
 				{:else if draft.kind === 'github-review-requested'}
 					<Field.Field>

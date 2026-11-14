@@ -1,4 +1,5 @@
 <script lang="ts">
+ import TimeInput from "#lib/components/TimeInput.svelte";
 	import SaveStatus from '#lib/components/settings/SaveStatus.svelte';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { SaveState } from '#lib/save-state.svelte.js';
@@ -59,6 +60,11 @@
 
 <div class="flex min-w-0 flex-col gap-1.5">
 	<div class="flex items-center gap-2">
+        {#if type === 'time'}
+            <TimeInput {id} {disabled} value={shown} class={className}
+                aria-invalid={save.status === 'failed' || undefined}
+                onchange={(value) => { draft = value; save.reset(); void flush(); }} />
+        {:else}
 		<Input
 			{id}
 			{type}
@@ -81,6 +87,7 @@
 				if (event.key === 'Enter') void flush();
 			}}
 		/>
+		{/if}
 		{#if suffix}<span class="text-sm text-muted-foreground">{suffix}</span>{/if}
 	</div>
 	{#if !external}<SaveStatus state={own} reserve={false} onretry={() => void flush()} />{/if}

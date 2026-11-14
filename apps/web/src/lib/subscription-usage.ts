@@ -1,3 +1,4 @@
+import { formatTime } from '#lib/time-format.ts';
 /**
  * The usage screen's words and shapes: durations, the pace in a sentence and its tone, the summary line, and the
  * geometry of the gauge and the chart. Pure, so every label is tested; the arithmetic itself (elapsed share, pace ratio,
@@ -55,7 +56,7 @@ export type ClockOptions = { locale?: string; timeZone?: string };
  */
 export function clockTime(at: number, now: number, options: ClockOptions = {}): string {
 	const { locale, timeZone } = options;
-	const time = new Date(at).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", timeZone });
+	const time = formatTime(at, { hour: "2-digit", minute: "2-digit", timeZone }, locale);
 	const day = (ms: number) => new Date(ms).toLocaleDateString("en-CA", { timeZone });
 	if (day(at) === day(now)) return time;
 	if (at > now && at - now < 6 * DAY_MS) {

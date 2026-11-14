@@ -7,6 +7,9 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class TaskTimelineGroupsTest {
+    @org.junit.Before fun use24HourClock() { io.github.mitzacoder.kemiri.data.DeviceTimeFormat.current = io.github.mitzacoder.kemiri.data.TimeFormat.Hour24 }
+    @org.junit.After fun restoreClockChoice() { io.github.mitzacoder.kemiri.data.DeviceTimeFormat.current = io.github.mitzacoder.kemiri.data.TimeFormat.Automatic }
+
     private val start = "2026-11-03T14:00:00Z"
     private val end = "2026-11-03T16:36:00Z"
     private val fact = BoardTimelineFact(at = start, endAt = end, kind = "worker", label = "Worker fern reported", id = "opaque-run", revision = 2, group = "work", outcome = "reported", factCount = 2, source = "worker", ref = "fern", detail = "Checks passed")

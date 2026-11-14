@@ -1,3 +1,4 @@
+import { formatTime } from '#lib/time-format.ts';
 export const DEFAULT_WORK_DAY_START = '08:00';
 export function normalizeWorkDayStart(start: unknown): string {
  return typeof start === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(start) ? start : DEFAULT_WORK_DAY_START;
@@ -27,5 +28,5 @@ export function localWaitingDate(timestamp: string): string {
 }
 
 export function formatWaitingTime(timestamp: string): string {
- return new Date(timestamp).toLocaleString(undefined, { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hourCycle:'h23' });
+ return formatTime(timestamp, { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }, undefined);
 }

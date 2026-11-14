@@ -1,5 +1,6 @@
 package io.github.mitzacoder.kemiri.features.settings
 
+import io.github.mitzacoder.kemiri.data.timeFormatter
 import io.github.mitzacoder.kemiri.data.*
 import io.github.mitzacoder.kemiri.protocol.*
 import java.net.URI
@@ -90,7 +91,7 @@ fun backendTime(value: String?, timezone: String): String {
     if (value == null) return "—"
     return runCatching {
         java.time.Instant.parse(value).atZone(java.time.ZoneId.of(timezone))
-            .format(java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM HH:mm z", java.util.Locale.getDefault()))
+            .format(timeFormatter("EEE, d MMM HH:mm z", java.util.Locale.getDefault()))
     }.getOrDefault(value)
 }
 

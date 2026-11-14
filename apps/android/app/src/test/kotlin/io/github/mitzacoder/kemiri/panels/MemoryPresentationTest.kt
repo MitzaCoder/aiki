@@ -8,6 +8,9 @@ import org.junit.Test
 
 /** How the Memory tab words memory; mirrors the web's `memory.test.ts`. */
 class MemoryPresentationTest {
+    @org.junit.Before fun use24HourClock() { io.github.mitzacoder.kemiri.data.DeviceTimeFormat.current = io.github.mitzacoder.kemiri.data.TimeFormat.Hour24 }
+    @org.junit.After fun restoreClockChoice() { io.github.mitzacoder.kemiri.data.DeviceTimeFormat.current = io.github.mitzacoder.kemiri.data.TimeFormat.Automatic }
+
     private val now = java.time.Instant.parse("2026-11-04T19:00:00Z").toEpochMilli()
 
     private fun summary(fileId: String = "testing", title: String = "Testing", status: String = "active", updated: String = "2026-11-04T18:30:00Z") = MemoryFileSummary(

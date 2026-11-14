@@ -1,5 +1,6 @@
 package io.github.mitzacoder.kemiri.features.notifications.relay
 
+import io.github.mitzacoder.kemiri.data.localizedTimeFormatter
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,7 +13,6 @@ import io.github.mitzacoder.kemiri.features.notifications.relayLastAttemptText
 import io.github.mitzacoder.kemiri.features.settings.*
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 /** Locally sourced backend names never leave this phone in relay management requests. */
@@ -100,5 +100,5 @@ internal fun RelayAccountActions(view: RelaySettingsView, session: RelaySettings
 }
 
 private fun relayDate(timestamp: Long): String = runCatching {
-    DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()))
+    localizedTimeFormatter(FormatStyle.SHORT, FormatStyle.SHORT).format(Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()))
 }.getOrDefault("Unknown time")

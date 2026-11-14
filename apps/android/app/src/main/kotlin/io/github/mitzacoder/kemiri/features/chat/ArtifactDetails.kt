@@ -1,5 +1,6 @@
 package io.github.mitzacoder.kemiri.features.chat
 
+import io.github.mitzacoder.kemiri.data.localizedTimeFormatter
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,7 +31,6 @@ import io.github.mitzacoder.kemiri.ui.components.LucideGlyph
 import io.github.mitzacoder.kemiri.ui.theme.Jarvis
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 /** Route identity survives recreation while metadata is loading; no signed capability is saved. */
@@ -72,7 +72,7 @@ internal enum class ArtifactDeleteState {
 /** A size as the web writes it ("820 B", "95 KB", "3.2 MB"); null when unknown. */
 internal fun artifactDetailSize(bytes: Long): String? = if (bytes < 0) null else formatBytes(bytes)
 internal fun artifactDetailTime(value: String): String? = runCatching {
-    DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+    localizedTimeFormatter(FormatStyle.MEDIUM, FormatStyle.SHORT)
         .withZone(ZoneId.systemDefault()).format(Instant.parse(value))
 }.getOrNull()
 /**

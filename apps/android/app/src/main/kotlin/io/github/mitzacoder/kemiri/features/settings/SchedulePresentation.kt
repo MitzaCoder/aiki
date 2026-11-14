@@ -61,15 +61,15 @@ fun describeSchedule(spec: ScheduleSpec): String = when (spec) {
         spec.everyMinutes % 60 == 0L -> everyPhrase(spec.everyMinutes / 60, "hour")
         else -> everyPhrase(spec.everyMinutes, "minute")
     }
-    is ScheduleSpecDaily -> "Every day at ${spec.time}"
+    is ScheduleSpecDaily -> "Every day at ${io.github.mitzacoder.kemiri.data.displayWallTime(spec.time)}"
     is ScheduleSpecWeekly -> {
         val days = spec.days.map { it.toInt() }.distinct().sorted()
         when {
-            days == listOf(1, 2, 3, 4, 5) -> "Weekdays at ${spec.time}"
-            days == listOf(0, 6) -> "Weekends at ${spec.time}"
-            days.size == 7 -> "Every day at ${spec.time}"
-            days.size == 1 -> "Every ${DAY_NAMES.getOrElse(days[0]) { "day" }} at ${spec.time}"
-            else -> "${dayList(days)} at ${spec.time}"
+            days == listOf(1, 2, 3, 4, 5) -> "Weekdays at ${io.github.mitzacoder.kemiri.data.displayWallTime(spec.time)}"
+            days == listOf(0, 6) -> "Weekends at ${io.github.mitzacoder.kemiri.data.displayWallTime(spec.time)}"
+            days.size == 7 -> "Every day at ${io.github.mitzacoder.kemiri.data.displayWallTime(spec.time)}"
+            days.size == 1 -> "Every ${DAY_NAMES.getOrElse(days[0]) { "day" }} at ${io.github.mitzacoder.kemiri.data.displayWallTime(spec.time)}"
+            else -> "${dayList(days)} at ${io.github.mitzacoder.kemiri.data.displayWallTime(spec.time)}"
         }
     }
     is ScheduleSpecCron -> "Cron: ${spec.expression}"

@@ -164,7 +164,7 @@ fun memoryStatusView(status: MemoryScopeStatus, now: Long): MemoryStatusView {
 fun memoryMaintenanceSummary(settings: MemoryMaintenanceSettings, timezone: String): String {
     if (settings.model == null) return "Off: maintenance doesn't run without a model."
     val writes = if (settings.afterWrites == 1L) "after 1 write" else "after ${settings.afterWrites} writes"
-    return "Nightly at ${settings.time} ($timezone), or $writes."
+    return "Nightly at ${io.github.mitzacoder.kemiri.data.displayWallTime(settings.time)} ($timezone), or $writes."
 }
 
 /** A front matter link ready to render: where it goes and what to call it (the title when this scope's list has it). */

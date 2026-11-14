@@ -1,5 +1,6 @@
 package io.github.mitzacoder.kemiri.features.usage
 
+import io.github.mitzacoder.kemiri.data.timeFormatter
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -275,7 +276,7 @@ private fun GroupCard(title: String, groups: List<CacheGroup>, wide: Boolean, la
     }
 }
 
-private val missTime = DateTimeFormatter.ofPattern("MMM d, HH:mm").withZone(ZoneId.systemDefault())
+private val missTime get() = timeFormatter("MMM d, HH:mm").withZone(ZoneId.systemDefault())
 
 @Composable
 private fun MissesCard(stats: CacheStats, wide: Boolean) {

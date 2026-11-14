@@ -505,7 +505,7 @@ internal fun highlightIndex(rows: List<ChatRow>, target: ChatHighlight): Int = w
 
 /** A worker's status, model, thinking, where it works and when it last changed (web `WorkerTranscript`'s header line). */
 @Composable private fun WorkerFacts(worker: WorkerSummary, models: List<ModelInfo>, modifier: Modifier = Modifier) {
-    val updated = remember(worker.updatedAt) { runCatching { fullTime(java.time.Instant.parse(worker.updatedAt).toEpochMilli()) }.getOrDefault(worker.updatedAt) }
+    val updated = remember(worker.updatedAt, io.github.mitzacoder.kemiri.data.DeviceTimeFormat.current) { runCatching { fullTime(java.time.Instant.parse(worker.updatedAt).toEpochMilli()) }.getOrDefault(worker.updatedAt) }
     FlowRow(modifier.fillMaxWidth(),horizontalArrangement = Arrangement.spacedBy(6.dp),verticalArrangement = Arrangement.spacedBy(2.dp),itemVerticalAlignment = Alignment.CenterVertically) {
         val style = MaterialTheme.typography.bodySmall
         val subtle = Jarvis.colors.fgSubtle

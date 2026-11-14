@@ -1,9 +1,9 @@
 package io.github.mitzacoder.kemiri.features.usage
 
+import io.github.mitzacoder.kemiri.data.timeFormatter
 import io.github.mitzacoder.kemiri.protocol.UsageWindow
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import kotlin.math.*
 
 enum class PaceKind { Unknown, Behind, OnPace, Ahead, Exhausted }
@@ -48,7 +48,7 @@ fun formatDuration(ms: Double): String {
     if (hours < 24) return "${hours}h" + if (minutes % 60 == 0L) "" else " ${minutes % 60}m"
     return "${hours / 24}d" + if (hours % 24 == 0L) "" else " ${hours % 24}h"
 }
-fun clockTime(at: Double): String = DateTimeFormatter.ofPattern("d MMM HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(at.toLong()))
+fun clockTime(at: Double): String = timeFormatter("d MMM HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(at.toLong()))
 fun paceTitle(p: WindowPace) = when(p.kind) { PaceKind.Unknown -> "Pace unknown"; PaceKind.Exhausted -> "Limit reached"; PaceKind.Ahead -> if(p.early && p.exhaustsAt != null) "Brisk start" else "Ahead of pace"; PaceKind.Behind -> "Behind pace"; PaceKind.OnPace -> "On pace" }
 fun paceDetail(p: WindowPace): String = when(p.kind) {
     PaceKind.Unknown -> if(p.usedPercent == null) "No reading for this window yet." else if(p.resetsAt == null) "The provider gives no reset time." else "No elapsed window to compare with."

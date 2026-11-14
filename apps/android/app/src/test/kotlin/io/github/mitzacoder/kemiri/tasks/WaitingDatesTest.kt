@@ -8,6 +8,9 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class WaitingDatesTest {
+    @org.junit.Before fun use24HourClock() { io.github.mitzacoder.kemiri.data.DeviceTimeFormat.current = io.github.mitzacoder.kemiri.data.TimeFormat.Hour24 }
+    @org.junit.After fun restoreClockChoice() { io.github.mitzacoder.kemiri.data.DeviceTimeFormat.current = io.github.mitzacoder.kemiri.data.TimeFormat.Automatic }
+
     @Test fun defaultAndValidation() {
         assertEquals("08:00", DeviceSettings().workDayStart)
         listOf("", "24:00", "9:00", "08:60").forEach { assertEquals("08:00", normalizeWorkDayStart(it)) }

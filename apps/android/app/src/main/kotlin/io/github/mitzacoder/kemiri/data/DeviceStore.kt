@@ -18,6 +18,7 @@ data class DeviceSettings(
     val deviceId: String = UUID.randomUUID().toString(),
     val palette: ThemePalette = ThemePalette.Jarvis,
     val mode: ThemeMode = ThemeMode.System,
+    val timeFormat: TimeFormat = TimeFormat.Automatic,
     /** Backend URL -> project ID -> last viewed reply entry. */
     val seenReplies: Map<String, Map<String, Long>> = emptyMap(),
     /** Legacy device-wide List/Board choice, used until a project has its own view preference. */
