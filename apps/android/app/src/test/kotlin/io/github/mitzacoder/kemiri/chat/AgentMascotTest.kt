@@ -1,5 +1,6 @@
 package io.github.mitzacoder.kemiri.chat
 
+import io.github.mitzacoder.kemiri.features.chat.showsAgentActivityRow
 import io.github.mitzacoder.kemiri.features.chat.agentFinished
 import io.github.mitzacoder.kemiri.features.chat.agentWaitingForUser
 import io.github.mitzacoder.kemiri.protocol.BoardQuestion
@@ -21,6 +22,12 @@ class AgentMascotTest {
         assertTrue(agentWaitingForUser(listOf(q.copy(taskId="T1")),workerTaskId="T1",worker=true))
         assertFalse(agentWaitingForUser(listOf(q.copy(taskId="T2")),workerTaskId="T1",worker=true))
     }
+    @Test fun waitingNeverAddsAnActivityMascot() {
+        for(working in listOf(false,true)) for(completed in listOf(false,true)) {
+            assertFalse(showsAgentActivityRow(true,working,completed))
+            assertEquals(working || completed,showsAgentActivityRow(false,working,completed))
+        }
+    }
     @Test fun onlySuccessfulLiveCompletionCelebrates() {
         assertTrue(agentFinished(true,false,false,true,false))
         assertFalse(agentFinished(false,false,false,true,false))
@@ -36,6 +43,11 @@ class AgentMascotTest {
         assertEquals(MascotPose(),mascotPose(AgentMotion.Done,9000))
         assertEquals(MascotPose(),mascotPose(AgentMotion.Idle,1800))
         assertTrue(mascotPose(AgentMotion.Done,442).y < 0f)
+    }
+    @Test fun largerMascotUsesFullVectorMotion() {
+        assertEquals(-12f,mascotPose(AgentMotion.Working,1500).y,.001f)
+        assertEquals(-4.5f,mascotPose(AgentMotion.Working,900).leaf,.001f)
+        assertEquals(-42f,mascotPose(AgentMotion.Done,442).y,.001f)
     }
     @Test fun waitingBodyIsStillAndWorkingBlinksOnceInTwoLoops() {
         for(t in 0L..3500L step 100L) {

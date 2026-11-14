@@ -2,10 +2,10 @@
 // Generated from assets/brand by bun scripts/generate-brand.ts.
 import './mascot-motion.css';
 import type { AgentMotion } from '../agent-activity.js';
-let { state = 'idle', size = 26 }: { state?: AgentMotion; size?: number } = $props();
+let { state = 'idle', size = 40 }: { state?: AgentMotion; size?: number } = $props();
 const id = $props.id();
 </script>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width={size} height={size} class="mascot-motion shrink-0" data-state={state === 'waiting' ? 'thinking' : state} data-size="small" data-play={state === 'done' ? '' : undefined} style={`--size:${size}px`} aria-hidden="true"><defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="122 115 780 780" fill="none" width={size} height={size} class="mascot-motion shrink-0" data-state={state === 'waiting' ? 'thinking' : state} data-size={size <= 32 ? 'small' : undefined} data-play={state === 'done' ? '' : undefined} style={`--size:${size}px`} aria-hidden="true"><defs>
     <linearGradient id={id + '-seed'} x1="330" y1="427" x2="722" y2="777" gradientUnits="userSpaceOnUse">
       <stop stop-color="#5b7bea"/><stop offset=".48" stop-color="#9564e8"/><stop offset="1" stop-color="#f24aeb"/>
     </linearGradient>

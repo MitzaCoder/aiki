@@ -31,7 +31,7 @@ private fun keyframed(at: Float, vararg frames: Pair<Float, Float>): Float {
     val (a,x) = frames[next - 1]; val (b,y) = frames[next]
     return x + (y - x) * mascotEase.transform(((at - a) / (b - a)).coerceIn(0f,1f))
 }
-/** The same source-coordinate pivots, durations and small-size keyframes as mascot-motion.css. */
+/** The same source-coordinate pivots, durations and full-size keyframes as mascot-motion.css. */
 fun mascotPose(state: AgentMotion, elapsedMs: Long): MascotPose {
     val t = elapsedMs.coerceAtLeast(0)
     return when(state) {
@@ -39,13 +39,13 @@ fun mascotPose(state: AgentMotion, elapsedMs: Long): MascotPose {
         AgentMotion.Working -> {
             val f = (t % 3000) / 3000f
             val breath = keyframed(f,0f to 0f,.5f to 1f,1f to 0f)
-            MascotPose(y = -7f * breath,scaleX = 1f - .015f * breath,scaleY = 1f + .02f * breath,
-                leaf = keyframed(f,0f to 0f,.3f to -3f,.6f to 3f,1f to 0f),
+            MascotPose(y = -12f * breath,scaleX = 1f - .015f * breath,scaleY = 1f + .02f * breath,
+                leaf = keyframed(f,0f to 0f,.3f to -4.5f,.6f to 4.5f,1f to 0f),
                 blink = keyframed((t % 6000) / 6000f,0f to 1f,.91f to 1f,.925f to .08f,.94f to 1f,1f to 1f))
         }
         AgentMotion.Done -> {
             val f = (t / 1300f).coerceAtMost(1f)
-            MascotPose(y = keyframed(f,0f to 0f,.15f to 0f,.34f to -30f,.49f to -19.5f,.65f to 0f,.82f to -4f,1f to 0f),
+            MascotPose(y = keyframed(f,0f to 0f,.15f to 0f,.34f to -42f,.49f to -27.3f,.65f to 0f,.82f to -4f,1f to 0f),
                 scaleX = keyframed(f,0f to 1f,.15f to 1.035f,.34f to .985f,.49f to 1f,.65f to 1.035f,.82f to .995f,1f to 1f),
                 scaleY = keyframed(f,0f to 1f,.15f to .96f,.34f to 1.02f,.49f to 1f,.65f to .975f,.82f to 1.005f,1f to 1f),
                 leaf = keyframed(f,0f to 0f,.15f to 0f,.33f to -8f,.44f to 6f,.56f to -4f,.7f to 2f,.86f to 0f,1f to 0f))
@@ -74,7 +74,7 @@ fun mascotPose(state: AgentMotion, elapsedMs: Long): MascotPose {
 }
 
 /** Generated vector layers, animated in Compose. Idle and reduced-motion instances never run a frame loop. */
-@Composable fun AgentMascot(state: AgentMotion, modifier: Modifier = Modifier, size: Dp = 26.dp, label: String? = null) {
+@Composable fun AgentMascot(state: AgentMotion, modifier: Modifier = Modifier, size: Dp = 40.dp, label: String? = null) {
     val reduced = rememberAgentReducedMotion()
     var elapsed by remember { mutableLongStateOf(0L) }
     LaunchedEffect(state,reduced) {

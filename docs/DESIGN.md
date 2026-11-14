@@ -2,7 +2,7 @@
 
 ## Agent mascot state mapping (T177 / Q199)
 
-Chat activity uses the 26 px/dp mascot: A while a run works, C for an open
+Chat activity uses the 40 px/dp mascot (T182): A while a run works, C for an open
 blocking question/approval belonging to that conversation, and B once on a
 successful live working-to-idle transition. Initial history, reconnects, failures,
 stops and merely answering/withdrawing a question must not replay Done. C is not
@@ -10,10 +10,18 @@ network waiting, queued user messages, provider retries or timed task waiting.
 Warnings default non-blocking. Thread IDs scope coordinator questions; worker
 transcripts use their linked task and thread rather than unrelated project asks.
 MCP approvals already surface as board questions, so no speculative wire state
-is invented. Waiting keeps its own accessible “Waiting for your answer…” label;
-ordinary activity keeps “Working…”.
+is invented. F68/Q205 removes the standalone waiting row entirely, mascot and
+label included: the question card is the cue. Ordinary activity keeps the visible
+“Working…” row with its breathing mascot. Existing real reply avatars remain;
+waiting does not create a new avatar or a synthetic assistant message.
+Both clients test the activity-row visibility rule separately: waiting suppresses
+it even if working/completion flags are also set. Web also tests rendered markup.
+The reply avatar is the same 40 px/dp component, including its Android gutter.
+This is clearly larger than the old 26 px/dp orb without crowding phone text.
+At 40, use full vector motion (12-unit bob, 42-unit hop, 4.5° leaf sway);
+web instances at 32 px or smaller retain the reduced-travel treatment.
 
-Streaming reply gutters retain the existing large-screen footprint. A transient
+Streaming reply gutters match the larger mascot on large screens. A transient
 completion row makes the one-shot visible on phone, then disappears; desktop
 reply avatars settle to the still mascot. Idle/empty and Usage decoration may
 retain the orb, as do lists/graphs whose status glyphs are not assistant avatars.

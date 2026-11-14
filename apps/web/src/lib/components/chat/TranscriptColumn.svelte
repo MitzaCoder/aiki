@@ -4,7 +4,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Spinner } from '#lib/components/ui/spinner/index.js';
 	import { tick, untrack, onDestroy, type Snippet } from 'svelte';
-	import { agentFinished, agentTurnWorking } from '#lib/agent-activity.js';
+	import { agentFinished, agentTurnWorking, showsAgentActivityRow } from '#lib/agent-activity.js';
 	import { loadEarlierPage, shouldPrefetchEarlier } from '#lib/chat/earlier-paging.js';
 	import type { WorkerSummary } from '@kemiri/protocol';
 	import type { MemoryExtraction } from '#lib/memory.js';
@@ -313,10 +313,10 @@
 						{/if}
 					{/snippet}
 
-					{#if waitingForUser || working || completed}
-						<div class="flex items-center gap-3 text-sm sm:gap-4 {((liveTurn && (waitingForUser || working)) || (completed && lastTurn !== undefined)) ? 'sm:hidden' : ''}" data-agent-activity={waitingForUser ? 'waiting' : completed ? 'done' : 'working'}>
-							<AgentMascot state={waitingForUser ? 'waiting' : completed ? 'done' : 'working'} />
-							<span class="font-medium" class:shimmer-text={!waitingForUser && !completed}>{waitingForUser ? 'Waiting for your answer…' : completed ? 'Done.' : 'Working…'}</span>
+					{#if showsAgentActivityRow(waitingForUser, working, completed)}
+						<div class="flex items-center gap-3 text-sm sm:gap-4 {((liveTurn && working) || (completed && lastTurn !== undefined)) ? 'sm:hidden' : ''}" data-agent-activity={completed ? 'done' : 'working'}>
+							<AgentMascot state={completed ? 'done' : 'working'} />
+							<span class="font-medium" class:shimmer-text={!completed}>{completed ? 'Done.' : 'Working…'}</span>
 						</div>
 					{/if}
 				</div>

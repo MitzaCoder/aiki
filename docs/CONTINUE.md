@@ -1,5 +1,61 @@
 # Continue
 
+## T182 follow-up: identify the reported lone mascot
+
+The lone mascot in the original `after-web-phone-dark-waiting.png` was the
+standalone activity row after its text was removed, not a reply avatar. Its
+artifact's version 2 already removed the row, but the original file still shows
+the interim state. Fresh uniquely named `no-waiting-row-*` artifacts remove that
+ambiguity. Both clients now share a tested visibility rule: waiting suppresses
+the activity row even if working/completion flags also remain set. Web rendered
+markup tests cover waiting with/without reply content and retain Working.
+
+Fresh phone dark web: mwgbrxrf-6be9ce569f; phone light: mwgbrxsl-501424ba8c.
+Desktop dark: mwgbrxpg-59a881d4f6; light: mwgbrxqh-a532d3037f. Android phone
+dark: mwgbrxne-3d37cf16f2; light: mwgbrxog-3afdbc1d6a. Recording:
+mwgbrxtv-aa9a88a028. Two synthetic real replies demonstrate consistent desktop
+avatars; the phone shows none, and neither client adds a waiting mascot.
+
+Rerun gates pass: web 1,130 tests / 80,159 assertions and zero-diagnostic check;
+Android 953 JVM tests (two skipped), plus assembleDebug. Gradle stopped. These
+follow-up checks are the requested web/Android subset, not a new full root gate.
+Synthetic backend/browser/emulator processes and owned temporary files cleaned;
+no physical phone, production state, push or main movement.
+
+## T182: larger chat mascot, no waiting row
+
+Chat activity and assistant reply avatars now share a 40 px/dp vector viewport,
+up from 26. Android's reply gutter grows with it. This is visibly bigger without
+crowding the phone transcript. The 40-size chat uses full vector bob/hop/sway;
+web sizes at or below 32 still use small-size travel. Reduced motion remains
+static. F68/Q205 then clarified the final scope: remove the standalone waiting
+row entirely, mascot included; the question card is the cue. Real reply avatars
+remain, but waiting alone creates no row or synthetic message. Working keeps its
+breathing mascot and visible text. Done text is unchanged.
+
+T182 proof index: mwgb3uqc-6afceeada0 (24 screenshots and four nine-second web
+recordings). Before/after working and waiting cover desktop/390 px web and the
+Android phone emulator, light/dark. Latest after versions implement F68/Q205;
+the earlier label-only captures are superseded. Final recordings:
+mwgbczwa-b8e0b50ed1 (desktop light), mwgbczy2-1afb245243 (desktop dark),
+mwgbd003-4a59c16725 (phone light), mwgbd02a-372939651d (phone dark).
+Browser assertions verify 40 px
+dimensions, no standalone waiting row/mascot, the retained real desktop reply
+avatar, breathing Working, static reduced motion and no overflow. Android shows
+no waiting row either. No production session or physical device was used.
+
+Recipe: temporary createSetup server under env -i with explicit HOME/USER/XDG
+and temp paths, terminals disabled, one faux project with a held model response
+and another using the real board ask tool. Vite plus headless Chromium use only
+that backend; the emulator connects through an explicit adb reverse. Processes
+are setsid-owned and stopped by PID; Gradle is stopped and owned temp files
+removed. No push, deployment or main movement.
+
+Checks pass: isolated root 2,668 tests / 94,268 assertions; root typecheck;
+web 1,128 tests / 80,139 assertions, zero-diagnostic check and build; Android
+952 JVM tests (two skipped), assembleDebug and lintDebug (zero errors, 49 existing
+warnings). External-denylist, generic public-tree and Gitleaks checks pass.
+
 ## T177 / Q199: mascot wired into agent activity
 
 A now replaces the 26 px/dp chat orb while a run/reply/tool is active. C marks

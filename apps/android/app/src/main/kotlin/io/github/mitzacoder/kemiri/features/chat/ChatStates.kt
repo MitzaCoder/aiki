@@ -9,6 +9,10 @@ import io.github.mitzacoder.kemiri.protocol.BoardQuestion
 internal fun agentWaitingForUser(questions: List<BoardQuestion>, threadId: String? = null, workerTaskId: String? = null, worker: Boolean = false): Boolean =
     questions.any { it.status == "open" && (it.blocksWork ?: (it.kind != "warning")) && (it.threadId ?: "main") == (threadId ?: "main") && (!worker || (workerTaskId != null && it.taskId == workerTaskId)) }
 
+/** Waiting has its question card, never a standalone mascot row, even during a live run. */
+internal fun showsAgentActivityRow(waiting: Boolean, working: Boolean, completed: Boolean): Boolean =
+    !waiting && (working || completed)
+
 internal fun agentFinished(previousRunning: Boolean, running: Boolean, waiting: Boolean, connected: Boolean, failed: Boolean) =
     previousRunning && !running && !waiting && connected && !failed
 

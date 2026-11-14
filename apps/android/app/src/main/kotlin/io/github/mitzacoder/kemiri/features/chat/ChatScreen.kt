@@ -309,7 +309,7 @@ fun ChatScreen(context: ProjectScreenContext, modifier: Modifier = Modifier) {
                     TranscriptRow(row,transcriptScope,streaming = busy && index == rows.lastIndex,orb = orbs?.get(index),motion = when { index == lastAvatar && busy && hasLiveAgentReply -> if(waitingForUser) AgentMotion.Waiting else AgentMotion.Working; completed && index == lastAvatar -> AgentMotion.Done; else -> AgentMotion.Idle })
                 }
             }
-            if((waitingForUser && (!wideReplies || !hasLiveAgentReply)) || (!waitingForUser && working && (!wideReplies || !hasLiveAgentReply)) || (completed && lastAvatar < 0)) item(key = "working") { WorkingRow(Modifier.padding(top = if(rows.isEmpty()) 0.dp else 16.dp),motion = if(waitingForUser) AgentMotion.Waiting else if(completed) AgentMotion.Done else AgentMotion.Working) }
+            if(showsAgentActivityRow(waitingForUser,working,completed) && ((working && (!wideReplies || !hasLiveAgentReply)) || (completed && lastAvatar < 0))) item(key = "working") { WorkingRow(Modifier.padding(top = if(rows.isEmpty()) 0.dp else 16.dp),motion = if(completed) AgentMotion.Done else AgentMotion.Working) }
         }
         }
         androidx.compose.animation.AnimatedVisibility(

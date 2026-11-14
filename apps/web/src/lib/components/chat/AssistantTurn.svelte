@@ -89,8 +89,9 @@
 	}
 </script>
 
+{#if motion !== 'waiting' || parts.length > 0}
 <div class="flex gap-3 sm:gap-4">
-	<div class="hidden pt-0.5 sm:block">
+	<div class="hidden pt-0.5 sm:block" role="img" aria-label={motion === 'waiting' ? 'Waiting for your answer…' : 'Assistant'}>
 		<AgentMascot state={motion ?? (streaming ? 'working' : 'idle')} />
 	</div>
 	<div class="min-w-0 flex-1">
@@ -148,7 +149,9 @@
 		{/each}
 
 		{#if streaming && parts.length === 0}
-			<p class="my-2 text-sm font-medium" class:shimmer-text={motion !== 'waiting'}>{motion === 'waiting' ? 'Waiting for your answer…' : 'Working…'}</p>
+			{#if motion !== 'waiting'}
+				<p class="my-2 text-sm font-medium shimmer-text">Working…</p>
+			{/if}
 		{/if}
 
 		{#each cacheMisses as miss, index (index)}
@@ -206,3 +209,4 @@
 		{/if}
 	</div>
 </div>
+{/if}

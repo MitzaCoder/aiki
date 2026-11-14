@@ -116,8 +116,8 @@ private const val ORB_MIN_WIDTH_DP = 640
  */
 @Composable private fun TurnGutter(orb: TurnOrb, motion: io.github.mitzacoder.kemiri.ui.components.AgentMotion, content: @Composable () -> Unit) {
     Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Box(Modifier.width(26.dp)) {
-            if(orb.first) io.github.mitzacoder.kemiri.ui.components.AgentMascot(motion,Modifier.padding(top = 2.dp),label = "Assistant")
+        Box(Modifier.width(40.dp)) {
+            if(orb.first) io.github.mitzacoder.kemiri.ui.components.AgentMascot(motion,Modifier.padding(top = 2.dp),label = if(motion == AgentMotion.Waiting) "Waiting for your answer…" else "Assistant")
         }
         Box(Modifier.weight(1f)) { content() }
     }
@@ -128,10 +128,11 @@ private const val ORB_MIN_WIDTH_DP = 640
  * shimmering "Working…", still with animations off.
  */
 @Composable fun WorkingRow(modifier: Modifier = Modifier, motion: io.github.mitzacoder.kemiri.ui.components.AgentMotion = io.github.mitzacoder.kemiri.ui.components.AgentMotion.Working) {
+    if(motion == AgentMotion.Waiting) return
     val still = io.github.mitzacoder.kemiri.ui.components.rememberAgentReducedMotion()
     Row(modifier.fillMaxWidth().semantics(mergeDescendants = true) {},verticalAlignment = Alignment.CenterVertically,horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         io.github.mitzacoder.kemiri.ui.components.AgentMascot(motion)
-        ShimmerText(when(motion) { io.github.mitzacoder.kemiri.ui.components.AgentMotion.Waiting -> "Waiting for your answer…"; io.github.mitzacoder.kemiri.ui.components.AgentMotion.Done -> "Done."; else -> "Working…" },animate = !still && motion == io.github.mitzacoder.kemiri.ui.components.AgentMotion.Working)
+        ShimmerText(if(motion == AgentMotion.Done) "Done." else "Working…",animate = !still && motion == AgentMotion.Working)
     }
 }
 

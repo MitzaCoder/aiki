@@ -14,6 +14,11 @@ export function agentTurnWorking(turn: { live?: boolean; parts: readonly { type:
 	return running && (turn.live === true || turn.parts.some(part => part.live === true || part.streaming === true));
 }
 
+/** A question is the waiting cue: never append a mascot-only activity row for it. */
+export function showsAgentActivityRow(waiting: boolean, working: boolean, completed: boolean): boolean {
+	return !waiting && (working || completed);
+}
+
 /** Never celebrate initial history, a disconnect, a failed/stopped run or just clearing a question. */
 export function agentFinished(previousRunning: boolean, running: boolean, waiting: boolean, connected: boolean, failed: boolean): boolean {
 	return previousRunning && !running && !waiting && connected && !failed;

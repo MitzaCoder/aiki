@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import type { BoardQuestion } from '@kemiri/protocol';
-import { agentFinished, agentWaitingForUser, agentTurnWorking } from '../src/lib/agent-activity.ts';
+import { agentFinished, agentWaitingForUser, agentTurnWorking, showsAgentActivityRow } from '../src/lib/agent-activity.ts';
 const question = (changes: Partial<BoardQuestion> = {}): BoardQuestion => ({ id:'Q1', revision:1, text:'Proceed?', options:[], taskId:null, status:'open', answer:null, askedAt:'2026-01-01T00:00:00Z', answeredAt:null, ...changes });
 test('only blocking user asks/approvals, scoped to the current thread, mean waiting', () => {
  expect(agentWaitingForUser([question()])).toBe(true);
@@ -21,6 +21,12 @@ test('live tool slots animate the reply even after its model message is persiste
  expect(agentTurnWorking({live:true,parts:[]},true)).toBe(true);
  expect(agentTurnWorking({parts:[{type:'text'}]},true)).toBe(false);
  expect(agentTurnWorking({live:true,parts:[]},false)).toBe(false);
+});
+test('waiting never adds an activity mascot, even with stale working or completion flags', () => {
+ for (const working of [false, true]) for (const completed of [false, true]) {
+  expect(showsAgentActivityRow(true, working, completed)).toBe(false);
+  expect(showsAgentActivityRow(false, working, completed)).toBe(working || completed);
+ }
 });
 test('Done is one live successful run edge, never history, a question clearing, failure or disconnect', () => {
  expect(agentFinished(true,false,false,true,false)).toBe(true);
