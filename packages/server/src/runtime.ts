@@ -1,3 +1,5 @@
+import { ProjectSkillStore } from "./skills.ts";
+import type { SkillRole, ProjectSkill } from "@kemiri/protocol";
 import { configureMcpRole, mcpRoleExtension, type McpService } from "./mcp.ts";
 import { DEFAULT_REPORT_AUDIT } from "@kemiri/protocol";
 import { ChatFileStore } from "./chat-files.ts";
@@ -69,7 +71,7 @@ import { ArtifactStore } from "./artifacts.ts";
 import { cacheRetentionFor, type PromptCacheRetention } from "./cache-retention.ts";
 import { createCodemodeSandbox, createHarnessCodemodeExtension } from "./codemode.ts";
 import { Coordinators } from "./coordinators.ts";
-import { createAgentContextExtension, readConversationContext } from "./context.ts";
+import { createAgentContextExtension, readConversationContext, loadAgentContext } from "./context.ts";
 import { createFolderContextExtension } from "./folder-context.ts";
 import { resolveAgentDir, resolveClaudeDir, resolveConfigDir } from "./data-dir.ts";
 import { ServerError, errorMessage } from "./errors.ts";
@@ -107,6 +109,7 @@ import type { ConversationIdentity, RequestLog } from "./request-log.ts";
 import { join } from "node:path";
 
 export type ProjectRuntime = {
+	readonly role: (conversationId: number) => Promise<SkillRole>;
 	readonly project: Project;
 	readonly harness: Harness;
 	readonly conversation: Conversation;
@@ -178,6 +181,8 @@ type RuntimeEntry = {
 
 export type ProjectManagerOptions = {
  mcp?: McpService;
+ skills?: ProjectSkillStore;
+ homeDir?: string;
 	store: ProjectStore;
 	models: Models;
 	/** Logs every turn's model request; each project installs its extension, which tells it the conversation. */
@@ -293,6 +298,8 @@ function projectSummary(
 export class ProjectManager {
 	readonly store: ProjectStore;
  readonly mcp: McpService | undefined;
+ readonly skills: ProjectSkillStore;
+ readonly #homeDir: string | undefined;
 
 	readonly files: ChatFileStore;
 	readonly models: Models;
@@ -351,6 +358,8 @@ export class ProjectManager {
 		this.store = options.store;
 		this.files = new ChatFileStore(options.store.dataDir);
  this.mcp = options.mcp;
+ this.skills = options.skills ?? new ProjectSkillStore(options.store.dataDir);
+ this.#homeDir = options.homeDir;
 		this.models = options.models;
 		this.#log = options.log ?? ((message) => console.log(message));
 		this.artifacts = options.artifacts ?? new ArtifactStore({ dataDir: options.store.dataDir, log: this.#log });
@@ -392,6 +401,13 @@ export class ProjectManager {
 			options.refStatus ?? new RefStatusService({ jiraSite: () => this.linkDetector.jiraLoginSite(), log: this.#log });
 		this.#refDetails =
 			options.refDetails ?? new RefDetailsService({ jiraSite: () => this.linkDetector.jiraLoginSite(), log: this.#log });
+	}
+
+	/** The project directory supplies the catalogue; choices always use the project ID. */
+	async projectSkills(projectId: string): Promise<ProjectSkill[]> {
+		const project = await this.store.require(projectId);
+		return this.skills.list(projectId, loadAgentContext({ agentDir: this.#agentDir, configDir: this.#configDir,
+			claudeDir: this.#claudeDir, cwd: project.path, ...(this.#homeDir === undefined ? {} : { homeDir: this.#homeDir }) }).skills);
 	}
 
 	/** Resolves a project ID to its stored record. */
@@ -1080,6 +1096,9 @@ export class ProjectManager {
 			configDir: this.#configDir,
 			claudeDir: this.#claudeDir,
 			usage: runtime.usage,
+			skills: this.skills,
+			role: runtime.role,
+			...(this.#homeDir === undefined ? {} : { homeDir: this.#homeDir }),
 		});
 	}
 
@@ -1142,6 +1161,7 @@ export class ProjectManager {
 		const project = entry.project;
 		const images = await this.#resolveImages();
 		const registry: Registry = createRegistry();
+		let role: (id: number) => Promise<SkillRole> = async () => "coordinator";
 		registry.install(createCodingTools(images === undefined ? {} : { images }));
 		// Caps the coordinator's own bash/powershell calls so a slow or polling command can never keep it unreachable;
 		// removed for workers below, who keep the tools' own timeouts.
@@ -1151,6 +1171,10 @@ export class ProjectManager {
 		// created later selects the extension with the rest of the coordinator's and picks up its workspace's files.
 		registry.install(
 			createAgentContextExtension({
+				projectId: project.id,
+				skills: this.skills,
+				role: id => role(id),
+				...(this.#homeDir === undefined ? {} : { homeDir: this.#homeDir }),
 				agentDir: this.#agentDir,
 				configDir: this.#configDir,
 				claudeDir: this.#claudeDir,
@@ -1399,10 +1423,11 @@ export class ProjectManager {
 		// Installed last so its section (the tools a script can call) renders after every other section's, which fixed
 		// positions (the SYSTEM.md preamble first of all) depend on first-extension-wins insertion order.
 		let mcpNamespaces: import("@earendil-works/pi-durable/codemode").CodemodeNamespace[] = [];
+  role = async id => coordinators.isMain(id) ? "coordinator" : coordinators.isBackground(id) ? "background" : (await workerOf(id))?.scheduleId ? "coordinator" : "workers";
   if (this.mcp) {
    board.onMcpAnswer = (id, answer) => this.mcp!.applyAnswer(project.id, id, answer);
    entry.stopMcp = this.mcp.bind({ projectId: project.id, registry,
-    role: async id => coordinators.isMain(id) ? "coordinator" : coordinators.isBackground(id) ? "background" : (await workerOf(id))?.scheduleId ? "coordinator" : "workers",
+    role,
     thread: async id => coordinators.threadIdOf(id) ?? (await workerOf(id))?.threadId ?? MAIN_THREAD_ID,
     board: { request: input => board.requestMcpApproval(input), withdraw: id => board.withdrawMcpApproval(id), answer: async id => {
      const question = (await board.state()).questions.find(question => question.id === id);
@@ -1421,7 +1446,8 @@ export class ProjectManager {
                     const threadId = coordinators.threadIdOf(id) ?? MAIN_THREAD_ID;
                     const target = coordinators.isMain(id) ? conversation : await threads.conversation(threadId);
                     const context = await readConversationContext({ project: entry.project, workerId: null, threadId, conversation: target,
-                        harness, registry, agentDir: this.#agentDir, configDir: this.#configDir, claudeDir: this.#claudeDir });
+                        harness, registry, agentDir: this.#agentDir, configDir: this.#configDir, claudeDir: this.#claudeDir,
+                        skills: this.skills, role, ...(this.#homeDir === undefined ? {} : { homeDir: this.#homeDir }) });
                     return createHash("sha256").update(JSON.stringify([context.systemPrompt, context.tools])).digest("hex");
                 },
                 conversation: async id => {
@@ -1630,6 +1656,7 @@ export class ProjectManager {
 			coordinators,
 			threads,
 			storage: projectStorage,
+			role,
 		};
 		entry.stopExtraction = async () => {
 			extractionStopped = true;

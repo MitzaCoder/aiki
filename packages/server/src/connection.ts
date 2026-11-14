@@ -188,6 +188,10 @@ export class ClientConnection {
 		return this.#ready;
 	}
 
+	notifySkills(projectId: string): void {
+		this.#respond({ type: "skills.project.changed", projectId });
+	}
+
 	/** Push a project state change to this connection. */
 	notifyProject(summary: ProjectSummary): void {
 		this.#respond({ type: "project.state", project: summary });
@@ -452,6 +456,13 @@ export class ClientConnection {
 					this.#respond({ type: "models.list", id: request.id, ...catalog });
 					return;
 				}
+    case "skills.project.get": case "skills.project.set": {
+     if (!this.#features.includes("project-skills")) return this.#unknownRequest(request);
+     await this.#manager.store.require(request.projectId);
+     if (request.type === "skills.project.set") await this.#manager.skills.set(request.projectId, request.changes);
+     this.#respond({ type: request.type, id: request.id, projectId: request.projectId, skills: await this.#manager.projectSkills(request.projectId) });
+     return;
+    }
     case "mcp.oauth.start": case "mcp.oauth.complete": case "mcp.oauth.cancel": case "mcp.list": case "mcp.add": case "mcp.token.set": case "mcp.refresh": case "mcp.policy.set": case "mcp.remove": case "mcp.disconnect": case "mcp.project.get": case "mcp.project.set": {
      const mcp = this.#manager.mcp;
      if (!mcp || !this.#features.includes("mcp-servers")) return this.#unknownRequest(request);

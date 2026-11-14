@@ -103,6 +103,7 @@ export async function createSetup(options?: {
 			agentDir,
 			configDir,
 			claudeDir,
+			homeDir: join(root, "home"),
 			...(options?.logins === undefined ? {} : { logins: options.logins }),
 			...(options?.allowedOrigins === undefined ? {} : { allowedOrigins: options.allowedOrigins }),
 			...(options?.webDir === undefined ? {} : { webDir: options.webDir }),

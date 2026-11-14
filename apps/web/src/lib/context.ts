@@ -211,6 +211,7 @@ const SKILL_SOURCE_LABELS: Record<SkillSource, string> = {
 	harness: "Harness",
 	pi: "pi",
 	claude: "Claude",
+	agents: "Agents",
 };
 
 /** Where a skill came from; an older backend sends no source, and every skill it knew was pi's. */

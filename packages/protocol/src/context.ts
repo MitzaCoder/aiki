@@ -40,13 +40,14 @@ export type ContextFile = Static<typeof ContextFileSchema>;
 
 /**
  * Where a skill comes from: the harness's own skills directories, pi's agent directory and `.pi/skills`, or Claude
- * Code's home and `.claude/skills` (its installed plugins included, the skills synced from claude.ai not).
+ * Code's home and `.claude/skills` (its installed plugins included, the skills synced from claude.ai not), or
+ * shared `.agents/skills` in the home and project directories.
  */
 export const SkillSourceSchema = Type.Union(
-	[Type.Literal("harness"), Type.Literal("pi"), Type.Literal("claude")],
+	[Type.Literal("harness"), Type.Literal("pi"), Type.Literal("claude"), Type.Literal("agents")],
 	{
 		description:
-			'"harness": the harness\'s config directory or the project\'s .aiki; "pi": pi\'s agent directory or .pi/skills; "claude": Claude Code\'s home, its plugins or .claude/skills.',
+			'"harness": the harness\'s config directory or the project\'s .aiki; "pi": pi\'s agent directory or .pi/skills; "claude": Claude Code\'s home, its plugins or .claude/skills; "agents": home or project .agents/skills.',
 	},
 );
 export type SkillSource = Static<typeof SkillSourceSchema>;
@@ -124,6 +125,7 @@ export const ConversationContextSchema = Type.Object({
 			"In the order they appear in the system prompt: SYSTEM.md, APPEND_SYSTEM.md, then the AGENTS.md files from the agent directory and the filesystem root down to the cwd.",
 	}),
 	skills: Type.Array(SkillInfoSchema),
+	skillsHeldBack: Type.Optional(Type.Integer({ minimum: 0 })),
 	usage: Type.Optional(ContextUsageSchema),
 });
 export type ConversationContext = Static<typeof ConversationContextSchema>;

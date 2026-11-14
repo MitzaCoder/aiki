@@ -54,6 +54,61 @@ open class UnionSerializer<T : Any>(
 }
 
 @Serializable
+data class ProjectSkill(
+    val `name`: String,
+    val `description`: String,
+    val `path`: String,
+    val `origin`: String,
+    val `source`: String,
+    val `hides`: List<String>,
+    val `roles`: List<String>,
+    val `decided`: Boolean
+)
+
+@Serializable
+data class SkillsProjectGetRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "skills.project.get",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `projectId`: String
+)
+
+@Serializable
+data class SkillsProjectSetRequest(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "skills.project.set",
+    val `id`: String = java.util.UUID.randomUUID().toString(),
+    val `projectId`: String,
+    val `changes`: List<SkillsProjectSetRequestChangesItem>
+)
+
+@Serializable
+data class SkillsProjectSetRequestChangesItem(
+    val `name`: String,
+    val `roles`: List<String>?
+)
+
+@Serializable
+data class SkillsProjectGetResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "skills.project.get",
+    val `id`: String,
+    val `projectId`: String,
+    val `skills`: List<ProjectSkill>
+)
+
+@Serializable
+data class SkillsProjectSetResponse(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "skills.project.set",
+    val `id`: String,
+    val `projectId`: String,
+    val `skills`: List<ProjectSkill>
+)
+
+@Serializable
+data class SkillsProjectChangedEvent(
+    @kotlinx.serialization.EncodeDefault val `type`: String = "skills.project.changed",
+    val `projectId`: String
+) : ProtocolEvent
+
+@Serializable
 data class McpOAuthStartRequest(
     @kotlinx.serialization.EncodeDefault val `type`: String = "mcp.oauth.start",
     val `id`: String = java.util.UUID.randomUUID().toString(),
@@ -3174,6 +3229,7 @@ data class ConversationContext(
     val `tools`: List<ToolInfo>,
     val `contextFiles`: List<ContextFile>,
     val `skills`: List<SkillInfo>,
+    val `skillsHeldBack`: Long? = null,
     val `usage`: ContextUsage? = null
 )
 
@@ -3555,6 +3611,7 @@ data class MemoryChangedEvent(
 data class UnknownEvent(val raw: JsonObject) : ProtocolEvent
 
 fun decodeProtocolEvent(raw: JsonObject, json: Json): ProtocolEvent = when(raw["type"]?.jsonPrimitive?.content) {
+    "skills.project.changed" -> json.decodeFromJsonElement(SkillsProjectChangedEvent.serializer(), raw)
     "mcp.oauth.changed" -> json.decodeFromJsonElement(McpOAuthChangedEvent.serializer(), raw)
     "auth.devicesChanged" -> json.decodeFromJsonElement(AuthDevicesChangedEvent.serializer(), raw)
     "auth.pairingRequested" -> json.decodeFromJsonElement(AuthPairingRequestedEvent.serializer(), raw)

@@ -1,3 +1,4 @@
+import { ProjectSkillStore } from "./skills.ts";
 import { McpService } from "./mcp.ts";
 /**
  * The Bun server: `Bun.serve` on the configured interface (loopback by default) and the WebSocket protocol at `/ws`.
@@ -118,6 +119,8 @@ export type StartServerOptions = {
 	 * Default: `KEMIRI_CLAUDE_DIR`, else `~/.claude` of the user this process runs as.
 	 */
 	claudeDir?: string;
+	/** Home whose .agents/skills are read; injectable for isolated tests. */
+	homeDir?: string;
 	/** Must match the store the models were created with. Default: `credentials.json` in the data directory. */
 	credentials?: CredentialStore;
 	/** `null` disables image processing; omitted creates the Photon worker processor on first project open. */
@@ -405,7 +408,8 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 	// The server may run as a system service whose HOME is not the user's, so what its prompts read is worth saying at
 	// every start: the agent directory with its AGENTS.md and global skills, the harness's own config directory with the
 	// system prompt files it holds, and Claude Code's home with the skills it adds.
-	const globalContext = loadAgentContext({ agentDir, configDir, claudeDir, cwd: dataDir });
+	const globalContext = loadAgentContext({ agentDir, configDir, claudeDir, cwd: dataDir,
+		...(options.homeDir === undefined ? {} : { homeDir: options.homeDir }) });
 	const globalFile = globalContext.files.find((file) => file.scope === "global" && file.kind === "agents");
 	const globalPromptFiles = globalContext.files.filter((file) => file.kind !== "agents");
 	const globalSkillsFrom = (source: LoadedSkill["source"]): number =>
@@ -541,8 +545,14 @@ export async function startServer(options: StartServerOptions): Promise<HarnessS
 		for (const connection of connections) connection.notifyMcpOAuth(flow);
 	});
 	await mcp.open();
+	const skills = new ProjectSkillStore(dataDir, projectId => {
+		for (const connection of connections) connection.notifySkills(projectId);
+	});
+	await skills.open();
 	const manager = new ProjectManager({
 		mcp,
+		skills,
+		...(options.homeDir === undefined ? {} : { homeDir: options.homeDir }),
 		taskFreshness: features.includes("task-freshness"),
   taskActivity: features.includes("task-activity"),
 		reportAudit: features.includes("report-audit"),

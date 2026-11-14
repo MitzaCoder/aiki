@@ -1389,7 +1389,7 @@ feature) and get it pushed as `conversation.context.changed` while they watch th
   base prompt — role, tool list, rules, docs — while context files and skills stay; this harness writes no base
   instructions of its own, so SYSTEM.md only fills that preamble slot and never replaces the harness's coordinator or
   worker sections, the AGENTS.md files or the skills. Symlinks are followed, and an empty file counts as none.
-- **Skills**: three sources, in this order. The harness's own: `<configDir>/skills/*/SKILL.md` and
+- **Skills**: four sources, in this order. The harness's own: `<configDir>/skills/*/SKILL.md` and
   `<cwd>/.aiki/skills/*/SKILL.md`. pi's: `<agentDir>/skills/*/SKILL.md` and `<cwd>/.pi/skills/*/SKILL.md`.
   Claude Code's: `<claudeDir>/skills/*/SKILL.md` (its home — `AIKI_CLAUDE_DIR`, else `~/.claude`) and
   `<cwd>/.claude/skills/*/SKILL.md`, plus the skills of the plugins Claude Code records as installed and enabled in
@@ -1397,18 +1397,33 @@ feature) and get it pushed as `conversation.context.changed` while they watch th
   `.claude/settings.json` and `.claude/settings.local.json`; a plugin's skills are namespaced `plugin:skill` as
   Claude Code namespaces them, a user or managed install is global and a project or local one belongs to its project.
   Claude Code's `skills/synced/` (skills downloaded from claude.ai) and its `.trash/` are deliberately not read.
+  Shared agents skills follow Claude: `<homeDir>/.agents/skills/*/SKILL.md`, then
+  `<cwd>/.agents/skills/*/SKILL.md` (home is injectable through the server/loader options).
+  Built-in harness skills are last, as fallbacks; they have `origin: "builtin"` in the project catalogue.
   Name and description come from the YAML frontmatter (the directory name when it has none). They are offered in the
   prompt like pi's `<available_skills>` — name, description, absolute path — and the model reads the file with its
   `read` tool when a task matches; `read` in the response says whether this conversation's transcript already did.
-  A name clash keeps the first: harness over pi over Claude, and within a source global over project. A skill whose
+  A name clash keeps the first: harness over pi over Claude over agents over built-ins, and within a source global over project. A skill whose
   `SKILL.md` real path was already loaded is dropped too, so one symlinked into two places is offered once.
   Bundled skills are last-resort harness skills, after all of these sources; source and binary installs both offer
   stable, content-addressed paths under `<configDir>/builtin-skills/<content-hash>/` (see HTML artifact design above).
+- **Project skill choices (D82)**: `skills.project.get {projectId}` lists the winning skills with name, description,
+  absolute path, origin (`project`, `global`, `builtin`), source (`harness`, `pi`, `claude`, `agents`), shadowed paths
+  in `hides`, effective `roles` and `decided`. `skills.project.set {projectId, changes: [{name, roles}]}` returns the
+  same catalogue; roles are `coordinator`, `workers`, `background`, `[]` is off, and `null` removes the decision.
+  Undecided skills stay offered to all roles, preserving upgrades. Atomic private `skills/projects.json` under the
+  backend data directory stores project ID → skill name → roles, never a repository file. Invalid entries are ignored;
+  unknown names remain harmless decisions for a future installed skill. `skills.project.changed {projectId}` broadcasts
+  after a save. Capability `project-skills` is not assumed for legacy hello.
+  The skills prompt section applies saved choices after shadowing, so disabling the winner never reveals a loser.
+  Each project extension captures project ID, even for workers in jj workspaces, and shares MCP's conversation-role
+  lookup (scheduled workers use coordinator, background threads use background). `conversation.context.skillsHeldBack`
+  optionally counts withheld winners; its skills list matches that conversation's offered catalogue.
 - Both are sections of one extension installed for the project, so the coordinator and every worker have them: a worker's
   cwd is its jj workspace when isolated, and it reads that checkout's files. Workers get no worker tools, and the worker
   tools themselves refuse to run outside the coordinator conversation.
 - Files are re-read before every turn, so an edit applies to the next turn without a restart. The rendered text depends
-  only on file content and absolute paths, in a fixed order: an unchanged turn renders the same sections, pi-durable
+  only on file content, absolute paths and saved project/role choices, in a fixed order: an unchanged turn renders the same sections, pi-durable
   writes no `pi.system` entry, and the provider's prompt cache keeps hitting. Nothing per-turn (timestamps, sizes,
   counters) and no conversation state such as a skill's `read` flag belongs in a section.
 - The response also carries the full system prompt the next request would use, the tools with the extension that
@@ -4150,9 +4165,14 @@ section lists, the URLs and the rules below as pure functions (`test/settings.te
   - Notifications is the old /notifications page; Archived projects is the unarchive list (the drawer keeps its own).
 - **Project settings**, opened from the top bar gear and the ⋯ menu: **General** (name, folder, archive),
   **Coordinator** (model, thinking), **Workers** (worker models, check-ins), **Scheduled tasks**, **Tickets and pull
-  requests**, **Prompt cache**, **MCP** (server and agent-role enablement), **Storage**. A section a backend does not offer is left out of the list.
+  requests**, **Prompt cache**, **MCP** (server and agent-role enablement), **Skills** (capability `project-skills`), **Storage**. A section a backend does not offer is left out of the list.
 - `/` stays the projects home (it was both): every backend's projects, Add a project (opens `FolderPicker`), the
   first-run backend form. Management moved to Settings → Backends.
+
+Skills choices belong to the backend project, not a repo. The planned Skills screen uses simple on/off controls;
+undecided skills are offered to every role and marked New. The protocol/storage retain independent coordinator,
+workers and background roles. Clients hide the section when `project-skills` is absent. The backend contract and
+prompt filtering are implemented independently of the client screens.
 
 ### Routes and redirects
 

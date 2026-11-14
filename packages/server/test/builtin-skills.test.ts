@@ -23,7 +23,7 @@ const skillBody = "---\nname: example\ndescription: Design HTML pages.\n---\nRea
 function renderExample(directory: string): string {
 	return renderSkills([{
 		name: "example", description: "Design HTML pages.", path: join(directory, "example/SKILL.md"),
-		source: "harness", scope: "global",
+		source: "harness", scope: "global", origin: "builtin", hides: [],
 	}])!;
 }
 

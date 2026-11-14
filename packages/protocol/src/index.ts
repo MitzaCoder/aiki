@@ -1,5 +1,7 @@
 import { McpOAuthStartRequestSchema, McpOAuthStartResponseSchema, McpOAuthCompleteRequestSchema, McpOAuthCompleteResponseSchema, McpOAuthCancelRequestSchema, McpOAuthCancelResponseSchema, McpOAuthChangedEventSchema, McpOAuthFlowSchema } from "./mcp.ts";
 export * from "./mcp.ts";
+export * from "./skills.ts";
+import { SkillRoleSchema, ProjectSkillSchema, SkillsProjectGetRequestSchema, SkillsProjectSetRequestSchema, SkillsProjectGetResponseSchema, SkillsProjectSetResponseSchema, SkillsProjectChangedEventSchema } from "./skills.ts";
 import { McpListRequestSchema, McpListResponseSchema, McpAddRequestSchema, McpAddResponseSchema, McpTokenSetRequestSchema, McpTokenSetResponseSchema, McpRefreshRequestSchema, McpRefreshResponseSchema, McpPolicySetRequestSchema, McpPolicySetResponseSchema, McpRemoveRequestSchema, McpRemoveResponseSchema, McpDisconnectRequestSchema, McpDisconnectResponseSchema, McpProjectGetRequestSchema, McpProjectGetResponseSchema, McpProjectSetRequestSchema, McpProjectSetResponseSchema } from "./mcp.ts";
 
 export { type NotificationRelayStatus, NotificationRelayStatusSchema } from "./notifications.ts";
@@ -730,6 +732,7 @@ export const ClientMessageSchema = Type.Union([
 	McpPolicySetRequestSchema,
 	McpRemoveRequestSchema,
 	McpDisconnectRequestSchema,
+	SkillsProjectGetRequestSchema, SkillsProjectSetRequestSchema,
 	McpProjectGetRequestSchema,
 	McpProjectSetRequestSchema,
 
@@ -848,6 +851,7 @@ export const ResponseSchema = Type.Union([
 	McpPolicySetResponseSchema,
 	McpRemoveResponseSchema,
 	McpDisconnectResponseSchema,
+	SkillsProjectGetResponseSchema, SkillsProjectSetResponseSchema,
 	McpProjectGetResponseSchema,
 	McpProjectSetResponseSchema,
 
@@ -950,6 +954,7 @@ export const ResponseSchema = Type.Union([
 export type Response = Static<typeof ResponseSchema>;
 
 export const ServerEventSchema = Type.Union([
+ SkillsProjectChangedEventSchema,
  McpOAuthChangedEventSchema,
 	AuthDevicesChangedEventSchema,
 	AuthPairingRequestedEventSchema,
@@ -982,6 +987,13 @@ export type ServerMessage = Static<typeof ServerMessageSchema>;
  * them to a generator directly.
  */
 export const PROTOCOL_SCHEMAS: Readonly<Record<string, TSchema>> = {
+ SkillRole: SkillRoleSchema,
+ ProjectSkill: ProjectSkillSchema,
+ SkillsProjectGetRequest: SkillsProjectGetRequestSchema,
+ SkillsProjectSetRequest: SkillsProjectSetRequestSchema,
+ SkillsProjectGetResponse: SkillsProjectGetResponseSchema,
+ SkillsProjectSetResponse: SkillsProjectSetResponseSchema,
+ SkillsProjectChangedEvent: SkillsProjectChangedEventSchema,
  McpOAuthStartRequest: McpOAuthStartRequestSchema,
  McpOAuthStartResponse: McpOAuthStartResponseSchema,
  McpOAuthCompleteRequest: McpOAuthCompleteRequestSchema,

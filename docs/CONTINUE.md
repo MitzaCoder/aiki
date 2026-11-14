@@ -1,5 +1,40 @@
 # Continue
 
+## T183 / T185: per-project skill choices backend (D82)
+
+Capability `project-skills` adds `skills.project.get/set` and the broadcast
+`skills.project.changed {projectId}`. Both replies include projectId and the
+winning ProjectSkill catalogue: name, description, absolute SKILL.md path,
+origin (project/global/builtin), source (harness/pi/claude/agents), hides, roles,
+decided. Set accepts `changes: [{name, roles}]`: [] disables; null resets to
+undecided/all roles. Unknown names persist harmlessly. Invalid saved entries
+are ignored. Backend-only `skills/projects.json` uses atomic 0600 JSON writes.
+
+`src/skills.ts` owns choices; `src/context.ts` discovers and settles names
+before filtering, so off never reveals a shadowed skill. Discovery order:
+harness, pi, Claude (plugins included), home/project .agents/skills, built-ins;
+global precedes project within each source. The server/loader homeDir option
+keeps tests isolated. Project extensions capture projectId, not workspace cwd.
+Skills and MCP share the exact runtime role lookup: main/scheduled workers →
+coordinator, background threads → background, other workers → workers.
+Conversation context includes optional skillsHeldBack and its filtered list.
+Only files plus saved choices affect skills text; an unchanged render is
+byte-identical and a choice changes only the skills section.
+
+Android DTOs/request overloads regenerated and --check passes (395 DTOs,
+108 requests). Its ProtocolEvent when blocks need SkillsProjectChangedEvent;
+get/set are typed RPC DTOs, not new sealed event cases. Android compilation and
+client Skills screens are deliberately left to their workers. Web only adds
+the required source-label mapping to keep its exhaustive record compiling.
+
+Checks passed in order: isolated root bun test (2,677 tests, 94,353 assertions,
+zero failures), root typecheck, web check (zero errors/warnings). Seven new
+protocol/server tests cover defaults/reset, restart and broadcast, garbage,
+shadowing, home/project agents, workspace project identity, real new-worker
+prompt filtering, stable render and a single section change. No UI proof,
+deploy, bookmark movement or push; built-in path fix is a separate worker.
+
+
 ## T181: stable built-in skill paths across releases
 
 Source and binary installs now materialize all bundled skill files at

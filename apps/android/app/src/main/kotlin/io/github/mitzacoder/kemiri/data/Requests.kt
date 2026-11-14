@@ -4,6 +4,14 @@ package io.github.mitzacoder.kemiri.data
 import io.github.mitzacoder.kemiri.protocol.*
 import kotlinx.serialization.json.*
 
+suspend fun HarnessClient.request(value: SkillsProjectGetRequest, explicitNulls: Set<String> = emptySet()): SkillsProjectGetResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(SkillsProjectGetRequest.serializer(), value).jsonObject, explicitNulls), SkillsProjectGetResponse.serializer()
+)
+
+suspend fun HarnessClient.request(value: SkillsProjectSetRequest, explicitNulls: Set<String> = emptySet()): SkillsProjectSetResponse = exchange(
+    value.id, withExplicitNulls(wireJson.encodeToJsonElement(SkillsProjectSetRequest.serializer(), value).jsonObject, explicitNulls), SkillsProjectSetResponse.serializer()
+)
+
 suspend fun HarnessClient.request(value: McpOAuthStartRequest, explicitNulls: Set<String> = emptySet()): McpOAuthStartResponse = exchange(
     value.id, withExplicitNulls(wireJson.encodeToJsonElement(McpOAuthStartRequest.serializer(), value).jsonObject, explicitNulls), McpOAuthStartResponse.serializer()
 )

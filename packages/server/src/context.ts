@@ -6,6 +6,8 @@
  * next turn without a restart. The same files, plus the rendered prompt and the offered tools, are what
  * `conversation.context` serves; see `readConversationContext`.
  */
+import type { ProjectSkillStore } from "./skills.ts";
+import type { SkillRole, ProjectSkill } from "@kemiri/protocol";
 import { builtinSkillsDirectory } from "./builtin-skills.ts";
 import { serverSettings } from "./server-settings.ts";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
@@ -96,7 +98,7 @@ export const AGENT_CONTEXT_EXTENSION = serverSettings.KEMIRI_CONTEXT_EXTENSION |
  * A skill as the harness knows it: where it came from, and whether this conversation has read it — the latter is per
  * conversation, so `read` is added later.
  */
-export type LoadedSkill = Omit<SkillInfo, "read"> & { source: SkillSource };
+export type LoadedSkill = Omit<SkillInfo, "read"> & { source: SkillSource; origin: ProjectSkill["origin"]; hides: string[] };
 
 export type LoadedAgentContext = {
 	/**
@@ -301,7 +303,7 @@ function readSkill(
 	if (description.length === 0) return undefined;
 	const name = (frontmatter["name"] ?? "").trim() || basename(directory);
 	if (name.length === 0) return undefined;
-	return { name, description, path, scope, source };
+	return { name, description, path, scope, source, origin: scope, hides: [] };
 }
 
 /** A directory's entries by name, or none when it cannot be listed (it usually does not exist). */
@@ -509,16 +511,20 @@ function readClaudePluginSkills(options: {
 	return skills;
 }
 
-/** The candidates in order, dropping a repeated name and a skill whose `SKILL.md` real path is already loaded. */
+/** Settle name clashes before policy filtering; retain shadowed paths on the winner. Deduplicate real paths too. */
 function uniqueSkills(candidates: readonly LoadedSkill[]): LoadedSkill[] {
 	const skills: LoadedSkill[] = [];
-	const names = new Set<string>();
+	const names = new Map<string, LoadedSkill>();
 	const realPaths = new Set<string>();
 	for (const skill of candidates) {
-		if (names.has(skill.name)) continue;
+		const winner = names.get(skill.name);
+		if (winner !== undefined) {
+			if (winner.path !== skill.path && !winner.hides.includes(skill.path)) winner.hides.push(skill.path);
+			continue;
+		}
 		const real = realPath(skill.path);
 		if (realPaths.has(real)) continue;
-		names.add(skill.name);
+		names.set(skill.name, skill);
 		realPaths.add(real);
 		skills.push(skill);
 	}
@@ -530,11 +536,11 @@ function uniqueSkills(candidates: readonly LoadedSkill[]): LoadedSkill[] {
  * project's or the config directory's), then the agent directory's AGENTS.md, then the ones from the filesystem root down
  * to `cwd`, so the nearest file is last and wins.
  *
- * Skills come from three places, in this order: the harness's own (`<configDir>/skills`, then
+ * Skills come from four sources, in this order: the harness's own (`<configDir>/skills`, then
  * `<cwd>/.aiki/skills`), pi's (`<agentDir>/skills`, then `<cwd>/.pi/skills`), and Claude Code's
  * (`<claudeDir>/skills` with its enabled plugins' skills, then `<cwd>/.claude/skills`). Within a source the global
- * directory comes before the project's, and a name keeps its first skill: harness over pi over Claude, then global over
- * project. Bundled skills are fallback harness skills after these sources, so a user's same-named skill may override one. A skill whose `SKILL.md` real path was already loaded is dropped too, so the same skill symlinked into two
+ * directory comes before the project's, and a name keeps its first skill: harness over pi over Claude over
+ * `.agents/skills` (home, then cwd), then global over project. Bundled skills are fallback harness skills after these sources, so a user's same-named skill may override one. A skill whose `SKILL.md` real path was already loaded is dropped too, so the same skill symlinked into two
  * places is offered once. Claude Code's `skills/synced/` (downloaded from claude.ai) and `.trash/` are not read.
  *
  * Read fresh on every call, and synchronously: it runs inside the request that renders the prompt, where a handful of
@@ -549,6 +555,7 @@ export function loadAgentContext(options: {
 	configDir: string;
 	claudeDir: string;
 	cwd: string;
+	homeDir?: string;
 	/** The conversation's model, whose notes are read too; none without one. */
 	model?: { provider: string; modelId: string } | undefined;
 }): LoadedAgentContext {
@@ -587,7 +594,9 @@ export function loadAgentContext(options: {
 			skip: CLAUDE_SKIPPED_SKILL_DIRS,
 		}),
 		...claudePluginSkills("project"),
-		...readSkillsDir(builtinSkillsDirectory(options.configDir), "global", "harness"),
+		...readSkillsDir(join(options.homeDir ?? homedir(), ".agents", SKILLS_DIR_NAME), "global", "agents"),
+		...readSkillsDir(join(options.cwd, ".agents", SKILLS_DIR_NAME), "project", "agents"),
+		...readSkillsDir(builtinSkillsDirectory(options.configDir), "global", "harness").map(skill => ({ ...skill, origin: "builtin" as const })),
 	]);
 	return { files, skills };
 }
@@ -654,6 +663,10 @@ export function createAgentContextExtension(options: {
 	agentDir: string;
 	configDir: string;
 	claudeDir: string;
+	homeDir?: string;
+	projectId?: string;
+	skills?: ProjectSkillStore;
+	role?: (conversationId: number) => SkillRole | Promise<SkillRole>;
 }): Extension {
 	return defineExtension({
 		name: AGENT_CONTEXT_EXTENSION,
@@ -685,17 +698,13 @@ export function createAgentContextExtension(options: {
 					}).files,
 				);
 			}),
-			section(SKILLS_SECTION, (input) => {
+			section(SKILLS_SECTION, async (input) => {
 				const cwd = input.agent.cwd;
 				if (cwd === undefined) return undefined;
-				return renderSkills(
-					loadAgentContext({
-						agentDir: options.agentDir,
-						configDir: options.configDir,
-						claudeDir: options.claudeDir,
-						cwd,
-					}).skills,
-				);
+				const skills = loadAgentContext({ ...options, cwd }).skills;
+				return renderSkills(options.skills && options.projectId && options.role
+					? options.skills.filter(options.projectId, await options.role(input.conversationId), skills)
+					: skills);
 			}),
 			// Last, so switching models leaves every section before it, and the provider's cache of them, untouched.
 			section(MODEL_NOTES_SECTION, (input) => renderModelNotes(readModelNotes(options.configDir, input.agent.model))),
@@ -706,6 +715,9 @@ export function createAgentContextExtension(options: {
 // --- what the next request is sent with --------------------------------------------------------------------------
 
 export type ConversationContextSources = {
+	homeDir?: string;
+	skills?: ProjectSkillStore;
+	role?: (conversationId: number) => SkillRole | Promise<SkillRole>;
 	project: Project;
 	/** Null for the coordinator. */
 	workerId: string | null;
@@ -850,7 +862,11 @@ export async function readConversationContext(sources: ConversationContextSource
 		claudeDir: sources.claudeDir,
 		cwd,
 		model: agent.model,
+		...(sources.homeDir === undefined ? {} : { homeDir: sources.homeDir }),
 	});
+	const skills = sources.skills && sources.role
+		? sources.skills.filter(sources.project.id, await sources.role(sources.conversation.id), loaded.skills)
+		: loaded.skills;
 	const systemPrompt = await renderSystemPrompt({
 		conversation: sources.conversation,
 		harness: sources.harness,
@@ -878,11 +894,12 @@ export async function readConversationContext(sources: ConversationContextSource
 		...(sources.threadId === undefined ? {} : { threadId: sources.threadId }),
 		cwd,
 		projectPath: sources.project.path,
-		homeDir: homedir(),
+		homeDir: sources.homeDir ?? homedir(),
 		systemPrompt,
 		tools: describeTools(agent, sources.registry),
 		contextFiles: loaded.files,
-		skills: loaded.skills.map((skill) => ({
+		skillsHeldBack: loaded.skills.length - skills.length,
+		skills: skills.map((skill) => ({
 			...skill,
 			read: read.has(skill.path) || readRealPaths.has(realPath(skill.path)),
 		})),
